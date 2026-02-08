@@ -4,6 +4,8 @@ System wykorzystujący dwa agenty AI współpracujące w trybie group chat orche
 
 ## 📋 Opis
 
+![math-simple](math-simple.png)
+
 Bielik-M to aplikacja demonstrująca współpracę dwóch wyspecjalizowanych agentów AI:
 
 - **🔍 Analizator** - Analizuje problemy matematyczne, rozbija je na kroki i tworzy strategię rozwiązania
