@@ -1,4 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { MLXAgent } from './mlxAgent';
+
+export type LLMProvider = 'claude' | 'mlx';
 
 export interface Message {
   id: string;
@@ -14,14 +17,40 @@ export interface Agent {
   systemPrompt: string;
 }
 
+export interface MLXConfig {
+  baseUrl: string;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+}
+
 export class GroupChatOrchestrator {
-  private client: Anthropic;
+  private client: Anthropic | null = null;
+  private mlxAgent: MLXAgent | null = null;
   private agents: Agent[];
   private conversationHistory: Message[] = [];
+  private provider: LLMProvider;
 
-  constructor(apiKey: string, agents: Agent[]) {
-    this.client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  constructor(
+    provider: LLMProvider,
+    agents: Agent[],
+    apiKey?: string,
+    mlxConfig?: MLXConfig
+  ) {
+    this.provider = provider;
     this.agents = agents;
+
+    if (provider === 'claude') {
+      if (!apiKey) {
+        throw new Error('API key is required for Claude provider');
+      }
+      this.client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+    } else if (provider === 'mlx') {
+      if (!mlxConfig) {
+        throw new Error('MLX config is required for MLX provider');
+      }
+      this.mlxAgent = new MLXAgent(mlxConfig);
+    }
   }
 
   /**
@@ -66,34 +95,51 @@ export class GroupChatOrchestrator {
     if (!agent) throw new Error(`Agent ${agentId} not found`);
 
     const messages = this.getAgentContext(agentId);
-
-    console.log(`🤖 [${agent.name}] Wysyłanie zapytania do API:`, {
-      model: 'claude-haiku-4-5-20251001',
-      agent: agent.name,
-      systemPrompt: agent.systemPrompt,
-      messages: messages,
-    });
-
-    const response = await this.client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4096,
-      system: agent.systemPrompt,
-      messages,
-    });
-
-    console.log(`✅ [${agent.name}] Otrzymano odpowiedź z API:`, response);
-
-    // Extract text content from response
     let content = '';
-    if (response.content && response.content.length > 0) {
-      const firstBlock = response.content[0];
-      console.log(`📝 [${agent.name}] Pierwszy blok odpowiedzi:`, firstBlock);
-      if (firstBlock.type === 'text') {
-        content = firstBlock.text.trim();
-        console.log(`📄 [${agent.name}] Treść odpowiedzi (${content.length} znaków):`, content);
+
+    if (this.provider === 'claude' && this.client) {
+      console.log(`🤖 [${agent.name}] Wysyłanie zapytania do Claude API:`, {
+        model: 'claude-haiku-4-5-20251001',
+        agent: agent.name,
+        systemPrompt: agent.systemPrompt,
+        messages: messages,
+      });
+
+      const response = await this.client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 4096,
+        system: agent.systemPrompt,
+        messages,
+      });
+
+      console.log(`✅ [${agent.name}] Otrzymano odpowiedź z Claude API:`, response);
+
+      // Extract text content from response
+      if (response.content && response.content.length > 0) {
+        const firstBlock = response.content[0];
+        console.log(`📝 [${agent.name}] Pierwszy blok odpowiedzi:`, firstBlock);
+        if (firstBlock.type === 'text') {
+          content = firstBlock.text.trim();
+          console.log(`📄 [${agent.name}] Treść odpowiedzi (${content.length} znaków):`, content);
+        }
+      } else {
+        console.warn(`⚠️ [${agent.name}] Brak contentu w odpowiedzi!`, response);
       }
+    } else if (this.provider === 'mlx' && this.mlxAgent) {
+      console.log(`🤖 [${agent.name}] Wysyłanie zapytania do MLX:`, {
+        model: this.mlxAgent.getModel(),
+        agent: agent.name,
+        systemPrompt: agent.systemPrompt,
+        messages: messages,
+      });
+
+      content = await this.mlxAgent.execute(agent.systemPrompt, messages);
+
+      console.log(`✅ [${agent.name}] Otrzymano odpowiedź z MLX:`, {
+        contentLength: content.length,
+      });
     } else {
-      console.warn(`⚠️ [${agent.name}] Brak contentu w odpowiedzi!`, response);
+      throw new Error(`Invalid provider configuration: ${this.provider}`);
     }
 
     const message: Message = {

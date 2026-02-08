@@ -1,0 +1,37 @@
+{
+  "name": "mcp-sympy-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for SymPy mathematical computations",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-sympy-server": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "sympy",
+    "mathematics",
+    "symbolic-math",
+    "calculus",
+    "algebra"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

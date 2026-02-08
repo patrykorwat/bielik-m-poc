@@ -14,6 +14,8 @@ Agenty wymieniają się informacjami w grupowym czacie, współpracując nad kom
 ## ✨ Funkcje
 
 - **Group Chat Orchestration** - Orkiestracja konwersacji między wieloma agentami
+- **Wsparcie dla MLX** - Lokalny inference na Apple Silicon z akceleracją sprzętową
+- **Multi-Provider** - Wybór między Claude (cloud) a MLX (lokalny)
 - **Brak Chain of Thoughts** - Agenty komunikują się bezpośrednio bez wewnętrznych rozważań
 - **Polski interfejs użytkownika** - Kompletnie spolszczony UI
 - **Konfigurowalność** - Możliwość ustawienia liczby rund konwersacji
@@ -25,7 +27,8 @@ Agenty wymieniają się informacjami w grupowym czacie, współpracując nad kom
 ### Wymagania
 
 - Node.js 18+ lub nowszy
-- Klucz API Anthropic
+- **Dla Claude**: Klucz API Anthropic
+- **Dla MLX**: Mac z Apple Silicon (M1/M2/M3/M4) i uruchomiony serwer MLX
 
 ### Instalacja
 
@@ -43,16 +46,49 @@ npm run dev
 
 ### Konfiguracja
 
+#### Opcja 1: Claude (Cloud)
+
 1. Otwórz aplikację w przeglądarce (domyślnie `http://localhost:5173`)
-2. Wprowadź swój klucz API Anthropic
-3. Kliknij "Rozpocznij"
+2. Wybierz provider "Claude (Anthropic)"
+3. Wprowadź swój klucz API Anthropic
+4. Kliknij "Rozpocznij"
 
-### Uzyskiwanie klucza API
-
+**Uzyskiwanie klucza API:**
 1. Odwiedź [console.anthropic.com](https://console.anthropic.com/)
 2. Zarejestruj się lub zaloguj
 3. Przejdź do sekcji API Keys
 4. Wygeneruj nowy klucz API
+
+#### Opcja 2: MLX (Lokalny - Apple Silicon)
+
+1. Zainstaluj MLX:
+   ```bash
+   # Opcja 1: Homebrew (zalecane dla macOS)
+   brew install mlx-lm
+
+   # Opcja 2: pip
+   pip install mlx mlx-lm
+   ```
+
+2. Uruchom serwer MLX:
+   ```bash
+   mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit
+
+   # Lub na innym porcie:
+   mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit --port 8080
+   ```
+
+3. W aplikacji:
+   - Wybierz provider "MLX (Apple Silicon - lokalny)"
+   - Wprowadź URL serwera (domyślnie `http://localhost:8080`)
+   - Wprowadź nazwę modelu
+   - Kliknij "Rozpocznij"
+
+**Wymagania MLX:**
+- Mac z Apple Silicon (M1/M2/M3/M4)
+- macOS 14.0 lub wyższy
+- Darmowy, lokalny inference bez kosztów API
+- Akceleracja sprzętowa za pomocą Neural Engine
 
 ## 💻 Użycie
 
@@ -92,7 +128,9 @@ Możesz ustawić liczbę rund (1-5), w których agenty będą wymieniać informa
 bielik-m/
 ├── src/
 │   ├── services/
-│   │   └── agentService.ts      # Logika orkiestracji agentów
+│   │   ├── agentService.ts      # Logika orkiestracji agentów
+│   │   ├── mlxAgent.ts          # Implementacja MLX agenta
+│   │   └── types.ts             # Typy TypeScript
 │   ├── App.tsx                  # Główny komponent UI
 │   ├── App.css                  # Style aplikacji
 │   ├── main.tsx                 # Punkt wejścia
@@ -107,12 +145,29 @@ bielik-m/
 
 #### GroupChatOrchestrator
 
-Główna klasa zarządzająca konwersacją między agentami:
+Główna klasa zarządzająca konwersacją między agentami z wsparciem dla wielu providerów:
 
 ```typescript
-// Tworzenie orchestratora
+// Tworzenie orchestratora z Claude
 const agents = createMathAgents();
-const orchestrator = new GroupChatOrchestrator(apiKey, agents);
+const orchestrator = new GroupChatOrchestrator(
+  'claude',
+  agents,
+  apiKey
+);
+
+// Tworzenie orchestratora z MLX
+const orchestratorMLX = new GroupChatOrchestrator(
+  'mlx',
+  agents,
+  undefined,
+  {
+    baseUrl: 'http://localhost:8080',
+    model: 'mlx-community/Llama-3.2-3B-Instruct-4bit',
+    temperature: 0.7,
+    maxTokens: 4096
+  }
+);
 
 // Rozpoczęcie konwersacji
 await orchestrator.orchestrateConversation(
@@ -156,7 +211,19 @@ UI ← Kompletne rozwiązanie
 - **TypeScript** - Typy statyczne
 - **Vite** - Bundler i dev server
 - **Anthropic SDK** - Integracja z Claude AI
+- **MLX** - Apple Silicon optimized inference
 - **CSS3** - Stylowanie (gradientowe, responsywne)
+
+### Porównanie providerów
+
+| Feature | Claude | MLX |
+|---------|--------|-----|
+| **Koszt** | Płatny (API) | Darmowy (lokalny) |
+| **Jakość** | Bardzo wysoka | Dobra |
+| **Szybkość** | Szybka | Bardzo szybka (z akceleracją) |
+| **Prywatność** | Cloud | 100% lokalny |
+| **Wymagania** | Klucz API | Apple Silicon Mac |
+| **Offline** | ❌ | ✅ |
 
 ## 📦 Skrypty
 
@@ -184,6 +251,11 @@ npm run lint
 ## 🚨 Ważne uwagi
 
 ⚠️ **Uwaga bezpieczeństwa**: Aplikacja używa `dangerouslyAllowBrowser: true` do celów demonstracyjnych. W środowisku produkcyjnym klucz API powinien być przechowywany na backendzie, a komunikacja z Anthropic powinna odbywać się przez serwer proxy.
+
+## 📚 Dodatkowa dokumentacja
+
+- [MLX_GUIDE.md](MLX_GUIDE.md) - Kompletny przewodnik po MLX
+- [EXAMPLES.md](EXAMPLES.md) - Przykłady użycia z MLX i Claude
 
 ## 🤝 Wkład w rozwój
 
