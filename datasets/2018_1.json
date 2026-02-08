@@ -1,0 +1,501 @@
+[
+    {
+        "question": "Liczba $2 \\\\log_3 6 - \\\\log_3 4$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "4",
+            "b": "2",
+            "c": "2\\\\log_3 2",
+            "d": "\\\\log_3 8"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\\\frac{\\\\sqrt[3]{7}}{\\\\sqrt[5]{81}} \\\\cdot \\\\sqrt[3]{56}$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "\\\\frac{\\\\sqrt{3}}{2}",
+            "b": "\\\\frac{3}{2\\\\sqrt[3]{21}}",
+            "c": "\\\\frac{3}{2}",
+            "d": "\\\\frac{9}{4}"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dane są liczby $a = 3,6 \\\\cdot 10^{-12}$ oraz $b = 2,4 \\\\cdot 10^{-20}$. Wtedy iloraz $\\\\frac{a}{b}$ jest równy",
+        "answer": "C",
+        "options": {
+            "a": "8,64 \\\\cdot 10^{-32}",
+            "b": "1,5 \\\\cdot 10^{-8}",
+            "c": "1,5 \\\\cdot 10^{8}",
+            "d": "8,64 \\\\cdot 10^{32}"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Cena roweru po obniżce o 15% była równa 850 zł. Przed obniżką ten rower kosztował",
+        "answer": "C",
+        "options": {
+            "a": "865,00 zł",
+            "b": "850,15 zł",
+            "c": "1000,00 zł",
+            "d": "977,50 zł"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Zbiorem wszystkich rozwiązań nierówności $\\\\frac{1-2x}{2} > \\\\frac{1}{3}$ jest przedział",
+        "answer": "A",
+        "options": {
+            "a": "\\\\left(-\\\\infty, \\\\frac{1}{6}\\\\right)",
+            "b": "\\\\left(-\\\\infty, \\\\frac{2}{3}\\\\right)",
+            "c": "\\\\left(\\\\frac{1}{6}, +\\\\infty\\\\right)",
+            "d": "\\\\left(\\\\frac{2}{3}, +\\\\infty\\\\right)"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja kwadratowa jest określona wzorem $f(x) = -2(x+3)(x-5)$. Liczby $x_1$, $x_2$ są różnymi miejscami zerowymi funkcji $f$. Zatem",
+        "answer": "C",
+        "options": {
+            "a": "x_1 + x_2 = -8",
+            "b": "x_1 + x_2 = -2",
+            "c": "x_1 + x_2 = 2",
+            "d": "x_1 + x_2 = 8"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 6,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Równanie $\\\\frac{x^2 + 2x}{x^2 - 4} = 0$",
+        "answer": "D",
+        "options": {
+            "a": "ma trzy rozwiązania: $x = -2$, $x = 0$, $x = 2$",
+            "b": "ma dwa rozwiązania: $x = 0$, $x = -2$",
+            "c": "ma dwa rozwiązania: $x = -2$, $x = 2$",
+            "d": "ma jedno rozwiązanie: $x = 0$"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 7,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja liniowa $f$ określona jest wzorem $f(x) = \\\\frac{1}{3}x - 1$, dla wszystkich liczb rzeczywistych $x$. Wskaż zdanie prawdziwe.",
+        "answer": "D",
+        "options": {
+            "a": "Funkcja $f$ jest malejąca i jej wykres przecina oś $Oy$ w punkcie $P = (0, \\\\frac{1}{3})$.",
+            "b": "Funkcja $f$ jest malejąca i jej wykres przecina oś $Oy$ w punkcie $P = (0, -1)$.",
+            "c": "Funkcja $f$ jest rosnąca i jej wykres przecina oś $Oy$ w punkcie $P = (0, \\\\frac{1}{3})$.",
+            "d": "Funkcja $f$ jest rosnąca i jej wykres przecina oś $Oy$ w punkcie $P = (0, -1)$."
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 8,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wykresem funkcji kwadratowej $f(x) = x^2 - 6x - 3$ jest parabola, której wierzchołkiem jest punkt o współrzędnych",
+        "answer": "C",
+        "options": {
+            "a": "(-6, -3)",
+            "b": "(-6, 69)",
+            "c": "(3, -12)",
+            "d": "(6, -3)"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 9,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba 1 jest miejscem zerowym funkcji liniowej $f(x) = ax + b$, a punkt $M = (3, -2)$ należy do wykresu tej funkcji. Współczynnik $a$ we wzorze tej funkcji jest równy",
+        "answer": "D",
+        "options": {
+            "a": "1",
+            "b": "\\\\frac{3}{2}",
+            "c": "-\\\\frac{3}{2}",
+            "d": "-1"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 10,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest ciąg $(a_n)$ określony wzorem $a_n = \\\\frac{5 - 2n}{6}$ dla $n \\\\geq 1$. Ciąg ten jest",
+        "answer": "A",
+        "options": {
+            "a": "arytmetyczny i jego różnica jest równa $r = -\\\\frac{1}{3}$.",
+            "b": "arytmetyczny i jego różnica jest równa $r = -2$.",
+            "c": "geometryczny i jego iloraz jest równy $q = -\\\\frac{1}{3}$.",
+            "d": "geometryczny i jego iloraz jest równy $q = \\\\frac{5}{6}$."
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 11,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dla ciągu arytmetycznego $(a_n)$, określonego dla $n \\\\geq 1$, jest spełniony warunek $a_4 + a_5 + a_6 = 12$. Wtedy",
+        "answer": "A",
+        "options": {
+            "a": "a_5 = 4",
+            "b": "a_5 = 3",
+            "c": "a_5 = 6",
+            "d": "a_5 = 5"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 12,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest ciąg geometryczny $(a_n)$, określony dla $n \\\\geq 1$, w którym $a_1 = \\\\sqrt{2}$, $a_2 = 2\\\\sqrt{2}$, $a_3 = 4\\\\sqrt{2}$. Wzór na $n$-ty wyraz tego ciągu ma postać",
+        "answer": "B",
+        "options": {
+            "a": "a_n = (\\\\sqrt{2})^n",
+            "b": "a_n = \\\\frac{2^n}{\\\\sqrt{2}}",
+            "c": "a_n = \\\\left(\\\\frac{\\\\sqrt{2}}{2}\\\\right)^n",
+            "d": "a_n = \\\\frac{(\\\\sqrt{2})^n}{2}"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 13,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Przyprostokątna $LM$ trójkąta prostokątnego $KLM$ ma długość 3, a przeciwprostokątna $KL$ ma długość 8 (zobacz rysunek). [Rysunek: trójkąt prostokątny $KLM$, $LM = 3$, $KL = 8$, kąt $\\alpha$ przy wierzchołku $K$]\nWtedy miara $\\alpha$ kąta ostrego $LKM$ tego trójkąta spełnia warunek",
+        "answer": "C",
+        "options": {
+            "a": "27^\\circ < \\alpha \\leq 30^\\circ",
+            "b": "24^\\circ < \\alpha \\leq 27^\\circ",
+            "c": "21^\\circ < \\alpha \\leq 24^\\circ",
+            "d": "18^\\circ < \\alpha \\leq 21^\\circ"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 14,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest trójkąt o bokach długości: $2\\\\sqrt{5}$, $3\\\\sqrt{5}$, $4\\\\sqrt{5}$. Trójkątem podobnym do tego trójkąta jest trójkąt, którego boki mają długości",
+        "answer": "A",
+        "options": {
+            "a": "10, 15, 20",
+            "b": "20, 45, 80",
+            "c": "\\\\sqrt{2}, \\\\sqrt{3}, \\\\sqrt{4}",
+            "d": "\\\\sqrt{5}, 2\\\\sqrt{5}, 3\\\\sqrt{5}"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 15,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest okrąg o środku $S$. Punkty $K$, $L$ i $M$ leżą na tym okręgu. Na łuku $KL$ tego okręgu są oparte kąty $KSL$ i $KML$ (zobacz rysunek), których miary $\\alpha$ i $\\beta$ spełniają warunek $\\alpha + \\beta = 111^\\circ$. Wynika stąd, że [Rysunek: okrąg, punkty $K$, $L$, $M$, kąty $KSL = \\alpha$, $KML = \\beta$]",
+        "answer": "A",
+        "options": {
+            "a": "\\\\alpha = 74^\\circ",
+            "b": "\\\\alpha = 76^\\circ",
+            "c": "\\\\alpha = 70^\\circ",
+            "d": "\\\\alpha = 72^\\circ"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 16,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest trapez prostokątny $KLMN$, którego podstawy mają długości $|KL| = a$, $|MN| = b$, $a > b$. Kąt $KLM$ ma miarę $60^\\circ$. Długość ramienia $LM$ tego trapezu jest równa [Rysunek: trapez prostokątny $KLMN$, podstawy $KL = a$, $MN = b$]",
+        "answer": "B",
+        "options": {
+            "a": "a - b",
+            "b": "2(a - b)",
+            "c": "a + \\frac{1}{2}b",
+            "d": "\\frac{a + b}{2}"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 17,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkt $K = (2, 2)$ jest wierzchołkiem trójkąta równoramiennego $KLM$, w którym $|KM| = |LM|$. Odcinek $MN$ jest wysokością trójkąta i $N = (4, 3)$. Zatem",
+        "answer": "B",
+        "options": {
+            "a": "L = (5, 3)",
+            "b": "L = (6, 4)",
+            "c": "L = (3, 5)",
+            "d": "L = (4, 6)"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 18,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Proste o równaniach $y = (m + 2)x + 3$ oraz $y = (2m - 1)x - 3$ są równoległe, gdy",
+        "answer": "B",
+        "options": {
+            "a": "m = 2",
+            "b": "m = 3",
+            "c": "m = 0",
+            "d": "m = 1"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 19,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Podstawą ostrosłupa jest kwadrat $KLMN$ o boku długości 4. Wysokością tego ostrosłupa jest krawędź $NS$, a jej długość też jest równa 4 (zobacz rysunek). Kąt $\\alpha$, jaki tworzą krawędzie $KS$ i $MS$, spełnia warunek [Rysunek: ostrosłup o podstawie kwadratowej, wysokość $NS = 4$]",
+        "answer": "D",
+        "options": {
+            "a": "\\\\alpha = 45^\\circ",
+            "b": "45^\\circ < \\alpha < 60^\\circ",
+            "c": "\\alpha > 60^\\circ",
+            "d": "\\alpha = 60^\\circ"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 20,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Podstawą graniastosłupa prostego jest prostokąt o bokach długości 3 i 4. Kąt $\\alpha$, jaki przekątna tego graniastosłupa tworzy z jego podstawą, jest równy $45^\\circ$ (zobacz rysunek). Wysokość graniastosłupa jest równa [Rysunek: graniastosłup prosty, podstawa 3 i 4, przekątna i kąt $\\alpha$]",
+        "answer": "A",
+        "options": {
+            "a": "5",
+            "b": "3\\sqrt{2}",
+            "c": "5\\sqrt{2}",
+            "d": "\\frac{5\\sqrt{3}}{3}"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 21,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono bryłę zbudowaną z walca i półkuli. Wysokość walca jest równa $r$ i jest taka sama jak promień półkuli oraz taka sama jak promień podstawy walca. Objętość tej bryły jest równa [Rysunek: walec z półkulą, wysokość i promień $r$]",
+        "answer": "A",
+        "options": {
+            "a": "\\frac{5}{3}\\pi r^3",
+            "b": "\\frac{4}{3}\\pi r^3",
+            "c": "\\frac{2}{3}\\pi r^3",
+            "d": "\\frac{1}{3}\\pi r^3"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 22,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W zestawie $2, 2, 2, ..., 2, 4, 4, 4, ..., 4$ jest $2m$ liczb ($m \\geq 1$), w tym $m$ liczb 2 i $m$ liczb 4. Odchylenie standardowe tego zestawu liczb jest równe",
+        "answer": "B",
+        "options": {
+            "a": "2",
+            "b": "1",
+            "c": "\\frac{1}{\\sqrt{2}}",
+            "d": "\\sqrt{2}"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 23,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ile jest wszystkich liczb naturalnych czterocyfrowych mniejszych od 2018 i podzielnych przez 5?",
+        "answer": "$V = \\frac{81}{2}$",
+        "options": {
+            "a": "402",
+            "b": "403",
+            "c": "203",
+            "d": "204"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 24,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W pudełku jest 50 kuponów, wśród których jest 15 kuponów przegrywających, a pozostałe kupony są wygrywające. Z tego pudełka w sposób losowy wyciągamy jeden kupon. Prawdopodobieństwo zdarzenia polegającego na tym, że wyciągniemy kupon wygrywający, jest równe",
+        "answer": "D",
+        "options": {
+            "a": "\\frac{15}{35}",
+            "b": "\\frac{1}{50}",
+            "c": "\\frac{15}{50}",
+            "d": "\\frac{35}{50}"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 25,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność $2x^2 - 3x > 5$.",
+        "answer": "$x \\in (-\\infty, -1) \\cup (\\frac{5}{2}, +\\infty)$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 26,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Rozwiąż równanie $(x^3 + 125)(x^2 - 64) = 0$.",
+        "answer": "$x = -5,\\ x = 8,\\ x = -8$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 27,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Udowodnij, że dla dowolnych liczb dodatnich $a$, $b$ prawdziwa jest nierówność $\\frac{1}{2a} + \\frac{1}{2b} \\geq \\frac{2}{a+b}$.",
+        "answer": "Należy wykazać, że $\\frac{a+b}{2ab} \\geq \\frac{2}{a+b}$ dla $a, b > 0$, czyli $a^2 + 2ab + b^2 \\geq 4ab$, co jest równoważne $a^2 - 2ab + b^2 \\geq 0$, czyli $(a-b)^2 \\geq 0$.",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 28,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Okręgi o środkach odpowiednio $A$ i $B$ są styczne zewnętrznie i każdy z nich jest styczny do obu ramion danego kąta prostego (zobacz rysunek). Promień okręgu o środku $A$ jest równy $2$.\n\n[Rysunek: dwa okręgi styczne do siebie i do ramion kąta prostego, oznaczone środki $A$ i $B$]\n\nUzasadnij, że promień okręgu o środku $B$ jest mniejszy od $\\sqrt{2} - 1$.",
+        "answer": "$r < \\sqrt{2} - 1$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 29,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Do wykresu funkcji wykładniczej, określonej dla każdej liczby rzeczywistej $x$ wzorem $f(x) = a^x$ (gdzie $a > 0$ i $a \\neq 1$), należy punkt $P = (2, 9)$. Oblicz $a$ i zapisz zbiór wartości funkcji $g$, określonej wzorem $g(x) = f(x) - 2$.",
+        "answer": "$a = 3$ i zbiorem wartości funkcji $g$ jest $(-2, +\\infty)$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 30,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dwunasty wyraz ciągu arytmetycznego $(a_n)$, określonego dla $n \\geq 1$, jest równy $30$, a suma jego dwunastu początkowych wyrazów jest równa $162$. Oblicz pierwszy wyraz tego ciągu.",
+        "answer": "$a_1 = -3$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 31,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "W układzie współrzędnych punkty $A = (4, 3)$ i $B = (10, 5)$ są wierzchołkami trójkąta $ABC$. Wierzchołek $C$ leży na prostej o równaniu $y = 2x + 3$. Oblicz współrzędne punktu $C$, dla którego kąt $ABC$ jest prosty.",
+        "answer": "Współrzędne punktu $C$ to $\\left(\\frac{32}{5}, \\frac{79}{5}\\right)$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 32,
+            "max_points": 5
+        }
+    },
+    {
+        "question": "Dane są dwa zbiory: $A = \\{100, 200, 300, 400, 500, 600, 700\\}$ i $B = \\{10, 11, 12, 13, 14, 15, 16\\}$. Z każdego z nich losujemy jedną liczbę. Oblicz prawdopodobieństwo zdarzenia polegającego na tym, że suma wylosowanych liczb będzie podzielna przez $3$. Obliczone prawdopodobieństwo zapisz w postaci nieskracalnego ułamka zwykłego.",
+        "answer": "$\\frac{16}{49}$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 33,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Dany jest graniastosłup prawidłowy trójkątny (zobacz rysunek). Pole powierzchni całkowitej tego graniastosłupa jest równe $45\\sqrt{3}$. Pole podstawy graniastosłupa jest równe polu jednej ściany bocznej. Oblicz objętość tego graniastosłupa.\n\n[Rysunek: graniastosłup prawidłowy trójkątny, oznaczone wierzchołki $A$, $B$, $C$, $D$, $E$, $F$]",
+        "answer": null,
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 1,
+            "task_number": 34,
+            "max_points": 4
+        }
+    }
+]

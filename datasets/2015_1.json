@@ -1,0 +1,501 @@
+[
+    {
+        "question": "Wskaż rysunek, na którym przedstawiono przedział, będący zbiorem wszystkich rozwiązań nierówności $-4 \\leq x - 1 \\leq 4$. [Rysunki: cztery osie liczbowych z zaznaczonymi przedziałami, odpowiednio: A. od $-5$ do $3$ (koła otwarte), B. od $-3$ do $5$ (koła otwarte), C. od $-3$ do $5$ (koła zamalowane), D. od $-5$ do $3$ (koła zamalowane)]",
+        "answer": "C",
+        "options": {
+            "a": "A.",
+            "b": "B.",
+            "c": "C.",
+            "d": "D."
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dane są liczby $a = -\\frac{1}{27}$, $b = \\log_{1/4} 64$, $c = \\log_{1/3} 27$. Iloczyn $abc$ jest równy",
+        "answer": "B",
+        "options": {
+            "a": "-9",
+            "b": "-\\frac{1}{3}",
+            "c": "\\frac{1}{3}",
+            "d": "3"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Kwotę 1000 zł ulokowano w banku na roczną lokatę oprocentowaną w wysokości 4\\% w stosunku rocznym. Po zakończeniu lokaty od naliczonych odsetek odprowadzany jest podatek w wysokości 19\\%. Maksymalna kwota, jaką po upływie roku będzie można wypłacić z banku, jest równa",
+        "answer": "C",
+        "options": {
+            "a": "1000 \\left( 1 - \\frac{81}{100} \\cdot \\frac{4}{100} \\right)",
+            "b": "1000 \\left( 1 + \\frac{19}{100} \\cdot \\frac{4}{100} \\right)",
+            "c": "1000 \\left( 1 + \\frac{81}{100} \\cdot \\frac{4}{100} \\right)",
+            "d": "1000 \\left( 1 - \\frac{19}{100} \\cdot \\frac{4}{100} \\right)"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Równość $\\frac{m}{5-\\sqrt{5}} = \\frac{5+\\sqrt{5}}{5}$ zachodzi dla",
+        "answer": "B",
+        "options": {
+            "a": "m = 5",
+            "b": "m = 4",
+            "c": "m = 1",
+            "d": "m = -5"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Układ równań $\\begin{cases} x - y = 3 \\\\ 2x + 0,5y = 4 \\end{cases}$ opisuje w układzie współrzędnych na płaszczyźnie",
+        "answer": "B",
+        "options": {
+            "a": "zbiór pusty.",
+            "b": "dokładnie jeden punkt.",
+            "c": "dokładnie dwa różne punkty.",
+            "d": "zbiór nieskończony."
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Suma wszystkich pierwiastków równania $(x+3)(x+7)(x-11)=0$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "-1",
+            "b": "21",
+            "c": "1",
+            "d": "-21"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 6,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Równanie $\\frac{x-1}{x+1} = x-1$",
+        "answer": "D",
+        "options": {
+            "a": "ma dokładnie jedno rozwiązanie: $x=1$.",
+            "b": "ma dokładnie jedno rozwiązanie: $x=0$.",
+            "c": "ma dokładnie jedno rozwiązanie: $x=-1$.",
+            "d": "ma dokładnie dwa rozwiązania: $x=0$, $x=1$."
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 7,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono wykres funkcji $f$. [Rysunek: wykres funkcji schodkowej, wartości od $-2$ do $2$] Zbiorem wartości funkcji $f$ jest",
+        "answer": "D",
+        "options": {
+            "a": "(-2, 2)",
+            "b": "\\langle -2, 2 )",
+            "c": "\\langle -2, 2 \\rangle",
+            "d": "(-2, 2\\rangle"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 8,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na wykresie funkcji liniowej określonej wzorem $f(x) = (m-1)x + 3$ leży punkt $S = (5, -2)$. Zatem",
+        "answer": "B",
+        "options": {
+            "a": "m = -1",
+            "b": "m = 0",
+            "c": "m = 1",
+            "d": "m = 2"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 9,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja liniowa $f$ określona wzorem $f(x) = 2x + b$ ma takie samo miejsce zerowe, jakie ma funkcja liniowa $g(x) = -3x + 4$. Stąd wynika, że",
+        "answer": "C",
+        "options": {
+            "a": "b = 4",
+            "b": "b = -\\frac{3}{2}",
+            "c": "b = -\\frac{8}{3}",
+            "d": "b = \\frac{4}{3}"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 10,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja kwadratowa określona jest wzorem $f(x) = x^2 + x + c$. Jeżeli $f(3) = 4$, to",
+        "answer": "A",
+        "options": {
+            "a": "f(1) = -6",
+            "b": "f(1) = 0",
+            "c": "f(1) = 6",
+            "d": "f(1) = 18"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 11,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ile liczb całkowitych $x$ spełnia nierówność $\\frac{2}{7} < \\frac{x}{14} < \\frac{4}{3}$?",
+        "answer": "A",
+        "options": {
+            "a": "14",
+            "b": "15",
+            "c": "16",
+            "d": "17"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 12,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W rosnącym ciągu geometrycznym $(a_n)$, określonym dla $n \\geq 1$, spełniony jest warunek $a_4 = 3a_1$. Iloraz $q$ tego ciągu jest równy",
+        "answer": "C",
+        "options": {
+            "a": "q = \\frac{1}{3}",
+            "b": "q = \\frac{1}{\\sqrt[3]{3}}",
+            "c": "q = \\sqrt[3]{3}",
+            "d": "q = 3"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 13,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Tangens kąta $\\alpha$ zaznaczonego na rysunku jest równy [Rysunek: układ współrzędnych, punkt $P = (-4, 5)$, kąt $\\alpha$ przy osi $x$ i odcinku $OP$]",
+        "answer": "D",
+        "options": {
+            "a": "-\\frac{\\sqrt{3}}{3}",
+            "b": "-\\frac{4}{5}",
+            "c": "-1",
+            "d": "-\\frac{5}{4}"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 14,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Jeżeli $0^{\\circ} < \\alpha < 90^{\\circ}$ oraz $\\tg \\alpha = 2 \\sin \\alpha$, to",
+        "answer": "A",
+        "options": {
+            "a": "\\cos \\alpha = \\frac{1}{2}",
+            "b": "\\cos \\alpha = \\frac{\\sqrt{2}}{2}",
+            "c": "\\cos \\alpha = \\frac{\\sqrt{3}}{2}",
+            "d": "\\cos \\alpha = 1"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 15,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Miara kąta wpisanego w okrąg jest o $20^{\\circ}$ mniejsza od miary kąta środkowego opartego na tym samym łuku. Wynika stąd, że miara kąta wpisanego jest równa",
+        "answer": "C",
+        "options": {
+            "a": "5^{\\circ}",
+            "b": "10^{\\circ}",
+            "c": "20^{\\circ}",
+            "d": "30^{\\circ}"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 16,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Pole rombu o obwodzie 8 jest równe 1. Kąt ostry tego rombu ma miarę $\\alpha$. Wtedy",
+        "answer": "A",
+        "options": {
+            "a": "14^{\\circ} < \\alpha < 15^{\\circ}",
+            "b": "29^{\\circ} < \\alpha < 30^{\\circ}",
+            "c": "60^{\\circ} < \\alpha < 61^{\\circ}",
+            "d": "75^{\\circ} < \\alpha < 76^{\\circ}"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 17,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Prosta $l$ o równaniu $y = m^2 x + 3$ jest równoległa do prostej $k$ o równaniu $y = (4m - 4)x - 3$. Zatem",
+        "answer": "A",
+        "options": {
+            "a": "m = 2",
+            "b": "m = -2",
+            "c": "m = -2 - 2\\sqrt{2}",
+            "d": "m = 2 + 2\\sqrt{2}"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 18,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Proste o równaniach: $y = 2mx - m^2 - 1$ oraz $y = 4m^2 x + m^2 + 1$ są prostopadłe dla",
+        "answer": "A",
+        "options": {
+            "a": "m = -\\frac{1}{2}",
+            "b": "m = \\frac{1}{2}",
+            "c": "m = 1",
+            "d": "m = 2"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 19,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dane są punkty $M = (-2, 1)$ i $N = (-1, 3)$. Punkt $K$ jest środkiem odcinka $MN$. Obrazem punktu $K$ w symetrii względem początku układu współrzędnych jest punkt",
+        "answer": "D",
+        "options": {
+            "a": "K' = \\left( 2, -\\frac{3}{2} \\right)",
+            "b": "K' = \\left( 2, \\frac{3}{2} \\right)",
+            "c": "K' = \\left( \\frac{3}{2}, 2 \\right)",
+            "d": "K' = \\left( \\frac{3}{2}, -2 \\right)"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 20,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W graniastosłupie prawidłowym czworokątnym $EFGHIJKL$ wierzchołki $E, G, L$ połączono odcinkami (tak jak na rysunku). [Rysunek: graniastosłup z zaznaczonymi odcinkami $EGL$, wysokością $OL$] Wskaż kąt między wysokością $OL$ trójkąta $EGL$ i płaszczyzną podstawy tego graniastosłupa.",
+        "answer": "A",
+        "options": {
+            "a": "$\\angle HOL$",
+            "b": "$\\angle OGL$",
+            "c": "$\\angle HLO$",
+            "d": "$\\angle OHL$"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 21,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Przekrojem osiowym stożka jest trójkąt równoboczny o boku długości $6$. Objętość tego stożka jest równa",
+        "answer": "B",
+        "options": {
+            "a": "27\\pi \\sqrt{3}",
+            "b": "9\\pi \\sqrt{3}",
+            "c": "18\\pi",
+            "d": "6\\pi"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 22,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Każda krawędź graniastosłupa prawidłowego trójkątnego ma długość równą $8$. Pole powierzchni całkowitej tego graniastosłupa jest równe",
+        "answer": "D",
+        "options": {
+            "a": "8^2 \\left( \\frac{\\sqrt{3}}{2} + 3 \\right)",
+            "b": "8^2 \\cdot \\sqrt{3}",
+            "c": "\\frac{8^2 \\sqrt{6}}{3}",
+            "d": "8^2 \\left( \\frac{\\sqrt{3}}{2} + 3 \\right)"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 23,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Średnia arytmetyczna zestawu danych: $2, 4, 7, 8, 9$ jest taka sama jak średnia arytmetyczna zestawu danych: $2, 4, 7, 8, 9, x$. Wynika stąd, że",
+        "answer": "D",
+        "options": {
+            "a": "x = 0",
+            "b": "x = 3",
+            "c": "x = 5",
+            "d": "x = 6"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 24,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W każdym z trzech pojemników znajduje się para kul, z których jedna jest czerwona, a druga – niebieska. Z każdego pojemnika losujemy jedną kulę. Niech $p$ oznacza prawdopodobieństwo zdarzenia polegającego na tym, że dokładnie dwie z trzech wylosowanych kul będą czerwone. Wtedy",
+        "answer": "B",
+        "options": {
+            "a": "p = \\frac{1}{4}",
+            "b": "p = \\frac{3}{8}",
+            "c": "p = \\frac{1}{2}",
+            "d": "p = \\frac{2}{3}"
+        },
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 25,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność $2x^2 - 4x > (x + 3)(x - 2)$.",
+        "answer": "$(-\\infty, 2) \\cup (3, +\\infty)$",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 26,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykaż, że dla każdej liczby rzeczywistej $x$ i dla każdej liczby rzeczywistej $y$ prawdziwa jest nierówność $4x^2 - 8xy + 5y^2 \\\\geq 0$.",
+        "answer": "Należy wykazać, że nierówność $4x^2 - 8xy + 5y^2 \\geq 0$ jest prawdziwa dla dowolnych liczb rzeczywistych $x$ i $y$.",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 27,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dany jest kwadrat $ABCD$. Przekątne $AC$ i $BD$ przecinają się w punkcie $E$. Punkty $K$ i $M$ są środkami odcinków – odpowiednio – $AE$ i $EC$. Punkty $L$ i $N$ leżą na przekątnej $BD$ tak, że $|BL| = \\frac{1}{3}|BE|$ i $|DN| = \\frac{1}{3}|DE|$ (zobacz rysunek). Wykaż, że stosunek pola czworokąta $KLMN$ do pola kwadratu $ABCD$ jest równy $1:3$. [Rysunek: kwadrat $ABCD$ z przekątnymi, punktami $K, L, M, N$ i $E$ zgodnie z opisem.]",
+        "answer": "Należy wykazać, że $\\frac{P_{KLMN}}{P_{ABCD}} = \\frac{1}{3}$.",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 28,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Oblicz najmniejszą i największą wartość funkcji kwadratowej $f(x) = x^2 - 6x + 3$ w przedziale $\\langle 0, 4 \\rangle$.",
+        "answer": "Najmniejsza wartość funkcji w przedziale $\\langle 0, 4 \\rangle$ jest równa $-6$, a największa wartość funkcji w tym przedziale jest równa $3$.",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 29,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "W układzie współrzędnych są dane punkty $A = (-43, -12)$, $B = (50, 19)$. Prosta $AB$ przecina oś $Ox$ w punkcie $P$. Oblicz pierwszą współrzędną punktu $P$.",
+        "answer": "$x = -7$",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 30,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Jeżeli do licznika i do mianownika nieskracalnego dodatniego ułamka dodamy połowę jego licznika, to otrzymamy $\\frac{4}{7}$, a jeżeli do licznika i do mianownika dodamy $1$, to otrzymamy $\\frac{1}{2}$. Wyznacz ten ułamek.",
+        "answer": "$\\frac{8}{17}$",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 31,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wysokość graniastosłupa prawidłowego czworokątnego jest równa $16$. Przekątna graniastosłupa jest nachylona do płaszczyzny jego podstawy pod kątem, którego cosinus jest równy $\\frac{3}{5}$. Oblicz pole powierzchni całkowitej tego graniastosłupa.",
+        "answer": "$P_c = 48(3 + 8\\sqrt{2})$",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 32,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Wśród $115$ osób przeprowadzono badania ankietowe, związane z zakupami w pewnym kiosku. W poniższej tabeli przedstawiono informacje o tym, ile osób kupiło bilety tramwajowe ulgowe oraz ile osób kupiło bilety tramwajowe normalne.\n\n\\begin{tabular}{|c|c|}\n\\hline\nRodzaj kupionych biletów & Liczba osób \\\\\n\\hline\nulgowe & 76 \\\\\nnormalne & 41 \\\\\n\\hline\n\\end{tabular}\n\nUwaga! $27$ osób spośród ankietowanych kupiło oba rodzaje biletów.\n\nOblicz prawdopodobieństwo zdarzenia polegającego na tym, że osoba losowo wybrana spośród ankietowanych nie kupiła żadnego biletu. Wynik przedstaw w formie nieskracalnego ułamka.",
+        "answer": "$\\frac{5}{23}$",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 33,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "W nieskończonym ciągu arytmetycznym $(a_n)$, określonym dla $n \\geq 1$, suma jedenastu początkowych wyrazów tego ciągu jest równa $187$. Średnia arytmetyczna pierwszego, trzeciego i dziewiątego wyrazu tego ciągu, jest równa $12$. Wyrazy $a_1$, $a_3$, $a_k$ ciągu $(a_n)$, w podanej kolejności, tworzą nowy ciąg – trzywyrazowy ciąg geometryczny $(b_n)$. Oblicz $k$.",
+        "answer": "$k = 11$",
+        "options": null,
+        "metadata": {
+            "year": 2015,
+            "level": 1,
+            "task_number": 34,
+            "max_points": 5
+        }
+    }
+]

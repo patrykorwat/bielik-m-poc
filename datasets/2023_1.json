@@ -1,0 +1,479 @@
+[
+    {
+        "question": "Liczba $\\log_9 27 + \\log_9 3$ jest równa",
+        "answer": "D",
+        "options": {
+            "A": "81",
+            "B": "9",
+            "C": "4",
+            "D": "2"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\sqrt[3]{\\dfrac{27}{16}} \\cdot \\sqrt[3]{2}$ jest równa",
+        "answer": "A",
+        "options": {
+            "A": "\\left(-\\dfrac{3}{2}\\right)",
+            "B": "\\dfrac{3}{2}",
+            "C": "\\dfrac{2}{3}",
+            "D": "\\left(-\\dfrac{2}{3}\\right)"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Cenę aparatu fotograficznego obniżono o $15\\%$, a następnie $-20\\%$ w odniesieniu do ceny obowiązującej w danym momencie. Po tych dwóch obniżkach aparat kosztuje $340$ zł. Przed obiema obniżkami cena tego aparatu była równa",
+        "answer": "A",
+        "options": {
+            "A": "500\\ \\text{zł}",
+            "B": "425\\ \\text{zł}",
+            "C": "400\\ \\text{zł}",
+            "D": "375\\ \\text{zł}"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dla każdej liczby rzeczywistej $a$ wyrażenie $(2a-3)^2-(2a+3)^2$ jest równe",
+        "answer": "A",
+        "options": {
+            "A": "-24a",
+            "B": "0",
+            "C": "18",
+            "D": "16a^2-24a"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono interpretację geometryczną jednego z niżej zapisanych układów równań. [Rysunek: wykres dwóch prostych przecinających się w układzie współrzędnych]\n\nWskaż ten układ równań, którego interpretację geometryczną przedstawiono na rysunku.",
+        "answer": "D",
+        "options": {
+            "A": "\\begin{cases} y = -x + 2 \\\\ y = -2x + 1 \\end{cases}",
+            "B": "\\begin{cases} y = x - 2 \\\\ y = -2x - 1 \\end{cases}",
+            "C": "\\begin{cases} y = x - 2 \\\\ y = 2x + 1 \\end{cases}",
+            "D": "\\begin{cases} y = -x + 2 \\\\ y = 2x - 1 \\end{cases}"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Zbiorem wszystkich rozwiązań nierówności $-2(x+3) \\leq \\dfrac{2-x}{3}$ jest przedział",
+        "answer": "C",
+        "options": {
+            "A": "(-\\infty, -4)",
+            "B": "(-\\infty, 4)",
+            "C": "(-4, \\infty)",
+            "D": "(4, \\infty)"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 6,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Jednym z rozwiązań równania $\\sqrt{3}(x^2-2)(x+3)=0$ jest liczba",
+        "answer": "D",
+        "options": {
+            "A": "3",
+            "B": "2",
+            "C": "\\sqrt{3}",
+            "D": "\\sqrt{2}"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 7,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Równanie $\\dfrac{(x+1)(x-1)^2}{(x-1)(x+1)^2}=0$ w zbiorze liczb rzeczywistych",
+        "answer": "A",
+        "options": {
+            "A": "nie ma rozwiązania.",
+            "B": "ma dokładnie jedno rozwiązanie: $-1$.",
+            "C": "ma dokładnie jedno rozwiązanie: $1$.",
+            "D": "ma dokładnie dwa rozwiązania: $-1$ oraz $1$."
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 8,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Miejscem zerowym funkcji liniowej $f(x) = (2p-1)x + p$ jest liczba $-4$. Wtedy",
+        "answer": "B",
+        "options": {
+            "A": "p = \\dfrac{4}{9}",
+            "B": "p = \\dfrac{4}{7}",
+            "C": "p = -4",
+            "D": "p = -\\dfrac{4}{7}"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 9,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja liniowa $f$ jest określona wzorem $f(x) = ax + b$, gdzie $a$ i $b$ są pewnymi liczbami rzeczywistymi. Na rysunku obok przedstawiono fragment wykresu funkcji $f$ w układzie współrzędnych $(x, y)$. [Rysunek: wykres funkcji liniowej o ujemnym nachyleniu, przecinający oś $y$ powyżej zera i oś $x$ w punkcie dodatnim]\n\nLiczba $a$ oraz liczba $b$ we wzorze funkcji $f$ spełniają warunki:",
+        "answer": "C",
+        "options": {
+            "A": "a > 0 \\text{ i } b > 0.",
+            "B": "a > 0 \\text{ i } b < 0.",
+            "C": "a < 0 \\text{ i } b > 0.",
+            "D": "a < 0 \\text{ i } b < 0."
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 10,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dziedziną funkcji $f$ jest zbiór [Rysunek: wykres funkcji $y=f(x)$ w układzie współrzędnych, wykres składa się z trzech odcinków, pierwszy od $x=-6$ do $x=-3$, drugi od $x=-3$ do $x=1$, trzeci od $x=1$ do $x=5$]",
+        "answer": "A",
+        "options": {
+            "A": "(-6, 5)",
+            "B": "(-6, 5]",
+            "C": "(-3, 5)",
+            "D": "(-3, 5]"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 11,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja $f$ jest malejąca w zbiorze",
+        "answer": "D",
+        "options": {
+            "A": "(-6, -3)",
+            "B": "(-3, 1)",
+            "C": "(1, 2)",
+            "D": "(2, 5)"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 12,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Największa wartość funkcji $f$ w przedziale $(-4, 1)$ jest równa",
+        "answer": "C",
+        "options": {
+            "A": "0",
+            "B": "1",
+            "C": "2",
+            "D": "5"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 13,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Jednym z miejsc zerowych funkcji kwadratowej $f$ jest liczba $-5$. Pierwsza współrzędna wierzchołka paraboli, będącej wykresem funkcji $f$, jest równa $3$. Drugim miejscem zerowym funkcji $f$ jest liczba",
+        "answer": "A",
+        "options": {
+            "A": "11",
+            "B": "1",
+            "C": "(-1)",
+            "D": "(-13)"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 14,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ciąg $(a_n)$ jest określony wzorem $a_n = 2^n \\cdot (n+1)$ dla każdej liczby naturalnej $n \\geq 1$. Wyraz $a_4$ jest równy",
+        "answer": "D",
+        "options": {
+            "A": "64",
+            "B": "40",
+            "C": "48",
+            "D": "80"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 15,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Trzywyrazowy ciąg $(27, 9, a-1)$ jest geometryczny. Liczba $a$ jest równa",
+        "answer": "C",
+        "options": {
+            "A": "3",
+            "B": "0",
+            "C": "4",
+            "D": "2"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 16,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W układzie współrzędnych zaznaczono kąt $\\alpha$ o wierzchołku w punkcie $O = (0, 0)$. Jedno z ramion tego kąta pokrywa się z dodatnią półosią $Ox$, a drugie przechodzi przez punkt $P = (-3, 1)$ (zobacz rysunek). [Rysunek: kąt $\\alpha$ w układzie współrzędnych, jedno ramię pokrywa się z osią $Ox$, drugie przechodzi przez punkt $(-3, 1)$]\n\nTangens kąta $\\alpha$ jest równy",
+        "answer": "D",
+        "options": {
+            "A": "\\dfrac{1}{\\sqrt{10}}",
+            "B": "\\left(-\\dfrac{3}{\\sqrt{10}}\\right)",
+            "C": "\\left(-\\dfrac{3}{1}\\right)",
+            "D": "\\left(-\\dfrac{1}{3}\\right)"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 17,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dla każdego kąta ostrego $\\alpha$ wyrażenie $\\sin^4 \\alpha + \\sin^2 \\alpha \\cdot \\cos^2 \\alpha$ jest równe",
+        "answer": "A",
+        "options": {
+            "A": "\\sin^2 \\alpha",
+            "B": "\\sin^6 \\alpha \\cdot \\cos^2 \\alpha",
+            "C": "\\sin^4 \\alpha + 1",
+            "D": "\\sin^2 \\alpha \\cdot (\\sin \\alpha + \\cos \\alpha) \\cdot (\\sin \\alpha - \\cos \\alpha)"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 18,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkty $A, B, C$ leżą na okręgu o środku w punkcie $O$. Kąt $ACO$ ma miarę $70^\\circ$ (zobacz rysunek). [Rysunek: okrąg, punkty $A, B, C$ na okręgu, $O$ środek, kąt $ACO = 70^\\circ$]\n\nMiara kąta ostrego $ABC$ jest równa",
+        "answer": "B",
+        "options": {
+            "A": "10^\\circ",
+            "B": "20^\\circ",
+            "C": "35^\\circ",
+            "D": "40^\\circ"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 19,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W rombie o boku długości $6\\sqrt{2}$ kąt rozwarty ma miarę $150^\\circ$. Iloczyn długości przekątnych tego rombu jest równy",
+        "answer": "B",
+        "options": {
+            "A": "24",
+            "B": "72",
+            "C": "36",
+            "D": "36\\sqrt{2}"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 20,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Przez punkty $A$ i $B$, leżące na okręgu o środku $O$, poprowadzono proste styczne do tego okręgu, przecinające się w punkcie $C$ (zobacz rysunek). [Rysunek: okrąg, styczne w punktach $A$ i $B$ przecinają się w punkcie $C$, kąt środkowy $AOB = 140^\\circ$]\n\nMiara kąta $ACB$ jest równa",
+        "answer": "C",
+        "options": {
+            "A": "20^\\circ",
+            "B": "35^\\circ",
+            "C": "40^\\circ",
+            "D": "70^\\circ"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 21,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest trójkąt $ABC$, w którym $|BC| = 6$. Miara kąta $ACB$ jest równa $150^\\circ$ (zobacz rysunek). [Rysunek: trójkąt $ABC$, $|BC| = 6$, kąt $ACB = 150^\\circ$]\n\nWysokość trójkąta $ABC$ opuszczona z wierzchołka $B$ jest równa",
+        "answer": "A",
+        "options": {
+            "A": "3",
+            "B": "4",
+            "C": "3\\sqrt{3}",
+            "D": "4\\sqrt{3}"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 22,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dana jest prosta $k$ o równaniu $y = -\\dfrac{1}{3}x + 2$. Prosta o równaniu $y = ax + b$ jest równoległa do prostej $k$ i przechodzi przez punkt $P = (3, 5)$, gdy",
+        "answer": "D",
+        "options": {
+            "A": "a = 3 \\text{ i } b = 4.",
+            "B": "a = -\\dfrac{1}{3} \\text{ i } b = 4.",
+            "C": "a = 3 \\text{ i } b = -4.",
+            "D": "a = -\\dfrac{1}{3} \\text{ i } b = 6."
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 23,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dane są punkty $K = (-3, -7)$ oraz $S = (5, 3)$. Punkt $S$ jest środkiem odcinka $KL$. Wtedy punkt $L$ ma współrzędne",
+        "answer": "B",
+        "options": {
+            "A": "(13, 10)",
+            "B": "(13, 13)",
+            "C": "(1, -2)",
+            "D": "(7, -1)"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 24,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dana jest prosta o równaniu $y = 2x - 3$. Obrazem tej prostej w symetrii środkowej względem początku układu współrzędnych jest prosta o równaniu",
+        "answer": "A",
+        "options": {
+            "A": "y = 2x + 3",
+            "B": "y = -2x - 3",
+            "C": "y = -2x + 3",
+            "D": "y = 2x - 3"
+        },
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 25,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność\n\n$$x(x-2) > 2x^2 - 3$$",
+        "answer": "Poprawne rozwiązanie nierówności $x^2 - 2x > 0$ lub poprawne wyznaczenie pierwiastków trójmianu kwadratowego.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 30,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Pan Stanisław spłacił pożyczkę w wysokości $8910$ zł w osiemnastu ratach. Każda kolejna rata była mniejsza od poprzedniej o $30$ zł.\nOblicz kwotę pierwszej raty.",
+        "answer": "Stosuje się zasady oceniania arkusza standardowego.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 31,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykaż, że dla każdej liczby rzeczywistej $x \\neq 1$ i dla każdej liczby rzeczywistej $y$ prawdziwa jest nierówność\n\n$$x^2 + y^2 + 5 > 2x + 4y$$",
+        "answer": "Stosuje się zasady oceniania arkusza standardowego.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 32,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Trójkąty prostokątne $T_1$ i $T_2$ są podobne. Przyprostokątne trójkąta $T_1$ mają długości $5$ i $12$. Przeciwprostokątna trójkąta $T_2$ ma długość $26$.\nOblicz pole trójkąta $T_2$.",
+        "answer": "$c_1 = 13 \\cdot \\frac{a_2}{b_2} = 13 \\cdot \\frac{12}{5}$",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 33,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "W kwadracie $ABCD$ punkty $A = (-8, -2)$ oraz $C = (0, 4)$ są końcami przekątnej.\nWyznacz równanie prostej zawierającej przekątną $BD$ tego kwadratu.",
+        "answer": "$\\frac{3}{4}$",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 34,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Ze zbioru ośmiu liczb $\\{2, 3, 4, 5, 6, 7, 8, 9\\}$ losujemy ze zwracaniem kolejno dwa razy po jednej liczbie.\nOblicz prawdopodobieństwo zdarzenia $A$ polegającego na tym, że iloczyn wylosowanych liczb jest podzielny przez $15$.",
+        "answer": "64",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 35,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Podstawą graniastosłupa prostego $ABCDEF$ jest trójkąt równoramienny $ABC$, w którym $|AC| = |BC|, |AB| = 8$. Wysokość trójkąta $ABC$, poprowadzona z wierzchołka $C$, ma długość $3$. Przekątna $CE$ ściany bocznej tworzy z krawędzią $CB$ podstawy $ABC$ kąt $60^\text{o}$ (zobacz rysunek).\n\n[Rysunek: graniastosłup prosty o podstawie trójkąta równoramiennego, z oznaczeniami długości i kąta]\n\nOblicz pole powierzchni całkowitej oraz objętość tego graniastosłupa.",
+        "answer": "Stosuje się zasady oceniania arkusza standardowego.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 1,
+            "task_number": 36,
+            "max_points": 5
+        }
+    }
+]

@@ -1,0 +1,527 @@
+[
+    {
+        "question": "Liczba $\\left(2\\sqrt{8} - 3\\sqrt{2}\\right)^2$ jest równa",
+        "answer": "A",
+        "options": {
+            "a": "2",
+            "b": "1",
+            "c": "26",
+            "d": "14"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dodatnie liczby $x$ i $y$ spełniają warunek $2x = 3y$. Wynika stąd, że wartość wyrażenia $\\frac{x^2 + y^2}{x \\cdot y}$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "\\frac{2}{3}",
+            "b": "\\frac{13}{6}",
+            "c": "\\frac{6}{13}",
+            "d": "\\frac{3}{2}"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $4 \\log_4 2 + 2 \\log_4 8$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "6 \\log_4 10",
+            "b": "16",
+            "c": "5",
+            "d": "6 \\log_4 16"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Cena działki po kolejnych dwóch obniżkach, za każdym razem o $10\\%$ w odniesieniu do ceny obowiązującej w danym momencie, jest równa $78\\ 732$ zł. Cena tej działki przed obiema obniżkami była, w zaokrągleniu do $1$ zł, równa",
+        "answer": "B",
+        "options": {
+            "a": "98\\ 732\\ \\text{zł}",
+            "b": "97\\ 200\\ \\text{zł}",
+            "c": "95\\ 266\\ \\text{zł}",
+            "d": "94\\ 478\\ \\text{zł}"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $3^{2 + \\frac{1}{4}}$ jest równa",
+        "answer": "A",
+        "options": {
+            "a": "3^2 \\cdot \\sqrt[4]{3}",
+            "b": "\\sqrt[4]{3^3}",
+            "c": "3^2 + \\sqrt[4]{3}",
+            "d": "3^2 + \\sqrt{3^4}"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiązaniem układu równań $\\begin{cases} 11x - 11y = 1 \\\\ 22x + 22y = -1 \\end{cases}$ jest para liczb: $x = x_0$, $y = y_0$. Wtedy",
+        "answer": "B",
+        "options": {
+            "a": "x_0 > 0 \\ \\text{i}\\ y_0 > 0",
+            "b": "x_0 > 0 \\ \\text{i}\\ y_0 < 0",
+            "c": "x_0 < 0 \\ \\text{i}\\ y_0 > 0",
+            "d": "x_0 < 0 \\ \\text{i}\\ y_0 < 0"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 6,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Zbiorem wszystkich rozwiązań nierówności $\\frac{2}{5} - \\frac{x}{3} > \\frac{x}{5}$ jest przedział",
+        "answer": "C",
+        "options": {
+            "a": "(-\\infty, 0)",
+            "b": "(0, +\\infty)",
+            "c": "(-\\infty, \\frac{3}{4})",
+            "d": "(\\frac{3}{4}, +\\infty)"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 7,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Iloczyn wszystkich rozwiązań równania $2x(x^2 - 9)(x + 1) = 0$ jest równy",
+        "answer": "C",
+        "options": {
+            "a": "(-3)",
+            "b": "3",
+            "c": "0",
+            "d": "9"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 8,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono wykres funkcji $f$. [Rysunek: wykres funkcji $f$ - wykres łamanej, wartości od $(-9, -3)$ do $(7, 4)$, z punktami charakterystycznymi w $(-3, -3)$, $(0, 0)$, $(4, 2)$, $(7, 4)$]. Iloczyn $f(-3) \\cdot f(0) \\cdot f(4)$ jest równy",
+        "answer": "B",
+        "options": {
+            "a": "(-12)",
+            "b": "(-8)",
+            "c": "0",
+            "d": "16"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 9,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku 1. przedstawiono wykres funkcji $f$ określonej na zbiorze $(-4, 5)$. [Rysunek 1: wykres funkcji $y = f(x)$ - łamana, punkty charakterystyczne $(-4, 2)$, $(-2, 3)$, $(0, 1)$, $(5, -6)$]. Funkcję $g$ określono za pomocą funkcji $f$. Wykres funkcji $g$ przedstawiono na rysunku 2. [Rysunek 2: wykres funkcji $y = g(x)$ - łamana, punkty charakterystyczne $(-4, 3)$, $(-2, 2)$, $(0, 1)$, $(5, -6)$]. Wynika stąd, że",
+        "answer": "D",
+        "options": {
+            "a": "g(x) = f(x) - 2",
+            "b": "g(x) = f(x - 2)",
+            "c": "g(x) = f(x) + 2",
+            "d": "g(x) = f(x + 2)"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 10,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Miejscem zerowym funkcji liniowej $f$ określonej wzorem $f(x) = -\\frac{1}{3}(x + 3) + 5$ jest liczba",
+        "answer": "D",
+        "options": {
+            "a": "(-3)",
+            "b": "\\frac{9}{2}",
+            "c": "5",
+            "d": "12"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 11,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wykresem funkcji kwadratowej $f(x) = 3x^2 + bx + c$ jest parabola o wierzchołku w punkcie $W = (-3, 2)$. Wzór tej funkcji w postaci kanonicznej to",
+        "answer": "B",
+        "options": {
+            "a": "f(x) = 3(x - 3)^2 + 2",
+            "b": "f(x) = 3(x + 3)^2 + 2",
+            "c": "f(x) = (x - 3)^2 + 2",
+            "d": "f(x) = (x + 3)^2 + 2"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 12,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ciąg $(a_n)$ jest określony wzorem $a_n = \\frac{2n^2 - 30n}{n}$ dla każdej liczby naturalnej $n \\geq 1$. Wtedy $a_7$ jest równy",
+        "answer": "D",
+        "options": {
+            "a": "(-196)",
+            "b": "(-32)",
+            "c": "(-26)",
+            "d": "(-16)"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 13,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W ciągu arytmetycznym $(a_n)$, określonym dla każdej liczby naturalnej $n \\geq 1$, $a_5 = -31$ oraz $a_{10} = -66$. Różnica tego ciągu jest równa",
+        "answer": "A",
+        "options": {
+            "a": "(-7)",
+            "b": "(-19,4)",
+            "c": "7",
+            "d": "19,4"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 14,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wszystkie wyrazy nieskończonego ciągu geometrycznego $(a_n)$, określonego dla każdej liczby naturalnej $n \\geq 1$, są dodatnie i $9a_5 = 4a_3$. Wtedy iloraz tego ciągu jest równy",
+        "answer": "A",
+        "options": {
+            "a": "\\frac{2}{3}",
+            "b": "\\frac{3}{2}",
+            "c": "\\frac{2}{9}",
+            "d": "\\frac{9}{2}"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 15,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\cos 12^\\circ \\cdot \\sin 78^\\circ + \\sin 12^\\circ \\cdot \\cos 78^\\circ$ jest równa",
+        "answer": "D",
+        "options": {
+            "a": "\\frac{1}{2}",
+            "b": "\\frac{\\sqrt{2}}{2}",
+            "c": "\\frac{\\sqrt{3}}{2}",
+            "d": "1"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 16,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkty $A, B, C$ leżą na okręgu o środku $S$. Punkt $D$ jest punktem przecięcia cięciwy $AC$ i średnicy okręgu poprowadzonej z punktu $B$. Miara kąta $BSC$ jest równa $\\alpha$, a miara kąta $ADB$ jest równa $\\gamma$ (zobacz rysunek). [Rysunek: okrąg, punkty $A, B, C, D, S$, kąty $\\alpha$, $\\gamma$]. Wtedy kąt $ABD$ ma miarę",
+        "answer": "B",
+        "options": {
+            "a": "\\frac{\\alpha}{2} + \\gamma - 180^\\circ",
+            "b": "180^\\circ - \\frac{\\alpha}{2} - \\gamma",
+            "c": "180^\\circ - \\alpha - \\gamma",
+            "d": "\\alpha + \\gamma - 180^\\circ"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 17,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkty $A, B, P$ leżą na okręgu o środku $S$ i promieniu $6$. Czworokąt $ASBP$ jest rombem, w którym kąt ostry $PAS$ ma miarę $60^\\circ$ (zobacz rysunek). [Rysunek: okrąg, romb wpisany w okrąg, kąt $60^\\circ$]. Pole zakreskowanej na rysunku figury jest równe",
+        "answer": "D",
+        "options": {
+            "a": "6\\pi",
+            "b": "9\\pi",
+            "c": "10\\pi",
+            "d": "12\\pi"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 18,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wysokość trójkąta równobocznego jest równa $6\\sqrt{3}$. Pole tego trójkąta jest równe",
+        "answer": "D",
+        "options": {
+            "a": "3\\sqrt{3}",
+            "b": "4\\sqrt{3}",
+            "c": "27\\sqrt{3}",
+            "d": "36\\sqrt{3}"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 19,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Boki równoległoboku mają długości $6$ i $10$, a kąt rozwarty między tymi bokami ma miarę $120^\\circ$. Pole tego równoległoboku jest równe",
+        "answer": "A",
+        "options": {
+            "a": "30\\sqrt{3}",
+            "b": "30",
+            "c": "60\\sqrt{3}",
+            "d": "60"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 20,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkty $A = (-2, 6)$ oraz $B = (3, b)$ leżą na prostej, która przechodzi przez początek układu współrzędnych. Wtedy $b$ jest równe",
+        "answer": "B",
+        "options": {
+            "a": "9",
+            "b": "(-9)",
+            "c": "(-4)",
+            "d": "4"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 21,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dane są cztery proste $k, l, m, n$ o równaniach:\n\n$k: y = -x + 1$\n\n$l: y = \\frac{2}{3}x + 1$\n\n$m: y = -\\frac{3}{2}x + 4$\n\n$n: y = -\\frac{2}{3}x - 1$\n\nWśród tych prostych prostopadłe są",
+        "answer": "C",
+        "options": {
+            "a": "proste $k$ oraz $l$.",
+            "b": "proste $k$ oraz $n$.",
+            "c": "proste $l$ oraz $m$.",
+            "d": "proste $m$ oraz $n$."
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 22,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkty $K = (4, -10)$ i $L = (b, 2)$ są końcami odcinka $KL$. Pierwsza współrzędna środka odcinka $KL$ jest równa $(-12)$. Wynika stąd, że",
+        "answer": "A",
+        "options": {
+            "a": "b = -28",
+            "b": "b = -14",
+            "c": "b = -24",
+            "d": "b = -10"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 23,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkty $A = (-4, 4)$ i $B = (4, 0)$ są sąsiednimi wierzchołkami kwadratu $ABCD$. Przekątna tego kwadratu ma długość",
+        "answer": "A",
+        "options": {
+            "a": "4\\sqrt{10}",
+            "b": "4\\sqrt{2}",
+            "c": "4\\sqrt{5}",
+            "d": "4\\sqrt{7}"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 24,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Podstawą graniastosłupa prostego jest romb o przekątnych długości $7\\ \\text{cm}$ i $10\\ \\text{cm}$. Wysokość tego graniastosłupa jest krótsza od dłuższej przekątnej rombu o $2\\ \\text{cm}$. Wtedy objętość graniastosłupa jest równa",
+        "answer": "B",
+        "options": {
+            "a": "560\\ \\text{cm}^3",
+            "b": "280\\ \\text{cm}^3",
+            "c": "\\frac{280}{3}\\ \\text{cm}^3",
+            "d": "\\frac{560}{3}\\ \\text{cm}^3"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 25,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest sześcian $ABCDEFGH$ o krawędzi długości $a$. Punkty $E, F, G, B$ są wierzchołkami ostrosłupa $EFGB$ (zobacz rysunek). [Rysunek: sześcian, ostrosłup $EFGB$]. Pole powierzchni całkowitej ostrosłupa $EFGB$ jest równe",
+        "answer": "D",
+        "options": {
+            "a": "a^2",
+            "b": "\\frac{3\\sqrt{3}}{2} \\cdot a^2",
+            "c": "\\frac{3}{2} a^2",
+            "d": "\\frac{3 + \\sqrt{3}}{2} a^2"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 26,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wszystkich różnych liczb naturalnych czterocyfrowych nieparzystych podzielnych przez $5$ jest",
+        "answer": "B",
+        "options": {
+            "a": "9 \\cdot 8 \\cdot 7 \\cdot 2",
+            "b": "9 \\cdot 10 \\cdot 10 \\cdot 1",
+            "c": "9 \\cdot 10 \\cdot 10 \\cdot 2",
+            "d": "9 \\cdot 9 \\cdot 8 \\cdot 1"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 27,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Średnia arytmetyczna zestawu sześciu liczb: $2x, 4, 6, 8, 11, 13$, jest równa $5$. Wynika stąd, że",
+        "answer": "C",
+        "options": {
+            "a": "x = -1",
+            "b": "x = 7",
+            "c": "x = -6",
+            "d": "x = 6"
+        },
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 28,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność: \n\n$$3x^2 - 2x - 9 \\\\geq 7$$",
+        "answer": "$(-\\infty, -2) \\cup \\left(\\frac{8}{3}, +\\infty\\right)$",
+        "options": null,
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 29,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "W ciągu arytmetycznym $\\left(a_n\\right)$, określonym dla każdej liczby naturalnej $n \\geq 1$, $a_1 = -1$ i $a_4 = 8$. Oblicz sumę stu początkowych kolejnych wyrazów tego ciągu.",
+        "answer": "$a_4 = a_1 + 3r$ lub\\; a_{100} = a_1 + 99r$ lub\\; $S_{100} = \\frac{a_1 + a_{100}}{2} \\cdot 100$",
+        "options": null,
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 30,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykaż, że dla każdej liczby rzeczywistej $a$ i każdej liczby rzeczywistej $b$ takich, że $b \\neq a$, spełniona jest nierówność\n\n$$\\frac{a^2 + b^2}{2} > \\left(\\frac{a + b}{2}\\right)^2$$",
+        "answer": "przekształcając nierówność $\\frac{a^2 + b^2}{2} > \\left(\\frac{a + b}{2}\\right)^2$, zastosuje wzór skróconego mnożenia na kwadrat sumy",
+        "options": null,
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 31,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Kąt $\\alpha$ jest ostry i $\\tg \\alpha = 2$. Oblicz wartość wyrażenia $\\sin^2 \\alpha$.",
+        "answer": "odczyta przybliżoną wartość kąta, dla którego $\\tg \\alpha = 2$ ($\\alpha = 63^\\circ$ lub $\\alpha = 64^\\circ$) i na tej podstawie oblicza $\\sin^2 \\alpha$.",
+        "options": null,
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 32,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dany jest trójkąt równoramienny $ABC$, w którym $|AC| = |BC|$. Dwusieczna kąta $BAC$ przecina bok $BC$ w takim punkcie $D$, że trójkąty $ABC$ i $BDA$ są podobne (zobacz rysunek). Oblicz miarę kąta $BAC$.\n\n[Rysunek: trójkąt równoramienny $ABC$ z zaznaczoną dwusieczną kąta $BAC$ przecinającą bok $BC$ w punkcie $D$]",
+        "answer": "Stosuje się zasady oceniania arkusza standardowego.",
+        "options": null,
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 33,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Ze zbioru dziewięcioelementowego $M = \\{1, 2, 3, 4, 5, 6, 7, 8, 9\\}$ losujemy kolejno ze zwracaniem dwa razy po jednej liczbie. Zdarzenie $A$ polega na wylosowaniu dwóch liczb ze zbioru $M$, których iloczyn jest równy $24$. Oblicz prawdopodobieństwo zdarzenia $A$.",
+        "answer": "$81$ lub $\\frac{3}{81}$",
+        "options": null,
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 34,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykres funkcji kwadratowej $f$ określonej wzorem $f(x) = ax^2 + bx + c$ ma z prostą o równaniu $y = 6$ dokładnie jeden punkt wspólny. Punkty $A = (-5, 0)$ i $B = (3, 0)$ należą do wykresu funkcji $f$. Oblicz wartości współczynników $a$, $b$ oraz $c$.",
+        "answer": "Stosuje się zasady oceniania arkusza standardowego.",
+        "options": null,
+        "metadata": {
+            "year": 2022,
+            "level": 1,
+            "task_number": 35,
+            "max_points": 5
+        }
+    }
+]

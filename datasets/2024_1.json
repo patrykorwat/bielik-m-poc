@@ -1,0 +1,495 @@
+[
+    {
+        "question": "Na początku sezonu letniego cenę $x$ pary sandałów podwyższono o $20\\%$. Po miesiącu nową cenę obniżono o $10\\%$. Po obu tych zmianach ta para sandałów kosztowała $81$ zł. Początkowa cena $x$ pary sandałów była równa",
+        "answer": "C",
+        "options": {
+            "a": "45\\ \\text{zł}",
+            "b": "73,63\\ \\text{zł}",
+            "c": "75\\ \\text{zł}",
+            "d": "87,48\\ \\text{zł}"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\left(\\frac{1}{16}\\right)^8 \\cdot 8^{16}$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "2^{24}",
+            "b": "2^{16}",
+            "c": "2^{12}",
+            "d": "2^8"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\log_{\\sqrt{3}} 9$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "2",
+            "b": "3",
+            "c": "4",
+            "d": "9"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dla każdej liczby rzeczywistej $a$ i dla każdej liczby rzeczywistej $b$ wartość wyrażenia $(2a + b)^2 - (2a - b)^2$ jest równa wartości wyrażenia",
+        "answer": "B",
+        "options": {
+            "a": "8a^2",
+            "b": "8ab",
+            "c": "-8ab",
+            "d": "2b^2"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Zbiorem wszystkich rozwiązań nierówności $1 - \\frac{3}{2}x < \\frac{2}{3} - x$ jest przedział",
+        "answer": "D",
+        "options": {
+            "a": "\\left(-\\infty, -\\frac{2}{3}\\right)",
+            "b": "\\left(-\\infty, \\frac{2}{3}\\right)",
+            "c": "\\left(-\\frac{2}{3}, +\\infty\\right)",
+            "d": "\\left(\\frac{2}{3}, +\\infty\\right)"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Największą liczbą będącą rozwiązaniem rzeczywistym równania $x(x+2)(x^2+9)=0$ jest",
+        "answer": "B",
+        "options": {
+            "a": "(-2)",
+            "b": "0",
+            "c": "2",
+            "d": "3"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 6,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Równanie $\\frac{x+1}{(x+2)(x-3)} = 0$ w zbiorze liczb rzeczywistych",
+        "answer": "B",
+        "options": {
+            "a": "nie ma rozwiązania.",
+            "b": "ma dokładnie jedno rozwiązanie: $(-1)$.",
+            "c": "ma dokładnie dwa rozwiązania: $(-2)$ oraz $3$.",
+            "d": "ma dokładnie trzy rozwiązania: $(-1)$, $(-2)$ oraz $3$."
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 7,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W październiku 2022 roku założono dwa sady, w których posadzono łącznie $1960$ drzew. Po roku stwierdzono, że uschło $5\\%$ drzew w pierwszym sadzie i $10\\%$ drzew w drugim sadzie. Uschnięte drzewa usunięto, a nowych nie dosadzano. Liczba drzew, które pozostały w drugim sadzie, stanowiła $60\\%$ liczby drzew, które pozostały w pierwszym sadzie. Niech $x$ oraz $y$ oznaczają liczby drzew posadzonych – odpowiednio – w pierwszym i drugim sadzie. Układem równań, którego poprawne rozwiązanie prowadzi do obliczenia liczby $x$ drzew posadzonych w pierwszym sadzie oraz liczby $y$ drzew posadzonych w drugim sadzie, jest",
+        "answer": "A",
+        "options": {
+            "a": "\\left\\{\\begin{array}{l} x+y=1960 \\\\ 0,6\\cdot 0,95x=0,9y \\end{array}\\right.",
+            "b": "\\left\\{\\begin{array}{l} x+y=1960 \\\\ 0,95x=0,6\\cdot 0,9y \\end{array}\\right.",
+            "c": "\\left\\{\\begin{array}{l} x+y=1960 \\\\ 0,05x=0,6\\cdot 0,1y \\end{array}\\right.",
+            "d": "\\left\\{\\begin{array}{l} x+y=1960 \\\\ 0,4\\cdot 0,95x=0,9y \\end{array}\\right."
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 8,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Średnia arytmetyczna trzech liczb: $a$, $b$, $c$, jest równa $9$. Średnia arytmetyczna sześciu liczb: $a$, $a$, $b$, $b$, $c$, $c$, jest równa",
+        "answer": "A",
+        "options": {
+            "a": "9",
+            "b": "6",
+            "c": "4,5",
+            "d": "18"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 9,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono dwie proste równoległe, które są interpretacją geometryczną jednego z poniższych układów równań A–D. [Rysunek: układ współrzędnych, dwie proste równoległe o równaniach $y = -\\frac{3}{2}x + 3$ i $y = -\\frac{3}{2}x - 1$] Układem równań, którego interpretację geometryczną przedstawiono na rysunku, jest",
+        "answer": "A",
+        "options": {
+            "a": "\\left\\{\\begin{array}{l} y = -\\frac{3}{2}x + 3 \\\\ y = -\\frac{3}{2}x - 1 \\end{array}\\right.",
+            "b": "\\left\\{\\begin{array}{l} y = \\frac{3}{2}x + 3 \\\\ y = \\frac{2}{3}x - 1 \\end{array}\\right.",
+            "c": "\\left\\{\\begin{array}{l} y = \\frac{3}{2}x + 3 \\\\ y = \\frac{3}{2}x - 1 \\end{array}\\right.",
+            "d": "\\left\\{\\begin{array}{l} y = -\\frac{3}{2}x - 3 \\\\ y = \\frac{3}{2}x + 1 \\end{array}\\right."
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 10,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono wykres funkcji $f$. [Rysunek: wykres funkcji $y = f(x)$, wykres schodkowy, wartości od $-6$ do $6$ na osi $x$, wartości od $-3$ do $6$ na osi $y$] Zbiorem wartości tej funkcji jest",
+        "answer": "C",
+        "options": {
+            "a": "(-6, 6)",
+            "b": "(1, 4)",
+            "c": "\\langle 1, 4 \\rangle",
+            "d": "\\langle -6, 6 \\rangle"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 11,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja liniowa $f$ jest określona wzorem $f(x) = (-2k + 3)x + k - 1$, gdzie $k \\in \\mathbb{R}$. Funkcja $f$ jest malejąca dla każdej liczby $k$ należącej do przedziału",
+        "answer": "D",
+        "options": {
+            "a": "(-\\infty, 1)",
+            "b": "(-\\infty, -\\frac{3}{2})",
+            "c": "(1, +\\infty)",
+            "d": "(\\frac{3}{2}, +\\infty)"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 12,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcje liniowe $f$ oraz $g$, określone wzorami $f(x) = 3x + 6$ oraz $g(x) = ax + 7$, mają to samo miejsce zerowe. Współczynnik $a$ we wzorze funkcji $g$ jest równy",
+        "answer": "D",
+        "options": {
+            "a": "-\\frac{7}{2}",
+            "b": "-\\frac{2}{7}",
+            "c": "\\frac{2}{7}",
+            "d": "\\frac{7}{2}"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 13,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja kwadratowa $f$ jest określona wzorem",
+        "answer": "B",
+        "options": {
+            "a": "f(x) = -(x+1)^2 - 9",
+            "b": "f(x) = -(x-1)^2 + 9",
+            "c": "f(x) = -(x-1)^2 - 9",
+            "d": "f(x) = -(x+1)^2 + 9"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 14,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dla funkcji $f$ prawdziwa jest równość",
+        "answer": "A",
+        "options": {
+            "a": "f(-4) = f(6)",
+            "b": "f(-4) = f(4)",
+            "c": "f(-4) = f(5)",
+            "d": "f(-4) = f(7)"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 15,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W ciągu arytmetycznym $(a_n)$, określonym dla każdej liczby naturalnej $n \\geq 1$, dane są wyrazy $a_4 = -2$ oraz $a_6 = 16$. Piąty wyraz tego ciągu jest równy",
+        "answer": "C",
+        "options": {
+            "a": "\\frac{7}{2}",
+            "b": "\\frac{9}{2}",
+            "c": "7",
+            "d": "9"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 16,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ciąg geometryczny $(a_n)$ jest określony wzorem $a_n = 2^{n-1}$, dla każdej liczby naturalnej $n \\geq 1$. Iloraz tego ciągu jest równy",
+        "answer": "C",
+        "options": {
+            "a": "\\frac{1}{2}",
+            "b": "(-2)",
+            "c": "2",
+            "d": "1"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 17,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ciąg $(b_n)$ jest określony wzorem $b_n = (n+2)(7-n)$, dla każdej liczby naturalnej $n \\geq 1$. Liczba dodatnich wyrazów ciągu $(b_n)$ jest równa",
+        "answer": "A",
+        "options": {
+            "a": "6",
+            "b": "7",
+            "c": "8",
+            "d": "9"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 18,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\sin^3 20^\\circ + \\cos^2 20^\\circ \\cdot \\sin 20^\\circ$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "\\cos 20^\\circ",
+            "b": "\\sin 20^\\circ",
+            "c": "\\tg 20^\\circ",
+            "d": "\\sin 20^\\circ \\cdot \\cos 20^\\circ"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 19,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Kąt $\\alpha$ jest ostry oraz $\\cos \\alpha = \\frac{5}{13}$. Wtedy",
+        "answer": "B",
+        "options": {
+            "a": "\\tg \\alpha = \\frac{12}{13}",
+            "b": "\\tg \\alpha = \\frac{12}{5}",
+            "c": "\\tg \\alpha = \\frac{5}{12}",
+            "d": "\\tg \\alpha = \\frac{13}{12}"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 20,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest równoległobok o bokach długości $3$ i $4$ oraz o kącie między nimi o mierze $120^\\circ$. Pole tego równoległoboku jest równe",
+        "answer": "B",
+        "options": {
+            "a": "6",
+            "b": "6\\sqrt{3}",
+            "c": "12",
+            "d": "12\\sqrt{3}"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 21,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W trójkącie $MKC$ bok $MK$ ma długość $24$. Prosta równoległa do boku $MK$ przecina boki $MC$ i $KC$ – odpowiednio – w punktach $A$ oraz $B$ takich, że $|AB| = 6$ i $|AC| = 3$ (zobacz rysunek). Długość odcinka $MA$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "18",
+            "b": "15",
+            "c": "9",
+            "d": "12"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 22,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W trójkącie $ABC$, wpisanym w okrąg o środku w punkcie $S$, kąt $ACB$ ma miarę $42^\\circ$ (zobacz rysunek). Miara kąta ostrego $BAS$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "42^\\circ",
+            "b": "45^\\circ",
+            "c": "48^\\circ",
+            "d": "69^\\circ"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 23,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Proste $k$ oraz $l$ są określone równaniami $k: y = (m+1)x + 7$ $l: y = -2x + 7$ Proste $k$ oraz $l$ są prostopadłe, gdy liczba $m$ jest równa",
+        "answer": "A",
+        "options": {
+            "a": "-\\frac{1}{2}",
+            "b": "\\frac{1}{2}",
+            "c": "(-3)",
+            "d": "1"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 24,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na prostej $l$ o współczynniku kierunkowym $\\frac{1}{2}$ leżą punkty $A = (2, -4)$ oraz $B = (0, b)$. Wtedy liczba $b$ jest równa",
+        "answer": "A",
+        "options": {
+            "a": "(-5)",
+            "b": "10",
+            "c": "(-2)",
+            "d": "0"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 25,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wysokość graniastosłupa prawidłowego sześciokątnego jest równa $6$ (zobacz rysunek). Pole podstawy tego graniastosłupa jest równe $15\\sqrt{3}$. Pole jednej ściany bocznej tego graniastosłupa jest równe",
+        "answer": "C",
+        "options": {
+            "a": "36\\sqrt{10}",
+            "b": "60",
+            "c": "6\\sqrt{10}",
+            "d": "360"
+        },
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 26,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność\n\n$$x^2 - 4 \\\\leq 3x$$",
+        "answer": "$x \\in \\langle -1, 4 \\rangle$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 30,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykaż, że dla każdej liczby rzeczywistej $x$ i dla każdej liczby rzeczywistej $y$ takich, że $x \\neq y$, prawdziwa jest nierówność\n\n$$(3x + y)(x + 3y) > 16xy$$",
+        "answer": "$3x^2 + 9xy + xy + 3y^2$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 31,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Osią symetrii wykresu funkcji kwadratowej $f(x) = x^2 + bx + c$ jest prosta o równaniu $x = -2$. Jednym z miejsc zerowych funkcji $f$ jest liczba $1$. Oblicz współczynniki $b$ oraz $c$.",
+        "answer": "$b = 4,\\ c = -5$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 32,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Ciąg arytmetyczny $(a_n)$ jest określony dla każdej liczby naturalnej $n \\geq 1$. Trzeci wyraz tego ciągu jest równy $(-1)$, a suma piętnastu początkowych kolejnych wyrazów tego ciągu jest równa $(-165)$. Oblicz różnicę tego ciągu.",
+        "answer": "$r = -2$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 33,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dany jest równoległobok $ABCD$, w którym $A = (-2, 6)$ oraz $B = (10, 2)$. Przekątne $AC$ oraz $BD$ tego równoległoboku przecinają się w punkcie $P = (6, 7)$. Oblicz długość boku $BC$ tego równoległoboku.",
+        "answer": "$|BC| = \boxed{2\root{13}$}$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 34,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dany jest pięcioelementowy zbiór $K = \\{5, 6, 7, 8, 9\\}$. Wylosowanie każdej liczby z tego zbioru jest jednakowo prawdopodobne. Ze zbioru $K$ losujemy \\textbf{ze zwracaniem} kolejno dwa razy po jednej liczbie i zapisujemy je w kolejności losowania. Oblicz prawdopodobieństwo zdarzenia $A$ polegającego na tym, że suma wylosowanych liczb jest liczbą parzystą.",
+        "answer": "$P(A) = \\frac{13}{25}$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 35,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "W graniastosłupie prawidłowym czworokątnym o objętości równej $108$ stosunek długości krawędzi podstawy do wysokości graniastosłupa jest równy $\\frac{1}{4}$. Przekątna tego graniastosłupa jest nachylona do płaszczyzny jego podstawy pod kątem $\\alpha$ (zobacz rysunek).\nOblicz cosinus kąta $\\alpha$ oraz pole powierzchni całkowitej tego graniastosłupa.\n\n[Rysunek: graniastosłup prawidłowy czworokątny z zaznaczoną przekątną i kątem $\\alpha$ między przekątną a płaszczyzną podstawy]",
+        "answer": "Część I: $\\cos \\alpha = \\frac{1}{3}$, Część II: $P_c = 162$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 1,
+            "task_number": 36,
+            "max_points": 5
+        }
+    }
+]

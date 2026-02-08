@@ -1,0 +1,501 @@
+[
+    {
+        "question": "Liczba $5^8 \times 16^{-2}$ jest równa",
+        "answer": "A",
+        "options": {
+            "a": "\\left( \\frac{5}{2} \\right)^8",
+            "b": "\\frac{5}{2}",
+            "c": "10^8",
+            "d": "10"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\sqrt[3]{54} - \\sqrt[3]{2}$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "\\sqrt[3]{52}",
+            "b": "3",
+            "c": "2\\sqrt[3]{2}",
+            "d": "2"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $2\\log_2 3 - 2\\log_2 5$ jest równa",
+        "answer": "A",
+        "options": {
+            "a": "\\log_2 \\frac{9}{25}",
+            "b": "\\log_2 \\frac{3}{5}",
+            "c": "\\log_2 \\frac{9}{5}",
+            "d": "\\log_2 \\frac{6}{25}"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba osobników pewnego zagrożonego wyginięciem gatunku zwierząt wzrosła w stosunku do liczby tych zwierząt z 31 grudnia 2011 r. o $120\\%$ i obecnie jest równa $8910$. Ile zwierząt liczyła populacja tego gatunku w ostatnim dniu 2011 roku?",
+        "answer": "A",
+        "options": {
+            "a": "4050",
+            "b": "1782",
+            "c": "7425",
+            "d": "7128"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Równość $\\left( x\\sqrt{2} - 2 \\right)^2 = \\left( 2 + \\sqrt{2} \\right)^2$ jest",
+        "answer": "C",
+        "options": {
+            "a": "prawdziwa dla $x = -\\sqrt{2}$.",
+            "b": "prawdziwa dla $x = \\sqrt{2}$.",
+            "c": "prawdziwa dla $x = -1$.",
+            "d": "fałszywa dla każdej liczby $x$."
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Do zbioru rozwiązań nierówności $\\left( x^4 + 1 \\right) (2 - x) > 0$ nie należy liczba",
+        "answer": "D",
+        "options": {
+            "a": "-3",
+            "b": "-1",
+            "c": "1",
+            "d": "3"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 6,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wskaż rysunek, na którym jest przedstawiony zbiór wszystkich rozwiązań nierówności $2 - 3x \\geq 4$. [Rysunek: cztery osie liczbowych z zaznaczonymi przedziałami, odpowiednio: A. $x \\leq \\frac{2}{3}$, B. $x \\geq \\frac{2}{3}$, C. $x \\leq -\\frac{2}{3}$, D. $x \\geq -\\frac{2}{3}$]",
+        "answer": "D",
+        "options": {
+            "a": "[Oś liczbową: $x \\leq \\frac{2}{3}$]",
+            "b": "[Oś liczbową: $x \\geq \\frac{2}{3}$]",
+            "c": "[Oś liczbową: $x \\leq -\\frac{2}{3}$]",
+            "d": "[Oś liczbową: $x \\geq -\\frac{2}{3}$]"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 7,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Równanie $x(x^2 - 4)(x^2 + 4) = 0$ z niewiadomą $x$",
+        "answer": "C",
+        "options": {
+            "a": "nie ma rozwiązań w zbiorze liczb rzeczywistych.",
+            "b": "ma dokładnie dwa rozwiązania w zbiorze liczb rzeczywistych.",
+            "c": "ma dokładnie trzy rozwiązania w zbiorze liczb rzeczywistych.",
+            "d": "ma dokładnie pięć rozwiązań w zbiorze liczb rzeczywistych."
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 8,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Miejscem zerowym funkcji liniowej $f(x) = \\sqrt{3}(x+1) - 12$ jest liczba",
+        "answer": "C",
+        "options": {
+            "a": "\\sqrt{3} - 4",
+            "b": "-2\\sqrt{3} + 1",
+            "c": "4\\sqrt{3} - 1",
+            "d": "-\\sqrt{3} + 12"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 9,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono fragment wykresu funkcji kwadratowej $f(x) = ax^2 + bx + c$, której miejsca zerowe to: $-3$ i $1$. [Rysunek: wykres funkcji kwadratowej, wierzchołek $W = (-1, 4)$] Współczynnik $c$ we wzorze funkcji $f$ jest równy",
+        "answer": "C",
+        "options": {
+            "a": "1",
+            "b": "2",
+            "c": "3",
+            "d": "4"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 10,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono fragment wykresu funkcji wykładniczej $f(x) = a^x$. Punkt $A = (1, 2)$ należy do tego wykresu funkcji. [Rysunek: wykres funkcji wykładniczej, punkt $A = (1, 2)$] Podstawa $a$ potęgi jest równa",
+        "answer": "D",
+        "options": {
+            "a": "-\\frac{1}{2}",
+            "b": "\\frac{1}{2}",
+            "c": "-2",
+            "d": "2"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 11,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W ciągu arytmetycznym $(a_n)$, określonym dla $n \\geq 1$, dane są: $a_1 = 5$, $a_2 = 11$. Wtedy",
+        "answer": "B",
+        "options": {
+            "a": "a_{14} = 71",
+            "b": "a_{12} = 71",
+            "c": "a_{11} = 71",
+            "d": "a_{10} = 71"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 12,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest trzywyrazowy ciąg geometryczny $(24, 6, a-1)$. Stąd wynika, że",
+        "answer": "A",
+        "options": {
+            "a": "a = \\frac{5}{2}",
+            "b": "a = \\frac{2}{5}",
+            "c": "a = \\frac{3}{2}",
+            "d": "a = \\frac{2}{3}"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 13,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Jeśli $m = \\sin 50^\\circ$, to",
+        "answer": "B",
+        "options": {
+            "a": "m = \\sin 40^\\circ",
+            "b": "m = \\cos 40^\\circ",
+            "c": "m = \\cos 50^\\circ",
+            "d": "m = \\tg 50^\\circ"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 14,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na okręgu o środku w punkcie $O$ leży punkt $C$ (zobacz rysunek). Odcinek $AB$ jest średnicą tego okręgu. Zaznaczony na rysunku kąt środkowy $\\alpha$ ma miarę [Rysunek: okrąg, $AB$ średnica, $\\angle COA = 56^\\circ$, $\\angle AOB = \\alpha$]",
+        "answer": "C",
+        "options": {
+            "a": "116^\\circ",
+            "b": "114^\\circ",
+            "c": "112^\\circ",
+            "d": "110^\\circ"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 15,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W trójkącie $ABC$ punkt $D$ leży na boku $BC$, a punkt $E$ leży na boku $AB$. Odcinek $DE$ jest równoległy do boku $AC$, a ponadto $|BD| = 10$, $|BC| = 12$ i $|AC| = 24$ (zobacz rysunek). [Rysunek: trójkąt z zaznaczonymi długościami] Długość odcinka $DE$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "22",
+            "b": "20",
+            "c": "12",
+            "d": "11"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 16,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Obwód trójkąta $ABC$, przedstawionego na rysunku, jest równy [Rysunek: trójkąt prostokątny, $\\angle BAC = 30^\\circ$, $|BC| = a$]",
+        "answer": "C",
+        "options": {
+            "a": "\\left( 3 + \\frac{\\sqrt{3}}{2} \\right)a",
+            "b": "\\left( 2 + \\frac{\\sqrt{2}}{2} \\right)a",
+            "c": "(3 + \\sqrt{3})a",
+            "d": "(2 + \\sqrt{2})a"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 17,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiona jest prosta $k$, przechodząca przez punkt $A = (2, -3)$ i przez początek układu współrzędnych, oraz zaznaczony jest kąt $\\alpha$ nachylenia tej prostej do osi $Ox$. [Rysunek: układ współrzędnych, prosta $k$, kąt $\\alpha$] Zatem",
+        "answer": "B",
+        "options": {
+            "a": "\\tg \\alpha = -\\frac{2}{3}",
+            "b": "\\tg \\alpha = -\\frac{3}{2}",
+            "c": "\\tg \\alpha = \\frac{2}{3}",
+            "d": "\\tg \\alpha = \\frac{3}{2}"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 18,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na płaszczyźnie z układem współrzędnych proste $k$ i $l$ przecinają się pod kątem prostym w punkcie $A = (-2, 4)$. Prosta $k$ jest określona równaniem $y = -\\frac{1}{4}x + \\frac{7}{2}$. Zatem prostą $l$ opisuje równanie",
+        "answer": "D",
+        "options": {
+            "a": "y = \\frac{1}{4}x + \\frac{7}{2}",
+            "b": "y = \\frac{1}{4}x - \\frac{7}{2}",
+            "c": "y = 4x - 12",
+            "d": "y = 4x + 12"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 19,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest okrąg o środku $S = (2, 3)$ i promieniu $r = 5$. Który z podanych punktów leży na tym okręgu?",
+        "answer": "A",
+        "options": {
+            "a": "A = (-1, 7)",
+            "b": "B = (2, -3)",
+            "c": "C = (3, 2)",
+            "d": "D = (5, 3)"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 20,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Pole powierzchni całkowitej graniastosłupa prawidłowego czworokątnego, w którym wysokość jest 3 razy dłuższa od krawędzi podstawy, jest równe 140. Zatem krawędź podstawy tego graniastosłupa jest równa",
+        "answer": "A",
+        "options": {
+            "a": "\\sqrt{10}",
+            "b": "3\\sqrt{10}",
+            "c": "\\sqrt{42}",
+            "d": "3\\sqrt{42}"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 21,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Promień $AS$ podstawy walca jest równy wysokości $OS$ tego walca. Sinus kąta $OAS$ (zobacz rysunek) jest równy [Rysunek: walec, trójkąt prostokątny $OAS$]",
+        "answer": "B",
+        "options": {
+            "a": "\\frac{\\sqrt{3}}{2}",
+            "b": "\\frac{\\sqrt{2}}{2}",
+            "c": "\\frac{1}{2}",
+            "d": "1"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 22,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest stożek o wysokości $4$ i średnicy podstawy $12$. Objętość tego stożka jest równa",
+        "answer": "D",
+        "options": {
+            "a": "576\\pi",
+            "b": "192\\pi",
+            "c": "144\\pi",
+            "d": "48\\pi"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 23,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Średnia arytmetyczna ośmiu liczb: $3, 5, 7, 9, x, 15, 17, 19$ jest równa $11$. Wtedy",
+        "answer": "D",
+        "options": {
+            "a": "x = 1",
+            "b": "x = 2",
+            "c": "x = 11",
+            "d": "x = 13"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 24,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ze zbioru dwudziestu czterech kolejnych liczb naturalnych od 1 do 24 losujemy jedną liczbę. Niech $A$ oznacza zdarzenie, że wylosowana liczba będzie dzielnikiem liczby 24. Wtedy prawdopodobieństwo zdarzenia $A$ jest równe",
+        "answer": "B",
+        "options": {
+            "a": "\\frac{1}{4}",
+            "b": "\\frac{1}{3}",
+            "c": "\\frac{1}{8}",
+            "d": "\\frac{1}{6}"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 25,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność $8x^2 - 72x \\\\leq 0$.",
+        "answer": "$0 \\leq x \\leq 9$ lub $(0,9)$ lub $x \\in (0,9)$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 26,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykaż, że liczba $4^{2017} + 4^{2018} + 4^{2019} + 4^{2020}$ jest podzielna przez 17.",
+        "answer": "Należy przeprowadzić poprawny dowód podzielności przez $17$.",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 27,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dane są dwa okręgi o środkach w punktach $P$ i $R$, styczne zewnętrznie w punkcie $C$. Prosta $AB$ jest styczna do obu okręgów odpowiednio w punktach $A$ i $B$ oraz $|\\sphericalangle APC| = \\alpha$ i $|\\sphericalangle ABC| = \\beta$ (zobacz rysunek). Wykaż, że $\\alpha = 180^\\circ - 2\\beta$. [Rysunek: dwa okręgi styczne zewnętrznie w punkcie $C$, styczne w punktach $A$ i $B$, kąty $\\alpha$ i $\\beta$ zaznaczone przy $P$ i $R$]",
+        "answer": "$\\alpha = 180^\\circ - 2\\beta$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 28,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Funkcja kwadratowa $f$ jest określona dla wszystkich liczb rzeczywistych $x$ wzorem $f(x) = ax^2 + bx + c$. Największa wartość funkcji $f$ jest równa 6 oraz $f(-6) = f(0) = \\frac{3}{2}$. Oblicz wartość współczynnika $a$.",
+        "answer": "$a = -\\frac{1}{2}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 29,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Przeciwprostokątna trójkąta prostokątnego ma długość 26 cm, a jedna z przyprostokątnych jest o 14 cm dłuższa od drugiej. Oblicz obwód tego trójkąta.",
+        "answer": "$60\\ \\text{cm}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 30,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "W ciągu arytmetycznym $(a_n)$, określonym dla $n \\geq 1$, dane są: wyraz $a_1 = 8$ i suma trzech początkowych wyrazów tego ciągu $S_3 = 33$. Oblicz różnicę $a_{16} - a_{13}$.",
+        "answer": "$a_{16} - a_{13} = 9$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 31,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dane są punkty $A = (-4, 0)$ i $M = (2, 9)$ oraz prosta $k$ o równaniu $y = -2x + 10$. Wierzchołek $B$ trójkąta $ABC$ to punkt przecięcia prostej $k$ z osią $Ox$ układu współrzędnych, a wierzchołek $C$ jest punktem przecięcia prostej $k$ z prostą $AM$. Oblicz pole trójkąta $ABC$.",
+        "answer": "$P_{ABC} = \\frac{243}{7}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 32,
+            "max_points": 5
+        }
+    },
+    {
+        "question": "Ze zbioru wszystkich liczb naturalnych dwucyfrowych losujemy jedną liczbę. Oblicz prawdopodobieństwo zdarzenia, że wylosujemy liczbę, która jest równocześnie mniejsza od 40 i podzielna przez 3. Wynik zapisz w postaci ułamka zwykłego nieskracalnego.",
+        "answer": "$P(A) = \\frac{10}{90} = \\frac{1}{9}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 33,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "W ostrosłupie prawidłowym trójkątnym wysokość ściany bocznej prostopadła do krawędzi podstawy ostrosłupa jest równa $\\frac{5\\sqrt{3}}{4}$, a pole powierzchni bocznej tego ostrosłupa jest równe $\\frac{15\\sqrt{3}}{4}$. Oblicz objętość tego ostrosłupa.",
+        "answer": "$V = \\frac{\\sqrt{209}}{12}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 1,
+            "task_number": 34,
+            "max_points": 4
+        }
+    }
+]

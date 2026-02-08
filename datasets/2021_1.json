@@ -1,0 +1,527 @@
+[
+    {
+        "question": "Liczba $100^5 \\cdot (0{,}1)^{-6}$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "$10^{13}$",
+            "b": "$10^{16}$",
+            "c": "$10^{-1}$",
+            "d": "$10^{-30}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $78$ stanowi $150\\%$ liczby $c$. Wtedy liczba $c$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "60",
+            "b": "52",
+            "c": "48",
+            "d": "39"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozważamy przedziały liczbowe $(-\\infty, 5)$ i $\\langle -1, +\\infty)$. Ile jest wszystkich liczb całkowitych, które należą jednocześnie do obu rozważanych przedziałów?",
+        "answer": "A",
+        "options": {
+            "a": "6",
+            "b": "5",
+            "c": "4",
+            "d": "7"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Suma $2 \\log \\sqrt{10} + \\log 10^3$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "2",
+            "b": "3",
+            "c": "4",
+            "d": "5"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Różnica $0,(3) - \\frac{23}{33}$ jest równa",
+        "answer": "D",
+        "options": {
+            "a": "$-0,(39)$",
+            "b": "$-\\frac{39}{100}$",
+            "c": "$-0,36$",
+            "d": "$-\\frac{4}{11}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Zbiorem wszystkich rozwiązań nierówności $\\frac{2-x}{2} - 2x \\geq 1$ jest przedział",
+        "answer": "B",
+        "options": {
+            "a": "$(0, +\\infty)$",
+            "b": "$(-\\infty, 0)$",
+            "c": "$(-\\infty, 5)$",
+            "d": "$(-\\infty, \\frac{1}{3})$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 6,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na poniższym rysunku przedstawiono wykres funkcji $f$ określonej w zbiorze $\\langle -6, 5)$. [Rysunek: wykres funkcji $f$ w podanym zbiorze]\n\nFunkcja $g$ jest określona wzorem $g(x) = f(x) - 2$ dla $x \\in \\langle -6, 5)$. Wskaż zdanie prawdziwe.",
+        "answer": "A",
+        "options": {
+            "a": "Liczba $f(2) + g(2)$ jest równa $(-2)$.",
+            "b": "Zbiory wartości funkcji $f$ i $g$ są równe.",
+            "c": "Funkcje $f$ i $g$ mają te same miejsca zerowe.",
+            "d": "Punkt $P = (0, -2)$ należy do wykresów funkcji $f$ i $g$."
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 7,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku obok przedstawiono geometryczną interpretację jednego z niżej zapisanych układów równań. Wskaż ten układ, którego geometryczną interpretację przedstawiono na rysunku. [Rysunek: dwa przecinające się wykresy prostych na płaszczyźnie]\n\nA. $\\begin{cases} y = x + 1 \\\\ y = -2x + 4 \\end{cases}$\nB. $\\begin{cases} y = x - 1 \\\\ y = 2x + 4 \\end{cases}$\nC. $\\begin{cases} y = x - 1 \\\\ y = -2x + 4 \\end{cases}$\nD. $\\begin{cases} y = x + 1 \\\\ y = 2x + 4 \\end{cases}$",
+        "answer": "A",
+        "options": {
+            "a": "$\\begin{cases} y = x + 1 \\\\ y = -2x + 4 \\end{cases}$",
+            "b": "$\\begin{cases} y = x - 1 \\\\ y = 2x + 4 \\end{cases}$",
+            "c": "$\\begin{cases} y = x - 1 \\\\ y = -2x + 4 \\end{cases}$",
+            "d": "$\\begin{cases} y = x + 1 \\\\ y = 2x + 4 \\end{cases}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 8,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Proste o równaniach $y = 3x - 5$ oraz $y = \\frac{m-3}{2}x + \\frac{9}{2}$ są równoległe, gdy",
+        "answer": "D",
+        "options": {
+            "a": "$m = 1$",
+            "b": "$m = 3$",
+            "c": "$m = 6$",
+            "d": "$m = 9$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 9,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja $f$ jest określona wzorem $f(x) = \\frac{x^2}{2x-2}$ dla każdej liczby rzeczywistej $x \\neq 1$. Wtedy dla argumentu $x = \\sqrt{3} - 1$ wartość funkcji $f$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "$\\frac{1}{\\sqrt{3}-1}$",
+            "b": "$-1$",
+            "c": "$1$",
+            "d": "$\\frac{1}{\\sqrt{3}-2}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 10,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Do wykresu funkcji $f$ określonej dla każdej liczby rzeczywistej $x$ wzorem $f(x) = 3^x - 2$ należy punkt o współrzędnych",
+        "answer": "C",
+        "options": {
+            "a": "$(-1, -5)$",
+            "b": "$(0, -2)$",
+            "c": "$(0, -1)$",
+            "d": "$(2, 4)$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 11,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja kwadratowa $f$ określona wzorem $f(x) = -2(x+1)(x-3)$ jest malejąca w przedziale",
+        "answer": "A",
+        "options": {
+            "a": "$(1, +\\infty)$",
+            "b": "$(-\\infty, 1)$",
+            "c": "$(-\\infty, -8)$",
+            "d": "$(-8, +\\infty)$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 12,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Trzywyrazowy ciąg $\\left(15, 3x, \\frac{5}{3}\\right)$ jest geometryczny i wszystkie jego wyrazy są dodatnie. Stąd wynika, że",
+        "answer": "D",
+        "options": {
+            "a": "$x = \\frac{3}{5}$",
+            "b": "$x = \\frac{4}{5}$",
+            "c": "$x = 1$",
+            "d": "$x = \\frac{5}{3}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 13,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ciąg $(b_n)$ jest określony wzorem $b_n = 3n^2 - 25n$ dla każdej liczby naturalnej $n \\geq 1$. Liczba nie dodatnich wyrazów ciągu $(b_n)$ jest równa",
+        "answer": "D",
+        "options": {
+            "a": "14",
+            "b": "13",
+            "c": "9",
+            "d": "8"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 14,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ciąg arytmetyczny $(a_n)$ jest określony dla każdej liczby naturalnej $n \\geq 1$. Trzeci i piąty wyraz ciągu spełniają warunek $a_3 + a_5 = 58$. Wtedy czwarty wyraz tego ciągu jest równy",
+        "answer": "B",
+        "options": {
+            "a": "28",
+            "b": "29",
+            "c": "33",
+            "d": "40"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 15,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dla każdego kąta ostrego $\\alpha$ iloczyn $\\frac{\\cos \\alpha}{1-\\sin^2 \\alpha} \\cdot \\frac{1-\\cos^2 \\alpha}{\\sin \\alpha}$ jest równy",
+        "answer": "B",
+        "options": {
+            "a": "$\\sin \\alpha$",
+            "b": "$\\tg \\alpha$",
+            "c": "$\\cos \\alpha$",
+            "d": "$\\sin^2 \\alpha$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 16,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Prosta $k$ jest styczna w punkcie $A$ do okręgu o środku $O$. Punkt $B$ leży na tym okręgu i miara kąta $AOB$ jest równa $80^\\circ$. Przez punkty $O$ i $B$ poprowadzono prostą, która przecina prostą $k$ w punkcie $C$ (zobacz rysunek).\n\n[Rysunek: okrąg, styczna, kąty]\n\nMiara kąta $BAC$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "$10^\\circ$",
+            "b": "$30^\\circ$",
+            "c": "$40^\\circ$",
+            "d": "$50^\\circ$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 17,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Przyprostokątna $AC$ trójkąta prostokątnego $ABC$ ma długość $8$ oraz $\\tg \\alpha = \\frac{2}{5}$ (zobacz rysunek).\n\n[Rysunek: trójkąt prostokątny, oznaczone boki i kąt]\n\nPole tego trójkąta jest równe",
+        "answer": "D",
+        "options": {
+            "a": "12",
+            "b": "$\\frac{37}{3}$",
+            "c": "$\\frac{62}{5}$",
+            "d": "$\\frac{64}{5}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 18,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Pole pewnego trójkąta równobocznego jest równe $\\frac{4\\sqrt{3}}{9}$. Obwód tego trójkąta jest równy",
+        "answer": "A",
+        "options": {
+            "a": "4",
+            "b": "2",
+            "c": "$\\frac{4}{3}$",
+            "d": "$\\frac{2}{3}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 19,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W trójkącie $ABC$ bok $BC$ ma długość $13$, a wysokość $CD$ tego trójkąta dzieli bok $AB$ na odcinki o długościach $|AD| = 3$ i $|BD| = 12$ (zobacz rysunek obok). Długość boku $AC$ jest równa\n\n[Rysunek: trójkąt z oznaczonymi bokami i wysokością]",
+        "answer": "A",
+        "options": {
+            "a": "$\\sqrt{34}$",
+            "b": "$\\frac{13}{4}$",
+            "c": "$2\\sqrt{14}$",
+            "d": "$3\\sqrt{45}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 20,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkty $A, B, C$ i $D$ leżą na okręgu o środku $S$. Miary kątów $SBC, BCD, CDA$ są równe odpowiednio: $|\\angle SBC| = 60^\\circ$, $|\\angle BCD| = 110^\\circ$, $|\\angle CDA| = 90^\\circ$ (zobacz rysunek).\n\n[Rysunek: okrąg, czworokąt wpisany, kąty]\n\nWynika stąd, że miara $\\alpha$ kąta $DAS$ jest równa",
+        "answer": "D",
+        "options": {
+            "a": "$25^\\circ$",
+            "b": "$30^\\circ$",
+            "c": "$35^\\circ$",
+            "d": "$40^\\circ$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 21,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W równoległoboku $ABCD$, przedstawionym na rysunku, kąt $\\alpha$ ma miarę $70^\\circ$.\n\n[Rysunek: równoległobok z oznaczonymi kątami]\n\nWtedy kąt $\\beta$ ma miarę",
+        "answer": "B",
+        "options": {
+            "a": "$80^\\circ$",
+            "b": "$70^\\circ$",
+            "c": "$60^\\circ$",
+            "d": "$50^\\circ$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 22,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W każdym $n$–kącie wypukłym ($n \\geq 3$) liczba przekątnych jest równa $\\frac{n(n-3)}{2}$. Wielokątem wypukłym, w którym liczba przekątnych jest o $25$ większa od liczby boków, jest",
+        "answer": "B",
+        "options": {
+            "a": "siedmiokąt.",
+            "b": "dziesięciokąt.",
+            "c": "dwunastokąt.",
+            "d": "piętnastokąt."
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 23,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Pole figury $F_1$ złożonej z dwóch stycznych zewnętrznie kół o promieniach $1$ i $3$ jest równe polu figury $F_2$ złożonej z dwóch stycznych zewnętrznie kół o promieniach długości $r$ (zobacz rysunek).\n\n[Rysunek: dwa zestawy stycznych kół, jeden z promieniami 1 i 3, drugi z promieniami $r$ i $r$]\n\nDługość $r$ promienia jest równa",
+        "answer": "C",
+        "options": {
+            "a": "$\\sqrt{3}$",
+            "b": "2",
+            "c": "$\\sqrt{5}$",
+            "d": "3"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 24,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkt $A = (3, -5)$ jest wierzchołkiem kwadratu $ABCD$, a punkt $M = (1, 3)$ jest punktem przecięcia się przekątnych tego kwadratu. Wynika stąd, że pole kwadratu $ABCD$ jest równe",
+        "answer": "B",
+        "options": {
+            "a": "68",
+            "b": "136",
+            "c": "$2\\sqrt{34}$",
+            "d": "$8\\sqrt{34}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 25,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Z wierzchołków sześcianu $ABCDEFGH$ losujemy jednocześnie dwa różne wierzchołki. Prawdopodobieństwo tego, że wierzchołki te będą końcami przekątnej sześcianu $ABCDEFGH$, jest równe",
+        "answer": "A",
+        "options": {
+            "a": "$\\frac{1}{7}$",
+            "b": "$\\frac{4}{7}$",
+            "c": "$\\frac{1}{14}$",
+            "d": "$\\frac{3}{7}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 26,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wszystkich liczb naturalnych trzycyfrowych, większych od $700$, w których każda cyfra należy do zbioru $\\{1, 2, 3, 7, 8, 9\\}$ i żadna cyfra się nie powtarza, jest",
+        "answer": "B",
+        "options": {
+            "a": "108",
+            "b": "60",
+            "c": "40",
+            "d": "299"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 27,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Sześcio wyrazowy ciąg liczbowy $(1, 2, 2x, x+2, 5, 6)$ jest niemalejący. Mediana wyrazów tego ciągu jest równa $4$. Wynika stąd, że",
+        "answer": "C",
+        "options": {
+            "a": "$x = 1$",
+            "b": "$x = \\frac{3}{2}$",
+            "c": "$x = 2$",
+            "d": "$x = \\frac{8}{3}$"
+        },
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 28,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność: \n\n$$x^2 - 5x \\\\leq 14$$",
+        "answer": "$x \\in \\langle -2, 7 \\rangle$",
+        "options": null,
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 29,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykaż, że dla każdych trzech dodatnich liczb $a$, $b$ i $c$ takich, że $a < b$, spełniona jest nierówność\n\n$$\\frac{a}{b} < \\frac{a + c}{b + c}$$",
+        "answer": "Należy przeprowadzić dowód, że $a < b \\implies \\frac{a}{b} < \\frac{a+c}{b+c}$",
+        "options": null,
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 30,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Funkcja liniowa $f$ przyjmuje wartość $2$ dla argumentu $0$, a ponadto $f(4) - f(2) = 6$. Wyznacz wzór funkcji $f$.",
+        "answer": "$f(x) = 3x + 2$",
+        "options": null,
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 31,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Rozwiąż równanie:\n\n$$\\frac{3x + 2}{3x - 2} = 4 - x$$",
+        "answer": "poprawnie oblicza pierwiastki równania otrzymanego z przekształcenia $\\frac{3x+2}{3x-2} = 4-x$ do postaci kwadratowej",
+        "options": null,
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 32,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Trójkąt równoboczny $ABC$ ma pole równe $9\\sqrt{3}$. Prosta równoległa do boku $BC$ przecina boki $AB$ i $AC$ – odpowiednio – w punktach $K$ i $L$. Trójkąty $ABC$ i $AKL$ są podobne, a stosunek długości boków tych trójkątów jest równy $\\frac{3}{2}$. Oblicz długość boku trójkąta $AKL$.",
+        "answer": "zastosuje poprawną metodę obliczenia długości boku trójkąta $ABC$ (stosuje wzór na pole trójkąta równobocznego) LUB zapisze, że $\\frac{P_{ABC}}{P_{AKL}} = \\left(\\frac{3}{2}\\right)^2$",
+        "options": null,
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 33,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Gracz rzuca dwukrotnie symetryczną sześcienną kostką do gry i oblicza sumę liczb wyrzuconych oczek. Oblicz prawdopodobieństwo zdarzenia $A$ polegającego na tym, że suma liczb wyrzuconych oczek jest równa $4$ lub $5$, lub $6$.",
+        "answer": "poprawnie wypisze (lub zaznaczy) wszystkie zdarzenia elementarne sprzyjające zdarzeniu $A$, popełni błąd w ich zliczeniu i konsekwentnie zapisze wynik $\\frac{x}{36}$, gdzie $x$ jest liczbą zliczonych zdarzeń elementarnych sprzyjających zdarzeniu $A$",
+        "options": null,
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 34,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Punkty $A = (-20, 12)$ i $B = (7, 3)$ są wierzchołkami trójkąta równoramiennego $ABC$, w którym $|AC| = |BC|$. Wierzchołek $C$ leży na osi $Oy$ układu współrzędnych. Oblicz współrzędne wierzchołka $C$ oraz obwód tego trójkąta.",
+        "answer": "zastosuje poprawną metodę wyznaczenia równania symetralnej odcinka $AB$ LUB stosuje poprawne metody wyznaczenia wielkości w punktach 1)-4) pierwszego punktora standardowych zasad oceniania za 1 pkt oraz zastosuje poprawną metodę obliczenia długości boku $AB$ trójkąta",
+        "options": null,
+        "metadata": {
+            "year": 2021,
+            "level": 1,
+            "task_number": 35,
+            "max_points": 5
+        }
+    }
+]

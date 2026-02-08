@@ -1,0 +1,501 @@
+[
+    {
+        "question": "Wartość wyrażenia $x^2 - 6x + 9$ dla $x = \\\\sqrt{3} + 3$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "1",
+            "b": "3",
+            "c": "1 + 2\\\\sqrt{3}",
+            "d": "1 - 2\\\\sqrt{3}"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\\\frac{2^{50} \\\\cdot 3^{40}}{36^{10}}$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "6^{70}",
+            "b": "6^{45}",
+            "c": "2^{30} \\\\cdot 3^{20}",
+            "d": "2^{10} \\\\cdot 3^{20}"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\\\log_5 \\\\sqrt{125}$ jest równa",
+        "answer": "D",
+        "options": {
+            "a": "\\\\frac{2}{3}",
+            "b": "2",
+            "c": "3",
+            "d": "\\\\frac{3}{2}"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Cenę $x$ pewnego towaru obniżono o 20% i otrzymano cenę $y$. Aby przywrócić cenę $x$, nową cenę $y$ należy podnieść o",
+        "answer": "A",
+        "options": {
+            "a": "25\\%",
+            "b": "20\\%",
+            "c": "15\\%",
+            "d": "12\\%"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Zbiorem wszystkich rozwiązań nierówności $3(1-x) > 2(3x-1) - 12x$ jest przedział",
+        "answer": "A",
+        "options": {
+            "a": "\\left(-\\\\frac{5}{3}, +\\\\infty\\\\right)",
+            "b": "\\left(-\\\\infty, \\\\frac{5}{3}\\\\right)",
+            "c": "\\left(\\\\frac{5}{3}, +\\\\infty\\\\right)",
+            "d": "\\left(-\\\\infty, -\\\\frac{5}{3}\\\\right)"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Suma wszystkich rozwiązań równania $x(x-3)(x+2)=0$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "0",
+            "b": "1",
+            "c": "2",
+            "d": "3"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 6,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Współczynnik $a$ we wzorze funkcji $f$ jest równy [Rysunek: wykres funkcji kwadratowej $f(x) = a(x-1)(x-3)$, wierzchołek $W = (2, 1)$]",
+        "answer": "D",
+        "options": {
+            "a": "1",
+            "b": "2",
+            "c": "-2",
+            "d": "-1"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 7,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Największa wartość funkcji $f$ w przedziale $\\langle 1, 4 \\rangle$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "-3",
+            "b": "0",
+            "c": "1",
+            "d": "2"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 8,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Osią symetrii paraboli będącej wykresem funkcji $f$ jest prosta o równaniu",
+        "answer": "B",
+        "options": {
+            "a": "x = 1",
+            "b": "x = 2",
+            "c": "y = 1",
+            "d": "y = 2"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 9,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Równanie $x(x-2) = (x-2)^2$ w zbiorze liczb rzeczywistych",
+        "answer": "B",
+        "options": {
+            "a": "nie ma rozwiązań.",
+            "b": "ma dokładnie jedno rozwiązanie: $x = 2$.",
+            "c": "ma dokładnie jedno rozwiązanie: $x = 0$.",
+            "d": "ma dwa różne rozwiązania: $x = 1$ i $x = 2$."
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 10,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono fragment wykresu funkcji liniowej $f$ określonej wzorem $f(x) = ax + b$. [Rysunek: wykres funkcji liniowej o ujemnym nachyleniu przecinający oś $y$ powyżej zera]\nWspółczynniki $a$ oraz $b$ we wzorze funkcji $f$ spełniają zależność",
+        "answer": "D",
+        "options": {
+            "a": "a + b > 0",
+            "b": "a + b = 0",
+            "c": "a \\cdot b > 0",
+            "d": "a \\cdot b < 0"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 11,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja $f$ jest określona wzorem $f(x) = 4^{-x} + 1$ dla każdej liczby rzeczywistej $x$. Liczba $f\\left(\\frac{1}{2}\\right)$ jest równa",
+        "answer": "B",
+        "options": {
+            "a": "\\frac{1}{2}",
+            "b": "\\frac{3}{2}",
+            "c": "3",
+            "d": "17"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 12,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Proste o równaniach $y = (m-2)x$ oraz $y = \\frac{3}{4}x + 7$ są równoległe. Wtedy",
+        "answer": "C",
+        "options": {
+            "a": "m = -\\frac{5}{4}",
+            "b": "m = \\frac{2}{3}",
+            "c": "m = \\frac{11}{4}",
+            "d": "m = \\frac{10}{3}"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 13,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ciąg $(a_n)$ jest określony wzorem $a_n = 2n^2$ dla $n \\geq 1$. Różnica $a_5 - a_4$ jest równa",
+        "answer": "D",
+        "options": {
+            "a": "4",
+            "b": "20",
+            "c": "36",
+            "d": "18"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 14,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "W ciągu arytmetycznym $(a_n)$, określonym dla $n \\geq 1$, czwarty wyraz jest równy 3, a różnica tego ciągu jest równa 5. Suma $a_1 + a_2 + a_3 + a_4$ jest równa",
+        "answer": "C",
+        "options": {
+            "a": "-42",
+            "b": "-36",
+            "c": "-18",
+            "d": "6"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 15,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkt $A = \\left(\\frac{1}{3}, -1\\right)$ należy do wykresu funkcji liniowej $f$ określonej wzorem $f(x) = 3x + b$. Wynika stąd, że",
+        "answer": "D",
+        "options": {
+            "a": "b = 2",
+            "b": "b = 1",
+            "c": "b = -1",
+            "d": "b = -2"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 16,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkty $A, B, C, D$ leżą na okręgu o środku w punkcie $O$. Kąt środkowy $DOC$ ma miarę $118^{\\circ}$ (zobacz rysunek).\n[Rysunek: okrąg z zaznaczonymi punktami $A, B, C, D$ i kątem środkowym $DOC = 118^{\\circ}$]\nMiara kąta $ABC$ jest równa",
+        "answer": "D",
+        "options": {
+            "a": "59^{\\circ}",
+            "b": "48^{\\circ}",
+            "c": "62^{\\circ}",
+            "d": "31^{\\circ}"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 17,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Prosta przechodząca przez punkty $A = (3, -2)$ i $B = (-1, 6)$ jest określona równaniem",
+        "answer": "A",
+        "options": {
+            "a": "y = -2x + 4",
+            "b": "y = -2x - 8",
+            "c": "y = 2x + 8",
+            "d": "y = 2x - 4"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 18,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dany jest trójkąt prostokątny o kątach ostrych $\\alpha$ i $\\beta$ (zobacz rysunek).\n[Rysunek: trójkąt prostokątny z kątami $\\alpha$ i $\\beta$]\nWyrażenie $2\\cos\\alpha - \\sin\\beta$ jest równe",
+        "answer": "B",
+        "options": {
+            "a": "2\\sin\\beta",
+            "b": "\\cos\\alpha",
+            "c": "0",
+            "d": "2"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 19,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkt $B$ jest obrazem punktu $A = (-3, 5)$ w symetrii względem początku układu współrzędnych. Długość odcinka $AB$ jest równa",
+        "answer": "A",
+        "options": {
+            "a": "2\\sqrt{34}",
+            "b": "8",
+            "c": "\\sqrt{34}",
+            "d": "12"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 20,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Ile jest wszystkich dwucyfrowych liczb naturalnych utworzonych z cyfr: 1, 3, 5, 7, 9, w których cyfry się nie powtarzają?",
+        "answer": "C",
+        "options": {
+            "a": "10",
+            "b": "15",
+            "c": "20",
+            "d": "25"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 21,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Pole prostokąta $ABCD$ jest równe 90. Na bokach $AB$ i $CD$ wybrano – odpowiednio – punkty $P$ i $R$, takie, że $\\frac{|AP|}{|PB|} = \\frac{|CR|}{|RD|} = \\frac{3}{2}$ (zobacz rysunek).\n[Rysunek: prostokąt $ABCD$ z zaznaczonymi punktami $P$ na $AB$ i $R$ na $CD$]\nPole czworokąta $APCR$ jest równe",
+        "answer": "C",
+        "options": {
+            "a": "36",
+            "b": "40",
+            "c": "54",
+            "d": "60"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 22,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Cztery liczby: 2, 3, $a$, 8, tworzące zestaw danych, są uporządkowane rosnąco. Mediana tego zestawu czterech danych jest równa medianie zestawu pięciu danych: 5, 3, 6, 8, 2. Zatem",
+        "answer": "A",
+        "options": {
+            "a": "a = 7",
+            "b": "a = 6",
+            "c": "a = 5",
+            "d": "a = 4"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 23,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Przekątna sześcianu ma długość $4\\sqrt{3}$. Pole powierzchni tego sześcianu jest równe",
+        "answer": "A",
+        "options": {
+            "a": "96",
+            "b": "24\\sqrt{3}",
+            "c": "192",
+            "d": "16\\sqrt{3}"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 24,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dwa stożki o takich samych podstawach połączono podstawami w taki sposób jak na rysunku. Stosunek wysokości tych stożków jest równy $3:2$. Objętość stożka o krótszej wysokości jest równa $12\\ \\text{cm}^3$.\n[Rysunek: dwa stożki połączone podstawami]\nObjętość bryły utworzonej z połączonych stożków jest równa",
+        "answer": "B",
+        "options": {
+            "a": "20\\ \\text{cm}^3",
+            "b": "30\\ \\text{cm}^3",
+            "c": "39\\ \\text{cm}^3",
+            "d": "52{,}5\\ \\text{cm}^3"
+        },
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 25,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność $2(x-1)(x+3) > x-1$.",
+        "answer": "$(-\\infty, 1) \\cup \\left(-\\frac{5}{2}, +\\infty\\right)$",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 26,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Rozwiąż równanie $(x^2-1)(x^2-2x)=0$.",
+        "answer": "$x = 1,\\ x = 0,\\ x = 2$",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 27,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykaż, że dla każdych dwóch różnych liczb rzeczywistych $a$ i $b$ prawdziwa jest nierówność \n$$a(a-2b)+2b^2>0.$$",
+        "answer": "$(a-b)^2 + b^2 > 0$",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 28,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Trójkąt $ABC$ jest równoboczny. Punkt $E$ leży na wysokości $CD$ tego trójkąta oraz $|CE| = \\frac{3}{4}|CD|$. Punkt $F$ leży na boku $BC$ i odcinek $EF$ jest prostopadły do $BC$ (zobacz rysunek).\n[Rysunek: trójkąt równoboczny $ABC$, wysokość $CD$, punkt $E$ na $CD$, punkt $F$ na $BC$, odcinek $EF$ prostopadły do $BC$]\nWykaż, że $|CF| = \\frac{9}{16}|CB|$.",
+        "answer": "$\\frac{|CF|}{|CE|} = \\frac{|CD|}{|CB|}$",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 29,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Rzucamy dwa razy symetryczną sześcienną kostką do gry, która na każdej ściance ma inną liczbę oczek – od jednego oczka do sześciu oczek. Oblicz prawdopodobieństwo zdarzenia $A$ polegającego na tym, że co najmniej jeden raz wypadnie ścianka z pięcioma oczkami.",
+        "answer": "poprawnie wypisze (lub zaznaczy) wszystkie zdarzenia elementarne sprzyjające zdarzeniu $A$",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 30,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Kąt $\\alpha$ jest ostry i spełnia warunek $\\frac{2\\sin\\alpha + 3\\cos\\alpha}{\\cos\\alpha} = 4$. Oblicz tangens kąta $\\alpha$.",
+        "answer": "$2 \\tg \\alpha = 1$",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 31,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dany jest kwadrat $ABCD$, w którym $A = \\left(5, -\\frac{5}{3}\\right)$. Przekątna $BD$ tego kwadratu jest zawarta w prostej o równaniu $y = \\frac{4}{3}x$. Oblicz współrzędne punktu przecięcia przekątnych $AC$ i $BD$ oraz pole kwadratu $ABCD$.",
+        "answer": "$-\\frac{3}{4}$",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 32,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Wszystkie wyrazy ciągu geometrycznego $(a_n)$, określonego dla $n \\geq 1$, są dodatnie. Wyrazy tego ciągu spełniają warunek $6a_1 - 5a_2 + a_3 = 0$. Oblicz iloraz $q$ tego ciągu należący do przedziału $\\left\\langle 2\\sqrt{2}, 3\\sqrt{2} \\right)$.",
+        "answer": "Stosują się zasady oceniania arkusza standardowego.",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 33,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Dany jest ostrosłup prawidłowy czworokątny $ABCDS$, którego krawędź boczna ma długość $6$ (zobacz rysunek). Ściana boczna tego ostrosłupa jest nachylona do płaszczyzny podstawy pod kątem, którego tangens jest równy $\\sqrt{7}$. Oblicz objętość tego ostrosłupa.\n[Rysunek: ostrosłup prawidłowy czworokątny $ABCDS$, krawędź boczna $6$]",
+        "answer": "$V = \\frac{32 \\sqrt{7}}{3}$",
+        "options": null,
+        "metadata": {
+            "year": 2020,
+            "level": 1,
+            "task_number": 34,
+            "max_points": 5
+        }
+    }
+]
