@@ -13,16 +13,13 @@ interface MessageContentProps {
 export function MessageContent({ content }: MessageContentProps) {
   const renderedContent = useMemo(() => {
     const parts: JSX.Element[] = [];
-    let lastIndex = 0;
     let key = 0;
 
     // First, handle display math ($$...$$)
     const displayMathRegex = /\$\$([\s\S]*?)\$\$/g;
-    const inlineMathRegex = /\$([^\$\n]+?)\$/g;
 
     // Split by display math first
     let match;
-    let tempContent = content;
     const displayMathBlocks: { index: number; length: number; latex: string }[] = [];
 
     while ((match = displayMathRegex.exec(content)) !== null) {
