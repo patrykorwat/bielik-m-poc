@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MCPAgentOrchestrator, Message, LLMProvider, MLXConfig } from './services/mcpAgentService';
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
+import { MessageContent } from './components/MessageContent';
 import './App.css';
 
 const MCP_PROXY_URL = 'http://localhost:3001';
@@ -340,7 +341,7 @@ function App() {
                   </div>
                 )}
                 <div className="message-content">
-                  {msg.content}
+                  <MessageContent content={msg.content} />
                   {msg.toolCalls && msg.toolCalls.length > 0 && (
                     <div className="tool-calls">
                       {msg.toolCalls.map(tc => (
