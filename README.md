@@ -270,5 +270,3 @@ MIT
 Projekt stworzony jako demonstracja group chat orchestration z agentami AI.
 
 ---
-
-**Zbudowano z wykorzystaniem Claude 3.5 Sonnet i React**

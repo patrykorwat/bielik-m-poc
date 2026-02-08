@@ -137,6 +137,19 @@ export class MCPAgentOrchestrator {
    */
   private extractToolCallFromMLX(content: string): ToolCall | null {
     try {
+      // Try to find <tool_call> tag format (Claude-style)
+      const toolCallMatch = content.match(/<tool_call>\s*({[\s\S]*?})\s*<\/tool_call>/);
+      if (toolCallMatch) {
+        const parsed = JSON.parse(toolCallMatch[1]);
+        if (parsed.name) {
+          return {
+            id: crypto.randomUUID(),
+            name: parsed.name,
+            arguments: parsed.arguments || {},
+          };
+        }
+      }
+
       // Try to find JSON block in response
       const jsonMatch = content.match(/```json\s*\n?([\s\S]*?)\n?```/);
       if (jsonMatch) {
@@ -157,6 +170,14 @@ export class MCPAgentOrchestrator {
           id: crypto.randomUUID(),
           name: parsed.tool_call.name,
           arguments: parsed.tool_call.arguments || {},
+        };
+      }
+      // Direct tool call format
+      if (parsed.name) {
+        return {
+          id: crypto.randomUUID(),
+          name: parsed.name,
+          arguments: parsed.arguments || {},
         };
       }
     } catch (error) {
