@@ -66,6 +66,42 @@ export function MessageContent({ content }: MessageContentProps) {
       // Convert inline math: \(...\) to $...$
       normalized = normalized.replace(/\\\((.*?)\\\)/g, '$$$1$$');
 
+      // Convert standalone \boxed{...} to $\boxed{...}$ (if not already in math mode)
+      // Need to handle nested braces properly
+      {
+        let result = '';
+        let i = 0;
+        while (i < normalized.length) {
+          // Look for \boxed{ that is NOT preceded by $
+          if (i >= 6 && normalized.substring(i - 6, i) === '\\boxed' && normalized[i] === '{') {
+            // Check if preceded by $
+            const precedingChar = i >= 7 ? normalized[i - 7] : '';
+            if (precedingChar !== '$') {
+              // Find matching closing brace
+              let depth = 1;
+              let j = i + 1;
+              while (j < normalized.length && depth > 0) {
+                if (normalized[j] === '{') depth++;
+                else if (normalized[j] === '}') depth--;
+                j++;
+              }
+
+              // Extract the boxed content
+              const boxedContent = normalized.substring(i + 1, j - 1);
+
+              // Remove the \boxed{ we already processed and add wrapped version
+              result = result.substring(0, result.length - 6); // Remove \boxed
+              result += `$\\boxed{${boxedContent}}$`;
+              i = j;
+              continue;
+            }
+          }
+          result += normalized[i];
+          i++;
+        }
+        normalized = result;
+      }
+
       console.log('Normalized content:', normalized);
 
       const parts: JSX.Element[] = [];

@@ -302,12 +302,13 @@ WORKFLOW:
 2. Wywołaj narzędzie/narzędzia (OBOWIĄZKOWE!)
 3. Użyj wyniku z narzędzia do odpowiedzi
 4. Formatuj matematykę używając $ dla inline lub $$ dla display LaTeX
+5. Dla finalnych wyników używaj $\boxed{wynik}$ aby je wyróżnić
 
 PRZYKŁAD DOBREJ ODPOWIEDZI:
 User: "Rozwiąż x² - 4 = 0"
 Assistant: [wywołuje sympy_solve z x**2 - 4]
 [otrzymuje wynik: [-2, 2]]
-"Rozwiązania równania to $x_1 = -2$ i $x_2 = 2$"
+"Rozwiązania równania to $\boxed{x_1 = -2}$ i $\boxed{x_2 = 2}$"
 
 PRZYKŁAD ZŁEJ ODPOWIEDZI (ZABRONIONE):
 "Delta wynosi... czyli x = ..." [ręczne obliczenia - NIEDOZWOLONE!]
@@ -457,8 +458,10 @@ TOOL_CALL: nazwa_narzędzia(parametr1="wartość1", parametr2="wartość2")
 
 Wszystkie wyniki matematyczne MUSZĄ być w formacie LaTeX używając \( ... \) dla inline math lub \[ ... \] dla display math.
 
+Dla finalnych wyników używaj \boxed{wynik} aby je wyróżnić.
+
 NIGDY nie używaj surowego tekstu dla matematyki!
-✓ Poprawnie: "Pochodna wynosi \( 2x \)"
+✓ Poprawnie: "Pochodna wynosi \( 2x \)" lub "Wynik: \boxed{2x}"
 ✗ Źle: "Pochodna wynosi 2x"
 
 Odpowiadaj po polsku. NIGDY nie pokazuj ręcznych obliczeń - TYLKO wyniki z narzędzi w LaTeX!
