@@ -30,6 +30,7 @@ Agent automatycznie wybiera odpowiednie narzędzia SymPy, wykonuje obliczenia i 
 ### Wymagania
 
 - Node.js 18+ lub nowszy
+- Python 3.8+ (dla serwera MCP SymPy)
 - **Dla Claude**: Klucz API Anthropic
 - **Dla MLX**: Mac z Apple Silicon (M1/M2/M3/M4) i uruchomiony serwer MLX
 
@@ -37,24 +38,81 @@ Agent automatycznie wybiera odpowiednie narzędzia SymPy, wykonuje obliczenia i 
 
 ```bash
 # Sklonuj repozytorium
-git clone https://github.com/yourusername/bielik-m.git
-cd bielik-m
+git clone https://github.com/yourusername/bielik-m-poc.git
+cd bielik-m-poc
 
-# Zainstaluj zależności
+# Zainstaluj zależności głównej aplikacji
 npm install
 
-# Uruchom aplikację w trybie deweloperskim
+# Zainstaluj zależności MCP SymPy server
+cd mcp-sympy-server
+npm install
+
+# Zainstaluj Python dependencies dla SymPy
+python3 -m venv venv
+source venv/bin/activate  # Na Windows: venv\Scripts\activate
+pip install sympy
+
+# Zbuduj MCP server
+npm run build
+cd ..
+```
+
+### Uruchomienie aplikacji
+
+**WAŻNE:** Aplikacja wymaga uruchomienia **dwóch serwerów** - MCP proxy (dla narzędzi SymPy) i aplikacji webowej.
+
+#### Krok 1: Uruchom MCP Proxy Server
+
+W osobnym terminalu:
+
+```bash
+# Z głównego katalogu projektu
+npm run mcp-proxy
+```
+
+Ten serwer:
+- Uruchamia się na porcie **3001**
+- Łączy się z MCP SymPy serverem
+- Udostępnia 9 narzędzi matematycznych
+- **MUSI działać** aby aplikacja mogła używać narzędzi SymPy
+
+Powinieneś zobaczyć:
+```
+MCP Proxy Server running on http://localhost:3001
+Available tools: [
+  'sympy_calculate',
+  'sympy_simplify',
+  'sympy_solve',
+  'sympy_differentiate',
+  'sympy_integrate',
+  'sympy_expand',
+  'sympy_factor',
+  'sympy_limit',
+  'sympy_matrix'
+]
+```
+
+#### Krok 2: Uruchom aplikację webową
+
+W drugim terminalu:
+
+```bash
+# Z głównego katalogu projektu
 npm run dev
 ```
 
-### Konfiguracja
+Aplikacja uruchomi się na `http://localhost:5173`
 
-#### Opcja 1: Claude (Cloud)
+#### Krok 3: Konfiguracja w UI
 
-1. Otwórz aplikację w przeglądarce (domyślnie `http://localhost:5173`)
+##### Opcja A: Claude (Cloud)
+
+1. Otwórz aplikację w przeglądarce
 2. Wybierz provider "Claude (Anthropic)"
 3. Wprowadź swój klucz API Anthropic
-4. Kliknij "Rozpocznij"
+4. Upewnij się że widzisz status "**MCP Connected**" (zielony)
+5. Kliknij "Rozpocznij"
 
 **Uzyskiwanie klucza API:**
 1. Odwiedź [console.anthropic.com](https://console.anthropic.com/)
@@ -62,7 +120,7 @@ npm run dev
 3. Przejdź do sekcji API Keys
 4. Wygeneruj nowy klucz API
 
-#### Opcja 2: MLX (Lokalny - Apple Silicon)
+##### Opcja B: MLX (Lokalny - Apple Silicon)
 
 1. Zainstaluj MLX:
    ```bash
@@ -83,8 +141,9 @@ npm run dev
 
 3. W aplikacji:
    - Wybierz provider "MLX (Apple Silicon - lokalny)"
-   - Wprowadź URL serwera (domyślnie `http://localhost:8080`)
-   - Wprowadź nazwę modelu
+   - Wprowadź URL serwera (domyślnie `http://localhost:8011`)
+   - Wprowadź nazwę modelu (domyślnie `LibraxisAI/Bielik-11B-v3.0-mlx-q4`)
+   - Upewnij się że widzisz status "**MCP Connected**" (zielony)
    - Kliknij "Rozpocznij"
 
 **Wymagania MLX:**
@@ -93,129 +152,239 @@ npm run dev
 - Darmowy, lokalny inference bez kosztów API
 - Akceleracja sprzętowa za pomocą Neural Engine
 
+### ⚠️ Rozwiązywanie problemów
+
+#### MCP nie jest połączony (czerwony status)
+
+Jeśli widzisz komunikat "MCP Disconnected" (czerwony):
+
+1. **Sprawdź czy MCP proxy działa:**
+   ```bash
+   curl http://localhost:3001/health
+   ```
+   Powinno zwrócić: `{"status":"ok","mcpConnected":true,"toolsCount":9}`
+
+2. **Jeśli MCP proxy nie działa, uruchom go:**
+   ```bash
+   npm run mcp-proxy
+   ```
+
+3. **Sprawdź czy port 3001 nie jest zajęty:**
+   ```bash
+   lsof -i :3001
+   ```
+
+4. **Odśwież aplikację w przeglądarce** po uruchomieniu MCP proxy
+
+#### Błędy narzędzi SymPy
+
+Jeśli narzędzia zwracają błędy typu "name 'X' is not defined":
+
+1. **Sprawdź czy Python i SymPy są zainstalowane:**
+   ```bash
+   cd mcp-sympy-server
+   source venv/bin/activate
+   python -c "import sympy; print(sympy.__version__)"
+   ```
+
+2. **Przebuduj MCP server:**
+   ```bash
+   cd mcp-sympy-server
+   npm run build
+   cd ..
+   ```
+
+3. **Zrestartuj MCP proxy** (zatrzymaj i uruchom ponownie `npm run mcp-proxy`)
+
 ## 💻 Użycie
+
+### Dostępne narzędzia SymPy
+
+Agent ma dostęp do 9 narzędzi matematycznych:
+
+1. **sympy_calculate** - Dowolne obliczenia SymPy (również wieloliniowe skrypty)
+2. **sympy_solve** - Rozwiązywanie równań i układów równań
+3. **sympy_differentiate** - Obliczanie pochodnych
+4. **sympy_integrate** - Całkowanie (oznaczone i nieoznaczone)
+5. **sympy_simplify** - Upraszczanie wyrażeń
+6. **sympy_expand** - Rozwijanie wyrażeń
+7. **sympy_factor** - Faktoryzacja
+8. **sympy_limit** - Obliczanie granic
+9. **sympy_matrix** - Operacje na macierzach
 
 ### Przykładowe pytania
 
+**Rozwiązywanie równań:**
 ```
 Rozwiąż równanie kwadratowe: 2x² + 5x - 3 = 0
 ```
 
+**Pochodne:**
 ```
 Oblicz pochodną funkcji f(x) = x³ + 2x² - 5x + 1
 ```
 
+**Całki:**
 ```
-Jakie jest pole koła o promieniu 7 cm?
-```
-
-```
-Rozwiąż układ równań:
-2x + y = 5
-x - y = 1
+Oblicz całkę z sin(x)*cos(x)
 ```
 
-### Konfiguracja rund konwersacji
+**Upraszczanie:**
+```
+Uprość wyrażenie: (x+1)² - (x-1)²
+```
 
-Możesz ustawić liczbę rund (1-5), w których agenty będą wymieniać informacje:
+**Faktoryzacja:**
+```
+Zfaktoryzuj: x² - 9
+```
 
-- **1 runda** - Szybka odpowiedź, każdy agent odpowiada raz
-- **2 rundy** (domyślnie) - Dobra równowaga między jakością a czasem
-- **3+ rundy** - Głębsza analiza dla złożonych problemów
+**Granice:**
+```
+Oblicz granicę lim(x→0) sin(x)/x
+```
+
+**Wyrażenia z wieloma zmiennymi:**
+```
+Oblicz pochodną 3*a²*(R - a)/(2*R) względem a
+```
+
+### Cechy interfejsu
+
+- **🔧 Wyświetlanie wywołań narzędzi** - Widoczne parametry każdego wywołania
+- **✅ Wyniki narzędzi** - Przejrzyste pokazywanie wyników z SymPy
+- **📐 LaTeX rendering** - Wzory matematyczne renderowane w czasie rzeczywistym
+- **📜 Historia** - Zapisywanie i wczytywanie poprzednich sesji
+- **⏱️ Znaczniki czasu** - Czas każdej wiadomości
 
 ## 🏗️ Architektura
 
 ### Struktura projektu
 
 ```
-bielik-m/
+bielik-m-poc/
 ├── src/
 │   ├── services/
-│   │   ├── agentService.ts      # Logika orkiestracji agentów
-│   │   ├── mlxAgent.ts          # Implementacja MLX agenta
-│   │   └── types.ts             # Typy TypeScript
-│   ├── App.tsx                  # Główny komponent UI
-│   ├── App.css                  # Style aplikacji
-│   ├── main.tsx                 # Punkt wejścia
-│   └── vite-env.d.ts           # Typy TypeScript
+│   │   ├── mcpAgentService.ts       # Orkiestracja agenta z MCP
+│   │   ├── mcpClientBrowser.ts      # Klient MCP dla przeglądarki
+│   │   ├── mlxAgent.ts              # Implementacja MLX agenta
+│   │   └── chatHistoryService.ts    # Zarządzanie historią
+│   ├── components/
+│   │   ├── MessageContent.tsx       # Renderowanie LaTeX
+│   │   └── ChatHistorySidebar.tsx   # Sidebar z historią
+│   ├── App.tsx                      # Główny komponent UI
+│   ├── App.css                      # Style aplikacji
+│   └── main.tsx                     # Punkt wejścia
+├── mcp-sympy-server/               # MCP Server dla SymPy
+│   ├── src/
+│   │   └── index.ts                # Implementacja narzędzi SymPy
+│   ├── dist/                       # Zbudowany serwer
+│   ├── venv/                       # Python virtual environment
+│   └── package.json
+├── mcp-proxy-server.js             # HTTP proxy dla MCP
 ├── index.html
 ├── package.json
-├── tsconfig.json
 └── vite.config.ts
 ```
 
 ### Komponenty systemu
 
-#### GroupChatOrchestrator
+#### MCPAgentOrchestrator
 
-Główna klasa zarządzająca konwersacją między agentami z wsparciem dla wielu providerów:
+Główna klasa zarządzająca agentem AI z dostępem do narzędzi MCP:
 
 ```typescript
 // Tworzenie orchestratora z Claude
-const agents = createMathAgents();
-const orchestrator = new GroupChatOrchestrator(
+const orchestrator = new MCPAgentOrchestrator(
   'claude',
-  agents,
   apiKey
 );
 
-// Tworzenie orchestratora z MLX
-const orchestratorMLX = new GroupChatOrchestrator(
+// Lub z MLX
+const orchestrator = new MCPAgentOrchestrator(
   'mlx',
-  agents,
   undefined,
   {
-    baseUrl: 'http://localhost:8080',
-    model: 'mlx-community/Llama-3.2-3B-Instruct-4bit',
+    baseUrl: 'http://localhost:8011',
+    model: 'LibraxisAI/Bielik-11B-v3.0-mlx-q4',
     temperature: 0.7,
     maxTokens: 4096
   }
 );
 
-// Rozpoczęcie konwersacji
-await orchestrator.orchestrateConversation(
+// Połącz z MCP
+await orchestrator.connectMCP('http://localhost:3001');
+
+// Przetwarzaj wiadomości
+await orchestrator.processMessage(
   "Rozwiąż równanie: x² - 5x + 6 = 0",
-  rounds: 2,
-  onMessageCallback: (message) => console.log(message)
+  (message) => console.log(message)
 );
 ```
 
-#### Agenci matematyczni
+#### MCP Proxy Server
 
-Dwaj wyspecjalizowani agenci:
+HTTP proxy który umożliwia przeglądarce komunikację z MCP serverem:
 
-```typescript
-const agents = createMathAgents();
-// agents[0] - Analizator (analiza problemów)
-// agents[1] - Kalkulator (wykonywanie obliczeń)
-```
+- **Port:** 3001
+- **Endpoints:**
+  - `GET /health` - Status połączenia
+  - `GET /tools` - Lista dostępnych narzędzi
+  - `POST /tools/call` - Wywołanie narzędzia
+- **Komunikacja:** HTTP/JSON ↔ stdio (MCP server)
+
+#### MCP SymPy Server
+
+Serwer MCP implementujący narzędzia SymPy:
+
+- **Technologia:** TypeScript + Python
+- **Narzędzi:** 9 (solve, differentiate, integrate, etc.)
+- **Automatyczne wykrywanie symboli:** Wszystkie zmienne w wyrażeniach są automatycznie definiowane
 
 ### Przepływ danych
 
 ```
 Użytkownik → Wiadomość
     ↓
-GroupChatOrchestrator
+MCPAgentOrchestrator
     ↓
-Analizator (runda 1) → Strategia rozwiązania
+Agent AI (Claude/MLX)
     ↓
-Kalkulator (runda 1) → Pierwsze obliczenia
+[Decyzja o użyciu narzędzia]
     ↓
-Analizator (runda 2) → Weryfikacja/doprecyzowanie
+MCP Client (browser) → HTTP Request
     ↓
-Kalkulator (runda 2) → Finalne wyniki
+MCP Proxy Server (port 3001)
     ↓
-UI ← Kompletne rozwiązanie
+MCP SymPy Server (stdio)
+    ↓
+Python + SymPy → Obliczenia
+    ↓
+Wynik ← MCP Proxy ← MCP Client
+    ↓
+Agent AI → Analiza wyniku
+    ↓
+UI ← Sformatowana odpowiedź z LaTeX
 ```
 
 ## 🛠️ Technologie
 
+### Frontend
 - **React 18** - Biblioteka UI
 - **TypeScript** - Typy statyczne
 - **Vite** - Bundler i dev server
-- **Anthropic SDK** - Integracja z Claude AI
-- **MLX** - Apple Silicon optimized inference
+- **KaTeX** - Renderowanie LaTeX
 - **CSS3** - Stylowanie (gradientowe, responsywne)
+
+### Backend / Narzędzia
+- **Model Context Protocol (MCP)** - Standardowy interfejs dla narzędzi AI
+- **SymPy** - Biblioteka Python do symbolicznych obliczeń matematycznych
+- **Node.js** - Runtime dla MCP proxy i serwera
+- **Express** - HTTP server dla MCP proxy
+
+### AI Providers
+- **Anthropic SDK** - Integracja z Claude AI (Claude Haiku 4.5)
+- **MLX** - Apple Silicon optimized inference (opcjonalne)
 
 ### Porównanie providerów
 
@@ -230,6 +399,8 @@ UI ← Kompletne rozwiązanie
 
 ## 📦 Skrypty
 
+### Aplikacja główna
+
 ```bash
 # Tryb deweloperski z hot reload
 npm run dev
@@ -242,6 +413,25 @@ npm run preview
 
 # Linting
 npm run lint
+```
+
+### MCP Proxy
+
+```bash
+# Uruchom MCP proxy server (port 3001)
+npm run mcp-proxy
+```
+
+### MCP SymPy Server
+
+```bash
+cd mcp-sympy-server
+
+# Zbuduj serwer TypeScript
+npm run build
+
+# Uruchom serwer bezpośrednio (dla testów)
+node dist/index.js
 ```
 
 ## 🔒 Bezpieczeństwo
@@ -264,12 +454,24 @@ npm run lint
 
 Zachęcamy do zgłaszania issues i pull requestów!
 
+## 🎯 Kluczowe osiągnięcia
+
+✅ **Integracja MCP** - Standardowy protokół dla narzędzi AI
+✅ **9 narzędzi SymPy** - Pełny zestaw do symbolicznych obliczeń matematycznych
+✅ **Automatyczne wykrywanie symboli** - Brak potrzeby manualnego definiowania zmiennych
+✅ **LaTeX rendering** - Piękne wzory matematyczne w czasie rzeczywistym
+✅ **Multi-provider** - Claude (cloud) lub MLX (lokalny)
+✅ **Historia konwersacji** - Zapisywanie i wczytywanie sesji
+✅ **Przejrzysty UI** - Widoczne wywołania i wyniki narzędzi
+
 ## 📄 Licencja
 
 MIT
 
 ## 👨‍💻 Autor
 
-Projekt stworzony jako demonstracja group chat orchestration z agentami AI.
+Projekt stworzony jako demonstracja integracji AI agents z Model Context Protocol i narzędziami SymPy.
 
 ---
+
+**Wskazówka:** Pamiętaj aby uruchomić **oba serwery** (`npm run mcp-proxy` i `npm run dev`) przed rozpoczęciem pracy z aplikacją!
