@@ -259,10 +259,12 @@ print(result)`;
       }
 
       case "sympy_solve": {
-        // Extract all potential symbols from the equation
+        // Extract all potential symbols from the equation AND variable
         const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
         const potentialSymbols = (args.equation.match(symbolsRegex) || [])
           .filter((s: string) => !['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo', 'Eq'].includes(s));
+        // Also add the variable we're solving for
+        potentialSymbols.push(args.variable);
         const uniqueSymbols = [...new Set(potentialSymbols)];
 
         const code = `${baseImports}

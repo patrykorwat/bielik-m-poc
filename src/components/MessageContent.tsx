@@ -14,7 +14,49 @@ interface MessageContentProps {
  */
 export function MessageContent({ content }: MessageContentProps) {
   const renderedContent = useMemo(() => {
-    function processLatex(textContent: string): JSX.Element[] | JSX.Element {
+    // If content is an array, process it
+    if (Array.isArray(content)) {
+      console.log('Content is array:', content);
+
+      // Extract text from Claude content blocks
+      const textParts: string[] = [];
+      for (const block of content) {
+        if (typeof block === 'object' && block !== null) {
+          if (block.type === 'text' && block.text) {
+            textParts.push(block.text);
+          }
+          // tool_use and tool_result blocks are handled separately in the UI
+        }
+      }
+
+      // If we found text, process it for LaTeX
+      if (textParts.length > 0) {
+        const textContent = textParts.join('\n');
+        console.log('Extracted text from array:', textContent);
+        // Continue to processing below
+        return processContent(textContent);
+      }
+
+      // Otherwise, check if it's tool_result format (should be hidden)
+      const hasToolResults = content.some(
+        (block: any) => block.type === 'tool_result'
+      );
+      if (hasToolResults) {
+        return null; // Tool results are displayed separately
+      }
+
+      return null;
+    }
+
+    // Ensure content is a string
+    const textContent = typeof content === 'string' ? content : String(content);
+
+    // Debug: log raw content
+    console.log('Raw content:', textContent);
+
+    return processContent(textContent);
+
+    function processContent(textContent: string): JSX.Element[] | JSX.Element {
       // First, normalize LaTeX delimiters: convert \[...\] to $$...$$ and \(...\) to $...$
       let normalized = textContent;
 
@@ -157,47 +199,6 @@ export function MessageContent({ content }: MessageContentProps) {
 
       return parts.length > 0 ? parts : <span>{textContent}</span>;
     }
-
-    // If content is an array, process it
-    if (Array.isArray(content)) {
-      console.log('Content is array:', content);
-
-      // Extract text from Claude content blocks
-      const textParts: string[] = [];
-      for (const block of content) {
-        if (typeof block === 'object' && block !== null) {
-          if (block.type === 'text' && block.text) {
-            textParts.push(block.text);
-          }
-          // tool_use and tool_result blocks are handled separately in the UI
-        }
-      }
-
-      // If we found text, process it for LaTeX
-      if (textParts.length > 0) {
-        const textContent = textParts.join('\n');
-        console.log('Extracted text from array:', textContent);
-        return processLatex(textContent);
-      }
-
-      // Otherwise, check if it's tool_result format (should be hidden)
-      const hasToolResults = content.some(
-        (block: any) => block.type === 'tool_result'
-      );
-      if (hasToolResults) {
-        return null; // Tool results are displayed separately
-      }
-
-      return null;
-    }
-
-    // Ensure content is a string
-    const textContent = typeof content === 'string' ? content : String(content);
-
-    // Debug: log raw content
-    console.log('Raw content:', textContent);
-
-    return processLatex(textContent);
   }, [content]);
 
   if (renderedContent === null) {
