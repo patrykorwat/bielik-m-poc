@@ -136,7 +136,7 @@ Aplikacja uruchomi się na `http://localhost:5173`
    mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit
 
    # Lub na innym porcie:
-   mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit --port 8080
+   mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit --port 8011
    ```
 
 3. W aplikacji:
