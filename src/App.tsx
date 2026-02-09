@@ -111,7 +111,18 @@ function App() {
       await orchestratorRef.current.processMessage(
         userInput,
         (message) => {
-          setMessages(prev => [...prev, message]);
+          setMessages(prev => {
+            // Check if message with this ID already exists
+            const existingIndex = prev.findIndex(m => m.id === message.id);
+            if (existingIndex !== -1) {
+              // Update existing message
+              const updated = [...prev];
+              updated[existingIndex] = message;
+              return updated;
+            }
+            // Add new message
+            return [...prev, message];
+          });
         }
       );
     } catch (error) {
@@ -327,21 +338,29 @@ function App() {
               </div>
             </div>
           ) : (
-            messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`message ${msg.role}`}
-              >
-                {msg.role === 'user' && (
-                  <div className="message-badge">👤 Ty</div>
-                )}
-                {msg.role === 'assistant' && (
-                  <div className="agent-badge">
-                    🤖 Agent Matematyczny
-                  </div>
-                )}
-                <div className="message-content">
-                  <MessageContent content={msg.content} />
+            messages
+              .filter((msg) => {
+                // Hide user messages that only contain tool results (internal messages)
+                if (msg.role === 'user' && Array.isArray(msg.content)) {
+                  return false;
+                }
+                return true;
+              })
+              .map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`message ${msg.role}`}
+                >
+                  {msg.role === 'user' && (
+                    <div className="message-badge">👤 Ty</div>
+                  )}
+                  {msg.role === 'assistant' && (
+                    <div className="agent-badge">
+                      🤖 Agent Matematyczny
+                    </div>
+                  )}
+                  <div className="message-content">
+                    <MessageContent content={msg.content} />
                   {msg.toolCalls && msg.toolCalls.length > 0 && (
                     <div className="tool-calls">
                       {msg.toolCalls.map(tc => (

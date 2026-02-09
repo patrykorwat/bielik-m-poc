@@ -7,7 +7,7 @@ export type LLMProvider = 'claude' | 'mlx';
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: string | any[]; // Can be string or array of content blocks for Claude API
   timestamp: Date;
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
@@ -264,32 +264,55 @@ export class MCPAgentOrchestrator {
         // Claude with native tool support
         const messages = this.conversationHistory
           .filter(msg => msg.role !== 'system')
-          .map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content,
-          }));
+          .map(msg => {
+            // If content is already an array (e.g., tool results), use it as is
+            // Otherwise, convert string content to the format Claude expects
+            const content = Array.isArray(msg.content)
+              ? msg.content
+              : (typeof msg.content === 'string' ? msg.content : String(msg.content));
+
+            return {
+              role: msg.role as 'user' | 'assistant',
+              content,
+            };
+          });
 
         const claudeTools = this.convertToolsForClaude();
 
-        const systemPrompt = `Jesteś ekspertem matematycznym z dostępem do narzędzi SymPy do wykonywania symbolicznych obliczeń matematycznych.
+        const systemPrompt = `🚨 KRYTYCZNA ZASADA: MUSISZ używać narzędzi do KAŻDEGO obliczenia matematycznego! 🚨
 
-WAŻNE: ZAWSZE używaj narzędzi SymPy do obliczeń - nie rozwiązuj problemów ręcznie!
+Absolutnie zakazane jest ręczne rozwiązywanie problemów matematycznych. Twoja jedyna rola to:
 
-Twoja rola:
-- Analizuj problemy matematyczne podane przez użytkownika
-- KONIECZNIE używaj narzędzi SymPy do WSZYSTKICH obliczeń (pochodne, całki, równania, uproszczenia, rozwijanie, faktoryzacja, granice, macierze)
-- Po otrzymaniu wyników z narzędzi, wyjaśnij kroki i wyniki w sposób zrozumiały
-- Odpowiadaj po polsku, używaj LaTeX do formatowania matematyki (otaczaj wzory znakami $ dla inline lub $$ dla display)
+1. ZAWSZE wywołaj odpowiednie narzędzie SymPy dla każdego kroku obliczeń
+2. Czekaj na wynik z narzędzia
+3. Dopiero wtedy wyjaśnij wynik użytkownikowi
 
-PRZYKŁADY UŻYCIA NARZĘDZI:
-- Dla pochodnej: użyj sympy_differentiate
-- Dla całki: użyj sympy_integrate
-- Dla równań: użyj sympy_solve
-- Dla uproszczeń: użyj sympy_simplify
-- Dla rozwijania: użyj sympy_expand
-- Dla faktoryzacji: użyj sympy_factor
+DOSTĘPNE NARZĘDZIA (używaj ich ZAWSZE):
+- sympy_solve - rozwiązywanie równań
+- sympy_differentiate - obliczanie pochodnych
+- sympy_integrate - całkowanie
+- sympy_simplify - upraszczanie wyrażeń
+- sympy_expand - rozwijanie wyrażeń
+- sympy_factor - faktoryzacja
+- sympy_limit - granice
+- sympy_calculate - dowolne obliczenia SymPy
 
-NIE rozwiązuj problemów ręcznie - to jest wymagane aby używać narzędzi!`;
+WORKFLOW:
+1. Przeanalizuj problem
+2. Wywołaj narzędzie/narzędzia (OBOWIĄZKOWE!)
+3. Użyj wyniku z narzędzia do odpowiedzi
+4. Formatuj matematykę używając $ dla inline lub $$ dla display LaTeX
+
+PRZYKŁAD DOBREJ ODPOWIEDZI:
+User: "Rozwiąż x² - 4 = 0"
+Assistant: [wywołuje sympy_solve z x**2 - 4]
+[otrzymuje wynik: [-2, 2]]
+"Rozwiązania równania to $x_1 = -2$ i $x_2 = 2$"
+
+PRZYKŁAD ZŁEJ ODPOWIEDZI (ZABRONIONE):
+"Delta wynosi... czyli x = ..." [ręczne obliczenia - NIEDOZWOLONE!]
+
+Odpowiadaj po polsku. NIGDY nie pokazuj ręcznych obliczeń - TYLKO wyniki z narzędzi!`;
 
         const requestParams: any = {
           model: 'claude-haiku-4-5-20251001',
@@ -303,45 +326,87 @@ NIE rozwiązuj problemów ręcznie - to jest wymagane aby używać narzędzi!`;
         }
 
         console.log('🤖 Calling Claude API with tools:', claudeTools.map(t => t.name));
-        const response = await this.client.messages.create(requestParams);
+        console.log('📤 Request messages:', JSON.stringify(messages, null, 2));
+
+        let response;
+        try {
+          response = await this.client.messages.create(requestParams);
+        } catch (error) {
+          console.error('❌ Claude API error:', error);
+          if (error instanceof Error) {
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+          }
+          throw error;
+        }
 
         console.log('✅ Claude response:', response);
+        console.log('📊 Stop reason:', response.stop_reason);
+        console.log('📝 Content blocks:', response.content);
 
         // Process response content
         for (const block of response.content) {
           if (block.type === 'text') {
             assistantContent += block.text;
+            console.log('📄 Found text block:', block.text);
           } else if (block.type === 'tool_use') {
             toolCalls.push({
               id: block.id,
               name: block.name,
               arguments: block.input as Record<string, any>,
             });
+            console.log('🔧 Found tool_use block:', block.name);
           }
         }
 
+        console.log('📊 Extracted - assistantContent:', assistantContent);
+        console.log('🔧 Extracted - toolCalls:', toolCalls);
+
         // If no content and no tool calls, stop
         if (!assistantContent && toolCalls.length === 0) {
+          console.log('⚠️ No content and no tool calls, breaking loop');
           break;
         }
 
         // Save assistant message
+        // Store the original response.content for API continuity
+        // But also extract text for display
         const assistantMsg: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: assistantContent || '(używam narzędzi...)',
+          content: response.content, // Store full content array from Claude
           timestamp: new Date(),
           toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
         };
         this.conversationHistory.push(assistantMsg);
-        newMessages.push(assistantMsg);
-        if (onMessageCallback) onMessageCallback(assistantMsg);
+
+        // For display callback, send a version with text content
+        const displayMsg: Message = {
+          ...assistantMsg,
+          content: assistantContent || '(używam narzędzi...)',
+        };
+        newMessages.push(displayMsg);
+        if (onMessageCallback) onMessageCallback(displayMsg);
 
         // Execute tool calls if any
         if (toolCalls.length > 0) {
           const toolResults = await this.executeToolCalls(toolCalls);
 
+          // Update both displayMsg and the message in newMessages with tool results
+          displayMsg.toolResults = toolResults;
+          // Find and update the message in newMessages array
+          const msgInNewMessages = newMessages.find(m => m.id === displayMsg.id);
+          if (msgInNewMessages) {
+            msgInNewMessages.toolResults = toolResults;
+          }
+
+          // Send updated message via callback
+          if (onMessageCallback) {
+            onMessageCallback({ ...displayMsg });
+          }
+
           // Add tool results as a user message for Claude
+          // Claude API expects content to be an array of tool_result objects
           const toolResultsContent = toolResults.map(tr => ({
             type: 'tool_result' as const,
             tool_use_id: tr.toolCallId,
@@ -352,7 +417,7 @@ NIE rozwiązuj problemów ręcznie - to jest wymagane aby używać narzędzi!`;
           this.conversationHistory.push({
             id: crypto.randomUUID(),
             role: 'user',
-            content: JSON.stringify(toolResultsContent),
+            content: toolResultsContent, // Store as array, not JSON string
             timestamp: new Date(),
             toolResults,
           });
