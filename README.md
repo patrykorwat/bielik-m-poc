@@ -1,28 +1,29 @@
-# 🤖 System Agentów Matematycznych Bielik-M
+# 🤖 Agent Matematyczny z SymPy (Bielik-M)
 
-System wykorzystujący dwa agenty AI współpracujące w trybie group chat orchestration do rozwiązywania zadań matematycznych.
+Inteligentny agent AI z dostępem do narzędzi matematycznych SymPy, umożliwiający rozwiązywanie zaawansowanych problemów matematycznych.
 
 ## 📋 Opis
 
 ![math-simple](math-simple.png)
 
-Bielik-M to aplikacja demonstrująca współpracę dwóch wyspecjalizowanych agentów AI:
+Bielik-M to aplikacja demonstrująca integrację agenta AI (Claude lub MLX) z Model Context Protocol (MCP) i narzędziami SymPy:
 
-- **🔍 Analizator** - Analizuje problemy matematyczne, rozbija je na kroki i tworzy strategię rozwiązania
-- **🔢 Kalkulator** - Wykonuje obliczenia krok po kroku i weryfikuje wyniki
+- **🤖 Agent Matematyczny** - Inteligentny agent AI który analizuje problemy matematyczne i używa odpowiednich narzędzi
+- **🔧 MCP + SymPy** - 9 narzędzi do symbolicznych obliczeń matematycznych (rozwiązywanie równań, pochodne, całki, upraszczanie, itp.)
+- **📐 LaTeX Rendering** - Pięknie sformatowane wzory matematyczne w interfejsie użytkownika
 
-Agenty wymieniają się informacjami w grupowym czacie, współpracując nad kompletnymi rozwiązaniami matematycznymi.
+Agent automatycznie wybiera odpowiednie narzędzia SymPy, wykonuje obliczenia i prezentuje wyniki w czytelny sposób.
 
 ## ✨ Funkcje
 
-- **Group Chat Orchestration** - Orkiestracja konwersacji między wieloma agentami
-- **Wsparcie dla MLX** - Lokalny inference na Apple Silicon z akceleracją sprzętową
-- **Multi-Provider** - Wybór między Claude (cloud) a MLX (lokalny)
-- **Brak Chain of Thoughts** - Agenty komunikują się bezpośrednio bez wewnętrznych rozważań
-- **Polski interfejs użytkownika** - Kompletnie spolszczony UI
-- **Konfigurowalność** - Możliwość ustawienia liczby rund konwersacji
-- **Historia konwersacji** - Pełna historia interakcji z agentami
-- **Obsługa streamu** - Wiadomości pojawiają się na bieżąco
+- **🔧 9 Narzędzi SymPy** - Pełny zestaw narzędzi do symbolicznych obliczeń matematycznych
+- **🤖 MCP Integration** - Integracja z Model Context Protocol dla standardowego interfejsu narzędzi
+- **📐 LaTeX Rendering** - Automatyczne renderowanie wzorów matematycznych z KaTeX
+- **🎯 Automatyczne wykrywanie zmiennych** - Wszystkie symbole w wyrażeniach są automatycznie definiowane
+- **💬 Multi-Provider** - Wybór między Claude (cloud) a MLX (lokalny)
+- **🇵🇱 Polski interfejs** - Kompletnie spolszczony UI
+- **📜 Historia konwersacji** - Zapisywanie i wczytywanie poprzednich sesji
+- **🔄 Wyświetlanie wyników narzędzi** - Przejrzyste pokazywanie wywołań i wyników narzędzi
 
 ## 🚀 Szybki start
 

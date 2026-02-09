@@ -227,14 +227,31 @@ async function handleToolCall(name: string, args: any): Promise<string> {
   try {
     switch (name) {
       case "sympy_calculate": {
-        const code = `${baseImports}
-result = ${args.expression}
+        // Check if expression is multi-line code or single expression
+        const expression = args.expression.trim();
+        let code: string;
+
+        if (expression.includes('\n') || expression.startsWith('from ')) {
+          // Multi-line script - execute as is (should already have print statements)
+          code = `${baseImports}\n${expression}`;
+        } else {
+          // Single expression - wrap it
+          code = `${baseImports}
+result = ${expression}
 print(result)`;
+        }
         return await executePythonSymPy(code);
       }
 
       case "sympy_simplify": {
+        // Extract all potential symbols from the expression
+        const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
+        const potentialSymbols = (args.expression.match(symbolsRegex) || [])
+          .filter((s: string) => !['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo'].includes(s));
+        const uniqueSymbols = [...new Set(potentialSymbols)];
+
         const code = `${baseImports}
+${uniqueSymbols.map(s => `${s} = symbols('${s}')`).join('\n')}
 expr = ${args.expression}
 result = simplify(expr)
 print(result)`;
@@ -242,8 +259,14 @@ print(result)`;
       }
 
       case "sympy_solve": {
+        // Extract all potential symbols from the equation
+        const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
+        const potentialSymbols = (args.equation.match(symbolsRegex) || [])
+          .filter((s: string) => !['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo', 'Eq'].includes(s));
+        const uniqueSymbols = [...new Set(potentialSymbols)];
+
         const code = `${baseImports}
-${args.variable} = symbols('${args.variable}')
+${uniqueSymbols.map(s => `${s} = symbols('${s}')`).join('\n')}
 result = solve(${args.equation}, ${args.variable})
 print(result)`;
         return await executePythonSymPy(code);
@@ -251,8 +274,14 @@ print(result)`;
 
       case "sympy_differentiate": {
         const order = args.order || 1;
+        // Extract all potential symbols from the expression
+        const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
+        const potentialSymbols = (args.expression.match(symbolsRegex) || [])
+          .filter((s: string) => !['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo'].includes(s));
+        const uniqueSymbols = [...new Set(potentialSymbols)];
+
         const code = `${baseImports}
-${args.variable} = symbols('${args.variable}')
+${uniqueSymbols.map(s => `${s} = symbols('${s}')`).join('\n')}
 expr = ${args.expression}
 result = diff(expr, ${args.variable}, ${order})
 print(result)`;
@@ -264,8 +293,14 @@ print(result)`;
         if (args.lower_limit && args.upper_limit) {
           integralArgs = `(${args.variable}, ${args.lower_limit}, ${args.upper_limit})`;
         }
+        // Extract all potential symbols from the expression
+        const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
+        const potentialSymbols = (args.expression.match(symbolsRegex) || [])
+          .filter((s: string) => !['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo'].includes(s));
+        const uniqueSymbols = [...new Set(potentialSymbols)];
+
         const code = `${baseImports}
-${args.variable} = symbols('${args.variable}')
+${uniqueSymbols.map(s => `${s} = symbols('${s}')`).join('\n')}
 expr = ${args.expression}
 result = integrate(expr, ${integralArgs})
 print(result)`;
@@ -273,7 +308,14 @@ print(result)`;
       }
 
       case "sympy_expand": {
+        // Extract all potential symbols from the expression
+        const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
+        const potentialSymbols = (args.expression.match(symbolsRegex) || [])
+          .filter((s: string) => !['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo'].includes(s));
+        const uniqueSymbols = [...new Set(potentialSymbols)];
+
         const code = `${baseImports}
+${uniqueSymbols.map(s => `${s} = symbols('${s}')`).join('\n')}
 expr = ${args.expression}
 result = expand(expr)
 print(result)`;
@@ -281,7 +323,14 @@ print(result)`;
       }
 
       case "sympy_factor": {
+        // Extract all potential symbols from the expression
+        const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
+        const potentialSymbols = (args.expression.match(symbolsRegex) || [])
+          .filter((s: string) => !['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo'].includes(s));
+        const uniqueSymbols = [...new Set(potentialSymbols)];
+
         const code = `${baseImports}
+${uniqueSymbols.map(s => `${s} = symbols('${s}')`).join('\n')}
 expr = ${args.expression}
 result = factor(expr)
 print(result)`;
@@ -289,8 +338,14 @@ print(result)`;
       }
 
       case "sympy_limit": {
+        // Extract all potential symbols from the expression
+        const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
+        const potentialSymbols = (args.expression.match(symbolsRegex) || [])
+          .filter((s: string) => !['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo'].includes(s));
+        const uniqueSymbols = [...new Set(potentialSymbols)];
+
         const code = `${baseImports}
-${args.variable} = symbols('${args.variable}')
+${uniqueSymbols.map(s => `${s} = symbols('${s}')`).join('\n')}
 expr = ${args.expression}
 result = limit(expr, ${args.variable}, ${args.point})
 print(result)`;
