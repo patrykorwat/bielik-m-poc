@@ -444,10 +444,31 @@ ${this.generateToolDescriptionsForMLX()}`;
 
         const messages = this.conversationHistory
           .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-          .map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content,
-          }));
+          .map(msg => {
+            // For MLX, we need to convert content to string
+            let contentStr: string;
+            if (Array.isArray(msg.content)) {
+              // Extract text from content blocks (for tool results, etc.)
+              contentStr = msg.content
+                .map(block => {
+                  if (typeof block === 'object' && block !== null) {
+                    if (block.type === 'text') return block.text || '';
+                    if (block.type === 'tool_result') return `Tool result: ${block.content}`;
+                    return '';
+                  }
+                  return String(block);
+                })
+                .filter(Boolean)
+                .join('\n');
+            } else {
+              contentStr = typeof msg.content === 'string' ? msg.content : String(msg.content);
+            }
+
+            return {
+              role: msg.role as 'user' | 'assistant',
+              content: contentStr,
+            };
+          });
 
         console.log('🤖 Calling MLX with tool descriptions');
         assistantContent = await this.mlxAgent.execute(systemPrompt, messages);

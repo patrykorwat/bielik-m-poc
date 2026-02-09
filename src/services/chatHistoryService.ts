@@ -1,4 +1,4 @@
-import { Message } from './agentService';
+import { Message } from './mcpAgentService';
 
 export interface ChatSession {
   id: string;
@@ -126,7 +126,23 @@ export class ChatHistoryService {
 
     const firstUserMessage = session.messages.find(m => m.role === 'user');
     if (firstUserMessage) {
-      const content = firstUserMessage.content.trim();
+      // Extract text content
+      let contentStr: string;
+      if (Array.isArray(firstUserMessage.content)) {
+        contentStr = firstUserMessage.content
+          .map(block => {
+            if (typeof block === 'object' && block !== null && block.type === 'text') {
+              return block.text || '';
+            }
+            return '';
+          })
+          .filter(Boolean)
+          .join(' ');
+      } else {
+        contentStr = firstUserMessage.content;
+      }
+
+      const content = contentStr.trim();
       return content.length > 50 ? content.substring(0, 50) + '...' : content;
     }
 
