@@ -378,7 +378,24 @@ function App() {
                     <div className="tool-results">
                       {msg.toolResults.map((tr, idx) => (
                         <div key={idx} className={`tool-result ${tr.isError ? 'error' : ''}`}>
-                          ✅ Wynik <code>{tr.toolName}</code>: <strong>{tr.result}</strong>
+                          {tr.isError ? '❌' : '✅'} {tr.isError ? 'Błąd' : 'Wynik'} <code>{tr.toolName}</code>:{' '}
+                          {tr.isError && (tr.result.includes('Traceback') || tr.result.includes('Error:')) ? (
+                            <pre style={{
+                              backgroundColor: '#fff3cd',
+                              border: '1px solid #ffc107',
+                              padding: '12px',
+                              borderRadius: '4px',
+                              overflow: 'auto',
+                              fontSize: '12px',
+                              marginTop: '8px',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word'
+                            }}>
+                              {tr.result}
+                            </pre>
+                          ) : (
+                            <strong>{tr.result}</strong>
+                          )}
                         </div>
                       ))}
                     </div>

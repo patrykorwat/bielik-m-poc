@@ -355,8 +355,18 @@ print(result)`;
       }
 
       case "sympy_matrix": {
+        // Convert matrix to proper Python format
+        let matrixStr: string;
+        if (typeof args.matrix === 'string') {
+          // Already a string, use as-is
+          matrixStr = args.matrix;
+        } else {
+          // Array - convert to JSON then to Python list format
+          matrixStr = JSON.stringify(args.matrix);
+        }
+
         const code = `${baseImports}
-M = Matrix(${args.matrix})
+M = Matrix(${matrixStr})
 if '${args.operation}' == 'det':
     result = M.det()
 elif '${args.operation}' == 'inverse':

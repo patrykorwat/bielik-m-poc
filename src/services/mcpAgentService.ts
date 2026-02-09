@@ -137,16 +137,26 @@ export class MCPAgentOrchestrator {
    */
   private extractToolCallFromMLX(content: string): ToolCall | null {
     try {
-      // Try to find <tool_call> tag format (Claude-style)
+      // Try to find <tool_call> tag format (Claude-style or Bielik Python dict)
       const toolCallMatch = content.match(/<tool_call>\s*({[\s\S]*?})\s*<\/tool_call>/);
       if (toolCallMatch) {
-        const parsed = JSON.parse(toolCallMatch[1]);
-        if (parsed.name) {
-          return {
-            id: crypto.randomUUID(),
-            name: parsed.name,
-            arguments: parsed.arguments || {},
-          };
+        let jsonStr = toolCallMatch[1];
+
+        // Convert Python dict syntax to JSON
+        // Replace single quotes with double quotes (but preserve escaped quotes)
+        jsonStr = jsonStr.replace(/'/g, '"');
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.name) {
+            return {
+              id: crypto.randomUUID(),
+              name: parsed.name,
+              arguments: parsed.arguments || {},
+            };
+          }
+        } catch (error) {
+          console.error('Failed to parse tool_call:', error, jsonStr);
         }
       }
 
@@ -159,6 +169,19 @@ export class MCPAgentOrchestrator {
             id: crypto.randomUUID(),
             name: parsed.tool_call.name,
             arguments: parsed.tool_call.arguments || {},
+          };
+        }
+      }
+
+      // Try to find TOOL_CALL: format (used by Bielik)
+      const toolCallTextMatch = content.match(/TOOL_CALL:\s*\n?\s*({[\s\S]*?})\s*(?:\n|$)/);
+      if (toolCallTextMatch) {
+        const parsed = JSON.parse(toolCallTextMatch[1]);
+        if (parsed.name) {
+          return {
+            id: crypto.randomUUID(),
+            name: parsed.name,
+            arguments: parsed.arguments || {},
           };
         }
       }
@@ -499,6 +522,9 @@ ${this.generateToolDescriptionsForMLX()}`;
         console.log('🤖 Calling MLX with tool descriptions');
         assistantContent = await this.mlxAgent.execute(systemPrompt, messages);
 
+        // Remove <think> blocks from response (Bielik shows reasoning)
+        assistantContent = assistantContent.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
         // Check if response contains a tool call
         const toolCall = this.extractToolCallFromMLX(assistantContent);
 
@@ -518,6 +544,18 @@ ${this.generateToolDescriptionsForMLX()}`;
 
           // Execute tool
           const toolResults = await this.executeToolCalls(toolCalls);
+
+          // Update assistant message with tool results (like Claude does)
+          assistantMsg.toolResults = toolResults;
+          const msgInNewMessages = newMessages.find(m => m.id === assistantMsg.id);
+          if (msgInNewMessages) {
+            msgInNewMessages.toolResults = toolResults;
+          }
+
+          // Send updated message via callback
+          if (onMessageCallback) {
+            onMessageCallback({ ...assistantMsg });
+          }
 
           // Add results back to conversation
           const resultsMessage = `Wynik narzędzia ${toolCall.name}:\n${toolResults[0].result}`;
