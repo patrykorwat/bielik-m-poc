@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MCPAgentOrchestrator, Message, LLMProvider, MLXConfig } from './services/mcpAgentService';
+import { TwoAgentOrchestrator, Message, LLMProvider, MLXConfig } from './services/twoAgentSystem';
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
@@ -21,7 +21,7 @@ function App() {
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [mcpConnected, setMcpConnected] = useState(false);
 
-  const orchestratorRef = useRef<MCPAgentOrchestrator | null>(null);
+  const orchestratorRef = useRef<TwoAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -76,7 +76,7 @@ function App() {
         };
       }
 
-      orchestratorRef.current = new MCPAgentOrchestrator(
+      orchestratorRef.current = new TwoAgentOrchestrator(
         provider,
         provider === 'claude' ? apiKey : undefined,
         mlxConfig
@@ -193,9 +193,9 @@ function App() {
     return (
       <div className="config-container">
         <div className="config-card">
-          <h1>🤖 Agent Matematyczny z SymPy</h1>
+          <h1>🤖 Dwuagentowy System Matematyczny z SymPy</h1>
           <p className="subtitle">
-            Jeden inteligentny agent z dostępem do narzędzi SymPy
+            Agent Analityczny + Agent Wykonawczy = Rozwiązania krok po kroku
           </p>
 
           <div className="config-form">
@@ -254,10 +254,11 @@ function App() {
           <div className="info-box">
             <h3>Jak to działa?</h3>
             <ul>
+              <li><strong>Agent Analityczny</strong> - rozbija problem na kroki i tworzy plan rozwiązania</li>
+              <li><strong>Agent Wykonawczy</strong> - wykonuje obliczenia SymPy krok po kroku</li>
               <li><strong>Model Context Protocol (MCP)</strong> - połączenie z serwerem SymPy</li>
-              <li><strong>9 narzędzi matematycznych</strong> - całki, pochodne, równania, macierze, itp.</li>
-              <li>Agent automatycznie wybiera i używa odpowiednich narzędzi</li>
-              <li>Precyzyjne obliczenia symboliczne dzięki SymPy</li>
+              <li><strong>sympy_calculate</strong> - wykonuje kod Python z wypisywaniem kroków pośrednich</li>
+              <li>Precyzyjne obliczenia symboliczne z widocznymi krokami</li>
             </ul>
             <h3>Dostępne narzędzia SymPy:</h3>
             <ul style={{ fontSize: '0.9em', lineHeight: '1.4' }}>
@@ -302,7 +303,7 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>🤖 Agent Matematyczny z SymPy</h1>
+        <h1>🤖 Dwuagentowy System Matematyczny</h1>
         <div className="header-controls">
           <button onClick={() => setShowHistory(true)} className="history-button">
             📚 Historia
@@ -322,7 +323,11 @@ function App() {
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="empty-state">
-              <p>👋 Witaj! Zadaj pytanie matematyczne, a agent użyje narzędzi SymPy do rozwiązania.</p>
+              <p>👋 Witaj! Zadaj pytanie matematyczne, a dwóch agentów będzie współpracować nad rozwiązaniem.</p>
+              <p style={{ marginTop: '10px', fontSize: '0.95em', color: '#666' }}>
+                🧠 <strong>Agent Analityczny</strong> rozbije problem na kroki<br/>
+                ⚡ <strong>Agent Wykonawczy</strong> wykona obliczenia z wypisaniem kroków pośrednich
+              </p>
               <div className="examples">
                 <p><strong>Przykłady:</strong></p>
                 <ul>
@@ -356,7 +361,7 @@ function App() {
                   )}
                   {msg.role === 'assistant' && (
                     <div className="agent-badge">
-                      🤖 Agent Matematyczny
+                      {msg.agentName === 'Agent Analityczny' ? '🧠' : '⚡'} {msg.agentName || 'Agent'}
                     </div>
                   )}
                   <div className="message-content">
