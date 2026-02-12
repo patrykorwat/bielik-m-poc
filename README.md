@@ -142,7 +142,7 @@ Aplikacja uruchomi się na `http://localhost:5173`
 3. W aplikacji:
    - Wybierz provider "MLX (Apple Silicon - lokalny)"
    - Wprowadź URL serwera (domyślnie `http://localhost:8011`)
-   - Wprowadź nazwę modelu (domyślnie `LibraxisAI/Bielik-11B-v3.0-mlx-q4`)
+   - Wprowadź nazwę modelu (domyślnie `LibraxisAI/Bielik-11B-v3.0-mlx-q5`)
    - Upewnij się że widzisz status "**MCP Connected**" (zielony)
    - Kliknij "Rozpocznij"
 
@@ -306,7 +306,7 @@ const orchestrator = new MCPAgentOrchestrator(
   undefined,
   {
     baseUrl: 'http://localhost:8011',
-    model: 'LibraxisAI/Bielik-11B-v3.0-mlx-q4',
+    model: 'LibraxisAI/Bielik-11B-v3.0-mlx-q5',
     temperature: 0.7,
     maxTokens: 4096
   }

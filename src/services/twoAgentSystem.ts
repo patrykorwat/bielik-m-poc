@@ -172,6 +172,35 @@ export class TwoAgentOrchestrator {
   }
 
   /**
+   * Clean malformed LaTeX from response (e.g., "1$", " $\boxed{}")
+   */
+  private cleanMalformedLatex(text: string): string {
+    let cleaned = text;
+
+    // Remove ALL single dollar signs (keep only $$)
+    // Replace any $ that's not followed or preceded by another $
+    cleaned = cleaned.split('$$').map((part, index) => {
+      // Keep $$ blocks intact, only clean the text between them
+      if (index % 2 === 0) {
+        // This is text outside $$...$$
+        return part.replace(/\$/g, '');
+      } else {
+        // This is inside $$...$$ - keep it
+        return part;
+      }
+    }).join('$$');
+
+    // Remove empty LaTeX blocks: $$$$
+    cleaned = cleaned.replace(/\$\$\s*\$\$/g, '');
+
+    // Fix spacing around $$
+    cleaned = cleaned.replace(/\s{2,}\$\$/g, ' $$');
+    cleaned = cleaned.replace(/\$\$\s{2,}/g, '$$ ');
+
+    return cleaned;
+  }
+
+  /**
    * Extract SymPy code from Executor response
    */
   private extractSymPyCode(response: string): string[] {
@@ -257,41 +286,39 @@ export class TwoAgentOrchestrator {
     const newMessages: Message[] = [userMsg];
 
     // System prompts for the two agents
-    const analyticalPrompt = `Jesteś Agentem Analitycznym. Twoja rola to rozbić problem matematyczny na proste kroki.
+    const analyticalPrompt = `ABSOLUTNIE ZAKAZANE jest używanie LaTeX, symboli matematycznych lub wzorów!
 
-WAŻNE ZASADY:
-- Pisz TYLKO zwykłym tekstem (bez LaTeX, bez symboli $, bez wzorów matematycznych)
-- NIE pisz kodu Python
-- Opisz logikę rozwiązania prostymi słowami
+Jesteś Agentem Analitycznym. Opisuj plan rozwiązania TYLKO prostym tekstem po polsku.
 
-Format odpowiedzi:
-PLAN ROZWIĄZANIA:
+ZABRONIONE (będziesz ukarany za ich użycie):
+❌ Symbole: $, $$, \\, ^, _, {, }
+❌ LaTeX: \\Delta, \\boxed, \\frac, itp.
+❌ Wzory matematyczne: x^2, m+7, 2x
+❌ Równania: ax + b = 0
 
-Krok 1: [Opisz słowami co trzeba zrobić]
+DOZWOLONE:
+✓ Proste słowa: "x do kwadratu", "m plus siedem", "dwa x"
+✓ Opis: "Oblicz wyróżnik równania"
+✓ Tekst: "Sprawdź czy delta jest większa od zera"
 
-Krok 2: [Opisz słowami kolejny krok]
+PRZYKŁAD POPRAWNY (MAKSYMALNIE 5-6 KROKÓW!):
+Krok 1: Oblicz wyróżnik równania kwadratowego
+Krok 2: Sprawdź czy wyróżnik jest dodatni
+Krok 3: Użyj wzorów Viete'a na sumę i iloczyn pierwiastków
+Krok 4: Podstaw warunek że pierwszy pierwiastek jest dwa razy większy od drugiego
+Krok 5: Rozwiąż równanie dla parametru m
 
-Krok 3: [Opisz słowami kolejny krok]
-
-...
-
-PRZYKŁAD DOBRY:
-Krok 1: Oblicz cenę po pierwszej podwyżce - zwiększ początkową cenę o 20 procent
-Krok 2: Oblicz cenę po drugiej zmianie - zmniejsz wynik z kroku 1 o 10 procent
-Krok 3: Ustaw równanie - wynik z kroku 2 równa się 81 złotych
-Krok 4: Rozwiąż równanie aby znaleźć początkową cenę
-
-PRZYKŁAD ZŁY (NIE RÓB TAK):
-Krok 1: Cena wynosi 1.2x (NIE UŻYWAJ wzorów!)
-Krok 2: $$1.2x$$ (NIE UŻYWAJ LaTeX!)
-
-Odpowiadaj po polsku TYLKO zwykłym tekstem bez wzorów.`;
+LIMIT: MAKSYMALNIE 5-6 KROKÓW! Pisz BARDZO KRÓTKO!
+Każdy krok to JEDNA KRÓTKA LINIA tekstu!
+ZAKAZANE są długie wyjaśnienia i szczegóły matematyczne!`;
 
     const executorPrompt = `Jesteś Agentem Wykonawczym - ekspertem w wykonywaniu obliczeń SymPy.
 
+ABSOLUTNIE ZAKAZANE: NIE używaj LaTeX w tekście! Tylko w kodzie Python dozwolony SymPy.
+
 Twoja rola:
-1. Napisz kod Python/SymPy realizujący plan Agenta Analitycznego
-2. Po kodzie dodaj krótkie podsumowanie z wynikiem w LaTeX
+1. Napisz TYLKO kod Python/SymPy realizujący plan
+2. Po kodzie napisz TYLKO: "Wynik: [liczba/wartości z SymPy]"
 
 Format odpowiedzi:
 \`\`\`python
@@ -308,18 +335,16 @@ print("Krok 2:", wynik2)
 print("\\nOstateczna odpowiedź:", ostateczny_wynik)
 \`\`\`
 
-Po wykonaniu kodu dodaj podsumowanie:
+Wynik: [wartość otrzymana z kodu]
 
-**PODSUMOWANIE:**
-[1-2 zdania + wynik w LaTeX: $$\\boxed{wartość}$$]
+ZAKAZANE:
+❌ LaTeX: , \\boxed, \\frac, ^, _, itp.
+❌ Długie wyjaśnienia
+❌ Powtarzanie kroków z kodu
 
-PRZYKŁAD PODSUMOWANIA:
-"Początkowa cena sandałów wynosi $$\\boxed{75}$$ zł (opcja c)."
-
-WAŻNE:
-- Kod MUSI być kompletny i działający
-- Podsumowanie MUSI zawierać $$\\boxed{wynik}$$
-- Używaj TYLKO $$ (nigdy pojedynczego $)
+DOZWOLONE:
+✓ Tylko kod Python
+✓ Tylko krótka linia "Wynik: [wartość]"
 
 Odpowiadaj po polsku.`;
 
@@ -332,10 +357,13 @@ Odpowiadaj po polsku.`;
       analyticalContext
     );
 
+    // Clean malformed LaTeX from analytical response
+    const cleanedAnalyticalResponse = this.cleanMalformedLatex(analyticalResponse);
+
     const analyticalMsg: Message = {
       id: crypto.randomUUID(),
       role: 'assistant',
-      content: analyticalResponse,
+      content: cleanedAnalyticalResponse,
       agentName: 'Agent Analityczny',
       timestamp: new Date(),
     };
@@ -353,6 +381,9 @@ Odpowiadaj po polsku.`;
       executorPrompt,
       executorContext
     );
+
+    // Clean malformed LaTeX from executor response
+    const cleanedExecutorResponse = this.cleanMalformedLatex(executorResponse);
 
     // Extract code blocks from executor's response
     const codeBlocks = this.extractSymPyCode(executorResponse);
@@ -393,8 +424,8 @@ Odpowiadaj po polsku.`;
       }
     }
 
-    // Add execution results to the executor's response content
-    let finalExecutorContent = executorResponse;
+    // Add execution results to the executor's response content (use cleaned version)
+    let finalExecutorContent = cleanedExecutorResponse;
 
     if (executionResults.length > 0 && !executionResults[0].includes('❌')) {
       // Append results summary to the executor's message

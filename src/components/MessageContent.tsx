@@ -57,6 +57,7 @@ export function MessageContent({ content }: MessageContentProps) {
     return processContent(textContent);
 
     function processContent(textContent: string): JSX.Element[] | JSX.Element {
+      // Keep Python code blocks in the output (code filtering disabled)
       // First, normalize LaTeX delimiters: convert \[...\] to $$...$$ and \(...\) to $...$
       let normalized = textContent;
 

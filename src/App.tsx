@@ -11,7 +11,7 @@ function App() {
   const [provider, setProvider] = useState<LLMProvider>('claude');
   const [apiKey, setApiKey] = useState('');
   const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:8011');
-  const [mlxModel, setMlxModel] = useState('LibraxisAI/Bielik-11B-v3.0-mlx-q4');
+  const [mlxModel, setMlxModel] = useState('LibraxisAI/Bielik-11B-v3.0-mlx-q5');
   const [isConfigured, setIsConfigured] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -240,7 +240,7 @@ function App() {
                   type="text"
                   value={mlxModel}
                   onChange={(e) => setMlxModel(e.target.value)}
-                  placeholder="LibraxisAI/Bielik-11B-v3.0-mlx-q4"
+                  placeholder="LibraxisAI/Bielik-11B-v3.0-mlx-q5"
                   className="api-input"
                 />
               </>
@@ -282,9 +282,9 @@ function App() {
                 <div className="mlx-command">
                   <h4>Uruchom serwer MLX w nowym terminalu:</h4>
                   <div className="command-box">
-                    <code>mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011</code>
+                    <code>mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q5 --port 8011</code>
                     <button
-                      onClick={() => copyToClipboard('mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011')}
+                      onClick={() => copyToClipboard('mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q5 --port 8011')}
                       className="copy-button"
                       title="Skopiuj do schowka"
                     >
