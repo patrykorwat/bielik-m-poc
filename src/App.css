@@ -539,7 +539,8 @@ body {
   border-radius: 6px;
 }
 
-.tool-call code {
+/* Only style the tool name code tag, not syntax highlighter code */
+.tool-call > code {
   background: #667eea;
   color: white;
   padding: 4px 10px;
@@ -547,6 +548,15 @@ body {
   font-family: 'Courier New', monospace;
   font-weight: 600;
   font-size: 0.95em;
+}
+
+/* Ensure syntax highlighter code tags don't get the blue background */
+.tool-call pre code,
+.tool-call details code {
+  background: transparent !important;
+  color: inherit !important;
+  padding: 0 !important;
+  font-weight: normal !important;
 }
 
 .tool-call details {
@@ -573,6 +583,21 @@ body {
   margin-top: 0.5em;
   border: 1px solid rgba(0, 0, 0, 0.1);
   font-size: 0.9em;
+  text-decoration: none !important;
+}
+
+.tool-call pre code,
+.tool-call pre span {
+  text-decoration-color: #1e1e1e !important;
+  border-bottom-color: #1e1e1e !important;
+}
+
+/* Hide underlines by matching background color */
+.tool-call pre *,
+.tool-call pre code *,
+.tool-call pre span * {
+  text-decoration-color: #1e1e1e !important;
+  border-bottom-color: #1e1e1e !important;
 }
 
 .tool-results {

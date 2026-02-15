@@ -4,6 +4,8 @@ import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
 import html2canvas from 'html2canvas';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './App.css';
 
 const MCP_PROXY_URL = 'http://localhost:3001';
@@ -530,17 +532,49 @@ function App() {
                           <details style={{ marginTop: '0.5em', fontSize: '0.85em' }} open>
                             <summary>Kod Python</summary>
                             {tc.name === 'sympy_calculate' && tc.arguments.expression ? (
-                              <pre style={{
-                                backgroundColor: '#1e1e1e',
-                                color: '#d4d4d4',
-                                padding: '12px',
-                                borderRadius: '4px',
-                                overflow: 'auto',
-                                fontSize: '13px',
-                                marginTop: '8px'
-                              }}>{tc.arguments.expression}</pre>
+                              <SyntaxHighlighter
+                                language="python"
+                                style={vscDarkPlus}
+                                customStyle={{
+                                  borderRadius: '4px',
+                                  fontSize: '13px',
+                                  marginTop: '8px',
+                                  padding: '12px',
+                                  margin: 0,
+                                  border: 'none',
+                                  textDecoration: 'none'
+                                }}
+                                codeTagProps={{
+                                  style: {
+                                    textDecoration: 'none',
+                                    textShadow: 'none'
+                                  }
+                                }}
+                              >
+                                {tc.arguments.expression}
+                              </SyntaxHighlighter>
                             ) : (
-                              <pre>{JSON.stringify(tc.arguments, null, 2)}</pre>
+                              <SyntaxHighlighter
+                                language="json"
+                                style={vscDarkPlus}
+                                customStyle={{
+                                  borderRadius: '4px',
+                                  fontSize: '13px',
+                                  marginTop: '8px',
+                                  padding: '12px',
+                                  margin: 0,
+                                  border: 'none',
+                                  textDecoration: 'none'
+                                }}
+                                codeTagProps={{
+                                  style: {
+                                    textDecoration: 'none',
+                                    textShadow: 'none'
+                                  }
+                                }}
+                              >
+                                {JSON.stringify(tc.arguments, null, 2)}
+                              </SyntaxHighlighter>
                             )}
                           </details>
                         </div>
