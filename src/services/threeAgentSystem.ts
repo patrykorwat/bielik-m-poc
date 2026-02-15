@@ -605,7 +605,7 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       'Agent Analityczny',
       analyticalPrompt,
       analyticalContext,
-      { maxTokens: 800, temperature: 0.2 }
+      { maxTokens: prompts.agents.analytical.max_tokens, temperature: prompts.agents.analytical.temperature }
     );
 
     const analyticalMsg: Message = {
@@ -628,7 +628,7 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       'Agent Wykonawczy',
       executorPrompt,
       executorContext,
-      { maxTokens: 1500, temperature: 0.2 }
+      { maxTokens: prompts.agents.executor.max_tokens, temperature: prompts.agents.executor.temperature }
     );
 
     // Truncate after first code block to remove Bielik's duplicate explanation + second block
@@ -793,7 +793,7 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
         'Agent Podsumowujący',
         summaryPrompt,
         summaryContext,
-        { maxTokens: 1200, temperature: 0.2 }
+        { maxTokens: prompts.agents.summary.max_tokens, temperature: prompts.agents.summary.temperature }
       );
 
       const summaryMsg: Message = {

@@ -1,7 +1,27 @@
 {
+  "model": {
+    "default": "LibraxisAI/Bielik-11B-v3.0-mlx-q4",
+    "base_url": "http://localhost:8011"
+  },
+
+  "agents": {
+    "analytical": {
+      "max_tokens": 800,
+      "temperature": 0.2
+    },
+    "executor": {
+      "max_tokens": 1500,
+      "temperature": 0.2
+    },
+    "summary": {
+      "max_tokens": 1200,
+      "temperature": 0.2
+    }
+  },
+
   "analytical": "Zaplanuj rozwiazanie zadania matematycznego. Napisz KROTKI plan w maksymalnie 10 linijkach.\n\nZAKAZY:\n- ZAKAZANE: $, $$, \\frac, \\sqrt, \\left, \\right, \\cdot, \\(, \\), \\[, \\], \\boxed, \\dfrac\n- ZAKAZANE: wykonywanie obliczen, podstawianie wartosci, rozwiazywanie - to zrobi nastepny agent\n- ZAKAZANE: pisanie \"Krok 1\", \"Krok 2\" itd. z obliczeniami\n- Zamiast LaTeX: x**2, a/b, sqrt(x)\n- KROTKO: kazdy punkt planu to JEDNO zdanie\n\nFORMAT:\n\nAnaliza: [co mamy, czego szukamy - max 2 zdania]\nOznaczenia: [zmienne]\nPlan:\n1. [co zrobic - bez obliczen]\n2. [co zrobic]\n3. [co zrobic]\nRodzaj: [obliczenia/optymalizacja/dowod]\nSzukamy: [czego]\n\nWAZNE: Napisz TYLKO plan. NIE obliczaj, NIE podstawiaj, NIE rozwiazuj.",
 
-  "executor_sympy": "Napisz JEDEN blok kodu Python/SymPy rozwiazujacy to zadanie.\n\nREGULY:\n- Potegowanie: x**2 (NIE x^2)\n- Mnozenie: 2*a (NIE 2a)\n- Ulamki: Rational(2,3) lub S(2)/3\n- NIE pisz assert\n- Ostatnia linia: print(\"ODPOWIEDZ:\", wynik)\n\nPRZYKLAD 1 (rownanie):\n```python\nfrom sympy import symbols, solve, Rational\nx = symbols('x')\nwynik = solve(Rational(3,2)*x - 1, x)\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nPRZYKLAD 2 (uproszczenie wyrazenia):\n```python\nfrom sympy import symbols, expand, simplify\na, b = symbols('a b')\nexpr = (2*a + b)**2 - (2*a - b)**2\nwynik = expand(expr)\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nPRZYKLAD 3 (optymalizacja):\n```python\nfrom sympy import symbols, solve, diff, simplify\nx = symbols('x')\nf = -x**2 + 4*x\ndf = diff(f, x)\nx_max = solve(df, x)[0]\nwynik = simplify(f.subs(x, x_max))\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nNapisz TYLKO:\nObliczam rozwiazanie:\n```python\n[kod]\n```\n\nNic wiecej. Zadnego tekstu po kodzie.",
+  "executor_sympy": "Napisz JEDEN blok kodu Python/SymPy rozwiazujacy to zadanie.\n\nREGULY:\n- Potegowanie: x**2 (NIE x^2)\n- Mnozenie: 2*a (NIE 2a)\n- Ulamki: Rational(2,3) lub S(2)/3\n- Rownania: Eq(lewa, prawa) - NIGDY NIE uzywaj ==\n- NIE pisz assert\n- Ostatnia linia: print(\"ODPOWIEDZ:\", wynik)\n\nPRZYKLAD 1 (rownanie):\n```python\nfrom sympy import symbols, solve, Rational\nx = symbols('x')\nwynik = solve(Rational(3,2)*x - 1, x)\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nPRZYKLAD 2 (system rownan z Eq):\n```python\nfrom sympy import symbols, solve, Eq\na, h = symbols('a h', positive=True, real=True)\neq1 = Eq(a**2 * h, 108)\neq2 = Eq(h, 4*a)\nwynik = solve([eq1, eq2], [a, h])\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nPRZYKLAD 3 (uproszczenie wyrazenia):\n```python\nfrom sympy import symbols, expand, simplify\na, b = symbols('a b')\nexpr = (2*a + b)**2 - (2*a - b)**2\nwynik = expand(expr)\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nPRZYKLAD 4 (optymalizacja):\n```python\nfrom sympy import symbols, solve, diff, simplify\nx = symbols('x')\nf = -x**2 + 4*x\ndf = diff(f, x)\nx_max = solve(df, x)[0]\nwynik = simplify(f.subs(x, x_max))\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nWAZNE:\n- NIGDY nie uzywaj == do tworzenia rownan (to jest blad!)\n- Uzywaj Eq(lewa, prawa) lub po prostu wyrazenie = 0\n- Importuj Eq jesli go uzywasz: from sympy import Eq\n\nNapisz TYLKO:\nObliczam rozwiazanie:\n```python\n[kod]\n```\n\nNic wiecej. Zadnego tekstu po kodzie.",
 
   "executor_lean": "Napisz formalny dowod matematyczny krok po kroku.\nZAKAZ: $, $$, \\frac, \\sqrt, \\left, \\right, \\(, \\), \\[, \\], \\boxed, \\dfrac\nUzywaj: x**2, a/b, sqrt(x)\nOdpowiadaj po polsku.",
 

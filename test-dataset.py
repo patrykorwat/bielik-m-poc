@@ -76,22 +76,29 @@ signal.signal(signal.SIGINT, signal_handler)
 
 # ── Configuration ────────────────────────────────────────────────────────
 
-DEFAULT_PORT = 8011
-DEFAULT_MODEL = "LibraxisAI/Bielik-11B-v3.0-mlx-q4"
-TEMPERATURE = 0.2
 DATASETS_DIR = os.path.join(os.path.dirname(__file__), "datasets")
 PROMPTS_FILE = os.path.join(os.path.dirname(__file__), "prompts.json")
 
-# ── Prompts (loaded from shared prompts.json) ────────────────────────────
+# ── Config (loaded from shared prompts.json) ─────────────────────────────
 
-def _load_prompts():
+def _load_config():
     with open(PROMPTS_FILE) as f:
         return json.load(f)
 
-_PROMPTS = _load_prompts()
-ANALYTICAL_PROMPT = _PROMPTS["analytical"]
-EXECUTOR_PROMPT = _PROMPTS["executor_sympy"]
-SUMMARY_PROMPT = _PROMPTS["summary"]
+_CONFIG = _load_config()
+
+# Model defaults (can be overridden by CLI args)
+DEFAULT_PORT = int(_CONFIG["model"]["base_url"].split(":")[-1])
+DEFAULT_MODEL = _CONFIG["model"]["default"]
+TEMPERATURE = _CONFIG["agents"]["executor"]["temperature"]
+
+# Prompts
+ANALYTICAL_PROMPT = _CONFIG["analytical"]
+EXECUTOR_PROMPT = _CONFIG["executor_sympy"]
+SUMMARY_PROMPT = _CONFIG["summary"]
+
+# Per-agent settings
+AGENT_CONFIG = _CONFIG["agents"]
 
 # ── API Call ─────────────────────────────────────────────────────────────
 
@@ -687,7 +694,9 @@ def test_question(q, base_url, model, verbose=True):
     analytical = call_bielik(
         ANALYTICAL_PROMPT,
         [{"role": "user", "content": question_text}],
-        base_url, model, max_tokens=800, temperature=0.2
+        base_url, model,
+        max_tokens=AGENT_CONFIG["analytical"]["max_tokens"],
+        temperature=AGENT_CONFIG["analytical"]["temperature"]
     )
     t_analytical = time.time() - t0
 
@@ -713,7 +722,9 @@ def test_question(q, base_url, model, verbose=True):
             {"role": "user", "content": question_text},
             {"role": "assistant", "content": f"[Agent Analityczny]: {analytical}"},
         ],
-        base_url, model, max_tokens=1500, temperature=0.2
+        base_url, model,
+        max_tokens=AGENT_CONFIG["executor"]["max_tokens"],
+        temperature=AGENT_CONFIG["executor"]["temperature"]
     )
     t_executor = time.time() - t0
 
