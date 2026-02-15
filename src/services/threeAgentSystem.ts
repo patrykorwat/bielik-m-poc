@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { MLXAgent } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
 import { LeanProverServiceBrowser } from './leanProverService.browser';
+import prompts from '../../prompts.json';
 
 export type LLMProvider = 'claude' | 'mlx';
 export type ProverBackend = 'sympy' | 'lean' | 'both';
@@ -423,8 +424,10 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) {
         return line;
       }
-      // Replace ^ with ** only between numbers/variables (not bitwise XOR context)
-      return line.replace(/(\w)\^(\w)/g, '$1**$2');
+      return line
+        .replace(/(\w)\^(\w)/g, '$1**$2')
+        .replace(/\)\^(\w)/g, ')**$1')
+        .replace(/(\w)\^\(/g, '$1**(');
     });
 
     // 5. Fix common Bielik errors: importing symbol names from sympy
@@ -432,14 +435,10 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
     lines = lines.map(line => {
       const importMatch = line.match(/^(from sympy import .+)/);
       if (importMatch) {
-        // Remove single-letter imports that should be symbols
         const parts = line.split(',').map(p => p.trim());
         const filtered = parts.filter(p => {
-          // Keep the "from sympy import ..." part
           if (p.startsWith('from ')) return true;
-          // Remove single letters (likely symbol variables)
           if (/^[a-z]$/i.test(p)) return false;
-          // Remove common symbol names
           if (['R', 'x', 'y', 'z', 'a', 'b', 'c', 'n', 'm', 'k', 't'].includes(p)) return false;
           return true;
         });
@@ -448,20 +447,43 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       return line;
     });
 
-    // 6. Ensure there's at least one print statement
+    // 6. Fix wrong SymPy names (common Bielik hallucinations)
+    const importFixes: Record<string, string> = {
+      'Simplify': 'simplify',
+      'Greater': 'Gt',
+      'Less': 'Lt',
+      'GreaterEqual': 'Ge',
+      'LessEqual': 'Le',
+    };
+    lines = lines.map(line => {
+      for (const [wrong, correct] of Object.entries(importFixes)) {
+        if (line.includes(wrong)) {
+          line = line.replace(new RegExp(wrong, 'g'), correct);
+        }
+      }
+      return line;
+    });
+
+    // 7. Fix Pi → pi (Bielik sometimes capitalizes it)
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
+      return line.replace(/\bPi\b/g, 'pi');
+    });
+
+    // 8. Ensure there's at least one print statement
     const hasPrint = lines.some(line => line.trim().startsWith('print(') || line.trim().startsWith('print ('));
     if (!hasPrint) {
-      // Find the last assignment and add a print for it
       for (let i = lines.length - 1; i >= 0; i--) {
         const assignMatch = lines[i].trim().match(/^(\w+)\s*=/);
         if (assignMatch && !lines[i].trim().startsWith('#') && !lines[i].trim().startsWith('from ') && !lines[i].trim().startsWith('import ')) {
-          lines.push(`print("Wynik:", ${assignMatch[1]})`);
+          lines.push(`print("ODPOWIEDZ:", ${assignMatch[1]})`);
           break;
         }
       }
     }
 
-    // 7. Remove empty lines at start/end
+    // 9. Remove empty lines at start/end
     const result = lines.join('\n').trim();
 
     return result;
@@ -576,27 +598,7 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
 
     // AGENT 1: Analytical Agent - Break down the problem
     console.log('\n=== AGENT 1: Analytical ===');
-    const analyticalPrompt = `Zaplanuj rozwiazanie zadania matematycznego. Napisz KROTKI plan w maksymalnie 10 linijkach.
-
-ZAKAZY:
-- ZAKAZANE: $, $$, \\frac, \\sqrt, \\left, \\right, \\cdot, \\(, \\), \\[, \\], \\boxed, \\dfrac
-- ZAKAZANE: wykonywanie obliczen, podstawianie wartosci, rozwiazywanie - to zrobi nastepny agent
-- ZAKAZANE: pisanie "Krok 1", "Krok 2" itd. z obliczeniami
-- Zamiast LaTeX: x**2, a/b, sqrt(x)
-- KROTKO: kazdy punkt planu to JEDNO zdanie
-
-FORMAT:
-
-Analiza: [co mamy, czego szukamy - max 2 zdania]
-Oznaczenia: [zmienne]
-Plan:
-1. [co zrobic - bez obliczen]
-2. [co zrobic]
-3. [co zrobic]
-Rodzaj: [obliczenia/optymalizacja/dowod]
-Szukamy: [czego]
-
-WAZNE: Napisz TYLKO plan. NIE obliczaj, NIE podstawiaj, NIE rozwiazuj.`;
+    const analyticalPrompt = prompts.analytical;
 
     const analyticalContext = this.getAgentContext();
     const analyticalResponse = await this.executeAgentTurn(
@@ -619,53 +621,7 @@ WAZNE: Napisz TYLKO plan. NIE obliczaj, NIE podstawiaj, NIE rozwiazuj.`;
 
     // AGENT 2: Executor Agent - Execute the solution
     console.log('\n=== AGENT 2: Executor ===');
-    const executorPrompt = useLean ? `Napisz formalny dowod matematyczny krok po kroku.
-ZAKAZ: $, $$, \\frac, \\sqrt, \\left, \\right, \\(, \\), \\[, \\], \\boxed, \\dfrac
-Uzywaj: x**2, a/b, sqrt(x)
-Odpowiadaj po polsku.` : `Napisz JEDEN blok kodu Python/SymPy rozwiazujacy to zadanie.
-
-REGULY:
-- Potegowanie: x**2 (NIE x^2)
-- Mnozenie: 2*a (NIE 2a)
-- Ulamki: Rational(2,3) lub S(2)/3
-- NIE pisz assert
-- Ostatnia linia: print("ODPOWIEDZ:", wynik)
-
-PRZYKLAD 1 (rownanie):
-\`\`\`python
-from sympy import symbols, solve, Rational
-x = symbols('x')
-wynik = solve(Rational(3,2)*x - 1, x)
-print("ODPOWIEDZ:", wynik)
-\`\`\`
-
-PRZYKLAD 2 (uproszczenie wyrazenia):
-\`\`\`python
-from sympy import symbols, expand, simplify
-a, b = symbols('a b')
-expr = (2*a + b)**2 - (2*a - b)**2
-wynik = expand(expr)
-print("ODPOWIEDZ:", wynik)
-\`\`\`
-
-PRZYKLAD 3 (optymalizacja):
-\`\`\`python
-from sympy import symbols, solve, diff, simplify
-x = symbols('x')
-f = -x**2 + 4*x
-df = diff(f, x)
-x_max = solve(df, x)[0]
-wynik = simplify(f.subs(x, x_max))
-print("ODPOWIEDZ:", wynik)
-\`\`\`
-
-Napisz TYLKO:
-Obliczam rozwiazanie:
-\`\`\`python
-[kod]
-\`\`\`
-
-Nic wiecej. Zadnego tekstu po kodzie.`;
+    const executorPrompt = useLean ? prompts.executor_lean : prompts.executor_sympy;
 
     const executorContext = this.getAgentContext();
     const executorResponse = await this.executeAgentTurn(
@@ -698,39 +654,78 @@ Nic wiecej. Zadnego tekstu po kodzie.`;
         console.log('📤 Code sent to MCP sympy_calculate:', combinedCode);
 
         try {
-          let result: string;
-          try {
-            result = await this.executeSymPyCalculation(combinedCode);
-          } catch (firstError) {
-            // Retry with additional fixes
-            console.warn('⚠️ First execution failed, attempting auto-fix...', firstError);
-            let fixedCode = combinedCode;
+          let result: string = '';
+          const maxRetries = 3;
+          let currentCode = combinedCode;
+          let lastError: unknown = null;
 
-            // Fix 1: Replace ^ with ** more aggressively
-            fixedCode = fixedCode.replace(/(\w)\^(\w)/g, '$1**$2');
-            fixedCode = fixedCode.replace(/\)\^(\w)/g, ')**$1');
-            fixedCode = fixedCode.replace(/(\w)\^\(/g, '$1**(');
+          for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+              result = await this.executeSymPyCalculation(currentCode);
+              lastError = null;
+              break; // Success
+            } catch (error) {
+              lastError = error;
+              const errorMsg = error instanceof Error ? error.message : String(error);
+              console.warn(`⚠️ Attempt ${attempt + 1} failed:`, errorMsg.substring(0, 120));
 
-            // Fix 2: Remove any remaining assert lines
-            fixedCode = fixedCode.split('\n').filter(l => !l.trim().startsWith('assert ')).join('\n');
+              if (attempt >= maxRetries) break; // Don't fix on last attempt
 
-            // Fix 3: If NameError, try adding missing symbol definitions
-            const errorMsg = firstError instanceof Error ? firstError.message : String(firstError);
-            const nameErrorMatch = errorMsg.match(/NameError: name '(\w+)' is not defined/);
-            if (nameErrorMatch) {
-              const missingVar = nameErrorMatch[1];
-              // Add symbol definition after imports
-              const importEnd = fixedCode.lastIndexOf('import ');
-              const importLineEnd = fixedCode.indexOf('\n', importEnd);
-              if (importLineEnd > 0) {
-                fixedCode = fixedCode.substring(0, importLineEnd + 1) +
-                  `${missingVar} = symbols('${missingVar}', real=True)\n` +
-                  fixedCode.substring(importLineEnd + 1);
+              let fixedCode = currentCode;
+
+              // Fix 1: NameError — add missing symbol definition
+              const nameErrorMatch = errorMsg.match(/NameError: name '(\w+)' is not defined/);
+              if (nameErrorMatch) {
+                const missingVar = nameErrorMatch[1];
+                const lines = fixedCode.split('\n');
+                let insertIdx = 0;
+                for (let i = 0; i < lines.length; i++) {
+                  if (lines[i].trim().startsWith('from ') || lines[i].trim().startsWith('import ')) {
+                    insertIdx = i + 1;
+                  }
+                }
+                lines.splice(insertIdx, 0, `${missingVar} = symbols('${missingVar}', real=True)`);
+                fixedCode = lines.join('\n');
               }
-            }
 
-            console.log('📤 Retrying with fixed code:', fixedCode);
-            result = await this.executeSymPyCalculation(fixedCode);
+              // Fix 2: IndexError on solve()[0] — use safe indexing
+              if (errorMsg.includes('IndexError: list index out of range')) {
+                fixedCode = fixedCode.replace(
+                  /(\w+)\s*=\s*solve\(([^)]+)\)\[0\]/g,
+                  '_sols = solve($2)\n$1 = _sols[0] if _sols else None'
+                );
+              }
+
+              // Fix 3: 'And'/'Or' object not iterable/subscriptable
+              if (errorMsg.includes("'And' object") || errorMsg.includes("'Or' object")) {
+                fixedCode = fixedCode.replace(
+                  /for\s+(\w+)\s+in\s+(\w+)/g,
+                  'for $1 in ([$2] if not hasattr($2, "__iter__") else $2)'
+                );
+              }
+
+              // Fix 4: 'bool' object has no attribute 'subs' — == instead of Eq()
+              if (errorMsg.includes("'bool' object has no attribute 'subs'")) {
+                fixedCode = fixedCode.replace(/(\w+)\s*=\s*(.+?)\s*==\s*(.+)/g, '$1 = Eq($2, $3)');
+              }
+
+              // Fix 5: tuple/dict indexing with symbol — variable name collision
+              if (errorMsg.includes('tuple indices must be integers') || errorMsg.includes('list indices must be integers')) {
+                fixedCode = fixedCode.replace(/(\w+)\[(\w+)\](?!\s*if)/g, '$1[0]');
+              }
+
+              if (fixedCode === currentCode) {
+                console.warn('⚠️ No fix found, giving up retries.');
+                break; // No fix applied, don't keep retrying
+              }
+
+              console.log('📤 Retrying with fixed code...');
+              currentCode = fixedCode;
+            }
+          }
+
+          if (lastError) {
+            throw lastError; // Re-throw the last error if all retries failed
           }
           executionResults.push(`📊 Wyniki wykonania:\n${result}`);
 
@@ -791,28 +786,7 @@ Nic wiecej. Zadnego tekstu po kodzie.`;
     // AGENT 3: Verifier/Summary Agent - Summarize calculation results OR verify Lean proofs
     if (!useLean && executionResults.length > 0 && !executionResults.some(r => r.includes('❌'))) {
       console.log('\n=== AGENT 3: Summary ===');
-      const summaryPrompt = `Opisz rozwiazanie zadania krok po kroku po polsku. Przepisz wyniki z kodu. NIE licz sam.
-
-PRZYKLAD (dla innego zadania):
-Zadanie: Oblicz pole kola o promieniu 5.
-Wyniki kodu: Pole = 25*pi
-
-Rozwiazanie krok po kroku:
-
-Krok 1: Ustalamy dane zadania.
-Promien kola wynosi r = 5.
-
-Krok 2: Stosujemy wzor na pole kola.
-Pole = pi * r**2 = pi * 25.
-
-Krok 3: Obliczamy wartosc.
-Pole = 25*pi.
-
-ODPOWIEDZ: 25*pi
-
-KONIEC PRZYKLADU.
-
-Teraz opisz rozwiazanie powyzszego zadania w TAKIM SAMYM formacie. Napisz "Rozwiazanie krok po kroku:", potem kroki z wynikami z kodu, potem "ODPOWIEDZ:" z koncowym wynikiem.`;
+      const summaryPrompt = prompts.summary;
 
       const summaryContext = this.getAgentContext();
       const summaryResponse = await this.executeAgentTurn(

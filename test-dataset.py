@@ -80,98 +80,18 @@ DEFAULT_PORT = 8011
 DEFAULT_MODEL = "LibraxisAI/Bielik-11B-v3.0-mlx-q4"
 TEMPERATURE = 0.2
 DATASETS_DIR = os.path.join(os.path.dirname(__file__), "datasets")
+PROMPTS_FILE = os.path.join(os.path.dirname(__file__), "prompts.json")
 
-# ── Prompts (matching threeAgentSystem.ts) ───────────────────────────────
+# ── Prompts (loaded from shared prompts.json) ────────────────────────────
 
-ANALYTICAL_PROMPT = """Zaplanuj rozwiazanie zadania matematycznego. Napisz KROTKI plan w maksymalnie 10 linijkach.
+def _load_prompts():
+    with open(PROMPTS_FILE) as f:
+        return json.load(f)
 
-ZAKAZY:
-- ZAKAZANE: $, $$, \\frac, \\sqrt, \\left, \\right, \\cdot, \\(, \\), \\[, \\], \\boxed, \\dfrac
-- ZAKAZANE: wykonywanie obliczen, podstawianie wartosci, rozwiazywanie - to zrobi nastepny agent
-- ZAKAZANE: pisanie "Krok 1", "Krok 2" itd. z obliczeniami
-- Zamiast LaTeX: x**2, a/b, sqrt(x)
-- KROTKO: kazdy punkt planu to JEDNO zdanie
-
-FORMAT:
-
-Analiza: [co mamy, czego szukamy - max 2 zdania]
-Oznaczenia: [zmienne]
-Plan:
-1. [co zrobic - bez obliczen]
-2. [co zrobic]
-3. [co zrobic]
-Rodzaj: [obliczenia/optymalizacja/dowod]
-Szukamy: [czego]
-
-WAZNE: Napisz TYLKO plan. NIE obliczaj, NIE podstawiaj, NIE rozwiazuj."""
-
-EXECUTOR_PROMPT = """Napisz JEDEN blok kodu Python/SymPy rozwiazujacy to zadanie.
-
-REGULY:
-- Potegowanie: x**2 (NIE x^2)
-- Mnozenie: 2*a (NIE 2a)
-- Ulamki: Rational(2,3) lub S(2)/3
-- NIE pisz assert
-- Ostatnia linia: print("ODPOWIEDZ:", wynik)
-
-PRZYKLAD 1 (rownanie):
-```python
-from sympy import symbols, solve, Rational
-x = symbols('x')
-wynik = solve(Rational(3,2)*x - 1, x)
-print("ODPOWIEDZ:", wynik)
-```
-
-PRZYKLAD 2 (uproszczenie wyrazenia):
-```python
-from sympy import symbols, expand, simplify
-a, b = symbols('a b')
-expr = (2*a + b)**2 - (2*a - b)**2
-wynik = expand(expr)
-print("ODPOWIEDZ:", wynik)
-```
-
-PRZYKLAD 3 (optymalizacja):
-```python
-from sympy import symbols, solve, diff, simplify
-x = symbols('x')
-f = -x**2 + 4*x
-df = diff(f, x)
-x_max = solve(df, x)[0]
-wynik = simplify(f.subs(x, x_max))
-print("ODPOWIEDZ:", wynik)
-```
-
-Napisz TYLKO:
-Obliczam rozwiazanie:
-```python
-[kod]
-```
-
-Nic wiecej. Zadnego tekstu po kodzie."""
-
-SUMMARY_PROMPT = """Opisz rozwiazanie zadania krok po kroku po polsku. Przepisz wyniki z kodu. NIE licz sam.
-
-PRZYKLAD (dla innego zadania):
-Zadanie: Oblicz pole kola o promieniu 5.
-Wyniki kodu: Pole = 25*pi
-
-Rozwiazanie krok po kroku:
-
-Krok 1: Ustalamy dane zadania.
-Promien kola wynosi r = 5.
-
-Krok 2: Stosujemy wzor na pole kola.
-Pole = pi * r**2 = pi * 25.
-
-Krok 3: Obliczamy wartosc.
-Pole = 25*pi.
-
-ODPOWIEDZ: 25*pi
-
-KONIEC PRZYKLADU.
-
-Teraz opisz rozwiazanie powyzszego zadania w TAKIM SAMYM formacie. Napisz "Rozwiazanie krok po kroku:", potem kroki z wynikami z kodu, potem "ODPOWIEDZ:" z koncowym wynikiem."""
+_PROMPTS = _load_prompts()
+ANALYTICAL_PROMPT = _PROMPTS["analytical"]
+EXECUTOR_PROMPT = _PROMPTS["executor_sympy"]
+SUMMARY_PROMPT = _PROMPTS["summary"]
 
 # ── API Call ─────────────────────────────────────────────────────────────
 
@@ -214,9 +134,14 @@ def clean_latex_for_display(text):
     """Convert LaTeX to plain text for display."""
     t = text
     t = re.sub(r'\$\$?', '', t)
-    t = re.sub(r'\\frac\{([^}]*)\}\{([^}]*)\}', r'(\1)/(\2)', t)
+    # Remove \boxed{...} → content
+    t = re.sub(r'\\boxed\{([^}]*)\}', r'\1', t)
+    # Fractions
     t = re.sub(r'\\d?frac\{([^}]*)\}\{([^}]*)\}', r'(\1)/(\2)', t)
+    # Roots: \sqrt[n]{x} → x**(1/n), \sqrt{x} → sqrt(x)
+    t = re.sub(r'\\sqrt\[(\d+)\]\{([^}]*)\}', r'(\2)**(1/\1)', t)
     t = re.sub(r'\\sqrt\{([^}]*)\}', r'sqrt(\1)', t)
+    # Operators and formatting
     t = re.sub(r'\\(left|right|cdot|times|text|mathrm|quad|,|\\)', ' ', t)
     t = re.sub(r'\\langle', '<', t)
     t = re.sub(r'\\rangle', '>', t)
@@ -225,8 +150,13 @@ def clean_latex_for_display(text):
     t = re.sub(r'\\geq', '>=', t)
     t = re.sub(r'\\in', ' in ', t)
     t = re.sub(r'\\log_\{([^}]*)\}', r'log_\1', t)
+    # Remove remaining LaTeX commands
     t = re.sub(r'\\[a-zA-Z]+', '', t)
+    # Clean braces and formatting
+    t = re.sub(r'[{}]', '', t)
     t = re.sub(r'\s+', ' ', t).strip()
+    # Strip leading labels like "|BC| =" from expected answers
+    t = re.sub(r'^\|?\w+\|?\s*=\s*', '', t).strip()
     return t
 
 
@@ -257,7 +187,17 @@ def extract_answer_from_output(output):
     # Try both ASCII and Polish versions
     match = re.search(r'ODPOWIED[ZŹ]:\s*(.+)', output, re.IGNORECASE)
     if match:
-        return match.group(1).strip()
+        answer = match.group(1).strip()
+        # Unwrap lists: [value] → value, {key: value} → value
+        answer = re.sub(r'^\[(.+)\]$', r'\1', answer)
+        # Unwrap sets/dicts with single value
+        m = re.match(r'^\{(?:\w+:\s*)?(.+?)\}$', answer)
+        if m:
+            answer = m.group(1)
+        # Skip None / empty
+        if answer.lower() in ('none', 'null', '[]', '{}', ''):
+            return None
+        return answer
     # Look for the last printed value
     lines = [l.strip() for l in output.strip().split('\n') if l.strip()]
     if lines:
@@ -267,7 +207,10 @@ def extract_answer_from_output(output):
                 # Strip label prefix like "Wynik: " or "result: "
                 cleaned = re.sub(r'^[A-Za-ząćęłńóśźż\s]+:\s*', '', line)
                 if cleaned:
-                    return cleaned
+                    # Unwrap lists
+                    cleaned = re.sub(r'^\[(.+)\]$', r'\1', cleaned)
+                    if cleaned.lower() not in ('none', 'null', '[]', '{}', ''):
+                        return cleaned
         return lines[-1]
     return None
 
@@ -290,12 +233,20 @@ def _sympy_eval(expr_str):
         # Clean the expression
         s = expr_str.strip()
         s = re.sub(r'\\text\{[^}]*\}', '', s)  # remove \text{...}
+        s = s.replace('\\cdot', '*')
+        s = s.replace('\\left', '').replace('\\right', '')
+        s = re.sub(r'\\d?frac\{([^}]*)\}\{([^}]*)\}', r'((\1)/(\2))', s)
+        s = re.sub(r'\\sqrt\{([^}]*)\}', r'sqrt(\1)', s)
         s = s.replace('\\', '')  # remove remaining backslashes
         s = s.replace('{', '(').replace('}', ')')  # braces → parens
         s = s.replace('^', '**')
         s = re.sub(r'(\d)\s*([a-zA-Z])', r'\1*\2', s)  # 2x → 2*x
         s = s.replace('zł', '').replace('°', '').strip()
         s = re.sub(r',(\d)', r'.\1', s)  # Polish decimal comma
+        s = s.replace(' ', '')  # remove spaces
+
+        if not s or s in ('', '-', '+'):
+            return None
 
         code = f"from sympy import *; print(float(sympify('{s}')))"
         proc = subprocess.run(
@@ -307,6 +258,26 @@ def _sympy_eval(expr_str):
     except:
         pass
     return None
+
+
+def _sympy_compare(expr1, expr2):
+    """Compare two symbolic expressions using sympy. Returns True if equal."""
+    if not SYMPY_AVAILABLE:
+        return False
+    try:
+        code = f"""
+from sympy import *
+e1 = sympify('{expr1}')
+e2 = sympify('{expr2}')
+print(simplify(e1 - e2) == 0 or e1.equals(e2))
+"""
+        proc = subprocess.run(
+            ["python3", "-c", code],
+            capture_output=True, text=True, timeout=5
+        )
+        return proc.returncode == 0 and 'True' in proc.stdout
+    except:
+        return False
 
 
 def _try_float(s):
@@ -328,6 +299,32 @@ def _try_float(s):
     return None
 
 
+def _normalize_interval(s):
+    """Normalize interval notation for comparison.
+    E.g. '(x > 2/3) & (x < oo)' → '(2/3, inf)'
+         '(-1 <= x) & (x <= 4)' → '<-1, 4>'
+    """
+    s = s.strip()
+
+    # Pattern: (x > a) & (x < b) or (a < x) & (x < b)
+    m = re.search(r'(?:x\s*>\s*(.+?))\s*&\s*(?:x\s*<\s*(.+?))\)?$', s)
+    if not m:
+        m = re.search(r'(?:(.+?)\s*<\s*x)\s*&\s*(?:x\s*<\s*(.+?))\)?$', s)
+    if m:
+        left, right = m.group(1).strip(), m.group(2).strip()
+        right = right.replace('oo', 'inf')
+        left = left.replace('-oo', '-inf')
+        return f"({left}, {right})"
+
+    # Pattern: (x >= a) & (x <= b) or (-1 <= x) & (x <= 4)
+    m = re.search(r'(?:(?:x\s*>=\s*|(.+?)\s*<=\s*x)).*?&.*?(?:x\s*<=\s*(.+?))\)?$', s)
+    if m:
+        left, right = m.group(1) or '', m.group(2) or ''
+        return f"<{left.strip()}, {right.strip()}>"
+
+    return s
+
+
 def check_answer(expected, got, question):
     """Check if the model's answer matches expected. Returns (match, explanation)."""
     if not got:
@@ -335,38 +332,82 @@ def check_answer(expected, got, question):
 
     got_clean = got.strip()
     got_lower = got_clean.lower()
-    expected_clean = expected.strip().lower()
 
     # For multiple choice: try to match by value against each option
     if question.get('options'):
-        expected_letter = expected_clean  # e.g. "c"
+        # Keep expected letter in ORIGINAL case to match dict keys (uppercase in dataset)
+        expected_letter = expected.strip().upper()
+        expected_opt_latex = question['options'].get(expected_letter, '')
+        expected_opt_plain = clean_latex_for_display(expected_opt_latex)
+
+        # Helper: case-insensitive key comparison
+        def key_matches(opt_key):
+            return opt_key.upper() == expected_letter
 
         # 1. Check if model explicitly says the letter
         letter_match = re.search(r'\b([a-dA-D])\b', got_clean)
         if letter_match:
-            got_letter = letter_match.group(1).lower()
+            got_letter = letter_match.group(1).upper()
             if got_letter == expected_letter:
-                return True, f"Letter match: {got_letter.upper()}"
+                return True, f"Letter match: {got_letter}"
 
-        # 2. Try to evaluate model's numeric answer and compare with each option
+        # 2. Normalize intervals and compare
+        got_normalized = _normalize_interval(got_clean)
+        if got_normalized != got_clean:  # only if normalization changed something
+            best_interval_match = None
+            for opt_key, opt_latex in question['options'].items():
+                opt_plain = clean_latex_for_display(opt_latex)
+                opt_normalized = _normalize_interval(opt_plain)
+                if opt_normalized == opt_plain:  # option isn't an interval
+                    continue
+                got_nums = re.findall(r'-?\d+(?:/\d+)?(?:\.\d+)?|inf|-inf', got_normalized)
+                opt_nums = re.findall(r'-?\d+(?:/\d+)?(?:\.\d+)?|inf|-inf', opt_normalized)
+                if got_nums and opt_nums and got_nums == opt_nums:
+                    got_left = got_normalized[0] if got_normalized else ''
+                    opt_left = opt_normalized[0] if opt_normalized else ''
+                    if got_left == opt_left:
+                        best_interval_match = opt_key
+            if best_interval_match:
+                if key_matches(best_interval_match):
+                    return True, f"Interval match: {got_normalized} ≈ option {best_interval_match}"
+                else:
+                    return False, f"Interval matched option {best_interval_match}, expected {expected_letter}"
+
+        # 2b. Direct symbolic match against each option
+        for opt_key, opt_latex in question['options'].items():
+            opt_plain = clean_latex_for_display(opt_latex)
+            if _sympy_compare(got_clean, opt_plain):
+                if key_matches(opt_key):
+                    return True, f"Symbolic option match: {got_clean} = option {opt_key}"
+                else:
+                    return False, f"Symbolic matched option {opt_key}, expected {expected_letter}"
+
+        # 3. Try to evaluate model's numeric answer and compare with each option
         got_value = _sympy_eval(got_clean) or _try_float(got_clean)
 
         if got_value is not None:
+            best_match = None
+            best_diff = float('inf')
             for opt_key, opt_latex in question['options'].items():
                 opt_plain = clean_latex_for_display(opt_latex)
                 opt_value = _sympy_eval(opt_plain) or _try_float(opt_plain)
-                if opt_value is not None and abs(got_value - opt_value) < 0.01:
-                    if opt_key == expected_letter:
-                        return True, f"Value match: {got_value} = option {opt_key.upper()} ({opt_plain})"
-                    else:
-                        return False, f"Matched option {opt_key.upper()} ({opt_plain}), expected {expected_letter.upper()}"
+                if opt_value is not None:
+                    diff = abs(got_value - opt_value)
+                    if diff < best_diff:
+                        best_diff = diff
+                        best_match = opt_key
 
-        # 3. String containment check
-        expected_value = clean_latex_for_display(question['options'].get(expected_letter, ''))
-        if expected_value.lower() in got_lower:
-            return True, f"Substring match: {expected_value}"
+            if best_match and best_diff < 0.01:
+                if key_matches(best_match):
+                    return True, f"Value match: {got_value} = option {best_match} ({clean_latex_for_display(question['options'][best_match])})"
+                else:
+                    return False, f"Matched option {best_match}, expected {expected_letter}"
 
-        return False, f"Expected {expected_letter.upper()}, got: {got_clean[:60]}"
+        # 4. Symbolic comparison with expected option
+        if _sympy_compare(got_clean, expected_opt_plain):
+            return True, f"Symbolic match with option {expected_letter}"
+
+        return False, f"Expected {expected_letter} ({expected_opt_plain}), got: {got_clean[:60]}"
 
     # For open-ended: try numeric/symbolic comparison
     expected_plain = clean_latex_for_display(expected)
@@ -381,6 +422,27 @@ def check_answer(expected, got, question):
     if got_value is not None and exp_value is not None:
         if abs(got_value - exp_value) < 0.01:
             return True, f"Numeric match: {got_value}"
+        # Also check ratio (for fractions like 13/25 = 0.52)
+        if exp_value != 0 and abs(got_value / exp_value - 1.0) < 0.01:
+            return True, f"Ratio match: {got_value} ≈ {exp_value}"
+
+    # Symbolic comparison
+    if _sympy_compare(got_clean, expected_plain):
+        return True, f"Symbolic match"
+
+    # Try matching against parts of expected (e.g. "b = 4, c = -5" → check if got matches any key value)
+    # Also try matching the core expression from expected (strip "variable = " prefix)
+    exp_parts = re.split(r'[,;]', expected_plain)
+    for part in exp_parts:
+        part = part.strip()
+        # Extract value after = sign
+        m = re.match(r'[\w_|]+\s*=\s*(.+)', part)
+        val = m.group(1).strip() if m else part
+        if val and (val.lower() == got_lower or
+                    _sympy_compare(got_clean, val) or
+                    (got_value is not None and _sympy_eval(val) is not None and
+                     abs(got_value - _sympy_eval(val)) < 0.01)):
+            return True, f"Partial match: {got_clean} matches '{part}'"
 
     return False, f"Expected: {expected_plain}, got: {got_clean[:80]}"
 
@@ -403,6 +465,188 @@ def available_years(datasets_dir):
         if m:
             years.append(int(m.group(1)))
     return years
+
+
+def _sanitize_code(code):
+    """Sanitize Python/SymPy code — fix common Bielik patterns."""
+    lines = code.split('\n')
+
+    # Remove assert statements
+    lines = [l for l in lines if not l.strip().startswith('assert ')]
+
+    # Fix ^ → **
+    new_lines = []
+    for line in lines:
+        t = line.strip()
+        if not t.startswith('#') and not t.startswith('"') and not t.startswith("'"):
+            line = re.sub(r'(\w)\^(\w)', r'\1**\2', line)
+            line = re.sub(r'\)\^(\w)', r')**\1', line)
+            line = re.sub(r'(\w)\^\(', r'\1**(', line)
+        new_lines.append(line)
+    lines = new_lines
+
+    # Fix wrong imports (Simplify → simplify, Greater → Gt, etc.)
+    import_fixes = {
+        'Simplify': 'simplify',
+        'Greater': 'Gt',
+        'Less': 'Lt',
+        'GreaterEqual': 'Ge',
+        'LessEqual': 'Le',
+    }
+    result_lines = []
+    for line in lines:
+        for old, new in import_fixes.items():
+            if old in line:
+                line = line.replace(old, new)
+        result_lines.append(line)
+    lines = result_lines
+
+    return '\n'.join(lines)
+
+
+def _fix_code_from_error(code, error_msg):
+    """Try to fix code based on the error message."""
+    fixed = code
+
+    # Fix 1: NameError — add missing symbol definition
+    name_match = re.search(r"NameError: name '(\w+)' is not defined", error_msg)
+    if name_match:
+        missing = name_match.group(1)
+        # Add symbol definition after imports
+        lines = fixed.split('\n')
+        insert_idx = 0
+        for i, line in enumerate(lines):
+            if line.strip().startswith('from ') or line.strip().startswith('import '):
+                insert_idx = i + 1
+        lines.insert(insert_idx, f"{missing} = symbols('{missing}')")
+        fixed = '\n'.join(lines)
+
+    # Fix 2: IndexError on solve()[0] — use safe indexing
+    if 'IndexError: list index out of range' in error_msg:
+        fixed = re.sub(
+            r'(\w+)\s*=\s*solve\(([^)]+)\)\[0\]',
+            r'_sols = solve(\2)\n\1 = _sols[0] if _sols else None',
+            fixed
+        )
+        # Also handle patterns like wynik[0]
+        fixed = re.sub(
+            r'(\w+)\[0\]',
+            r'(\1[0] if \1 else None)',
+            fixed
+        )
+
+    # Fix 3: 'And' object is not subscriptable/iterable — inequality result
+    if "'And' object" in error_msg or "'Or' object" in error_msg:
+        # Replace solve_univariate_inequality patterns with solve
+        # Or wrap result printing
+        if 'is not subscriptable' in error_msg or 'is not iterable' in error_msg:
+            fixed = re.sub(
+                r'for\s+\w+\s+in\s+(\w+)',
+                r'for _item in ([\1] if not hasattr(\1, "__iter__") else \1)',
+                fixed
+            )
+
+    # Fix 4: Wrong import names
+    fixed = fixed.replace('from sympy import Simplify', 'from sympy import simplify')
+    fixed = fixed.replace('from sympy import Greater', 'from sympy import Gt')
+
+    # Fix 5: 'bool' object has no attribute 'subs' — comparison instead of equation
+    if "'bool' object has no attribute 'subs'" in error_msg:
+        # Replace == with Eq() in equation definitions
+        fixed = re.sub(r'(\w+)\s*=\s*(.+?)\s*==\s*(.+)', r'\1 = Eq(\2, \3)', fixed)
+
+    # Fix 6: tuple/dict indexing errors — variable name collision with symbol
+    if 'tuple indices must be integers' in error_msg or 'list indices must be integers' in error_msg:
+        # Pattern: solutions[symbol] → solutions[0] or solutions.values()
+        fixed = re.sub(r'(\w+)\[(\w+)\](?!\s*if)', r'\1[0]', fixed, count=1)
+
+    # Fix 7: Pi (capitalized) not defined — use pi
+    if "name 'Pi' is not defined" in error_msg:
+        fixed = fixed.replace('Pi', 'pi')
+
+    # Fix N: Ensure print statement exists
+    if 'print(' not in fixed:
+        lines = fixed.strip().split('\n')
+        # Find last assignment
+        for i in range(len(lines) - 1, -1, -1):
+            m = re.match(r'^(\w+)\s*=', lines[i].strip())
+            if m and not lines[i].strip().startswith('from ') and not lines[i].strip().startswith('import '):
+                lines.append(f'print("ODPOWIEDZ:", {m.group(1)})')
+                break
+        fixed = '\n'.join(lines)
+
+    return fixed
+
+
+def _run_sympy(code):
+    """Run code with sympy, return (stdout, stderr, returncode)."""
+    sanitized = _sanitize_code(code)
+    full_code = f"from sympy import *\nimport sys\nsys.set_int_max_str_digits(0)\n\n{sanitized}"
+    proc = subprocess.run(
+        ["python3", "-c", full_code],
+        capture_output=True, text=True, timeout=30
+    )
+    return proc.stdout.strip(), proc.stderr.strip(), proc.returncode
+
+
+def _run_sympy_with_retry(code, verbose, result):
+    """Run SymPy code with auto-retry on failure. Returns output or None."""
+    MAX_RETRIES = 3
+    current_code = code
+
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            stdout, stderr, rc = _run_sympy(current_code)
+
+            if rc == 0 and stdout:
+                result['answer_got'] = extract_answer_from_output(stdout)
+                if verbose:
+                    answer_line = result['answer_got'] or stdout[-80:]
+                    retry_tag = f" (retry {attempt})" if attempt > 0 else ""
+                    print(f"  SymPy:     ✅ → {answer_line[:60]}{retry_tag}")
+                return stdout
+            elif rc == 0 and not stdout:
+                # Code ran but produced no output
+                if verbose:
+                    print(f"  SymPy:     ❌ no output (code ran without print)")
+                result['errors'].append("SymPy: no output produced")
+                return None
+            else:
+                if attempt < MAX_RETRIES:
+                    fixed_code = _fix_code_from_error(current_code, stderr)
+                    if fixed_code == current_code:
+                        # No fix found, don't retry
+                        if verbose:
+                            err = stderr[-120:] if stderr else "unknown error"
+                            print(f"  SymPy:     ❌ {err}")
+                        result['errors'].append(f"SymPy error: {stderr[:100]}")
+                        return None
+                    if verbose:
+                        print(f"  SymPy:     ⚠️  retrying ({stderr[-60:].strip()})")
+                    current_code = fixed_code
+                    continue
+                else:
+                    if verbose:
+                        err = stderr[-120:] if stderr else "no output"
+                        print(f"  SymPy:     ❌ {err}")
+                    result['errors'].append(f"SymPy error: {stderr[:100]}")
+                    return None
+
+        except subprocess.TimeoutExpired:
+            result['errors'].append("SymPy timeout")
+            if verbose:
+                print(f"  SymPy:     ❌ timeout")
+            return None
+        except Exception as e:
+            result['errors'].append(f"SymPy exception: {e}")
+            if verbose:
+                print(f"  SymPy:     ❌ exception: {e}")
+            return None
+
+    # Exhausted retries without fix
+    if verbose:
+        print(f"  SymPy:     ❌ unfixable error after {MAX_RETRIES} retries")
+    return None
 
 
 # ── Test Runner ──────────────────────────────────────────────────────────

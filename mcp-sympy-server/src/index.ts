@@ -242,14 +242,41 @@ async function handleToolCall(name: string, args: any): Promise<string> {
           expression = expression.replace(/^assert\s+.*$/gm, '# (assert removed)');
 
           // Fix ^ used as exponent (replace with **)
-          const lines = expression.split('\n').map((line: string) => {
+          let lines = expression.split('\n').map((line: string) => {
             const trimmed = line.trim();
             if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) {
               return line;
             }
-            // Only replace ^ between word chars or parens (not in strings)
-            return line.replace(/(\w)\^(\w)/g, '$1**$2');
+            return line
+              .replace(/(\w)\^(\w)/g, '$1**$2')
+              .replace(/\)\^(\w)/g, ')**$1')
+              .replace(/(\w)\^\(/g, '$1**(');
           });
+
+          // Fix wrong SymPy names (common Bielik hallucinations)
+          const importFixes: Record<string, string> = {
+            'Simplify': 'simplify',
+            'Greater': 'Gt',
+            'Less': 'Lt',
+            'GreaterEqual': 'Ge',
+            'LessEqual': 'Le',
+          };
+          lines = lines.map((line: string) => {
+            for (const [wrong, correct] of Object.entries(importFixes)) {
+              if (line.includes(wrong)) {
+                line = line.replace(new RegExp(wrong, 'g'), correct);
+              }
+            }
+            return line;
+          });
+
+          // Fix Pi → pi (Bielik capitalizes it sometimes)
+          lines = lines.map((line: string) => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
+            return line.replace(/\bPi\b/g, 'pi');
+          });
+
           expression = lines.join('\n');
 
           code = `${baseImports}\n${expression}`;
