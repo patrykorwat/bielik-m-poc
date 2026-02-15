@@ -240,30 +240,65 @@ function App() {
     }
 
     try {
-      // Create a temporary container with white background
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.background = 'white';
-      tempContainer.style.padding = '20px';
-      tempContainer.style.width = messagesContainer.clientWidth + 'px';
+      // Create a clean wrapper for export
+      const exportWrapper = document.createElement('div');
+      exportWrapper.style.position = 'fixed';
+      exportWrapper.style.top = '-100000px'; // Move far off screen
+      exportWrapper.style.left = '0';
+      exportWrapper.style.width = '800px';
+      exportWrapper.style.backgroundColor = '#ffffff';
+      exportWrapper.style.padding = '30px';
+      exportWrapper.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif';
+      exportWrapper.style.zIndex = '-1';
+      exportWrapper.style.pointerEvents = 'none';
 
-      // Clone the messages
-      const clone = messagesContainer.cloneNode(true) as HTMLElement;
-      tempContainer.appendChild(clone);
-      document.body.appendChild(tempContainer);
+      // Add title
+      const title = document.createElement('h2');
+      title.textContent = '🤖 Konwersacja - System Trzech Agentów';
+      title.style.marginBottom = '20px';
+      title.style.color = '#333';
+      exportWrapper.appendChild(title);
+
+      // Clone each message individually and clean them
+      const messageElements = messagesContainer.querySelectorAll('.message');
+      messageElements.forEach((msgElement) => {
+        const msgClone = msgElement.cloneNode(true) as HTMLElement;
+        msgClone.style.marginBottom = '15px';
+        msgClone.style.opacity = '1';
+        msgClone.style.animation = 'none';
+        msgClone.style.backgroundColor = msgClone.classList.contains('user') ? '#667eea' : '#f0f0f0';
+
+        // Remove any inherited opacity/background issues and animations
+        const allElements = msgClone.querySelectorAll('*');
+        allElements.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          htmlEl.style.opacity = '1';
+          htmlEl.style.animation = 'none';
+        });
+        exportWrapper.appendChild(msgClone);
+      });
+
+      document.body.appendChild(exportWrapper);
+
+      // Wait for render
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       // Generate canvas
-      const canvas = await html2canvas(tempContainer, {
+      const canvas = await html2canvas(exportWrapper, {
         backgroundColor: '#ffffff',
-        scale: 2, // Higher quality
+        scale: 2,
         logging: false,
         useCORS: true,
         allowTaint: true,
+        ignoreElements: (element) => {
+          // Skip elements with animations that might affect opacity
+          return element.classList.contains('processing-indicator') ||
+                 element.classList.contains('spinner');
+        },
       });
 
       // Remove temporary container
-      document.body.removeChild(tempContainer);
+      document.body.removeChild(exportWrapper);
 
       // Convert to blob and download
       canvas.toBlob((blob) => {
