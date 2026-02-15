@@ -583,7 +583,13 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
 
     // AGENT 2: Executor Agent - Execute the solution
     console.log('\n=== AGENT 2: Executor ===');
-    const executorPrompt = useLean ? prompts.executor_lean : prompts.executor_sympy;
+    // Detect MC questions (contain "Opcje:" or option pattern "A)" "B)")
+    const isMultipleChoice = /Opcje:|[A-D]\)/.test(userMessage);
+    const executorPrompt = useLean ? prompts.executor_lean :
+      (isMultipleChoice && (prompts as any).executor_sympy_mc ? (prompts as any).executor_sympy_mc : prompts.executor_sympy);
+    if (isMultipleChoice) {
+      console.log('📋 MC question detected — using MC executor prompt');
+    }
 
     const executorContext = this.getAgentContext();
     const executorResponse = await this.executeAgentTurn(
@@ -776,95 +782,77 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       if (onMessageCallback) onMessageCallback(summaryMsg);
     }
 
-    if (useLean && this.leanClient) {
-      console.log('\n=== AGENT 3: Verifier (Lean) ===');
+    if (useLean) {
+      // AGENT 3: Formalizer — translate informal proof to formal Lean 4 code
+      console.log('\n=== AGENT 3: Formalizer (Lean 4) ===');
 
-      const verifierPrompt = `Jesteś ekspertem w weryfikacji dowodów matematycznych.
+      const formalizerPrompt = (prompts as any).formalizer_lean || prompts.executor_lean;
+      const formalizerConfig = (prompts.agents as any).formalizer || prompts.agents.executor;
 
-Twoja rola:
-1. Przeczytaj dowód od Agenta Wykonawczego
-2. Sprawdź poprawność logiczną każdego kroku
-3. Zidentyfikuj ewentualne luki lub błędy
-4. Oceń czy dowód jest kompletny i poprawny
-
-ZAKAZY:
-- ZAKAZANE: $, $$, \\frac, \\sqrt, \\left, \\right, \\cdot, \\(, \\), \\[, \\], \\boxed, \\dfrac
-- Zamiast LaTeX: x**2, a/b, sqrt(x), x^2, x_1, x_2
-- NIE uzywaj znakow dolara $ w ogole
-
-Format odpowiedzi:
-**Weryfikacja dowodu:**
-✅/❌ [ocena]
-
-**Szczegóły:**
-[analiza poszczególnych kroków]
-
-**Wnioski:**
-[podsumowanie]
-
-Odpowiadaj po polsku. NIE uzywaj LaTeX - pisz wzory w prostym formacie tekstowym (np. x^2, (x-y)^2, 3x + y).`;
-
-      const verifierContext = this.getAgentContext();
-      const verifierResponse = await this.executeAgentTurn(
-        'Agent Weryfikujący',
-        verifierPrompt,
-        verifierContext
+      const formalizerContext = this.getAgentContext();
+      const formalizerResponse = await this.executeAgentTurn(
+        'Agent Formalizujący',
+        formalizerPrompt,
+        formalizerContext,
+        { maxTokens: formalizerConfig.max_tokens, temperature: formalizerConfig.temperature }
       );
 
-      // Try to verify with Lean Prover
+      const cleanedFormalizerResponse = this.cleanMalformedLatex(formalizerResponse);
+
+      // Try to verify the Lean code with the Lean Prover
       let leanVerification = '';
       const leanToolCalls: ToolCall[] = [];
       const leanToolResults: ToolResult[] = [];
 
-      try {
-        console.log('🎯 Attempting Lean Prover verification...');
+      if (this.leanClient) {
+        try {
+          console.log('🎯 Attempting Lean Prover verification...');
 
-        // Record tool call
-        leanToolCalls.push({
-          id: 'lean-verify-1',
-          name: 'lean_prover_verify',
-          arguments: {
-            problem: userMessage.substring(0, 200) + (userMessage.length > 200 ? '...' : ''),
-            proof: cleanedExecutorResponse.substring(0, 500) + (cleanedExecutorResponse.length > 500 ? '...' : ''),
-          },
-        });
+          leanToolCalls.push({
+            id: 'lean-verify-1',
+            name: 'lean_prover_verify',
+            arguments: {
+              problem: userMessage.substring(0, 200) + (userMessage.length > 200 ? '...' : ''),
+              proof: cleanedFormalizerResponse.substring(0, 500) + (cleanedFormalizerResponse.length > 500 ? '...' : ''),
+            },
+          });
 
-        const leanResult = await this.verifyWithLean(userMessage, cleanedExecutorResponse);
-        leanVerification = `\n\n---\n**🎯 Weryfikacja Lean Prover:**\n${leanResult}`;
+          const leanResult = await this.verifyWithLean(userMessage, cleanedFormalizerResponse);
+          leanVerification = `\n\n---\n**Weryfikacja Lean Prover:**\n${leanResult}`;
 
-        // Record tool result
-        leanToolResults.push({
-          toolCallId: 'lean-verify-1',
-          toolName: 'lean_prover_verify',
-          result: leanResult,
-          isError: leanResult.includes('❌') || leanResult.includes('⚠️'),
-        });
-      } catch (error) {
-        console.warn('Lean verification failed:', error);
-        const errorMsg = `⚠️ Błąd weryfikacji: ${error instanceof Error ? error.message : String(error)}`;
-        leanVerification = `\n\n---\n**🎯 Weryfikacja Lean Prover:**\n${errorMsg}`;
+          leanToolResults.push({
+            toolCallId: 'lean-verify-1',
+            toolName: 'lean_prover_verify',
+            result: leanResult,
+            isError: leanResult.includes('❌') || leanResult.includes('⚠️'),
+          });
+        } catch (error) {
+          console.warn('Lean verification failed:', error);
+          const errorMsg = `Blad weryfikacji: ${error instanceof Error ? error.message : String(error)}`;
+          leanVerification = `\n\n---\n**Weryfikacja Lean Prover:**\n${errorMsg}`;
 
-        // Record error result
-        leanToolResults.push({
-          toolCallId: 'lean-verify-1',
-          toolName: 'lean_prover_verify',
-          result: errorMsg,
-          isError: true,
-        });
+          leanToolResults.push({
+            toolCallId: 'lean-verify-1',
+            toolName: 'lean_prover_verify',
+            result: errorMsg,
+            isError: true,
+          });
+        }
       }
 
-      const verifierMsg: Message = {
+      const formalizerMsg: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: this.cleanMalformedLatex(verifierResponse) + leanVerification,
-        agentName: 'Agent Weryfikujący',
+        content: cleanedFormalizerResponse + leanVerification,
+        agentName: 'Agent Formalizujący',
         timestamp: new Date(),
         toolCalls: leanToolCalls.length > 0 ? leanToolCalls : undefined,
         toolResults: leanToolResults.length > 0 ? leanToolResults : undefined,
       };
-      this.conversationHistory.push(verifierMsg);
-      newMessages.push(verifierMsg);
-      if (onMessageCallback) onMessageCallback(verifierMsg);
+      this.conversationHistory.push(formalizerMsg);
+      newMessages.push(formalizerMsg);
+      if (onMessageCallback) onMessageCallback(formalizerMsg);
+
     }
 
     console.log('✅ Processing complete');

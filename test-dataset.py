@@ -11,6 +11,12 @@ Usage:
   python3 test-dataset.py --year 2024 --task 1,2,5 # Specific tasks
   python3 test-dataset.py --only-mc                # Only multiple choice
   python3 test-dataset.py --only-open              # Only open-ended
+  python3 test-dataset.py --use-mcp                # Use MCP proxy (same as UI)
+
+To test via UI infrastructure (MCP proxy):
+  1. Start MCP proxy: npm run mcp-proxy  (port 3001)
+  2. Start MLX server: mlx_lm.server ... (port 8011)
+  3. Run: python3 test-dataset.py --use-mcp --year 2024 --all
 """
 
 import json
@@ -78,6 +84,8 @@ signal.signal(signal.SIGINT, signal_handler)
 
 DATASETS_DIR = os.path.join(os.path.dirname(__file__), "datasets")
 PROMPTS_FILE = os.path.join(os.path.dirname(__file__), "prompts.json")
+MCP_PROXY_URL = "http://localhost:3001"
+LEAN_PROXY_URL = "http://localhost:3002"
 
 # ── Config (loaded from shared prompts.json) ─────────────────────────────
 
@@ -95,6 +103,7 @@ TEMPERATURE = _CONFIG["agents"]["executor"]["temperature"]
 # Prompts
 ANALYTICAL_PROMPT = _CONFIG["analytical"]
 EXECUTOR_PROMPT = _CONFIG["executor_sympy"]
+EXECUTOR_MC_PROMPT = _CONFIG.get("executor_sympy_mc", _CONFIG["executor_sympy"])
 SUMMARY_PROMPT = _CONFIG["summary"]
 
 # Per-agent settings
@@ -133,6 +142,61 @@ def call_bielik(system_prompt, messages, base_url, model, max_tokens=2048, tempe
     except Exception as e:
         print(f"  ERROR: {e}")
         return None
+
+
+# ── MCP Proxy Integration ────────────────────────────────────────────────
+
+def check_mcp_proxy():
+    """Check if MCP proxy server is running."""
+    try:
+        req = Request(f"{MCP_PROXY_URL}/health")
+        with urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+            return data.get('mcpConnected', False)
+    except:
+        return False
+
+
+def check_lean_proxy():
+    """Check if Lean proxy server is running."""
+    try:
+        req = Request(f"{LEAN_PROXY_URL}/health")
+        with urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+            return data.get('status') == 'ok'
+    except:
+        return False
+
+
+def call_mcp_sympy(code):
+    """Execute SymPy code via MCP proxy server (same as UI). Returns (output, error, returncode)."""
+    sanitized = _sanitize_code(code)
+    url = f"{MCP_PROXY_URL}/tools/call"
+    payload = json.dumps({
+        "name": "sympy_calculate",
+        "arguments": {"expression": sanitized}
+    }).encode("utf-8")
+
+    req = Request(url, data=payload, headers={"Content-Type": "application/json"})
+    try:
+        with urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read())
+            # MCP returns {content: [{type: "text", text: "..."}]} format
+            content = data.get('content', [])
+            if isinstance(content, list) and content:
+                text = content[0].get('text', '')
+                is_error = content[0].get('isError', False)
+                if is_error:
+                    return '', text, 1
+                return text, '', 0
+            elif isinstance(content, str):
+                return content, '', 0
+            else:
+                return str(data), '', 0
+    except URLError as e:
+        return '', f"MCP proxy error: {e}", 1
+    except Exception as e:
+        return '', f"MCP error: {e}", 1
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -229,6 +293,7 @@ def format_question(q):
         text += "\nOpcje:"
         for key, val in q['options'].items():
             text += f"\n  {key.upper()}) {clean_latex_for_display(val)}"
+        text += "\n\nWybierz poprawna opcje (A/B/C/D)."
     return text
 
 
@@ -505,8 +570,25 @@ def _sanitize_code(code):
         for old, new in import_fixes.items():
             if old in line:
                 line = line.replace(old, new)
+        # Fix Pi → pi (common Bielik mistake)
+        if 'Pi' in line and 'import' not in line:
+            line = re.sub(r'\bPi\b', 'pi', line)
         result_lines.append(line)
     lines = result_lines
+
+    # Ensure sympy import exists
+    code_text = '\n'.join(lines)
+    if 'from sympy' not in code_text and 'import sympy' not in code_text:
+        lines.insert(0, 'from sympy import *')
+
+    # Ensure there's a print statement for ODPOWIEDZ
+    if 'print(' not in code_text:
+        # Find last assignment variable
+        for i in range(len(lines) - 1, -1, -1):
+            m = re.match(r'^(\w+)\s*=', lines[i].strip())
+            if m and not lines[i].strip().startswith(('from ', 'import ')):
+                lines.append(f'print("ODPOWIEDZ:", {m.group(1)})')
+                break
 
     return '\n'.join(lines)
 
@@ -596,27 +678,31 @@ def _run_sympy(code):
     return proc.stdout.strip(), proc.stderr.strip(), proc.returncode
 
 
-def _run_sympy_with_retry(code, verbose, result):
+def _run_sympy_with_retry(code, verbose, result, use_mcp=False):
     """Run SymPy code with auto-retry on failure. Returns output or None."""
     MAX_RETRIES = 3
     current_code = code
+    backend_label = "MCP" if use_mcp else "SymPy"
 
     for attempt in range(MAX_RETRIES + 1):
         try:
-            stdout, stderr, rc = _run_sympy(current_code)
+            if use_mcp:
+                stdout, stderr, rc = call_mcp_sympy(current_code)
+            else:
+                stdout, stderr, rc = _run_sympy(current_code)
 
             if rc == 0 and stdout:
                 result['answer_got'] = extract_answer_from_output(stdout)
                 if verbose:
                     answer_line = result['answer_got'] or stdout[-80:]
                     retry_tag = f" (retry {attempt})" if attempt > 0 else ""
-                    print(f"  SymPy:     ✅ → {answer_line[:60]}{retry_tag}")
+                    print(f"  {backend_label}:     ✅ → {answer_line[:60]}{retry_tag}")
                 return stdout
             elif rc == 0 and not stdout:
                 # Code ran but produced no output
                 if verbose:
-                    print(f"  SymPy:     ❌ no output (code ran without print)")
-                result['errors'].append("SymPy: no output produced")
+                    print(f"  {backend_label}:     ❌ no output (code ran without print)")
+                result['errors'].append(f"{backend_label}: no output produced")
                 return None
             else:
                 if attempt < MAX_RETRIES:
@@ -625,40 +711,40 @@ def _run_sympy_with_retry(code, verbose, result):
                         # No fix found, don't retry
                         if verbose:
                             err = stderr[-120:] if stderr else "unknown error"
-                            print(f"  SymPy:     ❌ {err}")
-                        result['errors'].append(f"SymPy error: {stderr[:100]}")
+                            print(f"  {backend_label}:     ❌ {err}")
+                        result['errors'].append(f"{backend_label} error: {stderr[:100]}")
                         return None
                     if verbose:
-                        print(f"  SymPy:     ⚠️  retrying ({stderr[-60:].strip()})")
+                        print(f"  {backend_label}:     ⚠️  retrying ({stderr[-60:].strip()})")
                     current_code = fixed_code
                     continue
                 else:
                     if verbose:
                         err = stderr[-120:] if stderr else "no output"
-                        print(f"  SymPy:     ❌ {err}")
-                    result['errors'].append(f"SymPy error: {stderr[:100]}")
+                        print(f"  {backend_label}:     ❌ {err}")
+                    result['errors'].append(f"{backend_label} error: {stderr[:100]}")
                     return None
 
         except subprocess.TimeoutExpired:
-            result['errors'].append("SymPy timeout")
+            result['errors'].append(f"{backend_label} timeout")
             if verbose:
-                print(f"  SymPy:     ❌ timeout")
+                print(f"  {backend_label}:     ❌ timeout")
             return None
         except Exception as e:
-            result['errors'].append(f"SymPy exception: {e}")
+            result['errors'].append(f"{backend_label} exception: {e}")
             if verbose:
-                print(f"  SymPy:     ❌ exception: {e}")
+                print(f"  {backend_label}:     ❌ exception: {e}")
             return None
 
     # Exhausted retries without fix
     if verbose:
-        print(f"  SymPy:     ❌ unfixable error after {MAX_RETRIES} retries")
+        print(f"  {backend_label}:     ❌ unfixable error after {MAX_RETRIES} retries")
     return None
 
 
 # ── Test Runner ──────────────────────────────────────────────────────────
 
-def test_question(q, base_url, model, verbose=True):
+def test_question(q, base_url, model, verbose=True, use_mcp=False):
     """Test a single question through the 3-agent pipeline. Returns result dict."""
     task_num = q['metadata']['task_number']
     year = q['metadata']['year']
@@ -714,10 +800,11 @@ def test_question(q, base_url, model, verbose=True):
         print(f"  Analytical ({t_analytical:.0f}s): {'✅' if result['analytical_ok'] else '❌'} "
               f"({len(analytical)} chars)")
 
-    # Agent 2: Executor
+    # Agent 2: Executor (use MC-specific prompt for multiple choice)
     t0 = time.time()
+    exec_prompt = EXECUTOR_MC_PROMPT if is_mc else EXECUTOR_PROMPT
     executor = call_bielik(
-        EXECUTOR_PROMPT,
+        exec_prompt,
         [
             {"role": "user", "content": question_text},
             {"role": "assistant", "content": f"[Agent Analityczny]: {analytical}"},
@@ -751,10 +838,20 @@ def test_question(q, base_url, model, verbose=True):
               f"valid={'✅' if result['code_valid'] else '❌'} "
               f"({len(truncated)} chars)")
 
-    # Try to execute code locally if sympy available (with auto-retry)
+    # Try to execute code via MCP proxy or locally
     sympy_output = None
-    if code and SYMPY_AVAILABLE:
-        sympy_output = _run_sympy_with_retry(code, verbose, result)
+    if code and use_mcp:
+        sympy_output = _run_sympy_with_retry(code, verbose, result, use_mcp=True)
+    elif code and SYMPY_AVAILABLE:
+        sympy_output = _run_sympy_with_retry(code, verbose, result, use_mcp=False)
+
+    # For MC: if no answer from SymPy, try to extract letter from raw executor output
+    if is_mc and not result['answer_got'] and executor:
+        # Look for letter answers in raw executor output (outside code blocks)
+        raw_text = re.sub(r'```[\s\S]*?```', '', executor)
+        letter_in_text = re.search(r'(?:odpowied[zź]|answer|opcja|option)[:\s]*([a-dA-D])\b', raw_text, re.IGNORECASE)
+        if letter_in_text:
+            result['answer_got'] = letter_in_text.group(1).upper()
 
     # Check answer
     if result['answer_got']:
@@ -789,26 +886,40 @@ def main():
     parser.add_argument("--only-mc", action="store_true", help="Only multiple-choice")
     parser.add_argument("--only-open", action="store_true", help="Only open-ended")
     parser.add_argument("--quiet", action="store_true", help="Less verbose output")
+    parser.add_argument("--use-mcp", action="store_true",
+                        help="Use MCP proxy (localhost:3001) for SymPy execution instead of local subprocess")
     args = parser.parse_args()
 
     base_url = f"http://localhost:{args.port}"
     verbose = not args.quiet
+    use_mcp = args.use_mcp
 
-    # Check server
+    # Check MLX server
     try:
         req = Request(f"{base_url}/v1/models")
         with urlopen(req, timeout=5) as resp:
             models = json.loads(resp.read())
             model_ids = [m['id'] for m in models.get('data', [])]
     except Exception as e:
-        print(f"ERROR: Cannot reach server at {base_url}: {e}")
+        print(f"ERROR: Cannot reach MLX server at {base_url}: {e}")
         sys.exit(1)
+
+    # Check MCP proxy if requested
+    if use_mcp:
+        if check_mcp_proxy():
+            print(f"✅ MCP proxy connected at {MCP_PROXY_URL}")
+        else:
+            print(f"ERROR: MCP proxy not available at {MCP_PROXY_URL}")
+            print(f"  Start it with: npm run mcp-proxy")
+            print(f"  Or run without --use-mcp to use local subprocess")
+            sys.exit(1)
 
     print("=" * 70)
     print("BIELIK-M-POC DATASET TESTER")
     print("=" * 70)
-    print(f"Server: {base_url}")
-    print(f"Model:  {args.model}")
+    print(f"Server:  {base_url}")
+    print(f"Model:   {args.model}")
+    print(f"Backend: {'MCP proxy' if use_mcp else 'local subprocess'}")
     print(f"Models available: {model_ids}")
 
     # Determine years to test
@@ -854,7 +965,7 @@ def main():
         for q in questions:
             if interrupted:
                 break
-            result = test_question(q, base_url, args.model, verbose=verbose)
+            result = test_question(q, base_url, args.model, verbose=verbose, use_mcp=use_mcp)
             year_results.append(result)
             all_results.append(result)
 

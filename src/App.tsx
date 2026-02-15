@@ -467,11 +467,15 @@ function App() {
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="empty-state">
-              <p>👋 Witaj! Zadaj pytanie matematyczne - system trzech agentów będzie współpracować nad rozwiązaniem.</p>
+              <p>👋 Witaj! Zadaj pytanie matematyczne - system agentów będzie współpracować nad rozwiązaniem.</p>
               <p style={{ marginTop: '10px', fontSize: '0.95em', color: '#666' }}>
                 🧠 <strong>Agent Analityczny</strong> rozbije problem na kroki<br/>
                 ⚡ <strong>Agent Wykonawczy</strong> wykona obliczenia lub przygotuje dowód<br/>
-                🎯 <strong>Agent Weryfikujący</strong> sprawdzi poprawność dowodu (Lean Prover)
+                🎯 <strong>Agent Weryfikujący</strong> sprawdzi poprawność dowodu (Lean Prover)<br/>
+                🔬 <strong>Agent Formalizujący</strong> (opcjonalny) - pełna formalna weryfikacja z Mathlib
+              </p>
+              <p style={{ marginTop: '8px', fontSize: '0.85em', color: '#888', fontStyle: 'italic' }}>
+                💡 Dla zadań z dowodami, Agent Formalizujący automatycznie przetłumaczy dowód na pełny formalny kod Lean 4 z biblioteką Mathlib, gotowy do kompilacji i weryfikacji.
               </p>
               <div className="examples">
                 <p><strong>Przykłady obliczeń (SymPy):</strong></p>
@@ -513,7 +517,8 @@ function App() {
                     <div className="agent-badge">
                       {msg.agentName === 'Agent Analityczny' ? '🧠' :
                        msg.agentName === 'Agent Wykonawczy' ? '⚡' :
-                       msg.agentName === 'Agent Weryfikujący' ? '🎯' : '🤖'} {msg.agentName || 'Agent'}
+                       msg.agentName === 'Agent Weryfikujący' ? '🎯' :
+                       msg.agentName === 'Agent Formalizujący' ? '🔬' : '🤖'} {msg.agentName || 'Agent'}
                     </div>
                   )}
                   <div className="message-content">
