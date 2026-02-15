@@ -787,6 +787,11 @@ Twoja rola:
 3. Zidentyfikuj ewentualne luki lub błędy
 4. Oceń czy dowód jest kompletny i poprawny
 
+ZAKAZY:
+- ZAKAZANE: $, $$, \\frac, \\sqrt, \\left, \\right, \\cdot, \\(, \\), \\[, \\], \\boxed, \\dfrac
+- Zamiast LaTeX: x**2, a/b, sqrt(x), x^2, x_1, x_2
+- NIE uzywaj znakow dolara $ w ogole
+
 Format odpowiedzi:
 **Weryfikacja dowodu:**
 ✅/❌ [ocena]
@@ -797,7 +802,7 @@ Format odpowiedzi:
 **Wnioski:**
 [podsumowanie]
 
-Odpowiadaj po polsku.`;
+Odpowiadaj po polsku. NIE uzywaj LaTeX - pisz wzory w prostym formacie tekstowym (np. x^2, (x-y)^2, 3x + y).`;
 
       const verifierContext = this.getAgentContext();
       const verifierResponse = await this.executeAgentTurn(
