@@ -3,6 +3,7 @@ import { ThreeAgentOrchestrator, Message, LLMProvider, MLXConfig, ProverBackend 
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
+import html2canvas from 'html2canvas';
 import './App.css';
 
 const MCP_PROXY_URL = 'http://localhost:3001';
@@ -229,6 +230,55 @@ function App() {
     });
   };
 
+  const handleExportToPNG = async () => {
+    const messagesContainer = document.querySelector('.messages-container');
+    if (!messagesContainer || messages.length === 0) {
+      alert('Brak konwersacji do wyeksportowania');
+      return;
+    }
+
+    try {
+      // Create a temporary container with white background
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.background = 'white';
+      tempContainer.style.padding = '20px';
+      tempContainer.style.width = messagesContainer.clientWidth + 'px';
+
+      // Clone the messages
+      const clone = messagesContainer.cloneNode(true) as HTMLElement;
+      tempContainer.appendChild(clone);
+      document.body.appendChild(tempContainer);
+
+      // Generate canvas
+      const canvas = await html2canvas(tempContainer, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher quality
+        logging: false,
+      });
+
+      // Remove temporary container
+      document.body.removeChild(tempContainer);
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          link.download = `konwersacja-${timestamp}.png`;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+      }, 'image/png');
+    } catch (error) {
+      console.error('Błąd eksportu do PNG:', error);
+      alert('Wystąpił błąd podczas eksportu do PNG');
+    }
+  };
+
   if (!isConfigured) {
     return (
       <div className="config-container">
@@ -395,6 +445,9 @@ function App() {
         <div className="header-controls">
           <button onClick={() => setShowHistory(true)} className="history-button">
             📚 Historia
+          </button>
+          <button onClick={handleExportToPNG} className="export-button" disabled={messages.length === 0}>
+            📸 Eksport PNG
           </button>
           {mcpConnected && (
             <span className="mcp-status">
