@@ -458,7 +458,10 @@ body {
   font-size: 14px;
   font-family: inherit;
   resize: none;
-  transition: border-color 0.3s;
+  transition: border-color 0.3s, height 0.1s ease;
+  min-height: 45px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .message-input:focus {

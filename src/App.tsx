@@ -26,6 +26,7 @@ function App() {
 
   const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -34,6 +35,16 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Auto-resize textarea as user types
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, 300); // max 300px
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [inputMessage]);
 
   // Load chat sessions on mount
   useEffect(() => {
@@ -525,13 +536,14 @@ function App() {
 
         <div className="input-container">
           <textarea
+            ref={textareaRef}
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Wpisz zadanie matematyczne... (Enter aby wysłać, Shift+Enter dla nowej linii)"
             className="message-input"
             disabled={isProcessing}
-            rows={3}
+            rows={1}
           />
           <button
             onClick={handleSendMessage}
