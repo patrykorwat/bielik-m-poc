@@ -232,6 +232,120 @@ export function MessageContent({ content }: MessageContentProps) {
 
       console.log('Parsed segments:', segments);
 
+      // Simple syntax highlighter for Lean using React components
+      const highlightLean = (code: string): JSX.Element => {
+        const lines = code.split('\n');
+
+        const tokenizeLine = (line: string): Array<{ type: string; value: string }> => {
+          const tokens: Array<{ type: string; value: string }> = [];
+          let i = 0;
+
+          while (i < line.length) {
+            // Skip whitespace
+            if (/\s/.test(line[i])) {
+              const start = i;
+              while (i < line.length && /\s/.test(line[i])) i++;
+              tokens.push({ type: 'whitespace', value: line.substring(start, i) });
+              continue;
+            }
+
+            // Comments
+            if (line[i] === '-' && i + 1 < line.length && line[i + 1] === '-') {
+              tokens.push({ type: 'comment', value: line.substring(i) });
+              break;
+            }
+
+            // Strings
+            if (line[i] === '"') {
+              const start = i;
+              i++;
+              while (i < line.length && line[i] !== '"') {
+                if (line[i] === '\\') i++;
+                i++;
+              }
+              i++;
+              tokens.push({ type: 'string', value: line.substring(start, i) });
+              continue;
+            }
+
+            // Numbers
+            if (/\d/.test(line[i])) {
+              const start = i;
+              while (i < line.length && /[\d.]/.test(line[i])) i++;
+              tokens.push({ type: 'number', value: line.substring(start, i) });
+              continue;
+            }
+
+            // Identifiers and keywords
+            if (/[a-zA-Z_ℕℤℝ]/.test(line[i])) {
+              const start = i;
+              while (i < line.length && /[a-zA-Z0-9_'ℕℤℝ]/.test(line[i])) i++;
+              const word = line.substring(start, i);
+
+              const keywords = ['import', 'theorem', 'lemma', 'def', 'inductive', 'structure',
+                               'by', 'with', 'have', 'show', 'let', 'in', 'match', 'if', 'then', 'else',
+                               'sorry', 'rw', 'simp', 'ring', 'exact', 'apply', 'intro', 'intros',
+                               'induction', 'cases', 'split', 'left', 'right', 'constructor',
+                               'open', 'namespace', 'section', 'variable', 'variables', 'axiom'];
+
+              const types = ['Nat', 'Int', 'Real', 'Bool', 'Prop', 'Type', 'Sort'];
+
+              if (keywords.includes(word)) {
+                tokens.push({ type: 'keyword', value: word });
+              } else if (types.includes(word) || word === 'ℕ' || word === 'ℤ' || word === 'ℝ') {
+                tokens.push({ type: 'type', value: word });
+              } else {
+                tokens.push({ type: 'identifier', value: word });
+              }
+              continue;
+            }
+
+            // Operators and punctuation
+            tokens.push({ type: 'operator', value: line[i] });
+            i++;
+          }
+
+          return tokens;
+        };
+
+        return (
+          <>
+            {lines.map((line, lineIdx) => (
+              <div key={lineIdx} style={{ fontFamily: 'monospace', minHeight: '1.5em' }}>
+                {tokenizeLine(line).map((token, tokenIdx) => {
+                  const style: React.CSSProperties = {};
+
+                  switch (token.type) {
+                    case 'keyword':
+                      style.color = '#C586C0';
+                      break;
+                    case 'type':
+                      style.color = '#4EC9B0';
+                      break;
+                    case 'string':
+                      style.color = '#CE9178';
+                      break;
+                    case 'comment':
+                      style.color = '#6A9955';
+                      style.fontStyle = 'italic';
+                      break;
+                    case 'number':
+                      style.color = '#B5CEA8';
+                      break;
+                  }
+
+                  return (
+                    <span key={tokenIdx} style={style}>
+                      {token.value}
+                    </span>
+                  );
+                })}
+              </div>
+            ))}
+          </>
+        );
+      };
+
       // Simple syntax highlighter for Python using React components
       const highlightPython = (code: string): JSX.Element => {
         const lines = code.split('\n');
@@ -353,6 +467,7 @@ export function MessageContent({ content }: MessageContentProps) {
         if (segment.type === 'code-block') {
           // Render code block with syntax highlighting
           const isPython = segment.language === 'python' || segment.language === 'py';
+          const isLean = segment.language === 'lean';
           const codeBlockKey = key++;
           parts.push(
             <div
@@ -412,6 +527,8 @@ export function MessageContent({ content }: MessageContentProps) {
               </div>
               {isPython ? (
                 highlightPython(segment.content)
+              ) : isLean ? (
+                highlightLean(segment.content)
               ) : (
                 <pre style={{ margin: 0, fontFamily: 'monospace' }}>
                   {segment.content}

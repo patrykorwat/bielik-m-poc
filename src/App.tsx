@@ -524,25 +524,31 @@ function App() {
                         <div key={tc.id} className="tool-call">
                           🔧 Używam narzędzia: <code>{tc.name}</code>
                           <details style={{ marginTop: '0.5em', fontSize: '0.85em' }} open>
-                            <summary>Kod Python</summary>
-                            <div style={{
-                              backgroundColor: '#e3f2fd',
-                              padding: '8px 12px',
-                              borderRadius: '4px',
-                              marginTop: '8px',
-                              fontSize: '0.9em',
-                              borderLeft: '3px solid #2196f3'
-                            }}>
-                              💡 <strong>Chcesz nauczyć się Pythona?</strong> Zobacz darmowy {' '}
-                              <a
-                                href="https://discovery.navoica.pl/course-v1:Uniwersytet_Gdanski+UG_2_Py_1+2024_01/about"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: '#1976d2', textDecoration: 'underline' }}
-                              >
-                                Kurs Pythona - Uniwersytet Gdański
-                              </a>
-                            </div>
+                            <summary>
+                              {tc.name === 'sympy_calculate' ? 'Kod Python' :
+                               tc.name === 'lean_prover_verify' ? 'Argumenty narzędzia' :
+                               'Argumenty'}
+                            </summary>
+                            {tc.name === 'sympy_calculate' && (
+                              <div style={{
+                                backgroundColor: '#e3f2fd',
+                                padding: '8px 12px',
+                                borderRadius: '4px',
+                                marginTop: '8px',
+                                fontSize: '0.9em',
+                                borderLeft: '3px solid #2196f3'
+                              }}>
+                                💡 <strong>Chcesz nauczyć się Pythona?</strong> Zobacz darmowy {' '}
+                                <a
+                                  href="https://discovery.navoica.pl/course-v1:Uniwersytet_Gdanski+UG_2_Py_1+2024_01/about"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ color: '#1976d2', textDecoration: 'underline' }}
+                                >
+                                  Kurs Pythona - Uniwersytet Gdański
+                                </a>
+                              </div>
+                            )}
                             {tc.name === 'sympy_calculate' && tc.arguments.expression ? (
                               <SyntaxHighlighter
                                 language="python"
