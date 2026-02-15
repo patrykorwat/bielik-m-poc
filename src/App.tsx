@@ -12,9 +12,8 @@ const MCP_PROXY_URL = 'http://localhost:3001';
 const LEAN_PROXY_URL = 'http://localhost:3002';
 
 function App() {
-  const [provider, setProvider] = useState<LLMProvider>('claude');
+  const [provider] = useState<LLMProvider>('mlx');
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
-  const [apiKey, setApiKey] = useState('');
   const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:8011');
   const [mlxModel, setMlxModel] = useState('LibraxisAI/Bielik-11B-v3.0-mlx-q4');
   const [isConfigured, setIsConfigured] = useState(false);
@@ -72,31 +71,21 @@ function App() {
   }, [messages, currentChatId, provider, isConfigured]);
 
   const handleConfigure = async () => {
-    if (provider === 'claude' && !apiKey.trim()) {
-      alert('Proszę wprowadzić klucz API dla Claude');
-      return;
-    }
-
-    if (provider === 'mlx' && !mlxBaseUrl.trim()) {
+    if (!mlxBaseUrl.trim()) {
       alert('Proszę wprowadzić URL serwera MLX');
       return;
     }
 
     try {
-      let mlxConfig: MLXConfig | undefined;
-      if (provider === 'mlx') {
-        mlxConfig = {
-          baseUrl: mlxBaseUrl,
-          model: mlxModel,
-          temperature: 0.7,
-          maxTokens: 4096,
-        };
-      }
+      const mlxConfig: MLXConfig = {
+        baseUrl: mlxBaseUrl,
+        model: mlxModel,
+        temperature: 0.7,
+        maxTokens: 4096,
+      };
 
       orchestratorRef.current = new ThreeAgentOrchestrator(
-        provider,
         proverBackend,
-        provider === 'claude' ? apiKey : undefined,
         mlxConfig
       );
 
@@ -328,17 +317,6 @@ function App() {
           </p>
 
           <div className="config-form">
-            <label htmlFor="provider">Wybierz Provider LLM:</label>
-            <select
-              id="provider"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value as LLMProvider)}
-              className="provider-select"
-            >
-              <option value="claude">Claude (Anthropic)</option>
-              <option value="mlx">MLX (Apple Silicon - lokalny)</option>
-            </select>
-
             <label htmlFor="proverBackend">Wybierz Backend Dowodzenia:</label>
             <select
               id="proverBackend"
@@ -365,41 +343,25 @@ function App() {
               </div>
             )}
 
-            {provider === 'claude' ? (
-              <>
-                <label htmlFor="apiKey">Klucz API Anthropic:</label>
-                <input
-                  id="apiKey"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="sk-ant-..."
-                  className="api-input"
-                />
-              </>
-            ) : (
-              <>
-                <label htmlFor="mlxBaseUrl">URL serwera MLX:</label>
-                <input
-                  id="mlxBaseUrl"
-                  type="text"
-                  value={mlxBaseUrl}
-                  onChange={(e) => setMlxBaseUrl(e.target.value)}
-                  placeholder="http://localhost:8011"
-                  className="api-input"
-                />
+            <label htmlFor="mlxBaseUrl">URL serwera MLX:</label>
+            <input
+              id="mlxBaseUrl"
+              type="text"
+              value={mlxBaseUrl}
+              onChange={(e) => setMlxBaseUrl(e.target.value)}
+              placeholder="http://localhost:8011"
+              className="api-input"
+            />
 
-                <label htmlFor="mlxModel">Model MLX:</label>
-                <input
-                  id="mlxModel"
-                  type="text"
-                  value={mlxModel}
-                  onChange={(e) => setMlxModel(e.target.value)}
-                  placeholder="LibraxisAI/Bielik-11B-v3.0-mlx-q4"
-                  className="api-input"
-                />
-              </>
-            )}
+            <label htmlFor="mlxModel">Model MLX:</label>
+            <input
+              id="mlxModel"
+              type="text"
+              value={mlxModel}
+              onChange={(e) => setMlxModel(e.target.value)}
+              placeholder="LibraxisAI/Bielik-11B-v3.0-mlx-q4"
+              className="api-input"
+            />
 
             <button onClick={handleConfigure} className="config-button">
               Rozpocznij
@@ -449,28 +411,26 @@ function App() {
                 </ul>
               </>
             )}
-            {provider === 'mlx' && (
-              <div className="mlx-info">
-                <h3>ℹ️ Wymagania MLX:</h3>
-                <ul>
-                  <li>Mac z Apple Silicon (M1/M2/M3/M4)</li>
-                  <li>Darmowy, lokalny inference z akceleracją sprzętową</li>
-                </ul>
-                <div className="mlx-command">
-                  <h4>Uruchom serwer MLX w nowym terminalu:</h4>
-                  <div className="command-box">
-                    <code>mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011</code>
-                    <button
-                      onClick={() => copyToClipboard('mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011')}
-                      className="copy-button"
-                      title="Skopiuj do schowka"
-                    >
-                      📋 Kopiuj
-                    </button>
-                  </div>
+            <div className="mlx-info">
+              <h3>ℹ️ Wymagania MLX:</h3>
+              <ul>
+                <li>Mac z Apple Silicon (M1/M2/M3/M4)</li>
+                <li>Darmowy, lokalny inference z akceleracją sprzętową</li>
+              </ul>
+              <div className="mlx-command">
+                <h4>Uruchom serwer MLX w nowym terminalu:</h4>
+                <div className="command-box">
+                  <code>mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011</code>
+                  <button
+                    onClick={() => copyToClipboard('mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011')}
+                    className="copy-button"
+                    title="Skopiuj do schowka"
+                  >
+                    📋 Kopiuj
+                  </button>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -566,6 +526,24 @@ function App() {
                           🔧 Używam narzędzia: <code>{tc.name}</code>
                           <details style={{ marginTop: '0.5em', fontSize: '0.85em' }} open>
                             <summary>Kod Python</summary>
+                            <div style={{
+                              backgroundColor: '#e3f2fd',
+                              padding: '8px 12px',
+                              borderRadius: '4px',
+                              marginTop: '8px',
+                              fontSize: '0.9em',
+                              borderLeft: '3px solid #2196f3'
+                            }}>
+                              💡 <strong>Chcesz nauczyć się Pythona?</strong> Zobacz darmowy {' '}
+                              <a
+                                href="https://discovery.navoica.pl/course-v1:Uniwersytet_Gdanski+UG_2_Py_1+2024_01/about"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#1976d2', textDecoration: 'underline' }}
+                              >
+                                Kurs Pythona - Uniwersytet Gdański
+                              </a>
+                            </div>
                             {tc.name === 'sympy_calculate' && tc.arguments.expression ? (
                               <SyntaxHighlighter
                                 language="python"

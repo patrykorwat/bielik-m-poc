@@ -1,10 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { MLXAgent } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
 import { LeanProverServiceBrowser } from './leanProverService.browser';
 import prompts from '../../prompts.json';
 
-export type LLMProvider = 'claude' | 'mlx';
+export type LLMProvider = 'mlx';
 export type ProverBackend = 'sympy' | 'lean' | 'both';
 
 export interface Message {
@@ -44,8 +43,7 @@ export interface MLXConfig {
  * - Verifier Agent: checks proofs with Acorn for complex theorems
  */
 export class ThreeAgentOrchestrator {
-  private client: Anthropic | null = null;
-  private mlxAgent: MLXAgent | null = null;
+  private mlxAgent: MLXAgent;
   private mcpClient: MCPClient | null = null;
   private leanClient: LeanProverServiceBrowser | null = null;
   private conversationHistory: Message[] = [];
@@ -55,25 +53,16 @@ export class ThreeAgentOrchestrator {
   private leanAvailable: boolean = false;
 
   constructor(
-    provider: LLMProvider,
     proverBackend: ProverBackend = 'both',
-    apiKey?: string,
-    mlxConfig?: MLXConfig
+    mlxConfig: MLXConfig
   ) {
-    this.provider = provider;
+    this.provider = 'mlx';
     this.proverBackend = proverBackend;
 
-    if (provider === 'claude') {
-      if (!apiKey) {
-        throw new Error('API key is required for Claude provider');
-      }
-      this.client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
-    } else if (provider === 'mlx') {
-      if (!mlxConfig) {
-        throw new Error('MLX config is required for MLX provider');
-      }
-      this.mlxAgent = new MLXAgent(mlxConfig);
+    if (!mlxConfig) {
+      throw new Error('MLX config is required');
     }
+    this.mlxAgent = new MLXAgent(mlxConfig);
 
     // Initialize Lean client
     if (proverBackend === 'lean' || proverBackend === 'both') {
@@ -179,47 +168,22 @@ export class ThreeAgentOrchestrator {
     const maxTokens = options?.maxTokens || 2048;
     const temperature = options?.temperature ?? 0.3;
 
-    if (this.provider === 'claude' && this.client) {
-      console.log(`🤖 [${agentName}] Calling Claude API (maxTokens=${maxTokens}, temp=${temperature})...`);
+    console.log(`🤖 [${agentName}] Calling MLX (maxTokens=${maxTokens}, temp=${temperature})...`);
 
-      const response = await this.client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: contextMessages,
-      });
+    const content = await this.mlxAgent.execute(systemPrompt, contextMessages, {
+      maxTokens,
+      temperature,
+    });
 
-      let content = '';
-      for (const block of response.content) {
-        if (block.type === 'text') {
-          content += block.text;
-        }
-      }
+    // Remove <think> blocks from Bielik responses (handle unclosed tags too)
+    let cleanContent = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    // Handle unclosed <think> tag (Bielik sometimes doesn't close it)
+    cleanContent = cleanContent.replace(/<think>[\s\S]*/g, '').trim();
+    // Remove any remaining think tags
+    cleanContent = cleanContent.replace(/<\/?think>/g, '').trim();
 
-      console.log(`✅ [${agentName}] Response received`);
-      return content.trim();
-
-    } else if (this.provider === 'mlx' && this.mlxAgent) {
-      console.log(`🤖 [${agentName}] Calling MLX (maxTokens=${maxTokens}, temp=${temperature})...`);
-
-      const content = await this.mlxAgent.execute(systemPrompt, contextMessages, {
-        maxTokens,
-        temperature,
-      });
-
-      // Remove <think> blocks from Bielik responses (handle unclosed tags too)
-      let cleanContent = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-      // Handle unclosed <think> tag (Bielik sometimes doesn't close it)
-      cleanContent = cleanContent.replace(/<think>[\s\S]*/g, '').trim();
-      // Remove any remaining think tags
-      cleanContent = cleanContent.replace(/<\/?think>/g, '').trim();
-
-      console.log(`✅ [${agentName}] Response received`);
-      return cleanContent;
-
-    } else {
-      throw new Error(`Invalid provider configuration: ${this.provider}`);
-    }
+    console.log(`✅ [${agentName}] Response received`);
+    return cleanContent;
   }
 
   /**
