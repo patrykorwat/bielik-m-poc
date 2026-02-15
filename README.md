@@ -251,7 +251,7 @@ npm run start:all
 3. W aplikacji:
    - Wybierz provider "MLX (Apple Silicon - lokalny)"
    - Wprowadź URL serwera (domyślnie `http://localhost:8011`)
-   - Wprowadź nazwę modelu (domyślnie `LibraxisAI/Bielik-11B-v3.0-mlx-q5`)
+   - Wprowadź nazwę modelu (domyślnie `LibraxisAI/Bielik-11B-v3.0-mlx-q4`)
    - Upewnij się że widzisz status "**MCP Connected**" (zielony)
    - Kliknij "Rozpocznij"
 
@@ -473,7 +473,7 @@ const orchestrator = new ThreeAgentOrchestrator(
   undefined,
   {
     baseUrl: 'http://localhost:8011',
-    model: 'LibraxisAI/Bielik-11B-v3.0-mlx-q5',
+    model: 'LibraxisAI/Bielik-11B-v3.0-mlx-q4',
     temperature: 0.7,
     maxTokens: 4096
   }
