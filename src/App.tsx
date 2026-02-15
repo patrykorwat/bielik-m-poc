@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
-import { TwoAgentOrchestrator, Message, LLMProvider, MLXConfig } from './services/twoAgentSystem';
+import { ThreeAgentOrchestrator, Message, LLMProvider, MLXConfig, ProverBackend } from './services/threeAgentSystem';
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
 import './App.css';
 
 const MCP_PROXY_URL = 'http://localhost:3001';
+const LEAN_PROXY_URL = 'http://localhost:3002';
 
 function App() {
   const [provider, setProvider] = useState<LLMProvider>('claude');
+  const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
   const [apiKey, setApiKey] = useState('');
   const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:8011');
   const [mlxModel, setMlxModel] = useState('LibraxisAI/Bielik-11B-v3.0-mlx-q5');
@@ -20,8 +22,9 @@ function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [mcpConnected, setMcpConnected] = useState(false);
+  const [leanConnected, setLeanConnected] = useState(false);
 
-  const orchestratorRef = useRef<TwoAgentOrchestrator | null>(null);
+  const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -76,17 +79,43 @@ function App() {
         };
       }
 
-      orchestratorRef.current = new TwoAgentOrchestrator(
+      orchestratorRef.current = new ThreeAgentOrchestrator(
         provider,
+        proverBackend,
         provider === 'claude' ? apiKey : undefined,
         mlxConfig
       );
 
-      // Connect to MCP server
-      console.log('Connecting to MCP proxy...');
-      await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
-      setMcpConnected(true);
-      console.log('MCP connected successfully');
+      // Connect to MCP server (SymPy)
+      if (proverBackend === 'sympy' || proverBackend === 'both') {
+        console.log('Connecting to MCP proxy...');
+        try {
+          await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
+          setMcpConnected(true);
+          console.log('MCP connected successfully');
+        } catch (error) {
+          console.warn('MCP connection failed:', error);
+          if (proverBackend === 'sympy') {
+            throw error;
+          }
+        }
+      }
+
+      // Connect to Lean Prover
+      if (proverBackend === 'lean' || proverBackend === 'both') {
+        console.log('Connecting to Lean proxy...');
+        try {
+          await orchestratorRef.current.connectLean(LEAN_PROXY_URL);
+          const backendInfo = orchestratorRef.current.getBackendInfo();
+          setLeanConnected(backendInfo.leanConnected);
+          console.log('Lean connected successfully');
+        } catch (error) {
+          console.warn('Lean connection failed:', error);
+          if (proverBackend === 'lean') {
+            throw error;
+          }
+        }
+      }
 
       // Create new chat session
       const newChatId = ChatHistoryService.generateChatId();
@@ -193,9 +222,9 @@ function App() {
     return (
       <div className="config-container">
         <div className="config-card">
-          <h1>🤖 Dwuagentowy System Matematyczny z SymPy</h1>
+          <h1>🤖 System Matematyczny z SymPy i Lean Prover</h1>
           <p className="subtitle">
-            Agent Analityczny + Agent Wykonawczy = Rozwiązania krok po kroku
+            SymPy dla obliczeń + Lean Prover dla formalnych dowodów = Kompletne rozwiązania matematyczne
           </p>
 
           <div className="config-form">
@@ -209,6 +238,32 @@ function App() {
               <option value="claude">Claude (Anthropic)</option>
               <option value="mlx">MLX (Apple Silicon - lokalny)</option>
             </select>
+
+            <label htmlFor="proverBackend">Wybierz Backend Dowodzenia:</label>
+            <select
+              id="proverBackend"
+              value={proverBackend}
+              onChange={(e) => setProverBackend(e.target.value as ProverBackend)}
+              className="provider-select"
+            >
+              <option value="both">Oba (SymPy + Lean Prover) - Rekomendowane</option>
+              <option value="sympy">Tylko SymPy (obliczenia numeryczne/symboliczne)</option>
+              <option value="lean">Tylko Lean Prover (formalne dowody)</option>
+            </select>
+
+            {proverBackend === 'lean' && (
+              <div className="info-box" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '4px' }}>
+                <strong>⚠️ Wymagane:</strong> Upewnij się, że serwer Lean Proxy działa:<br/>
+                <code style={{ backgroundColor: '#f8f9fa', padding: '2px 6px', borderRadius: '3px', fontSize: '0.9em' }}>npm run lean-proxy</code>
+              </div>
+            )}
+
+            {(proverBackend === 'lean' || proverBackend === 'both') && (
+              <div className="info-box" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#d1ecf1', border: '1px solid #0c5460', borderRadius: '4px', fontSize: '0.9em' }}>
+                <strong>ℹ️ Lean Prover:</strong> Działa bez instalacji Lean (tylko weryfikacja agenta). Dla pełnej weryfikacji zainstaluj Lean:<br/>
+                <code style={{ backgroundColor: '#f8f9fa', padding: '2px 6px', borderRadius: '3px' }}>brew install elan-init && elan default leanprover/lean4:stable</code>
+              </div>
+            )}
 
             {provider === 'claude' ? (
               <>
@@ -254,24 +309,46 @@ function App() {
           <div className="info-box">
             <h3>Jak to działa?</h3>
             <ul>
-              <li><strong>Agent Analityczny</strong> - rozbija problem na kroki i tworzy plan rozwiązania</li>
-              <li><strong>Agent Wykonawczy</strong> - wykonuje obliczenia SymPy krok po kroku</li>
-              <li><strong>Model Context Protocol (MCP)</strong> - połączenie z serwerem SymPy</li>
-              <li><strong>sympy_calculate</strong> - wykonuje kod Python z wypisywaniem kroków pośrednich</li>
-              <li>Precyzyjne obliczenia symboliczne z widocznymi krokami</li>
+              <li><strong>SymPy Backend</strong> - wykonuje obliczenia symboliczne i numeryczne</li>
+              <li><strong>Lean Prover Backend</strong> - tworzy i weryfikuje formalne dowody matematyczne</li>
+              <li><strong>Automatyczny wybór</strong> - system wykrywa czy zadanie wymaga dowodu czy obliczeń</li>
+              <li><strong>LLM Agent</strong> - analizuje problem i generuje kod/dowód</li>
+              <li>Precyzyjne obliczenia + formalna weryfikacja dowodów w jednym systemie</li>
             </ul>
-            <h3>Dostępne narzędzia SymPy:</h3>
+
+            <h3>🎯 Lean Prover:</h3>
             <ul style={{ fontSize: '0.9em', lineHeight: '1.4' }}>
-              <li><code>sympy_differentiate</code> - obliczanie pochodnych</li>
-              <li><code>sympy_integrate</code> - całkowanie (oznaczone i nieoznaczone)</li>
-              <li><code>sympy_solve</code> - rozwiązywanie równań</li>
-              <li><code>sympy_simplify</code> - upraszczanie wyrażeń</li>
-              <li><code>sympy_expand</code> - rozwijanie wyrażeń</li>
-              <li><code>sympy_factor</code> - faktoryzacja</li>
-              <li><code>sympy_limit</code> - granice funkcji</li>
-              <li><code>sympy_matrix</code> - operacje na macierzach</li>
-              <li><code>sympy_calculate</code> - dowolne obliczenia SymPy</li>
+              <li>Profesjonalny system dowodzenia twierdzeń matematycznych</li>
+              <li>Weryfikuje poprawność dowodów formalnych</li>
+              <li>Używany w badaniach matematycznych i weryfikacji oprogramowania</li>
+              <li>Wspiera zadania typu: "udowodnij", "wykaż", twierdzenia, lematy</li>
+              <li>
+                <strong>Instalacja macOS:</strong> <code>brew install elan-init && elan default leanprover/lean4:stable</code>
+              </li>
+              <li>
+                <strong>Instalacja Linux:</strong> <code>curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh</code>
+              </li>
+              <li>
+                <strong>Uruchom serwer:</strong> <code>npm run lean-proxy</code>
+              </li>
             </ul>
+
+            {proverBackend !== 'lean' && (
+              <>
+                <h3>Dostępne narzędzia SymPy:</h3>
+                <ul style={{ fontSize: '0.9em', lineHeight: '1.4' }}>
+                  <li><code>sympy_differentiate</code> - obliczanie pochodnych</li>
+                  <li><code>sympy_integrate</code> - całkowanie (oznaczone i nieoznaczone)</li>
+                  <li><code>sympy_solve</code> - rozwiązywanie równań</li>
+                  <li><code>sympy_simplify</code> - upraszczanie wyrażeń</li>
+                  <li><code>sympy_expand</code> - rozwijanie wyrażeń</li>
+                  <li><code>sympy_factor</code> - faktoryzacja</li>
+                  <li><code>sympy_limit</code> - granice funkcji</li>
+                  <li><code>sympy_matrix</code> - operacje na macierzach</li>
+                  <li><code>sympy_calculate</code> - dowolne obliczenia SymPy</li>
+                </ul>
+              </>
+            )}
             {provider === 'mlx' && (
               <div className="mlx-info">
                 <h3>ℹ️ Wymagania MLX:</h3>
@@ -303,14 +380,19 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>🤖 Dwuagentowy System Matematyczny</h1>
+        <h1>🤖 System Trzech Agentów</h1>
         <div className="header-controls">
           <button onClick={() => setShowHistory(true)} className="history-button">
             📚 Historia
           </button>
           {mcpConnected && (
             <span className="mcp-status">
-              🔌 MCP Connected
+              🔌 SymPy
+            </span>
+          )}
+          {leanConnected && (
+            <span className="mcp-status" style={{ marginLeft: '8px' }}>
+              🎯 Lean
             </span>
           )}
           <button onClick={handleClearHistory} className="clear-button">
@@ -323,13 +405,14 @@ function App() {
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="empty-state">
-              <p>👋 Witaj! Zadaj pytanie matematyczne, a dwóch agentów będzie współpracować nad rozwiązaniem.</p>
+              <p>👋 Witaj! Zadaj pytanie matematyczne - system trzech agentów będzie współpracować nad rozwiązaniem.</p>
               <p style={{ marginTop: '10px', fontSize: '0.95em', color: '#666' }}>
                 🧠 <strong>Agent Analityczny</strong> rozbije problem na kroki<br/>
-                ⚡ <strong>Agent Wykonawczy</strong> wykona obliczenia z wypisaniem kroków pośrednich
+                ⚡ <strong>Agent Wykonawczy</strong> wykona obliczenia lub przygotuje dowód<br/>
+                🎯 <strong>Agent Weryfikujący</strong> sprawdzi poprawność dowodu (Lean Prover)
               </p>
               <div className="examples">
-                <p><strong>Przykłady:</strong></p>
+                <p><strong>Przykłady obliczeń (SymPy):</strong></p>
                 <ul>
                   <li>Oblicz pochodną funkcji f(x) = x³ + 2x² - 5x + 1</li>
                   <li>Całkuj x² od 0 do 2</li>
@@ -337,8 +420,13 @@ function App() {
                   <li>Uprość wyrażenie sin(x)² + cos(x)²</li>
                   <li>Oblicz granicę sin(x)/x gdy x dąży do 0</li>
                   <li>Znajdź wyznacznik macierzy [[1, 2], [3, 4]]</li>
-                  <li>Rozwiń (x + 1)³</li>
-                  <li>Zfaktoryzuj x² - 4</li>
+                </ul>
+                <p style={{ marginTop: '12px' }}><strong>Przykłady dowodów (Lean):</strong></p>
+                <ul>
+                  <li>Udowodnij, że suma kątów w trójkącie wynosi 180 stopni</li>
+                  <li>Wykaż, że dla każdego n, n + 0 = n</li>
+                  <li>Dowód przez indukcję: suma pierwszych n liczb = n(n+1)/2</li>
+                  <li>Udowodnij własność przemienności dodawania</li>
                 </ul>
               </div>
             </div>
@@ -361,7 +449,9 @@ function App() {
                   )}
                   {msg.role === 'assistant' && (
                     <div className="agent-badge">
-                      {msg.agentName === 'Agent Analityczny' ? '🧠' : '⚡'} {msg.agentName || 'Agent'}
+                      {msg.agentName === 'Agent Analityczny' ? '🧠' :
+                       msg.agentName === 'Agent Wykonawczy' ? '⚡' :
+                       msg.agentName === 'Agent Weryfikujący' ? '🎯' : '🤖'} {msg.agentName || 'Agent'}
                     </div>
                   )}
                   <div className="message-content">
@@ -371,9 +461,21 @@ function App() {
                       {msg.toolCalls.map(tc => (
                         <div key={tc.id} className="tool-call">
                           🔧 Używam narzędzia: <code>{tc.name}</code>
-                          <details style={{ marginTop: '0.5em', fontSize: '0.85em' }}>
-                            <summary>Parametry</summary>
-                            <pre>{JSON.stringify(tc.arguments, null, 2)}</pre>
+                          <details style={{ marginTop: '0.5em', fontSize: '0.85em' }} open>
+                            <summary>Kod Python</summary>
+                            {tc.name === 'sympy_calculate' && tc.arguments.expression ? (
+                              <pre style={{
+                                backgroundColor: '#1e1e1e',
+                                color: '#d4d4d4',
+                                padding: '12px',
+                                borderRadius: '4px',
+                                overflow: 'auto',
+                                fontSize: '13px',
+                                marginTop: '8px'
+                              }}>{tc.arguments.expression}</pre>
+                            ) : (
+                              <pre>{JSON.stringify(tc.arguments, null, 2)}</pre>
+                            )}
                           </details>
                         </div>
                       ))}
@@ -415,7 +517,7 @@ function App() {
           {isProcessing && (
             <div className="processing-indicator">
               <div className="spinner"></div>
-              <span>Agent pracuje nad odpowiedzią...</span>
+              <span>Agenci pracują nad odpowiedzią...</span>
             </div>
           )}
           <div ref={messagesEndRef} />

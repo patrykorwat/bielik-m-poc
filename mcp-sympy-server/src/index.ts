@@ -228,15 +228,42 @@ async function handleToolCall(name: string, args: any): Promise<string> {
     switch (name) {
       case "sympy_calculate": {
         // Check if expression is multi-line code or single expression
-        const expression = args.expression.trim();
+        let expression = args.expression.trim();
         let code: string;
 
         if (expression.includes('\n') || expression.startsWith('from ')) {
-          // Multi-line script - execute as is (should already have print statements)
+          // Multi-line script - sanitize and execute
+          // Remove any duplicate 'from sympy import *' since we add it in baseImports
+          expression = expression.replace(/^from sympy import \*\s*$/gm, '');
+          expression = expression.replace(/^import sys\s*$/gm, '');
+          expression = expression.replace(/^sys\.set_int_max_str_digits\(\d+\)\s*$/gm, '');
+
+          // Remove assert statements (common Bielik error)
+          expression = expression.replace(/^assert\s+.*$/gm, '# (assert removed)');
+
+          // Fix ^ used as exponent (replace with **)
+          const lines = expression.split('\n').map((line: string) => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) {
+              return line;
+            }
+            // Only replace ^ between word chars or parens (not in strings)
+            return line.replace(/(\w)\^(\w)/g, '$1**$2');
+          });
+          expression = lines.join('\n');
+
           code = `${baseImports}\n${expression}`;
         } else {
           // Single expression - wrap it
+          // Auto-detect and define symbols
+          const symbolsRegex = /\b[a-zA-Z_][a-zA-Z0-9_]*\b/g;
+          const builtins = ['symbols', 'diff', 'integrate', 'solve', 'simplify', 'expand', 'factor', 'limit', 'Matrix', 'sin', 'cos', 'tan', 'exp', 'log', 'sqrt', 'pi', 'E', 'I', 'oo', 'Eq', 'Rational', 'result', 'print', 'True', 'False', 'None', 'abs', 'Sum', 'Product', 'N', 'Float', 'Integer', 'latex', 'pprint', 'trigsimp', 'radsimp', 'nsimplify', 'cancel', 'apart', 'together'];
+          const potentialSymbols = (expression.match(symbolsRegex) || [])
+            .filter((s: string) => !builtins.includes(s));
+          const uniqueSymbols = [...new Set(potentialSymbols)];
+
           code = `${baseImports}
+${uniqueSymbols.map(s => `${s} = symbols('${s}')`).join('\n')}
 result = ${expression}
 print(result)`;
         }

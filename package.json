@@ -8,7 +8,10 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "mcp-proxy": "node mcp-proxy-server.js"
+    "mcp-proxy": "node mcp-proxy-server.js",
+    "lean-proxy": "node lean-proxy-server.js",
+    "start:proxies": "concurrently \"npm run mcp-proxy\" \"npm run lean-proxy\"",
+    "start:all": "concurrently \"npm run dev\" \"npm run mcp-proxy\" \"npm run lean-proxy\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
@@ -25,6 +28,7 @@
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "concurrently": "^8.2.2",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",

@@ -45,3 +45,5 @@ coverage/
 *.tsbuildinfo
 .eslintcache
 .tmp
+
+__pycache__

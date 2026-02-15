@@ -75,7 +75,8 @@ export class MLXAgent {
    */
   async execute(
     systemPrompt: string,
-    messages: Array<{ role: 'user' | 'assistant'; content: string }>
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>,
+    overrides?: { maxTokens?: number; temperature?: number }
   ): Promise<string> {
     try {
       // Build MLX-compatible messages (OpenAI format)
@@ -88,8 +89,8 @@ export class MLXAgent {
         model: this.model,
         messages: messagesWithSystem,
         stream: false,
-        temperature: this.temperature,
-        max_tokens: this.maxTokens,
+        temperature: overrides?.temperature ?? this.temperature,
+        max_tokens: overrides?.maxTokens ?? this.maxTokens,
       };
 
       console.log('[MLXAgent] Sending request:', {

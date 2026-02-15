@@ -1,20 +1,32 @@
-# 🤖 Agent Matematyczny z SymPy (Bielik-M)
+# 🤖 System Trzech Agentów (Bielik-M)
 
-Inteligentny agent AI z dostępem do narzędzi matematycznych SymPy, umożliwiający rozwiązywanie zaawansowanych problemów matematycznych.
+Zaawansowany system trzech inteligentnych agentów AI z dostępem do narzędzi matematycznych SymPy oraz inteligentną weryfikacją dowodów, umożliwiający zarówno obliczenia symboliczne jak i formalne weryfikacje matematyczne.
 
 ## 📋 Opis
 
 ![math-simple](math-simple.png)
 
-Bielik-M to aplikacja demonstrująca integrację agenta AI (Claude lub MLX) z Model Context Protocol (MCP) i narzędziami SymPy:
+Bielik-M to aplikacja demonstrująca integrację trzech agentów AI (Claude lub MLX) z Model Context Protocol (MCP), narzędziami SymPy oraz Lean Prover:
 
-- **🤖 Agent Matematyczny** - Inteligentny agent AI który analizuje problemy matematyczne i używa odpowiednich narzędzi
-- **🔧 MCP + SymPy** - 9 narzędzi do symbolicznych obliczeń matematycznych (rozwiązywanie równań, pochodne, całki, upraszczanie, itp.)
+- **🧠 Agent Analityczny** - Analizuje problemy matematyczne i rozbija je na kroki rozwiązania
+- **⚡ Agent Wykonawczy** - Wykonuje obliczenia SymPy lub tworzy formalne dowody krok po kroku
+- **🎯 Agent Weryfikujący** - Weryfikuje poprawność dowodów za pomocą Lean Prover (profesjonalny theorem prover)
+- **🔧 MCP + SymPy** - 9 narzędzi do symbolicznych obliczeń matematycznych
+- **🎯 Lean Prover** - Formalna weryfikacja dowodów matematycznych
 - **📐 LaTeX Rendering** - Pięknie sformatowane wzory matematyczne w interfejsie użytkownika
 
-Agent automatycznie wybiera odpowiednie narzędzia SymPy, wykonuje obliczenia i prezentuje wyniki w czytelny sposób.
+System automatycznie wykrywa czy zadanie wymaga obliczeń numerycznych (SymPy) czy formalnego dowodu (Lean Prover), wybiera odpowiednie narzędzia i prezentuje wyniki w czytelny sposób.
 
 ## ✨ Funkcje
+
+### 🎯 Główne funkcje
+
+- **🧠 System Trzech Agentów** - Analityczny → Wykonawczy → Weryfikujący
+- **🔍 Inteligentne wykrywanie** - Automatyczny wybór między obliczeniami (SymPy) a dowodem formalnym (Lean)
+- **✅ Weryfikacja dowodów** - Agent Weryfikujący używa Lean Prover do formalnej weryfikacji matematycznej
+- **🔄 Elastyczny Backend** - Możliwość wyboru: tylko SymPy, tylko Lean Prover, lub oba
+
+### Pozostałe funkcje
 
 - **🔧 9 Narzędzi SymPy** - Pełny zestaw narzędzi do symbolicznych obliczeń matematycznych
 - **🤖 MCP Integration** - Integracja z Model Context Protocol dla standardowego interfejsu narzędzi
@@ -27,6 +39,28 @@ Agent automatycznie wybiera odpowiednie narzędzia SymPy, wykonuje obliczenia i 
 
 ## 🚀 Szybki start
 
+### ⚡ Quick Start (TL;DR)
+
+**Linux/macOS:**
+```bash
+git clone https://github.com/yourusername/bielik-m-poc.git
+cd bielik-m-poc
+./setup.sh    # Instalacja wszystkiego
+./start.sh    # Uruchomienie aplikacji
+```
+
+**Windows:**
+```cmd
+git clone https://github.com/yourusername/bielik-m-poc.git
+cd bielik-m-poc
+setup.bat     # Instalacja wszystkiego
+start.bat     # Uruchomienie aplikacji
+```
+
+Otwórz [http://localhost:5173](http://localhost:5173) i ciesz się!
+
+---
+
 ### Wymagania
 
 - Node.js 18+ lub nowszy
@@ -35,6 +69,37 @@ Agent automatycznie wybiera odpowiednie narzędzia SymPy, wykonuje obliczenia i 
 - **Dla MLX**: Mac z Apple Silicon (M1/M2/M3/M4) i uruchomiony serwer MLX
 
 ### Instalacja
+
+#### 🚀 Metoda 1: Automatyczna instalacja (REKOMENDOWANA)
+
+**Linux/macOS:**
+```bash
+# Sklonuj repozytorium
+git clone https://github.com/yourusername/bielik-m-poc.git
+cd bielik-m-poc
+
+# Uruchom skrypt instalacyjny
+chmod +x setup.sh
+./setup.sh
+```
+
+**Windows:**
+```cmd
+REM Sklonuj repozytorium
+git clone https://github.com/yourusername/bielik-m-poc.git
+cd bielik-m-poc
+
+REM Uruchom skrypt instalacyjny
+setup.bat
+```
+
+Skrypt automatycznie:
+- ✅ Sprawdzi wymagane zależności (Node.js, Python)
+- ✅ Zainstaluje zależności Node.js
+- ✅ Skonfiguruje środowisko Python z SymPy
+- ✅ Zbuduje MCP server
+
+#### 📦 Metoda 2: Instalacja manualna
 
 ```bash
 # Sklonuj repozytorium
@@ -60,9 +125,39 @@ cd ..
 
 ### Uruchomienie aplikacji
 
-**WAŻNE:** Aplikacja wymaga uruchomienia **dwóch serwerów** - MCP proxy (dla narzędzi SymPy) i aplikacji webowej.
+#### 🚀 Metoda 1: Automatyczne uruchomienie (REKOMENDOWANA)
 
-#### Krok 1: Uruchom MCP Proxy Server
+**Linux/macOS:**
+```bash
+# Uruchom wszystkie serwery jednym poleceniem
+./start.sh
+```
+
+**Windows:**
+```cmd
+REM Uruchom wszystkie serwery
+start.bat
+```
+
+Skrypt automatycznie:
+- ✅ Sprawdzi wszystkie wymagania
+- ✅ Wykryje konflikty portów i zaproponuje rozwiązanie
+- ✅ Uruchomi MCP Proxy (SymPy) - port 3001
+- ✅ Uruchomi aplikację webową - port 5173
+- ✅ Otworzy przeglądarkę automatycznie
+- ✅ Zapisze logi do katalogu `logs/`
+
+**Zatrzymanie:**
+- **Linux/macOS:** Naciśnij `Ctrl+C` w terminalu
+- **Windows:** Zamknij okna serwerów
+
+#### 📦 Metoda 2: Uruchomienie manualne
+
+**WAŻNE:** Aplikacja wymaga uruchomienia **dwóch serwerów**:
+1. **MCP proxy** (port 3001) - dla narzędzi SymPy
+2. **Aplikacja webowa** (port 5173) - frontend React
+
+##### Krok 1: Uruchom MCP Proxy Server
 
 W osobnym terminalu:
 
@@ -93,7 +188,7 @@ Available tools: [
 ]
 ```
 
-#### Krok 2: Uruchom aplikację webową
+##### Krok 2: Uruchom aplikację webową
 
 W drugim terminalu:
 
@@ -104,15 +199,29 @@ npm run dev
 
 Aplikacja uruchomi się na `http://localhost:5173`
 
-#### Krok 3: Konfiguracja w UI
+**Alternatywnie - uruchom wszystko na raz:**
+
+```bash
+# Zainstaluj concurrently (jeśli nie zainstalowane)
+npm install
+
+# Uruchom wszystkie serwery jednocześnie
+npm run start:all
+```
+
+#### Konfiguracja w UI
 
 ##### Opcja A: Claude (Cloud)
 
 1. Otwórz aplikację w przeglądarce
 2. Wybierz provider "Claude (Anthropic)"
-3. Wprowadź swój klucz API Anthropic
-4. Upewnij się że widzisz status "**MCP Connected**" (zielony)
-5. Kliknij "Rozpocznij"
+3. Wybierz backend dowodzenia:
+   - **Oba (SymPy + Weryfikacja)** - rekomendowane, automatyczny wybór
+   - **Tylko SymPy** - tylko obliczenia numeryczne/symboliczne
+   - **Tylko weryfikacja formalna** - tylko dowody logiczne (bez obliczeń)
+4. Wprowadź swój klucz API Anthropic
+5. Upewnij się że widzisz status "**🔌 SymPy**"
+6. Kliknij "Rozpocznij"
 
 **Uzyskiwanie klucza API:**
 1. Odwiedź [console.anthropic.com](https://console.anthropic.com/)
@@ -154,9 +263,9 @@ Aplikacja uruchomi się na `http://localhost:5173`
 
 ### ⚠️ Rozwiązywanie problemów
 
-#### MCP nie jest połączony (czerwony status)
+#### MCP nie jest połączony
 
-Jeśli widzisz komunikat "MCP Disconnected" (czerwony):
+Jeśli nie widzisz statusu "🔌 SymPy":
 
 1. **Sprawdź czy MCP proxy działa:**
    ```bash
@@ -198,6 +307,70 @@ Jeśli narzędzia zwracają błędy typu "name 'X' is not defined":
 
 ## 💻 Użycie
 
+### Inteligentny wybór backendu
+
+System automatycznie wykrywa typ zadania:
+
+**Zadania wymagające formalnego dowodu (Lean Prover):**
+- Zawierają słowa kluczowe: "udowodnij", "wykaż", "dowód", "twierdzenie", "indukcja", "dla każdego"
+- Wymagają logicznego rozumowania i formalnej weryfikacji
+- Agent Weryfikujący używa Lean Prover do weryfikacji poprawności matematycznej
+
+**Zadania obliczeniowe (SymPy):**
+- Obliczenia numeryczne i symboliczne
+- Rozwiązywanie równań, pochodne, całki
+- Upraszczanie wyrażeń
+
+### 🎯 Lean Prover - Formalna weryfikacja dowodów
+
+Lean Prover to profesjonalny interactive theorem prover używany w:
+- Badaniach matematycznych (np. Liquid Tensor Experiment)
+- Weryfikacji formalnej oprogramowania
+- Nauczaniu matematyki i logiki
+
+**Korzyści z integracji Lean:**
+- ✅ Formalna weryfikacja matematyczna - Lean gwarantuje poprawność dowodów
+- 🔬 Używany w badaniach - zaufany przez matematyków na całym świecie
+- 📚 Bogata biblioteka Mathlib - tysiące zweryfikowanych twierdzeń
+- 🎓 Edukacja - uczenie się formalnego rozumowania matematycznego
+
+**Instalacja Lean:**
+
+macOS (via Homebrew):
+```bash
+brew install elan-init
+elan default leanprover/lean4:stable
+```
+
+Linux:
+```bash
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+elan default leanprover/lean4:stable
+```
+
+Windows:
+- Download from: https://github.com/leanprover/lean4/releases
+- Or use elan: https://github.com/leanprover/elan
+
+**Weryfikacja instalacji:**
+```bash
+lean --version
+```
+
+**Uruchomienie z Lean:**
+```bash
+# Uruchom wszystkie serwery (MCP + Lean + frontend)
+./start.sh          # Linux/macOS
+start.bat           # Windows
+
+# Lub ręcznie:
+npm run start:all   # Wszystko jednocześnie
+# Lub osobno:
+npm run lean-proxy  # Lean Proxy na porcie 3002
+npm run mcp-proxy   # SymPy Proxy na porcie 3001
+npm run dev         # Frontend na porcie 5173
+```
+
 ### Dostępne narzędzia SymPy
 
 Agent ma dostęp do 9 narzędzi matematycznych:
@@ -214,40 +387,27 @@ Agent ma dostęp do 9 narzędzi matematycznych:
 
 ### Przykładowe pytania
 
-**Rozwiązywanie równań:**
+**Obliczenia (SymPy):**
 ```
 Rozwiąż równanie kwadratowe: 2x² + 5x - 3 = 0
-```
-
-**Pochodne:**
-```
 Oblicz pochodną funkcji f(x) = x³ + 2x² - 5x + 1
-```
-
-**Całki:**
-```
 Oblicz całkę z sin(x)*cos(x)
-```
-
-**Upraszczanie:**
-```
 Uprość wyrażenie: (x+1)² - (x-1)²
-```
-
-**Faktoryzacja:**
-```
 Zfaktoryzuj: x² - 9
-```
-
-**Granice:**
-```
 Oblicz granicę lim(x→0) sin(x)/x
-```
-
-**Wyrażenia z wieloma zmiennymi:**
-```
 Oblicz pochodną 3*a²*(R - a)/(2*R) względem a
 ```
+
+**Formalne dowody (weryfikacja logiczna):**
+```
+Udowodnij, że dla każdej liczby naturalnej n, n + 0 = n
+Wykaż własność przemienności dodawania: a + b = b + a
+Dowód przez indukcję: suma pierwszych n liczb naturalnych wynosi n(n+1)/2
+Udowodnij, że suma kątów w trójkącie wynosi 180 stopni
+Wykaż, że jeśli a = b i b = c, to a = c (przechodniość równości)
+```
+
+**Uwaga:** System wspiera zarówno weryfikację przez agenta AI jak i przez Lean Prover - profesjonalny system dowodzenia twierdzeń matematycznych używany w badaniach akademickich.
 
 ### Cechy interfejsu
 
@@ -265,10 +425,12 @@ Oblicz pochodną 3*a²*(R - a)/(2*R) względem a
 bielik-m-poc/
 ├── src/
 │   ├── services/
-│   │   ├── mcpAgentService.ts       # Orkiestracja agenta z MCP
-│   │   ├── mcpClientBrowser.ts      # Klient MCP dla przeglądarki
-│   │   ├── mlxAgent.ts              # Implementacja MLX agenta
-│   │   └── chatHistoryService.ts    # Zarządzanie historią
+│   │   ├── threeAgentSystem.ts           # System trzech agentów
+│   │   ├── mcpClientBrowser.ts           # Klient MCP dla przeglądarki
+│   │   ├── mlxAgent.ts                   # Implementacja MLX agenta
+│   │   ├── leanProverService.ts          # Lean Prover (Node.js)
+│   │   ├── leanProverService.browser.ts  # Lean Prover (przeglądarka)
+│   │   └── chatHistoryService.ts         # Zarządzanie historią
 │   ├── components/
 │   │   ├── MessageContent.tsx       # Renderowanie LaTeX
 │   │   └── ChatHistorySidebar.tsx   # Sidebar z historią
@@ -281,7 +443,10 @@ bielik-m-poc/
 │   ├── dist/                       # Zbudowany serwer
 │   ├── venv/                       # Python virtual environment
 │   └── package.json
-├── mcp-proxy-server.js             # HTTP proxy dla MCP
+├── mcp-proxy-server.js             # HTTP proxy dla MCP (SymPy)
+├── lean-proxy-server.js            # HTTP proxy dla Lean Prover
+├── start.sh / start.bat            # Skrypty uruchamiające
+├── setup.sh / setup.bat            # Skrypty instalacyjne
 ├── index.html
 ├── package.json
 └── vite.config.ts
@@ -289,20 +454,22 @@ bielik-m-poc/
 
 ### Komponenty systemu
 
-#### MCPAgentOrchestrator
+#### ThreeAgentOrchestrator
 
-Główna klasa zarządzająca agentem AI z dostępem do narzędzi MCP:
+Główna klasa zarządzająca systemem trzech agentów AI z dostępem do narzędzi MCP i Lean Prover:
 
 ```typescript
-// Tworzenie orchestratora z Claude
-const orchestrator = new MCPAgentOrchestrator(
+// Tworzenie orchestratora z Claude i oboma backendami
+const orchestrator = new ThreeAgentOrchestrator(
   'claude',
+  'both',  // 'sympy' | 'lean' | 'both'
   apiKey
 );
 
 // Lub z MLX
-const orchestrator = new MCPAgentOrchestrator(
+const orchestrator = new ThreeAgentOrchestrator(
   'mlx',
+  'both',
   undefined,
   {
     baseUrl: 'http://localhost:8011',
@@ -312,12 +479,15 @@ const orchestrator = new MCPAgentOrchestrator(
   }
 );
 
-// Połącz z MCP
+// Połącz z MCP (SymPy)
 await orchestrator.connectMCP('http://localhost:3001');
 
-// Przetwarzaj wiadomości
+// Połącz z Lean Prover
+await orchestrator.connectLean('http://localhost:3002');
+
+// Przetwarzaj wiadomości - system wybierze odpowiedni backend
 await orchestrator.processMessage(
-  "Rozwiąż równanie: x² - 5x + 6 = 0",
+  "Udowodnij, że suma kątów w trójkącie wynosi 180 stopni",
   (message) => console.log(message)
 );
 ```
@@ -341,16 +511,31 @@ Serwer MCP implementujący narzędzia SymPy:
 - **Narzędzi:** 9 (solve, differentiate, integrate, etc.)
 - **Automatyczne wykrywanie symboli:** Wszystkie zmienne w wyrażeniach są automatycznie definiowane
 
+#### Lean Proxy Server
+
+HTTP proxy umożliwiający komunikację przeglądarki z Lean Prover:
+
+- **Port:** 3002
+- **Endpoints:**
+  - `GET /health` - Sprawdza czy Lean jest zainstalowany
+  - `POST /verify` - Weryfikuje kod Lean
+  - `POST /prove` - Generuje i weryfikuje theorem z opisu problemu
+  - `GET /workspace` - Lista plików w workspace
+  - `GET /install` - Instrukcje instalacji Lean
+- **Komunikacja:** HTTP/JSON ↔ Lean CLI
+- **Workspace:** Tymczasowy katalog dla plików `.lean`
+
 ### Przepływ danych
 
+**Dla obliczeń (SymPy):**
 ```
 Użytkownik → Wiadomość
     ↓
-MCPAgentOrchestrator
+ThreeAgentOrchestrator
     ↓
-Agent AI (Claude/MLX)
+Agent Analityczny → Rozbicie problemu
     ↓
-[Decyzja o użyciu narzędzia]
+Agent Wykonawczy → Kod Python/SymPy
     ↓
 MCP Client (browser) → HTTP Request
     ↓
@@ -362,9 +547,34 @@ Python + SymPy → Obliczenia
     ↓
 Wynik ← MCP Proxy ← MCP Client
     ↓
-Agent AI → Analiza wyniku
+Agent Weryfikujący → Analiza wyniku
     ↓
 UI ← Sformatowana odpowiedź z LaTeX
+```
+
+**Dla formalnych dowodów (Lean):**
+```
+Użytkownik → Wiadomość ("udowodnij...")
+    ↓
+ThreeAgentOrchestrator → wykrywa potrzebę dowodu
+    ↓
+Agent Analityczny → Rozbicie problemu
+    ↓
+Agent Wykonawczy → Dowód krok po kroku
+    ↓
+Agent Weryfikujący → Weryfikacja z Lean
+    ↓
+Lean Prover Service (browser) → HTTP Request
+    ↓
+Lean Proxy Server (port 3002)
+    ↓
+Lean CLI → Weryfikacja formalna
+    ↓
+Wynik (verified/errors) ← Lean Proxy
+    ↓
+Agent Weryfikujący → Analiza wyniku Lean
+    ↓
+UI ← Raport weryfikacji + dowód
 ```
 
 ## 🛠️ Technologie
@@ -415,11 +625,20 @@ npm run preview
 npm run lint
 ```
 
-### MCP Proxy
+### Proxy Serwery
 
 ```bash
-# Uruchom MCP proxy server (port 3001)
+# Uruchom MCP proxy server (port 3001) - SymPy
 npm run mcp-proxy
+
+# Uruchom Lean proxy server (port 3002) - Lean Prover
+npm run lean-proxy
+
+# Uruchom oba proxy serwery
+npm run start:proxies
+
+# Uruchom wszystko (dev + oba proxy)
+npm run start:all
 ```
 
 ### MCP SymPy Server
@@ -456,6 +675,10 @@ Zachęcamy do zgłaszania issues i pull requestów!
 
 ## 🎯 Kluczowe osiągnięcia
 
+✅ **System Trzech Agentów** - Analityczny → Wykonawczy → Weryfikujący
+✅ **Lean Prover Integration** - Formalna weryfikacja matematyczna z profesjonalnym theorem prover
+✅ **Inteligentne wykrywanie** - Automatyczny wybór między SymPy a Lean Prover
+✅ **Elastyczny Backend** - SymPy dla obliczeń, Lean Prover dla formalnych dowodów, lub oba
 ✅ **Integracja MCP** - Standardowy protokół dla narzędzi AI
 ✅ **9 narzędzi SymPy** - Pełny zestaw do symbolicznych obliczeń matematycznych
 ✅ **Automatyczne wykrywanie symboli** - Brak potrzeby manualnego definiowania zmiennych
@@ -463,6 +686,7 @@ Zachęcamy do zgłaszania issues i pull requestów!
 ✅ **Multi-provider** - Claude (cloud) lub MLX (lokalny)
 ✅ **Historia konwersacji** - Zapisywanie i wczytywanie sesji
 ✅ **Przejrzysty UI** - Widoczne wywołania i wyniki narzędzi
+✅ **Dual Proxy Architecture** - Osobne serwery proxy dla SymPy i Lean
 
 ## 📄 Licencja
 
@@ -474,4 +698,4 @@ Projekt stworzony jako demonstracja integracji AI agents z Model Context Protoco
 
 ---
 
-**Wskazówka:** Pamiętaj aby uruchomić **oba serwery** (`npm run mcp-proxy` i `npm run dev`) przed rozpoczęciem pracy z aplikacją!
+**Wskazówka:** Pamiętaj aby uruchomić **MCP proxy server** (`npm run mcp-proxy`) i **aplikację** (`npm run dev`) przed rozpoczęciem pracy!
