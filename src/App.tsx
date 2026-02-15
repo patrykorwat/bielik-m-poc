@@ -256,6 +256,8 @@ function App() {
         backgroundColor: '#ffffff',
         scale: 2, // Higher quality
         logging: false,
+        useCORS: true,
+        allowTaint: true,
       });
 
       // Remove temporary container
