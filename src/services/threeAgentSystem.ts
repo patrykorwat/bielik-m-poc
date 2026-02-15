@@ -47,7 +47,6 @@ export class ThreeAgentOrchestrator {
   private mcpClient: MCPClient | null = null;
   private leanClient: LeanProverServiceBrowser | null = null;
   private conversationHistory: Message[] = [];
-  private provider: LLMProvider;
   private proverBackend: ProverBackend;
   private availableTools: MCPTool[] = [];
   private leanAvailable: boolean = false;
@@ -56,7 +55,6 @@ export class ThreeAgentOrchestrator {
     proverBackend: ProverBackend = 'both',
     mlxConfig: MLXConfig
   ) {
-    this.provider = 'mlx';
     this.proverBackend = proverBackend;
 
     if (!mlxConfig) {

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ThreeAgentOrchestrator, Message, LLMProvider, MLXConfig, ProverBackend } from './services/threeAgentSystem';
+import { ThreeAgentOrchestrator, Message, MLXConfig, ProverBackend } from './services/threeAgentSystem';
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
@@ -12,7 +12,6 @@ const MCP_PROXY_URL = 'http://localhost:3001';
 const LEAN_PROXY_URL = 'http://localhost:3002';
 
 function App() {
-  const [provider] = useState<LLMProvider>('mlx');
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
   const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:8011');
   const [mlxModel, setMlxModel] = useState('LibraxisAI/Bielik-11B-v3.0-mlx-q4');
@@ -59,7 +58,7 @@ function App() {
     if (messages.length > 0 && currentChatId && isConfigured) {
       const session: ChatSession = {
         id: currentChatId,
-        provider,
+        provider: 'mlx',
         messages,
         createdAt: messages[0]?.timestamp.toISOString() || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -68,7 +67,7 @@ function App() {
       // Refresh sessions list
       setChatSessions(ChatHistoryService.getAllSessions());
     }
-  }, [messages, currentChatId, provider, isConfigured]);
+  }, [messages, currentChatId, isConfigured]);
 
   const handleConfigure = async () => {
     if (!mlxBaseUrl.trim()) {
