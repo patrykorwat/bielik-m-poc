@@ -691,13 +691,16 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
           }
           executionResults.push(`📊 Wyniki wykonania:\n${result}`);
 
-          // Remove code blocks from content - they will be shown in tool calls only
-          const codeBlockPlaceholder = /__CODE_BLOCK_\d+__/g;
-          finalExecutorContent = finalExecutorContent.replace(codeBlockPlaceholder, '');
+          // Remove code blocks from content ONLY for SymPy (they will be shown in tool calls)
+          // For Lean, keep the code in the message content
+          if (!useLean) {
+            const codeBlockPlaceholder = /__CODE_BLOCK_\d+__/g;
+            finalExecutorContent = finalExecutorContent.replace(codeBlockPlaceholder, '');
 
-          // Remove markdown code blocks from content
-          finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
-          finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+            // Remove markdown code blocks from content
+            finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
+            finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+          }
 
           // Add only results to content
           finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA:**\n${result}`;
@@ -705,13 +708,16 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
           const errorMsg = `❌ Błąd wykonania: ${error instanceof Error ? error.message : String(error)}`;
           executionResults.push(errorMsg);
 
-          // Remove code blocks from content - they will be shown in tool calls only
-          const codeBlockPlaceholder = /__CODE_BLOCK_\d+__/g;
-          finalExecutorContent = finalExecutorContent.replace(codeBlockPlaceholder, '');
+          // Remove code blocks from content ONLY for SymPy (they will be shown in tool calls)
+          // For Lean, keep the code in the message content
+          if (!useLean) {
+            const codeBlockPlaceholder = /__CODE_BLOCK_\d+__/g;
+            finalExecutorContent = finalExecutorContent.replace(codeBlockPlaceholder, '');
 
-          // Remove markdown code blocks from content
-          finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
-          finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+            // Remove markdown code blocks from content
+            finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
+            finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+          }
 
           // Add only error to content
           finalExecutorContent += `\n\n---\n**BŁĄD WYKONANIA:**\n${errorMsg}`;
