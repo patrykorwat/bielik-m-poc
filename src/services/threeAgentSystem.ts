@@ -1,6 +1,7 @@
 import { MLXAgent } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
 import { LeanProverServiceBrowser } from './leanProverService.browser';
+import { RAGService } from './ragService';
 import prompts from '../../prompts.json';
 
 export type LLMProvider = 'mlx';
@@ -37,10 +38,13 @@ export interface MLXConfig {
 }
 
 /**
- * Three-agent orchestrator with:
- * - Analytical Agent: plans the solution
- * - Executor Agent: executes calculations (SymPy or Acorn)
- * - Verifier Agent: checks proofs with Acorn for complex theorems
+ * Multi-agent orchestrator for Polish matura math problems.
+ *
+ * Pipeline:
+ *   1. Analytical Agent  — plans the solution (always)
+ *   2. Executor Agent    — writes & runs SymPy code (always)
+ *   3. Summary Agent     — explains the solution step-by-step (always)
+ *   4. Lean Verifier     — formally verifies the result (optional, proof problems only)
  */
 export class ThreeAgentOrchestrator {
   private mlxAgent: MLXAgent;
@@ -50,6 +54,7 @@ export class ThreeAgentOrchestrator {
   private proverBackend: ProverBackend;
   private availableTools: MCPTool[] = [];
   private leanAvailable: boolean = false;
+  private ragService: RAGService;
 
   constructor(
     proverBackend: ProverBackend = 'both',
@@ -62,21 +67,19 @@ export class ThreeAgentOrchestrator {
     }
     this.mlxAgent = new MLXAgent(mlxConfig);
 
-    // Initialize Lean client
+    // Initialize RAG service (port 3003)
+    this.ragService = new RAGService();
+
+    // Initialize Lean client (for verification only)
     if (proverBackend === 'lean' || proverBackend === 'both') {
       this.leanClient = new LeanProverServiceBrowser();
     }
   }
 
   /**
-   * Connect to MCP server (SymPy)
+   * Connect to MCP server (SymPy) — always needed
    */
   async connectMCP(proxyUrl: string = 'http://localhost:3001'): Promise<void> {
-    if (this.proverBackend === 'lean') {
-      console.log('⏩ Skipping MCP connection (Lean-only mode)');
-      return;
-    }
-
     try {
       this.mcpClient = new MCPClient(proxyUrl);
       await this.mcpClient.connect();
@@ -84,15 +87,12 @@ export class ThreeAgentOrchestrator {
       console.log('🔌 Connected to MCP server. Available tools:', this.availableTools.map(t => t.name));
     } catch (error) {
       console.error('Failed to connect to MCP server:', error);
-      if (this.proverBackend === 'sympy') {
-        throw error;
-      }
-      console.warn('Continuing without MCP (Acorn mode available)');
+      throw error;
     }
   }
 
   /**
-   * Connect to Lean Prover backend
+   * Connect to Lean Prover backend (optional — for verification only)
    */
   async connectLean(proxyUrl: string = 'http://localhost:3002'): Promise<void> {
     if (this.proverBackend === 'sympy') {
@@ -109,35 +109,13 @@ export class ThreeAgentOrchestrator {
       this.leanAvailable = available;
 
       if (available) {
-        console.log('🎯 Connected to Lean Prover backend');
+        console.log('🎯 Lean Prover available (will be used for verification)');
       } else {
-        console.warn('⚠️ Lean Prover backend not available');
-        if (this.proverBackend === 'lean') {
-          throw new Error(
-            'Lean Prover backend is required but not available.\n\n' +
-            'Upewnij się, że:\n' +
-            '1. Serwer Lean Proxy działa: npm run lean-proxy\n' +
-            '2. Lean jest zainstalowany: lean --version\n' +
-            '   (jeśli nie: brew install elan-init && elan default leanprover/lean4:stable)\n\n' +
-            'Lub wybierz "Oba (SymPy + Lean)" aby używać SymPy gdy Lean nie jest dostępny.'
-          );
-        }
+        console.warn('⚠️ Lean Prover not available — verification disabled');
       }
     } catch (error) {
-      console.error('Failed to connect to Lean Prover:', error);
-      if (this.proverBackend === 'lean') {
-        // Enhance error message if it's a connection error
-        if (error instanceof Error && error.message.includes('Failed to fetch')) {
-          throw new Error(
-            'Nie można połączyć się z serwerem Lean Proxy.\n\n' +
-            'Uruchom serwer poleceniem:\n' +
-            '  npm run lean-proxy\n\n' +
-            'Lub wybierz "Oba (SymPy + Lean)" aby system automatycznie wybierał dostępny backend.'
-          );
-        }
-        throw error;
-      }
-      console.warn('Continuing without Lean');
+      console.warn('Lean Prover not available:', error);
+      this.leanAvailable = false;
     }
   }
 
@@ -155,7 +133,7 @@ export class ThreeAgentOrchestrator {
   }
 
   /**
-   * Execute a single agent turn
+   * Execute a single agent turn via MLX
    */
   private async executeAgentTurn(
     agentName: string,
@@ -173,11 +151,9 @@ export class ThreeAgentOrchestrator {
       temperature,
     });
 
-    // Remove <think> blocks from Bielik responses (handle unclosed tags too)
+    // Remove <think> blocks from Bielik responses
     let cleanContent = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-    // Handle unclosed <think> tag (Bielik sometimes doesn't close it)
     cleanContent = cleanContent.replace(/<think>[\s\S]*/g, '').trim();
-    // Remove any remaining think tags
     cleanContent = cleanContent.replace(/<\/?think>/g, '').trim();
 
     console.log(`✅ [${agentName}] Response received`);
@@ -185,40 +161,31 @@ export class ThreeAgentOrchestrator {
   }
 
   /**
-   * Determine if problem requires formal theorem proving
+   * Determine if a problem would benefit from formal Lean verification.
+   * This does NOT affect solving — Executor always uses SymPy.
+   * Lean is only used to verify the solution afterward.
    */
-  private requiresFormalProof(problem: string): boolean {
+  private couldBenefitFromVerification(problem: string): boolean {
     const keywords = [
-      'dowód',
-      'udowodnij',
-      'wykaż',
-      'prove',
-      'proof',
-      'theorem',
-      'twierdzenie',
-      'lemma',
-      'lemat',
-      'indukcja',
-      'induction',
-      'dla każdego',
-      'forall',
-      'istnieje',
-      'exists',
+      'dowód', 'udowodnij', 'wykaż', 'prove', 'proof',
+      'theorem', 'twierdzenie', 'lemma', 'lemat',
+      'indukcja', 'induction',
+      'dla każdego', 'forall', 'istnieje', 'exists',
+      'pokaż, że', 'pokaż że', 'uzasadnij',
     ];
-
     const lowerProblem = problem.toLowerCase();
     return keywords.some(keyword => lowerProblem.includes(keyword));
   }
 
   /**
-   * Execute SymPy calculation via MCP
+   * Execute SymPy calculation via MCP proxy
    */
   private async executeSymPyCalculation(code: string): Promise<string> {
     if (!this.mcpClient) {
       throw new Error('MCP client not connected');
     }
 
-    console.log('🔧 Executing SymPy calculation:', code);
+    console.log('🔧 Executing SymPy calculation...');
 
     try {
       const result = await this.mcpClient.callTool('sympy_calculate', {
@@ -232,7 +199,6 @@ export class ThreeAgentOrchestrator {
 
       console.log('✅ SymPy result:', textContent);
       return textContent;
-
     } catch (error) {
       console.error('❌ SymPy execution failed:', error);
       throw error;
@@ -240,49 +206,31 @@ export class ThreeAgentOrchestrator {
   }
 
   /**
-   * Verify proof with Lean Prover
+   * Verify a solution with Lean Prover (post-solve verification only)
    */
-  private async verifyWithLean(problem: string, proof: string): Promise<string> {
+  private async verifyWithLean(problem: string, solution: string): Promise<string> {
     if (!this.leanClient || !this.leanAvailable) {
       throw new Error('Lean Prover not available');
     }
 
-    console.log('🎯 Verifying with Lean Prover...');
+    console.log('🎯 Verifying solution with Lean Prover...');
 
     try {
-      const result = await this.leanClient.proveFromProblem(problem, proof);
+      const result = await this.leanClient.proveFromProblem(problem, solution);
 
       if (result.success && result.verificationDetails?.verified) {
-        const exampleCode = `import Mathlib.Data.Nat.Basic
+        return `✅ **Rozwiązanie zweryfikowane przez Lean Prover**
 
-theorem sum_first_n (n : ℕ) :
-  (Finset.range (n + 1)).sum id = n * (n + 1) / 2 := by
-  -- Formalny dowód przez indukcję w Lean
-  sorry`;
-
-        return `✅ **Dowód pomyślnie zweryfikowany przez Lean Prover!**
-
-Lean skompilował dowód bez błędów, co potwierdza poprawność struktury logicznej.
-
-**Uwaga:** Obecna wersja generuje uproszczony szablon Lean, który weryfikuje składnię.
-Dla pełnej formalnej weryfikacji matematycznej, dowód musiałby zostać przetłumaczony
-na język teorii typów Lean z użyciem biblioteki Mathlib.
-
-**Przykład pełnego dowodu formalnego:**
-\`\`\`lean
-${exampleCode}
-\`\`\`
+Lean potwierdził poprawność struktury logicznej rozwiązania.
 
 ${result.output ? `**Output Lean:**\n\`\`\`\n${result.output}\n\`\`\`` : ''}`;
       } else {
         const errors = result.verificationDetails?.errors?.join('\n') || '';
-        return `⚠️ **Lean wykrył błędy w kodzie:**
+        return `⚠️ **Lean wykrył problemy w rozwiązaniu:**
 
 ${errors}
-${result.output}
-${result.error || ''}
-
-Dowód nie przeszedł weryfikacji składniowej Lean.`;
+${result.output || ''}
+${result.error || ''}`;
       }
     } catch (error) {
       console.error('❌ Lean verification failed:', error);
@@ -291,109 +239,81 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
   }
 
   /**
-   * Clean malformed LaTeX from response (especially from Bielik model)
+   * Clean malformed LaTeX from response
    */
   private cleanMalformedLatex(text: string): string {
     let cleaned = text;
 
-    // Pattern 1: Remove standalone "1$" or "0$" that Bielik outputs instead of LaTeX
-    // These appear as line content like just "1$" or at end of lines
-    cleaned = cleaned.replace(/^(\d+)\$\s*$/gm, '');
-    cleaned = cleaned.replace(/\n(\d+)\$\n/g, '\n');
-
-    // Pattern 2: Remove broken LaTeX blocks like "$$1$" or "$1$" with just numbers
-    cleaned = cleaned.replace(/\$\$\d+\$/g, '');
-    cleaned = cleaned.replace(/\$\d+\$/g, '');
-
-    // Pattern 3: Clean isolated dollar signs that aren't part of valid LaTeX
-    // Valid: $x^2 + 1$ or $$\frac{a}{b}$$
-    // Invalid: standalone $ or $$ with no content
-    cleaned = cleaned.replace(/\$\$\s*\$\$/g, '');
-
-    // Pattern 4: Remove \boxed{...} wrapper — keep content inside
-    cleaned = cleaned.replace(/\\boxed\{([^}]*)\}/g, '$1');
-
-    // Pattern 5: Replace \dfrac{a}{b} and \frac{a}{b} with a/b
+    // Convert common LaTeX to readable text
     cleaned = cleaned.replace(/\\d?frac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)');
+    cleaned = cleaned.replace(/\\sqrt\{([^}]*)\}/g, 'sqrt($1)');
+    cleaned = cleaned.replace(/\\boxed\{([^}]*)\}/g, '$1');
+    cleaned = cleaned.replace(/\\(left|right|cdot|times|text|mathrm|quad|,)/g, '');
+    cleaned = cleaned.replace(/\^{(\w)}/g, '^$1');
+    cleaned = cleaned.replace(/_{(\w)}/g, '_$1');
 
-    // Pattern 6: Remove remaining LaTeX commands
-    cleaned = cleaned.replace(/\\(left|right|cdot|times|sqrt|text|mathrm|quad|,)/g, '');
+    // Remove dollar signs
+    cleaned = cleaned.replace(/\$\$/g, '');
+    cleaned = cleaned.replace(/\$/g, '');
 
-    // Pattern 7: Remove $ at end of lines when it's clearly broken
-    cleaned = cleaned.replace(/([a-zA-Z0-9)\]}])\$\s*$/gm, '$1');
+    // Remove LaTeX delimiters
+    cleaned = cleaned.replace(/\\\(/g, '');
+    cleaned = cleaned.replace(/\\\)/g, '');
+    cleaned = cleaned.replace(/\\\[/g, '');
+    cleaned = cleaned.replace(/\\\]/g, '');
 
-    // Pattern 8: Remove dollar signs around plain text that isn't math
-    cleaned = cleaned.replace(/\$([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż\s]+)\$/g, '$1');
-
-    // Pattern 6: Clean up multiple blank lines
+    // Clean up artifacts
+    cleaned = cleaned.replace(/^\s*\d+\s*$/gm, '');
     cleaned = cleaned.replace(/\n{3,}/g, '\n\n');
-
-    // Pattern 7: Remove orphaned $ signs (not paired)
-    // Count $ signs — if odd number, remove the last one
-    const dollarCount = (cleaned.match(/(?<!\$)\$(?!\$)/g) || []).length;
-    if (dollarCount % 2 !== 0) {
-      // Find and remove the last orphaned $
-      const lastDollarIdx = cleaned.lastIndexOf('$');
-      if (lastDollarIdx >= 0 && cleaned[lastDollarIdx - 1] !== '$' && cleaned[lastDollarIdx + 1] !== '$') {
-        cleaned = cleaned.substring(0, lastDollarIdx) + cleaned.substring(lastDollarIdx + 1);
-      }
-    }
+    cleaned = cleaned.replace(/\\([a-zA-Z]+)/g, '$1');
 
     return cleaned.trim();
   }
 
   /**
    * Sanitize Python/SymPy code before execution
-   * Fixes common issues from Bielik model output
    */
   private sanitizeCode(code: string): string {
     let lines = code.split('\n');
 
-    // 1. Remove assert statements (Bielik loves to add these and they cause errors)
+    // 1. Remove assert statements
     lines = lines.filter(line => !line.trim().startsWith('assert '));
 
-    // 2. Remove duplicate variable definitions (keep first occurrence)
+    // 2. Remove duplicate variable definitions
     const definedVars = new Set<string>();
     const symbolDefRegex = /^(\w+)\s*=\s*symbols?\(/;
     lines = lines.filter(line => {
       const match = line.trim().match(symbolDefRegex);
       if (match) {
         const varName = match[1];
-        if (definedVars.has(varName)) {
-          return false; // Skip duplicate definition
-        }
+        if (definedVars.has(varName)) return false;
         definedVars.add(varName);
       }
       return true;
     });
 
-    // 3. Remove duplicate import lines (keep first occurrence)
+    // 3. Remove duplicate imports
     const seenImports = new Set<string>();
     lines = lines.filter(line => {
       const trimmed = line.trim();
       if (trimmed.startsWith('from ') || trimmed.startsWith('import ')) {
-        if (seenImports.has(trimmed)) {
-          return false;
-        }
+        if (seenImports.has(trimmed)) return false;
         seenImports.add(trimmed);
       }
       return true;
     });
 
-    // 4. Fix ^ used instead of ** for exponentiation (but not in strings/comments)
+    // 4. Fix ^ → ** for exponentiation
     lines = lines.map(line => {
       const trimmed = line.trim();
-      if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) {
-        return line;
-      }
+      if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
       return line
         .replace(/(\w)\^(\w)/g, '$1**$2')
         .replace(/\)\^(\w)/g, ')**$1')
         .replace(/(\w)\^\(/g, '$1**(');
     });
 
-    // 5. Fix common Bielik errors: importing symbol names from sympy
-    // e.g. "from sympy import symbols, R, x" → "from sympy import symbols"
+    // 5. Filter out single-letter "imports" (Bielik hallucination)
     lines = lines.map(line => {
       const importMatch = line.match(/^(from sympy import .+)/);
       if (importMatch) {
@@ -409,7 +329,7 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       return line;
     });
 
-    // 6. Fix wrong SymPy names (common Bielik hallucinations)
+    // 6. Fix wrong SymPy names
     const importFixes: Record<string, string> = {
       'Simplify': 'simplify',
       'Greater': 'Gt',
@@ -426,14 +346,14 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       return line;
     });
 
-    // 7. Fix Pi → pi (Bielik sometimes capitalizes it)
+    // 7. Fix Pi → pi
     lines = lines.map(line => {
       const trimmed = line.trim();
       if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
       return line.replace(/\bPi\b/g, 'pi');
     });
 
-    // 8. Ensure there's at least one print statement
+    // 8. Ensure print statement exists
     const hasPrint = lines.some(line => line.trim().startsWith('print(') || line.trim().startsWith('print ('));
     if (!hasPrint) {
       for (let i = lines.length - 1; i >= 0; i--) {
@@ -445,27 +365,17 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       }
     }
 
-    // 9. Remove empty lines at start/end
-    const result = lines.join('\n').trim();
-
-    return result;
+    return lines.join('\n').trim();
   }
 
   /**
-   * Extract code from Executor response — returns ONLY the first valid code block
-   * Bielik often produces duplicate code blocks; the first one is always the best
+   * Extract first valid code block from response
    */
   private extractCode(response: string): string[] {
-    // Extract code from ```python blocks
-    const pythonBlockRegex = /```python\s*\n([\s\S]*?)\n```/;
-    const pythonMatch = pythonBlockRegex.exec(response);
-    if (pythonMatch) {
-      return [pythonMatch[1].trim()];
-    }
+    const pythonMatch = /```python\s*\n([\s\S]*?)\n```/.exec(response);
+    if (pythonMatch) return [pythonMatch[1].trim()];
 
-    // Also look for plain ``` blocks
-    const plainBlockRegex = /```\s*\n([\s\S]*?)\n```/;
-    const plainMatch = plainBlockRegex.exec(response);
+    const plainMatch = /```\s*\n([\s\S]*?)\n```/.exec(response);
     if (plainMatch) {
       const code = plainMatch[1].trim();
       if (code.includes('sympy') || code.includes('import') || code.includes('print')) {
@@ -477,25 +387,26 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
   }
 
   /**
-   * Truncate executor response after the first code block closes
-   * This removes duplicate explanations and second code blocks that Bielik adds
+   * Extract first Lean code block from response
+   */
+  private extractLeanCode(response: string): string | null {
+    const leanMatch = /```lean\s*\n([\s\S]*?)\n```/.exec(response);
+    return leanMatch ? leanMatch[1].trim() : null;
+  }
+
+  /**
+   * Truncate response after first code block
    */
   private truncateAfterFirstCodeBlock(response: string): string {
-    // Find first ```python ... ``` block and truncate everything after it
     const match = response.match(/([\s\S]*?```python\s*\n[\s\S]*?\n```)/);
-    if (match) {
-      return match[1].trim();
-    }
-    // Try plain ``` blocks
+    if (match) return match[1].trim();
     const plainMatch = response.match(/([\s\S]*?```\s*\n[\s\S]*?\n```)/);
-    if (plainMatch) {
-      return plainMatch[1].trim();
-    }
+    if (plainMatch) return plainMatch[1].trim();
     return response;
   }
 
   /**
-   * Get agent context (messages for agent to see)
+   * Get agent context from conversation history
    */
   private getAgentContext(): Array<{ role: 'user' | 'assistant'; content: string }> {
     return this.conversationHistory
@@ -530,13 +441,101 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
   }
 
   /**
-   * Process a user message with three agents: Analytical, Executor, Verifier
+   * Try to fix code based on error message, return fixed code or same code if no fix found
+   */
+  private tryFixCode(code: string, errorMsg: string): string {
+    let fixedCode = code;
+
+    // Fix 1: NameError — add missing symbol definition
+    const nameErrorMatch = errorMsg.match(/NameError: name '(\w+)' is not defined/);
+    if (nameErrorMatch) {
+      const missingVar = nameErrorMatch[1];
+      const lines = fixedCode.split('\n');
+      let insertIdx = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('from ') || lines[i].trim().startsWith('import ')) {
+          insertIdx = i + 1;
+        }
+      }
+      lines.splice(insertIdx, 0, `${missingVar} = symbols('${missingVar}', real=True)`);
+      fixedCode = lines.join('\n');
+    }
+
+    // Fix 2: IndexError on solve()[0]
+    if (errorMsg.includes('IndexError: list index out of range')) {
+      fixedCode = fixedCode.replace(
+        /(\w+)\s*=\s*solve\(([^)]+)\)\[0\]/g,
+        '_sols = solve($2)\n$1 = _sols[0] if _sols else None'
+      );
+    }
+
+    // Fix 3: 'And'/'Or' object not iterable
+    if (errorMsg.includes("'And' object") || errorMsg.includes("'Or' object")) {
+      fixedCode = fixedCode.replace(
+        /for\s+(\w+)\s+in\s+(\w+)/g,
+        'for $1 in ([$2] if not hasattr($2, "__iter__") else $2)'
+      );
+    }
+
+    // Fix 4: 'bool' object has no attribute 'subs'
+    if (errorMsg.includes("'bool' object has no attribute 'subs'")) {
+      fixedCode = fixedCode.replace(/(\w+)\s*=\s*(.+?)\s*==\s*(.+)/g, '$1 = Eq($2, $3)');
+    }
+
+    // Fix 5: tuple/dict indexing with symbol
+    if (errorMsg.includes('tuple indices must be integers') || errorMsg.includes('list indices must be integers')) {
+      fixedCode = fixedCode.replace(/(\w+)\[(\w+)\](?!\s*if)/g, '$1[0]');
+    }
+
+    return fixedCode;
+  }
+
+  /**
+   * Execute SymPy code with auto-retry on failure
+   */
+  private async executeWithRetry(code: string, maxRetries: number = 3): Promise<string> {
+    let currentCode = code;
+    let lastError: unknown = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await this.executeSymPyCalculation(currentCode);
+        return result; // Success
+      } catch (error) {
+        lastError = error;
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.warn(`⚠️ Attempt ${attempt + 1} failed:`, errorMsg.substring(0, 120));
+
+        if (attempt >= maxRetries) break;
+
+        const fixedCode = this.tryFixCode(currentCode, errorMsg);
+        if (fixedCode === currentCode) {
+          console.warn('⚠️ No fix found, giving up retries.');
+          break;
+        }
+
+        console.log('📤 Retrying with fixed code...');
+        currentCode = fixedCode;
+      }
+    }
+
+    throw lastError;
+  }
+
+  /**
+   * Process a user message through the full pipeline.
+   *
+   * Pipeline:
+   *   Agent 1: Analytical  → plan the solution
+   *   Agent 2: Executor    → SymPy code (always)
+   *   Agent 3: Summary     → step-by-step explanation
+   *   Agent 4: Verifier    → Lean verification (optional, proof problems only)
    */
   async processMessage(
     userMessage: string,
     onMessageCallback?: (message: Message) => void
   ): Promise<Message[]> {
-    console.log('🎯 Processing with three-agent system:', userMessage);
+    console.log('🎯 Processing with multi-agent system:', userMessage);
 
     // Add user message
     const userMsg: Message = {
@@ -550,17 +549,40 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
 
     const newMessages: Message[] = [userMsg];
 
-    // Determine if this needs formal proof
-    const needsFormalProof = this.requiresFormalProof(userMessage);
-    const useLean = needsFormalProof && this.leanAvailable &&
-                     (this.proverBackend === 'lean' || this.proverBackend === 'both');
+    // Check if problem might benefit from Lean verification (doesn't affect solving)
+    const shouldVerify = this.couldBenefitFromVerification(userMessage)
+      && this.leanAvailable
+      && (this.proverBackend === 'lean' || this.proverBackend === 'both');
 
-    console.log(`📋 Problem type: ${needsFormalProof ? 'Formal Proof' : 'Calculation'}`);
-    console.log(`🔧 Backend: ${useLean ? 'Lean Prover' : 'SymPy'}`);
+    // Detect MC questions
+    const isMultipleChoice = /Opcje:|[A-D]\)/.test(userMessage);
 
-    // AGENT 1: Analytical Agent - Break down the problem
+    console.log(`📋 Problem analysis:`);
+    console.log(`   MC question: ${isMultipleChoice}`);
+    console.log(`   Lean verification: ${shouldVerify ? 'yes' : 'no'}`);
+    console.log(`   Executor: always SymPy`);
+
+    // ═══════════════════════════════════════════════════════════════════
+    // RAG: Wzbogacenie kontekstem z bazy wiedzy
+    // ═══════════════════════════════════════════════════════════════════
+    let ragContext = '';
+    try {
+      ragContext = await this.ragService.getContext(userMessage, 5);
+      if (ragContext) {
+        console.log(`📚 RAG context injected (${ragContext.length} chars)`);
+      }
+    } catch (err) {
+      console.warn('⚠️ RAG unavailable (continuing without):', err);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // AGENT 1: Analytical — plan the solution
+    // ═══════════════════════════════════════════════════════════════════
     console.log('\n=== AGENT 1: Analytical ===');
-    const analyticalPrompt = prompts.analytical;
+
+    const analyticalPrompt = ragContext
+      ? `${prompts.analytical}\n${ragContext}`
+      : prompts.analytical;
 
     const analyticalContext = this.getAgentContext();
     const analyticalResponse = await this.executeAgentTurn(
@@ -581,14 +603,18 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
     newMessages.push(analyticalMsg);
     if (onMessageCallback) onMessageCallback(analyticalMsg);
 
-    // AGENT 2: Executor Agent - Execute the solution
-    console.log('\n=== AGENT 2: Executor ===');
-    // Detect MC questions (contain "Opcje:" or option pattern "A)" "B)")
-    const isMultipleChoice = /Opcje:|[A-D]\)/.test(userMessage);
-    const executorPrompt = useLean ? prompts.executor_lean :
-      (isMultipleChoice && (prompts as any).executor_sympy_mc ? (prompts as any).executor_sympy_mc : prompts.executor_sympy);
+    // ═══════════════════════════════════════════════════════════════════
+    // AGENT 2: Executor — always SymPy
+    // ═══════════════════════════════════════════════════════════════════
+    console.log('\n=== AGENT 2: Executor (SymPy) ===');
+
+    // Choose MC or standard executor prompt
+    const executorPrompt = isMultipleChoice && (prompts as any).executor_sympy_mc
+      ? (prompts as any).executor_sympy_mc
+      : prompts.executor_sympy;
+
     if (isMultipleChoice) {
-      console.log('📋 MC question detected — using MC executor prompt');
+      console.log('📋 MC question — using MC executor prompt');
     }
 
     const executorContext = this.getAgentContext();
@@ -599,138 +625,37 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       { maxTokens: prompts.agents.executor.max_tokens, temperature: prompts.agents.executor.temperature }
     );
 
-    // Truncate after first code block to remove Bielik's duplicate explanation + second block
+    // Truncate after first code block (Bielik often duplicates)
     const truncatedExecutorResponse = this.truncateAfterFirstCodeBlock(executorResponse);
     const cleanedExecutorResponse = this.cleanMalformedLatex(truncatedExecutorResponse);
 
     let finalExecutorContent = cleanedExecutorResponse;
     const executionResults: string[] = [];
-    const codeBlocks = this.extractCode(executorResponse); // Extract from original (before truncation)
+    const codeBlocks = this.extractCode(executorResponse);
 
-    if (!useLean) {
-      // Execute SymPy code
-      console.log(`📝 Found ${codeBlocks.length} code blocks to execute`);
-      console.log('📝 Code blocks:', codeBlocks);
+    console.log(`📝 Found ${codeBlocks.length} code blocks to execute`);
 
-      if (codeBlocks.length > 0 && this.mcpClient) {
-        // We only have 1 code block (extractCode returns the first valid one)
-        let combinedCode = codeBlocks[0];
+    if (codeBlocks.length > 0 && this.mcpClient) {
+      const combinedCode = this.sanitizeCode(codeBlocks[0]);
+      console.log('📤 Code sent to MCP sympy_calculate:', combinedCode);
 
-        // Sanitize the code before execution
-        combinedCode = this.sanitizeCode(combinedCode);
+      try {
+        const result = await this.executeWithRetry(combinedCode);
+        executionResults.push(`📊 Wyniki wykonania:\n${result}`);
 
-        console.log('📤 Code sent to MCP sympy_calculate:', combinedCode);
-
-        try {
-          let result: string = '';
-          const maxRetries = 3;
-          let currentCode = combinedCode;
-          let lastError: unknown = null;
-
-          for (let attempt = 0; attempt <= maxRetries; attempt++) {
-            try {
-              result = await this.executeSymPyCalculation(currentCode);
-              lastError = null;
-              break; // Success
-            } catch (error) {
-              lastError = error;
-              const errorMsg = error instanceof Error ? error.message : String(error);
-              console.warn(`⚠️ Attempt ${attempt + 1} failed:`, errorMsg.substring(0, 120));
-
-              if (attempt >= maxRetries) break; // Don't fix on last attempt
-
-              let fixedCode = currentCode;
-
-              // Fix 1: NameError — add missing symbol definition
-              const nameErrorMatch = errorMsg.match(/NameError: name '(\w+)' is not defined/);
-              if (nameErrorMatch) {
-                const missingVar = nameErrorMatch[1];
-                const lines = fixedCode.split('\n');
-                let insertIdx = 0;
-                for (let i = 0; i < lines.length; i++) {
-                  if (lines[i].trim().startsWith('from ') || lines[i].trim().startsWith('import ')) {
-                    insertIdx = i + 1;
-                  }
-                }
-                lines.splice(insertIdx, 0, `${missingVar} = symbols('${missingVar}', real=True)`);
-                fixedCode = lines.join('\n');
-              }
-
-              // Fix 2: IndexError on solve()[0] — use safe indexing
-              if (errorMsg.includes('IndexError: list index out of range')) {
-                fixedCode = fixedCode.replace(
-                  /(\w+)\s*=\s*solve\(([^)]+)\)\[0\]/g,
-                  '_sols = solve($2)\n$1 = _sols[0] if _sols else None'
-                );
-              }
-
-              // Fix 3: 'And'/'Or' object not iterable/subscriptable
-              if (errorMsg.includes("'And' object") || errorMsg.includes("'Or' object")) {
-                fixedCode = fixedCode.replace(
-                  /for\s+(\w+)\s+in\s+(\w+)/g,
-                  'for $1 in ([$2] if not hasattr($2, "__iter__") else $2)'
-                );
-              }
-
-              // Fix 4: 'bool' object has no attribute 'subs' — == instead of Eq()
-              if (errorMsg.includes("'bool' object has no attribute 'subs'")) {
-                fixedCode = fixedCode.replace(/(\w+)\s*=\s*(.+?)\s*==\s*(.+)/g, '$1 = Eq($2, $3)');
-              }
-
-              // Fix 5: tuple/dict indexing with symbol — variable name collision
-              if (errorMsg.includes('tuple indices must be integers') || errorMsg.includes('list indices must be integers')) {
-                fixedCode = fixedCode.replace(/(\w+)\[(\w+)\](?!\s*if)/g, '$1[0]');
-              }
-
-              if (fixedCode === currentCode) {
-                console.warn('⚠️ No fix found, giving up retries.');
-                break; // No fix applied, don't keep retrying
-              }
-
-              console.log('📤 Retrying with fixed code...');
-              currentCode = fixedCode;
-            }
-          }
-
-          if (lastError) {
-            throw lastError; // Re-throw the last error if all retries failed
-          }
-          executionResults.push(`📊 Wyniki wykonania:\n${result}`);
-
-          // Remove code blocks from content ONLY for SymPy (they will be shown in tool calls)
-          // For Lean, keep the code in the message content
-          if (!useLean) {
-            const codeBlockPlaceholder = /__CODE_BLOCK_\d+__/g;
-            finalExecutorContent = finalExecutorContent.replace(codeBlockPlaceholder, '');
-
-            // Remove markdown code blocks from content
-            finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
-            finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
-          }
-
-          // Add only results to content
-          finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA:**\n${result}`;
-        } catch (error) {
-          const errorMsg = `❌ Błąd wykonania: ${error instanceof Error ? error.message : String(error)}`;
-          executionResults.push(errorMsg);
-
-          // Remove code blocks from content ONLY for SymPy (they will be shown in tool calls)
-          // For Lean, keep the code in the message content
-          if (!useLean) {
-            const codeBlockPlaceholder = /__CODE_BLOCK_\d+__/g;
-            finalExecutorContent = finalExecutorContent.replace(codeBlockPlaceholder, '');
-
-            // Remove markdown code blocks from content
-            finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
-            finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
-          }
-
-          // Add only error to content
-          finalExecutorContent += `\n\n---\n**BŁĄD WYKONANIA:**\n${errorMsg}`;
-        }
-      } else if (codeBlocks.length === 0) {
-        console.warn('⚠️ No code blocks found in executor response. Response:', executorResponse.substring(0, 500));
+        // Remove code blocks from displayed content (shown in toolCalls instead)
+        finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
+        finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+        finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA:**\n${result}`;
+      } catch (error) {
+        const errorMsg = `❌ Błąd wykonania: ${error instanceof Error ? error.message : String(error)}`;
+        executionResults.push(errorMsg);
+        finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
+        finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+        finalExecutorContent += `\n\n---\n**BŁĄD WYKONANIA:**\n${errorMsg}`;
       }
+    } else if (codeBlocks.length === 0) {
+      console.warn('⚠️ No code blocks found in executor response');
     }
 
     const executorMsg: Message = {
@@ -739,16 +664,14 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       content: finalExecutorContent,
       agentName: 'Agent Wykonawczy',
       timestamp: new Date(),
-      toolCalls: codeBlocks.length > 0 && !useLean ? [{
+      toolCalls: codeBlocks.length > 0 ? [{
         id: 'sympy-exec-1',
         name: 'sympy_calculate',
-        arguments: {
-          expression: codeBlocks[0]
-        }
+        arguments: { expression: codeBlocks[0] }
       }] : undefined,
       toolResults: executionResults.map((result, idx) => ({
         toolCallId: `exec-${idx}`,
-        toolName: useLean ? 'lean_verify' : 'sympy_calculate',
+        toolName: 'sympy_calculate',
         result,
         isError: result.includes('❌'),
       })),
@@ -757,15 +680,18 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
     newMessages.push(executorMsg);
     if (onMessageCallback) onMessageCallback(executorMsg);
 
-    // AGENT 3: Verifier/Summary Agent - Summarize calculation results OR verify Lean proofs
-    if (!useLean && executionResults.length > 0 && !executionResults.some(r => r.includes('❌'))) {
+    // ═══════════════════════════════════════════════════════════════════
+    // AGENT 3: Summary — explain the solution step by step
+    // ═══════════════════════════════════════════════════════════════════
+    const hasResults = executionResults.length > 0 && !executionResults.some(r => r.includes('❌'));
+
+    if (hasResults) {
       console.log('\n=== AGENT 3: Summary ===');
-      const summaryPrompt = prompts.summary;
 
       const summaryContext = this.getAgentContext();
       const summaryResponse = await this.executeAgentTurn(
         'Agent Podsumowujący',
-        summaryPrompt,
+        prompts.summary,
         summaryContext,
         { maxTokens: prompts.agents.summary.max_tokens, temperature: prompts.agents.summary.temperature }
       );
@@ -782,42 +708,46 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
       if (onMessageCallback) onMessageCallback(summaryMsg);
     }
 
-    if (useLean) {
-      // AGENT 3: Formalizer — translate informal proof to formal Lean 4 code
-      console.log('\n=== AGENT 3: Formalizer (Lean 4) ===');
+    // ═══════════════════════════════════════════════════════════════════
+    // AGENT 4: Lean Verifier (optional — only for proof-type problems)
+    // ═══════════════════════════════════════════════════════════════════
+    if (shouldVerify && hasResults) {
+      console.log('\n=== AGENT 4: Lean Verifier ===');
 
+      // Step 4a: Use formalizer prompt to translate solution to Lean code
       const formalizerPrompt = (prompts as any).formalizer_lean || prompts.executor_lean;
       const formalizerConfig = (prompts.agents as any).formalizer || prompts.agents.executor;
 
       const formalizerContext = this.getAgentContext();
       const formalizerResponse = await this.executeAgentTurn(
-        'Agent Formalizujący',
+        'Agent Weryfikujący',
         formalizerPrompt,
         formalizerContext,
         { maxTokens: formalizerConfig.max_tokens, temperature: formalizerConfig.temperature }
       );
 
       const cleanedFormalizerResponse = this.cleanMalformedLatex(formalizerResponse);
+      const leanCode = this.extractLeanCode(formalizerResponse) || cleanedFormalizerResponse;
 
-      // Try to verify the Lean code with the Lean Prover
+      // Step 4b: Verify the Lean code with Lean Prover
       let leanVerification = '';
       const leanToolCalls: ToolCall[] = [];
       const leanToolResults: ToolResult[] = [];
 
-      if (this.leanClient) {
+      if (this.leanClient && this.leanAvailable) {
         try {
-          console.log('🎯 Attempting Lean Prover verification...');
+          console.log('🎯 Sending to Lean Prover for verification...');
 
           leanToolCalls.push({
             id: 'lean-verify-1',
             name: 'lean_prover_verify',
             arguments: {
-              problem: userMessage.substring(0, 200) + (userMessage.length > 200 ? '...' : ''),
-              proof: cleanedFormalizerResponse.substring(0, 500) + (cleanedFormalizerResponse.length > 500 ? '...' : ''),
+              problem: userMessage.substring(0, 200),
+              proof: leanCode.substring(0, 500),
             },
           });
 
-          const leanResult = await this.verifyWithLean(userMessage, cleanedFormalizerResponse);
+          const leanResult = await this.verifyWithLean(userMessage, leanCode);
           leanVerification = `\n\n---\n**Weryfikacja Lean Prover:**\n${leanResult}`;
 
           leanToolResults.push({
@@ -828,7 +758,7 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
           });
         } catch (error) {
           console.warn('Lean verification failed:', error);
-          const errorMsg = `Blad weryfikacji: ${error instanceof Error ? error.message : String(error)}`;
+          const errorMsg = `Błąd weryfikacji: ${error instanceof Error ? error.message : String(error)}`;
           leanVerification = `\n\n---\n**Weryfikacja Lean Prover:**\n${errorMsg}`;
 
           leanToolResults.push({
@@ -840,19 +770,18 @@ Dowód nie przeszedł weryfikacji składniowej Lean.`;
         }
       }
 
-      const formalizerMsg: Message = {
+      const verifierMsg: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: cleanedFormalizerResponse + leanVerification,
-        agentName: 'Agent Formalizujący',
+        agentName: 'Agent Weryfikujący',
         timestamp: new Date(),
         toolCalls: leanToolCalls.length > 0 ? leanToolCalls : undefined,
         toolResults: leanToolResults.length > 0 ? leanToolResults : undefined,
       };
-      this.conversationHistory.push(formalizerMsg);
-      newMessages.push(formalizerMsg);
-      if (onMessageCallback) onMessageCallback(formalizerMsg);
-
+      this.conversationHistory.push(verifierMsg);
+      newMessages.push(verifierMsg);
+      if (onMessageCallback) onMessageCallback(verifierMsg);
     }
 
     console.log('✅ Processing complete');

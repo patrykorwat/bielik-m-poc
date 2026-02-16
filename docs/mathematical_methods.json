@@ -1,0 +1,736 @@
+{
+  "meta": {
+    "description": "Lista metod matematycznych dla agenta 11B parametrów (Bielik-11B-v3) do rozwiązywania zadań z matury rozszerzonej z matematyki",
+    "source": "Informator CKE o egzaminie maturalnym z matematyki od 2024 roku (poziom rozszerzony)",
+    "engine": "SymPy (via MCP server)",
+    "version": "1.0"
+  },
+  "categories": [
+    {
+      "id": "algebra_expressions",
+      "name": "Wyrażenia algebraiczne",
+      "name_en": "Algebraic Expressions",
+      "methods": [
+        {
+          "id": "simplify_expressions",
+          "name": "Upraszczanie wyrażeń algebraicznych",
+          "name_en": "Simplifying algebraic expressions",
+          "description": "Upraszczanie złożonych wyrażeń z potęgami, pierwiastkami, logarytmami. Przekształcanie do prostszej formy.",
+          "sympy_approach": "from sympy import *; x = symbols('x'); simplify(expr) lub expand(expr) lub factor(expr)",
+          "sympy_functions": ["simplify", "expand", "factor", "cancel", "radsimp", "powsimp", "logcombine"],
+          "when_to_use": "Gdy zadanie wymaga obliczenia wartości wyrażenia lub uproszczenia do podanej formy",
+          "exam_problems": ["Zadanie 1 (logarytmy)", "Zadanie 2 (wyrażenia wymierne)"],
+          "tips_for_11b": "Zawsze definiuj zmienne przez symbols(). Używaj simplify() jako pierwszego kroku. Jeśli wynik nie jest uproszczony, spróbuj factor() lub cancel()."
+        },
+        {
+          "id": "logarithmic_computation",
+          "name": "Obliczenia logarytmiczne",
+          "name_en": "Logarithmic computations",
+          "description": "Obliczanie wartości wyrażeń z logarytmami, stosowanie własności logarytmów (zmiana podstawy, logarytm iloczynu/ilorazu/potęgi).",
+          "sympy_approach": "from sympy import log, Rational; log(x, base) dla logarytmu o danej podstawie; expand_log() i logcombine()",
+          "sympy_functions": ["log", "expand_log", "logcombine", "simplify"],
+          "when_to_use": "Gdy w zadaniu pojawiają się logarytmy do obliczenia lub uproszczenia",
+          "exam_problems": ["Zadanie 1"],
+          "tips_for_11b": "log(x, b) to logarytm z x o podstawie b. Używaj Rational() zamiast float dla dokładnych wyników. expand_log(force=True) rozwija logarytmy."
+        },
+        {
+          "id": "rational_expressions",
+          "name": "Wyrażenia wymierne - analiza",
+          "name_en": "Rational expression analysis",
+          "description": "Analiza wyrażeń wymiernych: znajdowanie dziedziny, upraszczanie, rozkład na ułamki proste, wartości całkowite.",
+          "sympy_approach": "cancel(expr) do uproszczenia; apart(expr) do rozkładu na ułamki proste; solve(denom, x) do znajdowania wykluczeń z dziedziny",
+          "sympy_functions": ["cancel", "apart", "together", "numer", "denom", "solve"],
+          "when_to_use": "Gdy zadanie dotyczy wyrażeń wymiernych, ich dziedziny lub wartości",
+          "exam_problems": ["Zadanie 2 (dzielniki, punkty kratowe)"],
+          "tips_for_11b": "Aby znaleźć wartości całkowite f(x)=P(x)/Q(x), wykonaj dzielenie wielomianów (div) i analizuj resztę. Sprawdź dzielniki reszty."
+        }
+      ]
+    },
+    {
+      "id": "equations_inequalities",
+      "name": "Równania i nierówności",
+      "name_en": "Equations and Inequalities",
+      "methods": [
+        {
+          "id": "polynomial_equations",
+          "name": "Równania wielomianowe",
+          "name_en": "Polynomial equations",
+          "description": "Rozwiązywanie równań wielomianowych: kwadratowych, sześciennych, wyższych stopni. Twierdzenie o pierwiastkach wymiernych, schemat Hornera.",
+          "sympy_approach": "solve(poly_expr, x) lub roots(poly_expr, x) lub factor(poly_expr)",
+          "sympy_functions": ["solve", "roots", "factor", "Poly", "real_roots", "all_roots"],
+          "when_to_use": "Gdy trzeba znaleźć pierwiastki wielomianu lub rozwiązać równanie wielomianowe",
+          "exam_problems": ["Zadanie 3 (wielomian z parametrem)"],
+          "tips_for_11b": "Dla wielomianów z parametrem użyj symbols('a') i solve() z warunkami. Poly(expr, x) daje obiekt wielomianu z metodami .all_roots(), .factor_list()."
+        },
+        {
+          "id": "parametric_equations",
+          "name": "Równania z parametrem",
+          "name_en": "Parametric equations",
+          "description": "Analiza równań zależnych od parametru: warunki na liczbę rozwiązań, warunki na znak rozwiązań, wyróżnik.",
+          "sympy_approach": "a = symbols('a'); eq = expr; delta = discriminant(Poly(eq, x)); solve(delta > 0, a) dla warunków",
+          "sympy_functions": ["solve", "discriminant", "Poly", "solveset", "S.Reals"],
+          "when_to_use": "Gdy zadanie zawiera parametr i pytanie o warunki na rozwiązania",
+          "exam_problems": ["Zadanie 3", "Zadanie 5"],
+          "tips_for_11b": "Kluczowe: oblicz wyróżnik (discriminant), wzory Viète'a (p+q=-b/a, p*q=c/a). Analizuj znaki pierwiastków przez iloczyn i sumę."
+        },
+        {
+          "id": "systems_of_equations",
+          "name": "Układy równań",
+          "name_en": "Systems of equations",
+          "description": "Rozwiązywanie układów równań liniowych i nieliniowych, w tym z parametrami.",
+          "sympy_approach": "solve([eq1, eq2], [x, y]) lub linsolve([eq1, eq2], [x, y]) dla liniowych",
+          "sympy_functions": ["solve", "linsolve", "nonlinsolve", "Matrix"],
+          "when_to_use": "Gdy zadanie prowadzi do układu równań (np. geometria analityczna, optymalizacja)",
+          "exam_problems": ["Zadanie 18 (układ równań liniowych z parametrem)"],
+          "tips_for_11b": "Dla układów z parametrem: zapisz macierz rozszerzoną, analizuj wyznacznik. solve() zwraca słownik lub listę krotek."
+        },
+        {
+          "id": "inequalities",
+          "name": "Nierówności",
+          "name_en": "Inequalities",
+          "description": "Rozwiązywanie nierówności wielomianowych, wymiernych, z wartością bezwzględną, logarytmicznych, wykładniczych.",
+          "sympy_approach": "solve(expr > 0, x) lub solve_univariate_inequality(expr > 0, x) lub solveset(expr > 0, x, S.Reals)",
+          "sympy_functions": ["solve", "solveset", "solve_univariate_inequality", "reduce_inequalities", "Abs"],
+          "when_to_use": "Gdy zadanie wymaga znalezienia zbioru rozwiązań nierówności",
+          "exam_problems": ["Zadanie 4 (nierówność kwadratowa z parametrem)"],
+          "tips_for_11b": "Dla nierówności z parametrem rozważ różne przypadki (a>0, a=0, a<0). solveset() zwraca obiekty przedziałowe (Interval, Union)."
+        },
+        {
+          "id": "absolute_value",
+          "name": "Równania i nierówności z wartością bezwzględną",
+          "name_en": "Absolute value equations and inequalities",
+          "description": "Rozwiązywanie równań i nierówności zawierających wartość bezwzględną, analiza przypadków.",
+          "sympy_approach": "from sympy import Abs, Piecewise; solve(Abs(expr) - val, x) lub ręczna analiza przypadków",
+          "sympy_functions": ["Abs", "solve", "Piecewise", "solveset"],
+          "when_to_use": "Gdy w zadaniu pojawia się |wyrażenie|",
+          "exam_problems": [],
+          "tips_for_11b": "SymPy radzi sobie z Abs() w solve(). Alternatywnie rozpisz na przypadki: if expr >= 0 then expr, else -expr."
+        }
+      ]
+    },
+    {
+      "id": "functions",
+      "name": "Funkcje",
+      "name_en": "Functions",
+      "methods": [
+        {
+          "id": "function_properties",
+          "name": "Badanie własności funkcji",
+          "name_en": "Function properties analysis",
+          "description": "Wyznaczanie dziedziny, zbioru wartości, miejsc zerowych, monotoniczności, parzystości/nieparzystości, okresowości.",
+          "sympy_approach": "solve(f(x), x) dla miejsc zerowych; diff(f(x), x) dla monotoniczności; solveset(f(x), x, domain=S.Reals)",
+          "sympy_functions": ["solve", "solveset", "diff", "limit", "oo", "S.Reals", "Interval"],
+          "when_to_use": "Gdy zadanie wymaga analizy własności danej funkcji",
+          "exam_problems": ["Zadanie 6 (monotoniczność)", "Zadanie 7 (ciągłość)"],
+          "tips_for_11b": "Schemat badania funkcji: 1) dziedzina, 2) miejsca zerowe solve(f,x), 3) pochodna diff(f,x), 4) solve(f',x) punkty krytyczne, 5) sign analysis."
+        },
+        {
+          "id": "monotonicity_proof",
+          "name": "Dowód monotoniczności",
+          "name_en": "Monotonicity proof",
+          "description": "Dowodzenie monotoniczności funkcji: z definicji (f(x1)-f(x2) analizowanie znaku), przez pochodną, przez przekształcenia.",
+          "sympy_approach": "f_diff = diff(f(x), x); solve(f_diff > 0, x) # jeśli > 0 wszędzie, to f rosnąca",
+          "sympy_functions": ["diff", "solve", "simplify", "factor", "sign"],
+          "when_to_use": "Gdy zadanie wymaga udowodnienia, że funkcja jest rosnąca/malejąca na danym przedziale",
+          "exam_problems": ["Zadanie 6 (dowód monotoniczności z definicji i przez pochodną)"],
+          "tips_for_11b": "Trzy metody: (1) z definicji: pokaż że f(x1)-f(x2) ma stały znak dla x1<x2, (2) pochodna: pokaż f'(x)>0 lub f'(x)<0, (3) złożenie funkcji rosnących/malejących. Metoda pochodnej jest najprostsza do implementacji w SymPy."
+        },
+        {
+          "id": "limits",
+          "name": "Obliczanie granic",
+          "name_en": "Computing limits",
+          "description": "Obliczanie granic ciągów i funkcji, granice niewłaściwe, twierdzenie o trzech ciągach (o dwóch policjantach).",
+          "sympy_approach": "limit(expr, x, value) lub limit(expr, n, oo) dla ciągów",
+          "sympy_functions": ["limit", "oo", "Limit", "series"],
+          "when_to_use": "Gdy zadanie wymaga obliczenia granicy funkcji lub ciągu",
+          "exam_problems": ["Zadanie 8 (twierdzenie o trzech ciągach)"],
+          "tips_for_11b": "limit(expr, x, a, '+') dla granicy prawostronnej, limit(expr, x, a, '-') dla lewostronnej. Dla ciągów: limit(a_n, n, oo)."
+        },
+        {
+          "id": "continuity",
+          "name": "Ciągłość funkcji",
+          "name_en": "Function continuity",
+          "description": "Badanie ciągłości funkcji, wyznaczanie parametrów zapewniających ciągłość, własność Darboux.",
+          "sympy_approach": "limit(f, x, a, '+') == limit(f, x, a, '-') == f(a) # warunek ciągłości",
+          "sympy_functions": ["limit", "Piecewise", "solve"],
+          "when_to_use": "Gdy zadanie dotyczy ciągłości funkcji lub własności Darboux (tw. o wartości pośredniej)",
+          "exam_problems": ["Zadanie 7 (ciągłość funkcji przedziałami)", "Zadanie 10 (własność Darboux)"],
+          "tips_for_11b": "Dla funkcji przedziałami: oblicz granice jednostronne w punktach sklejenia i porównaj z wartością funkcji. Własność Darboux: jeśli f ciągła i f(a)*f(b)<0, to istnieje c: f(c)=0."
+        },
+        {
+          "id": "inverse_functions",
+          "name": "Funkcja odwrotna",
+          "name_en": "Inverse functions",
+          "description": "Wyznaczanie funkcji odwrotnej, sprawdzanie różnowartościowości, zależność wykresów f i f^(-1).",
+          "sympy_approach": "solve(f_expr - y, x) # rozwiąż względem x, zamień y na x",
+          "sympy_functions": ["solve", "solveset"],
+          "when_to_use": "Gdy zadanie dotyczy funkcji odwrotnej",
+          "exam_problems": [],
+          "tips_for_11b": "Aby znaleźć f^(-1): 1) zapisz y=f(x), 2) solve(y - f(x), x) → x=g(y), 3) f^(-1)(x)=g(x). Wykres f^(-1) to odbicie f względem y=x."
+        }
+      ]
+    },
+    {
+      "id": "derivatives_calculus",
+      "name": "Pochodne i rachunek różniczkowy",
+      "name_en": "Derivatives and Calculus",
+      "methods": [
+        {
+          "id": "derivative_computation",
+          "name": "Obliczanie pochodnych",
+          "name_en": "Computing derivatives",
+          "description": "Obliczanie pochodnych funkcji elementarnych i złożonych. Reguły: suma, iloczyn, iloraz, funkcja złożona.",
+          "sympy_approach": "diff(f(x), x) # pochodna pierwsza; diff(f(x), x, 2) # pochodna druga",
+          "sympy_functions": ["diff", "Derivative", "simplify"],
+          "when_to_use": "Gdy zadanie wymaga obliczenia pochodnej lub badania przebiegu zmienności funkcji",
+          "exam_problems": ["Zadanie 9 (pochodna i ekstrema)", "Zadanie 11 (optymalizacja)"],
+          "tips_for_11b": "diff() automatycznie stosuje wszystkie reguły różniczkowania. Zawsze simplify() wynik pochodnej."
+        },
+        {
+          "id": "extrema_finding",
+          "name": "Wyznaczanie ekstremów",
+          "name_en": "Finding extrema",
+          "description": "Znajdowanie ekstremów lokalnych i globalnych funkcji. Warunek konieczny f'(x)=0, warunek dostateczny (zmiana znaku f' lub f'').",
+          "sympy_approach": "critical = solve(diff(f, x), x); # potem sprawdź f''(c) lub znaki f' wokół c",
+          "sympy_functions": ["diff", "solve", "subs", "sign"],
+          "when_to_use": "Gdy zadanie pyta o ekstrema, wartość największą/najmniejszą",
+          "exam_problems": ["Zadanie 9", "Zadanie 11 (wartość największa/najmniejsza)"],
+          "tips_for_11b": "Schemat: 1) f'(x)=0 → punkty krytyczne, 2) f''(c): jeśli >0 to minimum, <0 to maximum, 3) na przedziale zamkniętym sprawdź też końce."
+        },
+        {
+          "id": "optimization",
+          "name": "Zadania optymalizacyjne",
+          "name_en": "Optimization problems",
+          "description": "Modelowanie i rozwiązywanie zadań optymalizacyjnych: pole maksymalne, objętość, koszt minimalny, punkt Steinera.",
+          "sympy_approach": "# 1) Zdefiniuj funkcję celu z jedną zmienną\n# 2) diff(f, x) i solve\n# 3) Sprawdź warunek dostateczny\n# 4) Oblicz wartość optymalną",
+          "sympy_functions": ["diff", "solve", "subs", "simplify", "sqrt", "Rational"],
+          "when_to_use": "Gdy zadanie wymaga znalezienia wartości optymalnej (najm./najw.) pewnej wielkości",
+          "exam_problems": ["Zadanie 11 (optymalizacja geometryczna)", "Zadanie 29 (punkt Steinera)"],
+          "tips_for_11b": "Kluczowe: (1) zidentyfikuj funkcję celu i ograniczenia, (2) użyj ograniczeń by wyrazić funkcję celu w jednej zmiennej, (3) znajdź pochodną i punkty krytyczne, (4) sprawdź warunek dostateczny, (5) oblicz wartość w punkcie optymalnym."
+        },
+        {
+          "id": "tangent_line",
+          "name": "Styczna do wykresu",
+          "name_en": "Tangent line to graph",
+          "description": "Wyznaczanie równania stycznej do wykresu funkcji w danym punkcie: y = f(a) + f'(a)(x-a).",
+          "sympy_approach": "a_val = ...; tangent = f.subs(x, a_val) + diff(f, x).subs(x, a_val) * (x - a_val)",
+          "sympy_functions": ["diff", "subs", "simplify"],
+          "when_to_use": "Gdy zadanie pyta o styczną do wykresu lub kąt nachylenia",
+          "exam_problems": [],
+          "tips_for_11b": "Styczna w punkcie (a, f(a)): y = f(a) + f'(a)*(x-a). Kąt nachylenia: tan(α) = f'(a)."
+        }
+      ]
+    },
+    {
+      "id": "sequences_series",
+      "name": "Ciągi i szeregi",
+      "name_en": "Sequences and Series",
+      "methods": [
+        {
+          "id": "arithmetic_sequence",
+          "name": "Ciąg arytmetyczny",
+          "name_en": "Arithmetic sequence",
+          "description": "Wzór ogólny a_n = a_1 + (n-1)d, suma n wyrazów S_n = n(a_1+a_n)/2, własności.",
+          "sympy_approach": "n, a1, d = symbols('n a1 d'); a_n = a1 + (n-1)*d; S_n = n*(2*a1 + (n-1)*d)/2",
+          "sympy_functions": ["symbols", "solve", "summation", "simplify"],
+          "when_to_use": "Gdy w zadaniu pojawia się ciąg arytmetyczny",
+          "exam_problems": [],
+          "tips_for_11b": "Używaj wzorów bezpośrednio. summation(a1 + (i-1)*d, (i, 1, n)) dla sumy symbolicznej."
+        },
+        {
+          "id": "geometric_sequence",
+          "name": "Ciąg geometryczny",
+          "name_en": "Geometric sequence",
+          "description": "Wzór ogólny a_n = a_1*q^(n-1), suma n wyrazów, suma szeregu geometrycznego (|q|<1): S = a_1/(1-q).",
+          "sympy_approach": "a_n = a1 * q**(n-1); S_inf = a1 / (1-q)  # dla |q|<1",
+          "sympy_functions": ["symbols", "solve", "summation", "oo", "simplify", "Sum"],
+          "when_to_use": "Gdy w zadaniu pojawia się ciąg geometryczny lub szereg nieskończony",
+          "exam_problems": ["Zadanie 12 (szereg geometryczny, suma nieskończona)"],
+          "tips_for_11b": "Suma nieskończonego szeregu: Sum(a1*q**(n-1), (n, 1, oo)).doit() lub bezpośrednio a1/(1-q). Warunek zbieżności: |q|<1."
+        },
+        {
+          "id": "recursive_sequences",
+          "name": "Ciągi rekurencyjne",
+          "name_en": "Recursive sequences",
+          "description": "Analiza ciągów zadanych wzorem rekurencyjnym, wyznaczanie wzoru ogólnego, granice ciągów rekurencyjnych.",
+          "sympy_approach": "from sympy import Function, rsolve; a = Function('a'); rsolve(a(n+1) - 2*a(n) - 1, a(n), {a(0): 1})",
+          "sympy_functions": ["rsolve", "Function", "symbols", "limit"],
+          "when_to_use": "Gdy ciąg jest zadany rekurencyjnie i trzeba znaleźć wzór ogólny lub granicę",
+          "exam_problems": [],
+          "tips_for_11b": "rsolve() rozwiązuje relacje rekurencyjne. Dla bardziej złożonych ciągów: oblicz kilka wyrazów numerycznie i szukaj wzorca."
+        }
+      ]
+    },
+    {
+      "id": "trigonometry",
+      "name": "Trygonometria",
+      "name_en": "Trigonometry",
+      "methods": [
+        {
+          "id": "trig_equations",
+          "name": "Równania trygonometryczne",
+          "name_en": "Trigonometric equations",
+          "description": "Rozwiązywanie równań trygonometrycznych: sin(x)=a, cos(x)=a, tan(x)=a, złożone równania.",
+          "sympy_approach": "solveset(sin(x) - Rational(1,2), x, S.Reals) # daje pełny zbiór rozwiązań z ImageSet",
+          "sympy_functions": ["sin", "cos", "tan", "solveset", "S.Reals", "solve"],
+          "when_to_use": "Gdy zadanie wymaga rozwiązania równania trygonometrycznego",
+          "exam_problems": ["Zadanie 13 (równanie trygonometryczne)"],
+          "tips_for_11b": "solveset() daje pełne rozwiązanie z okresowością (ImageSet). Jeśli potrzebne rozwiązania w przedziale, użyj solve() z warunkami lub filtruj wyniki."
+        },
+        {
+          "id": "trig_identities",
+          "name": "Tożsamości trygonometryczne",
+          "name_en": "Trigonometric identities",
+          "description": "Stosowanie tożsamości: jedynka trygonometryczna, wzory dodawania, wzory podwojenia kąta, wzory redukcyjne.",
+          "sympy_approach": "trigsimp(expr) # upraszczanie; expand_trig(expr) # rozwijanie; simplify(expr)",
+          "sympy_functions": ["trigsimp", "expand_trig", "sin", "cos", "tan", "simplify"],
+          "when_to_use": "Gdy trzeba uprościć wyrażenie trygonometryczne lub zastosować tożsamość",
+          "exam_problems": ["Zadanie 13"],
+          "tips_for_11b": "trigsimp() upraszcza (np. sin²+cos²→1). expand_trig() rozwija (np. sin(2x)→2sin(x)cos(x)). Łącz obie funkcje."
+        },
+        {
+          "id": "trig_in_geometry",
+          "name": "Trygonometria w geometrii",
+          "name_en": "Trigonometry in geometry",
+          "description": "Zastosowanie trygonometrii w geometrii: twierdzenie sinusów, cosinusów, pole trójkąta przez sinus kąta.",
+          "sympy_approach": "# tw. cosinusów: c² = a² + b² - 2ab*cos(C)\n# tw. sinusów: a/sin(A) = b/sin(B) = 2R\n# pole = (1/2)*a*b*sin(C)",
+          "sympy_functions": ["cos", "sin", "acos", "asin", "solve", "sqrt", "simplify"],
+          "when_to_use": "Gdy zadanie geometryczne wymaga obliczenia kątów, boków lub pola z trygonometrią",
+          "exam_problems": ["Zadanie 14", "Zadanie 15", "Zadanie 17"],
+          "tips_for_11b": "Pamiętaj: acos() i asin() zwracają radiany. Konwersja: degrees(acos(val)) lub val * 180 / pi. Zawsze sprawdź dziedzinę (np. asin wymaga argumentu z [-1,1])."
+        }
+      ]
+    },
+    {
+      "id": "plane_geometry",
+      "name": "Geometria płaska (planimetria)",
+      "name_en": "Plane Geometry",
+      "methods": [
+        {
+          "id": "triangle_properties",
+          "name": "Własności trójkątów",
+          "name_en": "Triangle properties",
+          "description": "Obliczanie pól, obwodów, wysokości. Trójkąty podobne, przystające. Dwusieczna, środkowa, symetralne.",
+          "sympy_approach": "# Pole: S = sqrt(s*(s-a)*(s-b)*(s-c)) wzór Herona\n# lub S = Rational(1,2)*base*height\n# Koordynaty: Triangle(Point(x1,y1), Point(x2,y2), Point(x3,y3))",
+          "sympy_functions": ["sqrt", "Rational", "Triangle", "Point", "simplify"],
+          "when_to_use": "Gdy zadanie dotyczy trójkątów - pola, kąty, boki, punkty szczególne",
+          "exam_problems": ["Zadanie 14 (trójkąt)", "Zadanie 15 (czworokąty)"],
+          "tips_for_11b": "Podejście koordynatowe: umieść figurę w układzie współrzędnych, przypisz współrzędne wierzchołkom, oblicz algebraicznie. SymPy geometry: Triangle(A,B,C).area, .circumcircle, .incircle."
+        },
+        {
+          "id": "circle_properties",
+          "name": "Własności okręgu i koła",
+          "name_en": "Circle properties",
+          "description": "Kąty wpisane i środkowe, styczne, cięciwy, potęga punktu. Okrąg wpisany i opisany.",
+          "sympy_approach": "from sympy.geometry import Circle, Point; c = Circle(Point(0,0), r); c.tangent_lines(Point(x0,y0))",
+          "sympy_functions": ["Circle", "Point", "Line", "intersection", "tangent_lines"],
+          "when_to_use": "Gdy zadanie dotyczy okręgów, stycznych, kątów wpisanych",
+          "exam_problems": ["Zadanie 16 (okrąg wpisany/opisany)"],
+          "tips_for_11b": "Kąt wpisany = połowa kąta środkowego. Styczna prostopadła do promienia. W SymPy geometry: Circle(...).tangent_lines(Point) daje styczne przez punkt."
+        },
+        {
+          "id": "quadrilateral_properties",
+          "name": "Własności czworokątów",
+          "name_en": "Quadrilateral properties",
+          "description": "Równoległoboki, romby, trapezy, deltoid. Pola, przekątne, kąty, warunki wpisania/opisania okręgu.",
+          "sympy_approach": "# Pole trapezu: S = (a+b)/2 * h\n# Pole równoległoboku: S = a*h lub S = a*b*sin(alpha)\n# Podejście wektorowe lub koordynatowe",
+          "sympy_functions": ["solve", "sqrt", "Rational", "simplify", "Polygon", "Point"],
+          "when_to_use": "Gdy zadanie dotyczy czworokątów szczególnych",
+          "exam_problems": ["Zadanie 15 (trapez prostokątny)"],
+          "tips_for_11b": "Dla trapezów i równoległoboków: ustaw w układzie współrzędnych z jednym wierzchołkiem w (0,0) i bokiem na osi x. Oblicz pole przez shoelace formula lub rozkład na trójkąty."
+        },
+        {
+          "id": "similarity_congruence",
+          "name": "Podobieństwo i przystawanie",
+          "name_en": "Similarity and congruence",
+          "description": "Cechy podobieństwa (BBB, BKB, BKK) i przystawania (BBB, BKB, KBK, PKP) trójkątów. Skala podobieństwa.",
+          "sympy_approach": "# Sprawdź proporcje boków: a1/a2 == b1/b2 == c1/c2\n# lub kąty odpowiadające sobie równe",
+          "sympy_functions": ["Rational", "simplify", "solve", "Triangle"],
+          "when_to_use": "Gdy zadanie wymaga wykazania podobieństwa/przystawania lub użycia tych własności",
+          "exam_problems": ["Zadanie 14"],
+          "tips_for_11b": "Podobieństwo: stosunek odpowiednich boków jest stały (skala k). Pola: k², objętości: k³. Sprawdź proporcje numerycznie."
+        }
+      ]
+    },
+    {
+      "id": "analytic_geometry",
+      "name": "Geometria analityczna",
+      "name_en": "Analytic Geometry",
+      "methods": [
+        {
+          "id": "line_equations",
+          "name": "Równania prostych",
+          "name_en": "Line equations",
+          "description": "Prosta przez dwa punkty, prosta o danym nachyleniu, odległość punktu od prostej, kąt między prostymi, warunek prostopadłości/równoległości.",
+          "sympy_approach": "from sympy.geometry import Line, Point; l = Line(Point(x1,y1), Point(x2,y2)); l.equation()",
+          "sympy_functions": ["Line", "Point", "distance", "intersection", "angle_between", "is_perpendicular", "is_parallel"],
+          "when_to_use": "Gdy zadanie dotyczy prostych na płaszczyźnie",
+          "exam_problems": ["Zadanie 19 (proste prostopadłe)", "Zadanie 20"],
+          "tips_for_11b": "Odległość punktu (x0,y0) od prostej ax+by+c=0: |ax0+by0+c|/sqrt(a²+b²). W SymPy: Line(...).distance(Point(...)). Kąt: atan(|m1-m2|/(1+m1*m2))."
+        },
+        {
+          "id": "conic_sections",
+          "name": "Krzywe stożkowe",
+          "name_en": "Conic sections",
+          "description": "Okrąg, elipsa, hiperbola, parabola - równania, własności, przecięcia z prostymi.",
+          "sympy_approach": "from sympy.geometry import Circle, Ellipse; c = Circle(Point(h,k), r); # lub Ellipse(center, hradius, vradius)",
+          "sympy_functions": ["Circle", "Ellipse", "solve", "intersection", "Eq"],
+          "when_to_use": "Gdy zadanie dotyczy okręgu, elipsy lub innej krzywej stożkowej w układzie współrzędnych",
+          "exam_problems": ["Zadanie 20 (okrąg i prosta)"],
+          "tips_for_11b": "Okrąg: (x-h)²+(y-k)²=r². Aby znaleźć przecięcie z prostą: podstaw y=mx+b do równania okręgu i solve()."
+        },
+        {
+          "id": "vectors_2d",
+          "name": "Wektory na płaszczyźnie",
+          "name_en": "2D Vectors",
+          "description": "Operacje na wektorach: dodawanie, iloczyn skalarny, długość, kąt między wektorami, warunek prostopadłości.",
+          "sympy_approach": "from sympy import Matrix; v1 = Matrix([a,b]); v2 = Matrix([c,d]); v1.dot(v2); v1.norm()",
+          "sympy_functions": ["Matrix", "dot", "norm", "cross", "simplify"],
+          "when_to_use": "Gdy zadanie wymaga operacji wektorowych",
+          "exam_problems": ["Zadanie 19"],
+          "tips_for_11b": "Iloczyn skalarny: v1.dot(v2) = |v1||v2|cos(α). Prostopadłość: v1.dot(v2)=0. Równoległość: v1.cross(v2)=0 (dla 2D używaj rozszerzonego do 3D lub sprawdź proporcje)."
+        },
+        {
+          "id": "coordinate_proofs",
+          "name": "Dowody metodą współrzędnych",
+          "name_en": "Coordinate geometry proofs",
+          "description": "Dowodzenie twierdzeń geometrycznych przez umieszczenie figury w układzie współrzędnych i obliczenia algebraiczne.",
+          "sympy_approach": "# 1) Umieść figurę w układzie: A=Point(0,0), B=Point(a,0), ...\n# 2) Oblicz potrzebne wielkości symbolicznie\n# 3) simplify() wynik",
+          "sympy_functions": ["Point", "Line", "symbols", "simplify", "expand", "factor"],
+          "when_to_use": "Gdy zadanie wymaga dowodu geometrycznego - metoda współrzędnych jest najlepsza dla agenta AI",
+          "exam_problems": ["Zadanie 17 (dowód własności geometrycznej)"],
+          "tips_for_11b": "Metoda współrzędnych jest PREFEROWANA dla agenta AI. Umieść figurę tak, by wykorzystać symetrie (np. środek na początku układu, bok na osi). Użyj zmiennych symbolicznych."
+        }
+      ]
+    },
+    {
+      "id": "solid_geometry",
+      "name": "Geometria przestrzenna (stereometria)",
+      "name_en": "Solid Geometry",
+      "methods": [
+        {
+          "id": "polyhedra_volumes",
+          "name": "Objętości i pola wielościanów",
+          "name_en": "Polyhedra volumes and areas",
+          "description": "Obliczanie objętości i pól powierzchni: graniastosłupy, ostrosłupy, stożki, walce, kule. Przekroje.",
+          "sympy_approach": "# Graniastosłup: V = S_podstawy * h\n# Ostrosłup: V = (1/3) * S_podstawy * h\n# Kula: V = (4/3)*pi*r³, S = 4*pi*r²\n# Stożek: V = (1/3)*pi*r²*h",
+          "sympy_functions": ["pi", "sqrt", "Rational", "simplify", "solve", "symbols"],
+          "when_to_use": "Gdy zadanie dotyczy brył przestrzennych",
+          "exam_problems": ["Zadanie 21 (ostrosłup)", "Zadanie 22 (graniastosłup)"],
+          "tips_for_11b": "Kluczowe: narysuj przekrój (w myśli) i sprowadź do planimetrii. Twierdzenie Pitagorasa 3D: d²=a²+b²+c². Dla ostrosłupa: znajdź wysokość jako odległość wierzchołka od podstawy."
+        },
+        {
+          "id": "cross_sections",
+          "name": "Przekroje brył",
+          "name_en": "Cross-sections of solids",
+          "description": "Wyznaczanie przekrojów wielościanów płaszczyznami. Obliczanie pól przekrojów.",
+          "sympy_approach": "# Metoda współrzędnych 3D:\n# Umieść bryłę w układzie 3D\n# Znajdź przecięcie płaszczyzny z krawędziami\n# Oblicz pole wielokąta przekroju",
+          "sympy_functions": ["Point3D", "Plane", "Line3D", "Segment3D", "Polygon", "solve"],
+          "when_to_use": "Gdy zadanie wymaga znalezienia przekroju bryły lub jego pola",
+          "exam_problems": ["Zadanie 22 (przekrój graniastosłupa)"],
+          "tips_for_11b": "Podejście: (1) ustaw współrzędne 3D, (2) zdefiniuj płaszczyznę przekroju, (3) znajdź punkty przecięcia z krawędziami bryły, (4) oblicz pole wielokąta. SymPy geometry 3D: Point3D, Plane, Line3D."
+        },
+        {
+          "id": "spatial_relationships",
+          "name": "Relacje przestrzenne",
+          "name_en": "Spatial relationships",
+          "description": "Kąty dwuścienne, odległość punktu od płaszczyzny, odległość między prostymi skośnymi, prostopadłość i równoległość w przestrzeni.",
+          "sympy_approach": "from sympy.geometry import Point3D, Plane, Line3D; p = Plane(Point3D(0,0,0), normal_vector=(a,b,c)); p.distance(Point3D(x0,y0,z0))",
+          "sympy_functions": ["Point3D", "Plane", "Line3D", "distance", "angle_between", "normal_vector"],
+          "when_to_use": "Gdy zadanie dotyczy relacji między elementami w przestrzeni",
+          "exam_problems": ["Zadanie 21", "Zadanie 22"],
+          "tips_for_11b": "Kąt dwuścienny: kąt między normalami płaszczyzn. Odległość punkt-płaszczyzna: |ax0+by0+cz0+d|/sqrt(a²+b²+c²). Ustaw układ współrzędnych!"
+        }
+      ]
+    },
+    {
+      "id": "combinatorics_probability",
+      "name": "Kombinatoryka i prawdopodobieństwo",
+      "name_en": "Combinatorics and Probability",
+      "methods": [
+        {
+          "id": "counting_principles",
+          "name": "Zasady zliczania",
+          "name_en": "Counting principles",
+          "description": "Reguła mnożenia i dodawania, permutacje, kombinacje, wariacje, permutacje z powtórzeniami.",
+          "sympy_approach": "from sympy import factorial, binomial; binomial(n, k) # C(n,k); factorial(n) # n!",
+          "sympy_functions": ["factorial", "binomial", "Permutation", "Rational"],
+          "when_to_use": "Gdy zadanie wymaga zliczenia obiektów lub konfiguracji",
+          "exam_problems": ["Zadanie 23 (kombinatoryka)", "Zadanie 24"],
+          "tips_for_11b": "Permutacje: factorial(n). Kombinacje: binomial(n,k). Wariacje bez powtórzeń: factorial(n)/factorial(n-k). Z powtórzeniami: n**k. Zawsze sprawdź wynik numerycznie dla małych przypadków."
+        },
+        {
+          "id": "probability_classical",
+          "name": "Prawdopodobieństwo klasyczne",
+          "name_en": "Classical probability",
+          "description": "P(A) = |A|/|Ω|. Zdarzenia niezależne, wykluczające się. Prawdopodobieństwo warunkowe P(A|B) = P(A∩B)/P(B).",
+          "sympy_approach": "P_A = Rational(favorable, total) # prawdopodobieństwo jako ułamek",
+          "sympy_functions": ["Rational", "binomial", "factorial", "simplify"],
+          "when_to_use": "Gdy zadanie wymaga obliczenia prawdopodobieństwa",
+          "exam_problems": ["Zadanie 23", "Zadanie 25 (prawdopodobieństwo warunkowe)"],
+          "tips_for_11b": "Zawsze używaj Rational() nie float! P = Rational(sprzyjające, wszystkie). Zdarzenia niezależne: P(A∩B)=P(A)*P(B). Prawdopodobieństwo warunkowe: P(A|B)=P(A∩B)/P(B)."
+        },
+        {
+          "id": "probability_distributions",
+          "name": "Rozkłady prawdopodobieństwa",
+          "name_en": "Probability distributions",
+          "description": "Schemat Bernoulli'ego, rozkład dwumianowy, wartość oczekiwana, wariancja.",
+          "sympy_approach": "from sympy.stats import Binomial, E, variance; X = Binomial('X', n, p); E(X); variance(X)",
+          "sympy_functions": ["Binomial", "E", "variance", "density", "P", "Rational"],
+          "when_to_use": "Gdy zadanie dotyczy schematów powtarzalnych doświadczeń lub rozkładów",
+          "exam_problems": ["Zadanie 24 (schemat Bernoulli'ego)"],
+          "tips_for_11b": "Bernoulli: P(X=k) = C(n,k) * p^k * (1-p)^(n-k). W SymPy: binomial(n,k) * p**k * (1-p)**(n-k). Lub użyj sympy.stats dla pełnej analizy."
+        },
+        {
+          "id": "conditional_probability",
+          "name": "Prawdopodobieństwo warunkowe i Bayes",
+          "name_en": "Conditional probability and Bayes theorem",
+          "description": "Prawdopodobieństwo warunkowe, wzór na prawdopodobieństwo całkowite, twierdzenie Bayesa.",
+          "sympy_approach": "# P(A|B) = P(A∩B) / P(B)\n# Prawdopodobieństwo całkowite: P(A) = Σ P(A|Bi)*P(Bi)\n# Bayes: P(Bi|A) = P(A|Bi)*P(Bi) / P(A)",
+          "sympy_functions": ["Rational", "simplify", "Sum"],
+          "when_to_use": "Gdy zadanie wymaga prawdopodobieństwa warunkowego lub Bayesa",
+          "exam_problems": ["Zadanie 25"],
+          "tips_for_11b": "Narysuj (mentalnie) drzewo zdarzeń. Prawdopodobieństwo całkowite sumuje po gałęziach. Bayes odwraca warunkowanie. Wszystko jako Rational()."
+        }
+      ]
+    },
+    {
+      "id": "proofs_reasoning",
+      "name": "Dowody i rozumowanie",
+      "name_en": "Proofs and Reasoning",
+      "methods": [
+        {
+          "id": "direct_proof",
+          "name": "Dowód bezpośredni",
+          "name_en": "Direct proof",
+          "description": "Dowodzenie przez bezpośrednie wykazanie implikacji: z założenia P wynika Q.",
+          "sympy_approach": "# Symboliczne obliczenia wspierające dowód:\n# 1) Zdefiniuj zmienne i założenia\n# 2) Wykonaj przekształcenia algebraiczne\n# 3) Pokaż że wynik spełnia tezę",
+          "sympy_functions": ["symbols", "simplify", "expand", "factor", "Eq", "solve"],
+          "when_to_use": "Dla większości dowodów algebraicznych i analitycznych",
+          "exam_problems": ["Zadanie 6 (dowód monotoniczności)", "Zadanie 26"],
+          "tips_for_11b": "Schemat: 1) Zapisz formalne założenia, 2) Przeprowadź ciąg równoważności/wynikań, 3) Pokaż tezę. SymPy: simplify(lhs - rhs) == 0 potwierdza równość."
+        },
+        {
+          "id": "proof_by_contradiction",
+          "name": "Dowód nie wprost (sprzeczność)",
+          "name_en": "Proof by contradiction",
+          "description": "Założenie negacji tezy i wyprowadzenie sprzeczności.",
+          "sympy_approach": "# 1) Załóż ~Q (negację tezy)\n# 2) Kombinuj z P (założeniem)\n# 3) Wyprowadź sprzeczność (np. 0 > 1)\n# SymPy: solve() z sprzecznymi warunkami → pusty zbiór",
+          "sympy_functions": ["solve", "solveset", "simplify", "S.EmptySet"],
+          "when_to_use": "Gdy dowód bezpośredni jest trudny, np. dowody nieistnienia, niewymierności",
+          "exam_problems": [],
+          "tips_for_11b": "Typowe: załóż przeciwnie → wykaż sprzeczność z założeniami lub znanymi faktami. Np. √2 wymierne → p²=2q² → sprzeczność."
+        },
+        {
+          "id": "mathematical_induction",
+          "name": "Indukcja matematyczna",
+          "name_en": "Mathematical induction",
+          "description": "Dowodzenie dla wszystkich n naturalnych: baza (n=1) + krok indukcyjny (n→n+1).",
+          "sympy_approach": "# Baza: sprawdź dla n=1 (subs)\n# Krok: pokaż P(n)→P(n+1)\n# SymPy: expr.subs(n, 1) dla bazy; simplify(P(n+1) - f(P(n))) == 0 dla kroku",
+          "sympy_functions": ["subs", "simplify", "factor", "expand", "symbols"],
+          "when_to_use": "Gdy trzeba udowodnić tożsamość lub nierówność dla wszystkich n naturalnych",
+          "exam_problems": ["Zadanie 27 (indukcja)"],
+          "tips_for_11b": "Schemat: (1) BAZA: sprawdź n=1, (2) ZAŁOŻENIE: przyjmij P(n), (3) TEZA: pokaż P(n+1). SymPy: subs() do weryfikacji bazy i kroku algebraicznie."
+        },
+        {
+          "id": "divisibility_proofs",
+          "name": "Dowody podzielności",
+          "name_en": "Divisibility proofs",
+          "description": "Dowodzenie podzielności wyrażeń, często przez indukcję lub arytmetykę modularną.",
+          "sympy_approach": "from sympy import Mod; Mod(expr, divisor) # sprawdź resztę; factorint(value) # faktoryzacja",
+          "sympy_functions": ["Mod", "factorint", "simplify", "expand", "subs"],
+          "when_to_use": "Gdy zadanie wymaga dowodu podzielności",
+          "exam_problems": ["Zadanie 26 (podzielność)"],
+          "tips_for_11b": "Metody: (1) indukcja, (2) zapis n=mk+r i analiza, (3) rozkład wyrażenia na czynniki zawierające dzielnik. SymPy: Mod(expr.subs(n, val), d) weryfikuje dla konkretnych wartości."
+        },
+        {
+          "id": "existence_proofs",
+          "name": "Dowody istnienia (tw. Darboux, tw. o wartości pośredniej)",
+          "name_en": "Existence proofs (IVT)",
+          "description": "Twierdzenie Darboux (o wartości pośredniej): jeśli f ciągła na [a,b] i f(a)*f(b)<0, to istnieje c: f(c)=0.",
+          "sympy_approach": "# 1) Oblicz f(a) i f(b)\n# 2) Pokaż f(a)*f(b) < 0\n# 3) Powołaj się na tw. Darboux\n# Numerycznie: nsolve(f, x, a) znajdzie przybliżone c",
+          "sympy_functions": ["subs", "nsolve", "sign", "Rational"],
+          "when_to_use": "Gdy zadanie wymaga wykazania istnienia rozwiązania lub wartości",
+          "exam_problems": ["Zadanie 10 (tw. Darboux)"],
+          "tips_for_11b": "Schemat Darboux: (1) pokaż ciągłość f na [a,b], (2) oblicz f(a) i f(b), (3) pokaż różne znaki, (4) wnioskuj istnienie c. Kluczowe: f musi być ciągła!"
+        }
+      ]
+    },
+    {
+      "id": "number_theory",
+      "name": "Teoria liczb",
+      "name_en": "Number Theory",
+      "methods": [
+        {
+          "id": "divisibility_rules",
+          "name": "Podzielność i reszty",
+          "name_en": "Divisibility and remainders",
+          "description": "Podzielność, NWD, NWW, algorytm Euklidesa, arytmetyka modularna.",
+          "sympy_approach": "from sympy import gcd, lcm, Mod, factorint; gcd(a, b); lcm(a, b); factorint(n)",
+          "sympy_functions": ["gcd", "lcm", "Mod", "factorint", "isprime", "nextprime"],
+          "when_to_use": "Gdy zadanie dotyczy podzielności, NWD, NWW, reszt z dzielenia",
+          "exam_problems": ["Zadanie 26"],
+          "tips_for_11b": "gcd(a,b) daje NWD, lcm(a,b) daje NWW. factorint(n) daje rozkład na czynniki pierwsze. Mod(a,b) to reszta."
+        },
+        {
+          "id": "integer_solutions",
+          "name": "Rozwiązania całkowite",
+          "name_en": "Integer solutions",
+          "description": "Znajdowanie rozwiązań całkowitych równań (równania diofantyczne), analiza reszt.",
+          "sympy_approach": "from sympy import diophantine; diophantine(x**2 + y**2 - z**2) # rozwiązania parametryczne",
+          "sympy_functions": ["diophantine", "solve", "Mod", "symbols"],
+          "when_to_use": "Gdy zadanie wymaga rozwiązań w liczbach całkowitych",
+          "exam_problems": ["Zadanie 2 (punkty kratowe)"],
+          "tips_for_11b": "Dla prostych równań: sprawdź dzielniki. Dla x²+y²=n: rozkład n i warunki istnienia. diophantine() daje rozwiązania parametryczne."
+        }
+      ]
+    },
+    {
+      "id": "special_techniques",
+      "name": "Techniki specjalne",
+      "name_en": "Special Techniques",
+      "methods": [
+        {
+          "id": "substitution",
+          "name": "Metoda podstawienia",
+          "name_en": "Substitution method",
+          "description": "Upraszczanie zadań przez wprowadzenie nowej zmiennej: t=f(x), zamiana zmiennych w równaniach trygonometrycznych, wykładniczych.",
+          "sympy_approach": "t = symbols('t'); expr_in_t = expr.subs(f(x), t); solve(expr_in_t, t); # potem solve(f(x) - t_val, x)",
+          "sympy_functions": ["subs", "solve", "symbols"],
+          "when_to_use": "Gdy wyrażenie ma powtarzającą się strukturę (np. sin²x+sinx-2=0 → t²+t-2=0)",
+          "exam_problems": ["Zadanie 5", "Zadanie 13"],
+          "tips_for_11b": "Identyfikuj powtarzające się wyrażenia. Typowe podstawienia: t=sin(x), t=2^x, t=log(x), t=sqrt(x). Po rozwiązaniu w t, wróć do x i sprawdź dziedzinę!"
+        },
+        {
+          "id": "vieta_formulas",
+          "name": "Wzory Viète'a",
+          "name_en": "Vieta's formulas",
+          "description": "Związki między współczynnikami a pierwiastkami wielomianu: x1+x2=-b/a, x1*x2=c/a (dla kwadratowego).",
+          "sympy_approach": "from sympy import Poly; p = Poly(expr, x); coeffs = p.all_coeffs(); # x1+x2 = -coeffs[1]/coeffs[0]",
+          "sympy_functions": ["Poly", "all_coeffs", "solve", "symbols"],
+          "when_to_use": "Gdy zadanie pyta o sumę/iloczyn pierwiastków bez ich obliczania, lub o warunki na parametr",
+          "exam_problems": ["Zadanie 3", "Zadanie 5"],
+          "tips_for_11b": "Viète: suma pierwiastków = -b/a, iloczyn = c/a (kwadratowe). Dla n-tego stopnia: elementary symmetric polynomials. Użyteczne gdy nie znamy pierwiastków explicite."
+        },
+        {
+          "id": "case_analysis",
+          "name": "Analiza przypadków",
+          "name_en": "Case analysis",
+          "description": "Rozwiązywanie zadań przez podział na przypadki: warunki na parametr, wartość bezwzględna, funkcje przedziałami.",
+          "sympy_approach": "# Rozważ każdy przypadek osobno:\nresult_case1 = solve(expr, x, domain=...)\nresult_case2 = solve(expr, x, domain=...)\n# Połącz wyniki",
+          "sympy_functions": ["solve", "Piecewise", "Interval", "Union", "And", "Or"],
+          "when_to_use": "Gdy rozwiązanie wymaga rozważenia różnych przypadków (np. parametr, wartość bezwzględna)",
+          "exam_problems": ["Zadanie 4", "Zadanie 7"],
+          "tips_for_11b": "Systematycznie rozważ wszystkie przypadki. Dla parametru: a>0, a=0, a<0. Dla |x|: x≥0 i x<0. Zapisz wyniki każdego przypadku i złóż odpowiedź."
+        },
+        {
+          "id": "estimation_bounds",
+          "name": "Szacowanie i nierówności pomocnicze",
+          "name_en": "Estimation and auxiliary inequalities",
+          "description": "Szacowanie wyrażeń, nierówność AM-GM, nierówność Cauchy'ego-Schwarza, nierówność trójkąta.",
+          "sympy_approach": "# AM-GM: (a+b)/2 >= sqrt(a*b)\n# Sprawdź: simplify((a+b)/2 - sqrt(a*b)) # powinno być >= 0\n# Użyj assumptions: a = symbols('a', positive=True)",
+          "sympy_functions": ["symbols", "simplify", "sqrt", "Rational", "positive"],
+          "when_to_use": "Gdy zadanie wymaga wykazania nierówności lub oszacowania wartości",
+          "exam_problems": ["Zadanie 28", "Zadanie 30"],
+          "tips_for_11b": "AM-GM: (a+b)/2 ≥ √(ab). Przydatne do optymalizacji bez pochodnych. Deklaruj zmienne z assumptions: symbols('x', positive=True) pozwala SymPy na lepsze upraszczanie."
+        },
+        {
+          "id": "geometric_series_sum",
+          "name": "Sumowanie szeregów",
+          "name_en": "Series summation",
+          "description": "Obliczanie sum skończonych i nieskończonych szeregów, szeregi teleskopowe, szeregi geometryczne.",
+          "sympy_approach": "from sympy import Sum, summation, oo; summation(expr, (n, 1, oo)) # suma nieskończona\n# Teleskopowe: summation(f(n)-f(n+1), (n, 1, N))",
+          "sympy_functions": ["Sum", "summation", "oo", "simplify", "factor"],
+          "when_to_use": "Gdy zadanie wymaga obliczenia sumy szeregu",
+          "exam_problems": ["Zadanie 12"],
+          "tips_for_11b": "summation() oblicza sumy symboliczne. Dla szeregów teleskopowych: rozbij na ułamki proste (apart()) i zauważ uproszczenia."
+        }
+      ]
+    },
+    {
+      "id": "exam_strategy",
+      "name": "Strategie egzaminacyjne",
+      "name_en": "Exam Strategies",
+      "methods": [
+        {
+          "id": "numerical_verification",
+          "name": "Weryfikacja numeryczna",
+          "name_en": "Numerical verification",
+          "description": "Sprawdzanie poprawności wyników przez podstawienie wartości numerycznych.",
+          "sympy_approach": "result.subs(x, test_value) # sprawdź wynik dla konkretnej wartości\n# lub: N(symbolic_result) # konwersja na float",
+          "sympy_functions": ["subs", "N", "evalf", "Rational"],
+          "when_to_use": "ZAWSZE po uzyskaniu wyniku - jako krok weryfikacji",
+          "exam_problems": ["Wszystkie zadania"],
+          "tips_for_11b": "ZAWSZE weryfikuj wynik! Podstaw konkretne liczby i sprawdź. Np. jeśli rozwiązanie to x=3, sprawdź czy oryginalne równanie jest spełnione."
+        },
+        {
+          "id": "coordinate_approach",
+          "name": "Podejście współrzędnościowe do geometrii",
+          "name_en": "Coordinate approach to geometry",
+          "description": "Zamiast czystej geometrii syntetycznej, umieść figurę w układzie współrzędnych i użyj algebry.",
+          "sympy_approach": "# 1) Wybierz układ współrzędnych\n# 2) Przypisz współrzędne (symboliczne lub numeryczne)\n# 3) Oblicz algebraicznie",
+          "sympy_functions": ["Point", "Point3D", "Line", "Circle", "Polygon", "symbols"],
+          "when_to_use": "Dla KAŻDEGO zadania geometrycznego - preferowane podejście dla agenta AI",
+          "exam_problems": ["Zadania 14-22"],
+          "tips_for_11b": "PREFEROWANE PODEJŚCIE dla agenta AI do geometrii. Umieść figurę w układzie współrzędnych, przypisz zmienne symboliczne, oblicz z SymPy. Unikaj rozumowania czysto syntetycznego."
+        },
+        {
+          "id": "sympy_assumptions",
+          "name": "Deklaracja założeń w SymPy",
+          "name_en": "SymPy assumptions declaration",
+          "description": "Używanie assumptions (positive, real, integer, etc.) dla lepszych wyników simplify() i solve().",
+          "sympy_approach": "x = symbols('x', real=True, positive=True)\nn = symbols('n', integer=True, nonnegative=True)\na = symbols('a', nonzero=True)",
+          "sympy_functions": ["symbols", "assumptions", "ask", "Q"],
+          "when_to_use": "ZAWSZE deklaruj odpowiednie assumptions - kluczowe dla poprawnych wyników",
+          "exam_problems": ["Wszystkie zadania"],
+          "tips_for_11b": "ZAWSZE dodawaj assumptions! real=True dla zmiennych rzeczywistych, positive=True gdy > 0, integer=True dla liczb całkowitych. Bez assumptions SymPy może zwrócić rozwiązania zespolone."
+        }
+      ]
+    }
+  ],
+  "sympy_cheatsheet": {
+    "imports": "from sympy import *",
+    "define_variables": "x, y, z = symbols('x y z', real=True)",
+    "define_positive": "a, b = symbols('a b', positive=True)",
+    "define_integer": "n, k = symbols('n k', integer=True, nonnegative=True)",
+    "solve_equation": "solve(Eq(lhs, rhs), x)",
+    "solve_inequality": "solve(expr > 0, x) or solveset(expr > 0, x, S.Reals)",
+    "solve_system": "solve([eq1, eq2], [x, y])",
+    "derivative": "diff(f, x)",
+    "second_derivative": "diff(f, x, 2)",
+    "integral": "integrate(f, x) or integrate(f, (x, a, b))",
+    "limit": "limit(f, x, a)",
+    "series_sum": "summation(a_n, (n, 1, oo))",
+    "simplify": "simplify(expr) or trigsimp(expr) or radsimp(expr)",
+    "factor": "factor(expr)",
+    "expand": "expand(expr)",
+    "substitute": "expr.subs(x, value)",
+    "numerical": "N(expr) or expr.evalf()",
+    "geometry_2d": "Point(x,y), Line(p1,p2), Circle(center, r), Triangle(A,B,C)",
+    "geometry_3d": "Point3D(x,y,z), Plane(p, normal_vector=(a,b,c)), Line3D(p1,p2)",
+    "matrix": "Matrix([[a,b],[c,d]]), .det(), .inv(), .eigenvals()",
+    "combinatorics": "factorial(n), binomial(n,k)",
+    "exact_fractions": "Rational(1, 3)  # zamiast 1/3"
+  },
+  "problem_type_to_method_map": {
+    "oblicz_wartosc_wyrazenia": ["simplify_expressions", "logarithmic_computation", "substitution"],
+    "rozwiaz_rownanie": ["polynomial_equations", "trig_equations", "substitution", "absolute_value"],
+    "rozwiaz_nierownosc": ["inequalities", "case_analysis"],
+    "rownanie_z_parametrem": ["parametric_equations", "vieta_formulas", "case_analysis"],
+    "uklad_rownan": ["systems_of_equations"],
+    "badanie_funkcji": ["function_properties", "derivative_computation", "extrema_finding"],
+    "dowod_monotonicznosci": ["monotonicity_proof", "direct_proof"],
+    "granica_ciagu": ["limits", "geometric_series_sum"],
+    "optymalizacja": ["optimization", "derivative_computation", "extrema_finding"],
+    "rownanie_trygonometryczne": ["trig_equations", "trig_identities", "substitution"],
+    "zadanie_geometria_plaska": ["triangle_properties", "circle_properties", "coordinate_proofs", "coordinate_approach"],
+    "zadanie_geometria_analityczna": ["line_equations", "conic_sections", "vectors_2d"],
+    "zadanie_stereometria": ["polyhedra_volumes", "cross_sections", "spatial_relationships"],
+    "kombinatoryka": ["counting_principles"],
+    "prawdopodobienstwo": ["probability_classical", "probability_distributions", "conditional_probability"],
+    "dowod_podzielnosci": ["divisibility_proofs", "mathematical_induction", "divisibility_rules"],
+    "dowod_nierownosci": ["estimation_bounds", "direct_proof"],
+    "ciag_arytmetyczny_geometryczny": ["arithmetic_sequence", "geometric_sequence"],
+    "suma_szeregu": ["geometric_series_sum", "limits"]
+  }
+}

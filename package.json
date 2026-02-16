@@ -1,7 +1,7 @@
 {
-  "name": "bielik-m-poc",
+  "name": "bielik-matura",
   "version": "1.0.0",
-  "description": "AI agents with group chat orchestration for mathematical tasks",
+  "description": "Asystent matematyczny dla maturzystów - rozwiązywanie zadań maturalnych krok po kroku z użyciem AI",
   "type": "module",
   "scripts": {
     "dev": "vite",
