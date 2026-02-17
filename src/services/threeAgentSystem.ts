@@ -406,6 +406,48 @@ ${result.error || ''}`;
   }
 
   /**
+   * Format RAG results for user display (not for agent prompt)
+   */
+  private formatRAGForDisplay(results: any[]): string {
+    if (!results.length) return 'Brak pasujących informacji w bazie wiedzy.';
+
+    const lines: string[] = ['**Znaleziono pasujące informacje w bazie wiedzy:**\n'];
+
+    // Group by source
+    const methods = results.filter(r => r.source === 'methods' && r.score > 0.15);
+    const examples = results.filter(r => r.source === 'dataset' && r.score > 0.2);
+    const informator = results.filter(r => r.source === 'informator' && r.score > 0.2);
+
+    if (methods.length > 0) {
+      lines.push('**Metody matematyczne:**');
+      methods.slice(0, 2).forEach((m, idx) => {
+        lines.push(`${idx + 1}. **${m.title}** (relevance: ${(m.score * 100).toFixed(0)}%)`);
+        if (m.tips) lines.push(`   💡 ${m.tips.substring(0, 150)}`);
+      });
+      lines.push('');
+    }
+
+    if (examples.length > 0) {
+      lines.push('**Podobne zadania z matur:**');
+      examples.slice(0, 2).forEach((e, idx) => {
+        lines.push(`${idx + 1}. ${e.title} (relevance: ${(e.score * 100).toFixed(0)}%)`);
+      });
+      lines.push('');
+    }
+
+    if (informator.length > 0) {
+      lines.push('**Kontekst egzaminacyjny:**');
+      informator.slice(0, 1).forEach((i, idx) => {
+        lines.push(`${idx + 1}. ${i.title}`);
+        if (i.tips) lines.push(`   ${i.tips.substring(0, 200)}`);
+      });
+      lines.push('');
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
    * Get agent context from conversation history
    */
   private getAgentContext(): Array<{ role: 'user' | 'assistant'; content: string }> {
@@ -566,10 +608,25 @@ ${result.error || ''}`;
     // RAG: Wzbogacenie kontekstem z bazy wiedzy
     // ═══════════════════════════════════════════════════════════════════
     let ragContext = '';
+    let ragResults: any[] = [];
     try {
-      ragContext = await this.ragService.getContext(userMessage, 5);
-      if (ragContext) {
-        console.log(`📚 RAG context injected (${ragContext.length} chars)`);
+      ragResults = await this.ragService.query(userMessage, 5);
+      if (ragResults.length > 0) {
+        ragContext = this.ragService.formatContextForAgent(ragResults);
+        console.log(`📚 RAG: ${ragResults.length} wyników znalezionych`);
+
+        // Dodaj wiadomość RAG do konwersacji (wyświetlana użytkownikowi)
+        const ragDisplayMsg = this.formatRAGForDisplay(ragResults);
+        const ragMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: ragDisplayMsg,
+          agentName: '📚 Baza Wiedzy',
+          timestamp: new Date(),
+        };
+        this.conversationHistory.push(ragMsg);
+        newMessages.push(ragMsg);
+        if (onMessageCallback) onMessageCallback(ragMsg);
       }
     } catch (err) {
       console.warn('⚠️ RAG unavailable (continuing without):', err);

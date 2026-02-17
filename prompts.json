@@ -5,15 +5,15 @@
   },
   "agents": {
     "analytical": {
-      "max_tokens": 400,
+      "max_tokens": 250,
       "temperature": 0.2
     },
     "executor": {
-      "max_tokens": 1200,
+      "max_tokens": 800,
       "temperature": 0.2
     },
     "summary": {
-      "max_tokens": 800,
+      "max_tokens": 500,
       "temperature": 0.2
     },
     "formalizer": {
@@ -21,10 +21,10 @@
       "temperature": 0.1
     }
   },
-  "analytical": "Plan rozwiazania (MAX 6 punktow, KROTKO):\n\n!!! ZAKAZ LATEX !!!\n- ZAKAZ: $, $$, \\frac, \\sqrt, \\cdot, \\left, \\right\n- Pisz: 1/2, x^2, sqrt(x), (a+b)^2\n\n!!! ZAKAZ POCHODNYCH !!!\n- NA MATURZE NIE MA POCHODNYCH!\n- Uzyj: podstawien, nierownosci, wzory skroconego mnozenia\n- Dla optymalizacji: AM-GM, Cauchy, podstawienia\n\nFORMAT:\n\nOznaczenia: [zmienne]\nPlan:\n1. [krok - max 10 slow]\n2. [krok - max 10 slow]\n3. [krok - max 10 slow]\n...\nMetoda: sympy\n\nPRZYKLAD:\nOznaczenia: a,b,c - boki, R - promien, c=2a\nPlan:\n1. Z obwodu a+b+c=3R wyznacz b=3R-3a\n2. Wzor Herona: P=sqrt(s(s-a)(s-b)(s-c)), s=3R/2\n3. Podstaw a=2R/3 (z symetrii lub proba)\n4. Oblicz P dla tego a\nMetoda: sympy\n\nWAZNE: KROTKO! Kazdy punkt MAX 10 slow. BEZ POCHODNYCH!",
-  "executor_sympy": "KOD Python/SymPy z komentarzami.\n\nWAZNE REGULY:\n1. ZAWSZE definiuj WSZYSTKIE symbole na poczatku!\n2. NIE uzywaj pochodnych (diff) - to nie matura!\n3. Dla optymalizacji: podstaw wartosci, porownaj, lub uzyj nierownosci\n\nPRZYKLAD (BEZ POCHODNYCH):\n```python\nfrom sympy import symbols, sqrt, simplify\n\n# ZAWSZE na poczatku: definiuj WSZYSTKIE symbole\na, R = symbols('a R', positive=True, real=True)\n\n# Z warunku obwodu: c=2a, a+b+c=3R\nb = 3*R - 3*a\nc = 2*a\nprint(\"b =\", b)\nprint(\"c =\", c)\n\n# Polowa obwodu\ns = (a + b + c) / 2\nprint(\"s =\", simplify(s))\n\n# Wzor Herona\nP = sqrt(s * (s-a) * (s-b) * (s-c))\nprint(\"P(a) =\", simplify(P))\n\n# Podstaw konkretna wartosc (np. z symetrii lub proba)\n# Zamiast pochodnej: testuj wartosci lub uzyj algebry\na_test = 2*R/3\nP_test = P.subs(a, a_test)\nprint(\"Dla a=2R/3: P =\", simplify(P_test))\n\nprint(\"ODPOWIEDZ:\", simplify(P_test))\n```\n\nWAZNE: \n- DEFINIUJ wszystkie symbole PRZED uzyciem!\n- BEZ diff()!\n- Dodaj print() wynikow!",
+  "analytical": "KROTKI plan (MAX 5 krokow):\n\nOznaczenia: [zmienne]\nPlan:\n1. [krok - max 8 slow]\n2. [krok - max 8 slow]\n3. [krok - max 8 slow]\nMetoda: sympy\n\nPRZYKLAD:\nOznaczenia: n - liczba cyfr\nPlan:\n1. Wybor 3 nieparzystych z {1,3,5,7,9}\n2. Wybor 2 parzystych z {0,2,4,6,8}\n3. Ustawienie cyfr (0 nie na poczatku)\nMetoda: sympy\n\nREGULY:\n- ZAKAZ LaTeX ($, \\frac)\n- BEZ pochodnych (uzyj podstawien/nierownosci)\n- MAX 8 slow na krok!",
+  "executor_sympy": "TYLKO kod Python/SymPy:\n\n```python\nfrom sympy import symbols, factorial, binomial\n\n# Definiuj symbole\nn, k = symbols('n k', integer=True, positive=True)\n\n# Obliczenia\nwynik = factorial(5) / (factorial(3) * factorial(2))\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nREGULY:\n- Definiuj symbole PRZED uzyciem\n- BEZ pochodnych (diff)\n- Dodaj print(\"ODPOWIEDZ:\", ...)\n- KROTKO, bez tekstu poza kodem!",
   "executor_sympy_mc": "KOD Python/SymPy dla WIELOKROTNEGO WYBORU:\n\n```python\nfrom sympy import *\n\n# Obliczenia\nwynik = ...\n\n# Porownaj z opcjami\nopcja_A = ...\nopcja_B = ...\nopcja_C = ...\nopcja_D = ...\n\nif wynik == opcja_A: print(\"ODPOWIEDZ: A\")\nelif wynik == opcja_B: print(\"ODPOWIEDZ: B\")\nelif wynik == opcja_C: print(\"ODPOWIEDZ: C\")\nelif wynik == opcja_D: print(\"ODPOWIEDZ: D\")\n```\n\nWAZNE: TYLKO kod, BEZ tekstu!",
   "executor_lean": "Kod Lean 4:\n\n```lean\nimport Mathlib.Data.Nat.Basic\nimport Mathlib.Tactic\n\ntheorem nazwa (zmienne : typy) : teza := by\n  taktyki\n```\n\nWAZNE: TYLKO kod ```lean, BEZ tekstu!",
-  "summary": "Rozwiazanie KROTKO (max 5 krokow):\n\n!!! ZAKAZ LATEX !!!\n- ZAKAZ: $, $$, \\frac, \\sqrt\n- Pisz: a/b, x^2, sqrt(x)\n\nFORMAT:\n\nKrok 1: [nazwa]\n[1-2 zdania CO i DLACZEGO]\nWynik: [z kodu]\n\nKrok 2: [nazwa]\n[1-2 zdania]\nWynik: [z kodu]\n\n...\n\nODPOWIEDZ: [wynik]\n\nPRZYKLAD:\nKrok 1: Warunek obwodu\nZ a+b+c=3R i c=2a: b=3R-3a\nWynik: b = 3*R - 3*a\n\nKrok 2: Wzor Herona\nP = sqrt(s(s-a)(s-b)(s-c)), s=3R/2\nWynik: P(a) = sqrt(...)\n\nKrok 3: Maksimum\nTestujemy wartosci a lub uzywamy symetrii\nWynik: a_opt = 2*R/3 daje max\n\nKrok 4: Pole\nPodstawiamy a_opt\nODPOWIEDZ: 2*R**2/9\n\nWAZNE: KROTKO! Max 5 krokow, kazdy 1-2 zdania.",
+  "summary": "KROTKIE wyjasnienie (max 4 kroki):\n\nKrok 1: [nazwa]\n[1 zdanie]\nWynik: [z kodu]\n\nKrok 2: [nazwa]\n[1 zdanie]\nWynik: [z kodu]\n\nODPOWIEDZ: [wynik]\n\nPRZYKLAD:\nKrok 1: Wybor cyfr\nWybieramy 3 nieparzyste i 2 parzyste\nWynik: C(5,3) * C(4,2) = 60\n\nKrok 2: Ustawienie\nUkladamy cyfry (0 nie na poczatku)\nWynik: 60 * 3! * 2! - przypadki z 0\n\nODPOWIEDZ: 216\n\nREGULY:\n- MAX 4 kroki\n- MAX 1 zdanie na krok\n- ZAKAZ LaTeX",
   "formalizer_lean": "Formalny kod Lean 4 z Mathlib:\n\n```lean\nimport Mathlib.Data.Real.Basic\nimport Mathlib.Tactic\n\ntheorem nazwa (zmienne : typy) (warunki : Prop) : teza := by\n  calc teza\n    _ = ... := by ring\n    _ ≥ ... := by linarith\n```\n\nTaktyki: ring, linarith, nlinarith, field_simp, norm_num\n\nWAZNE: TYLKO kod, BEZ tekstu!"
 }

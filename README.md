@@ -36,9 +36,10 @@ Zaawansowany asystent matematyczny oparty na polskim modelu AI Bielik, wyposażo
 
 ### 🎯 Jak działa?
 
-System wykorzystuje **trzy wyspecjalizowane agenty AI**:
+System wykorzystuje **cztery wyspecjalizowane komponenty**:
 
-- **🧠 Agent Analityczny** - Analizuje zadanie i przedstawia szczegółowy plan rozwiązania z uzasadnieniem każdego kroku
+- **📚 Baza Wiedzy (RAG)** - Wyszukuje relevantne metody matematyczne i podobne zadania maturalne z bazy wiedzy
+- **🧠 Agent Analityczny** - Analizuje zadanie i przedstawia szczegółowy plan rozwiązania wykorzystując kontekst z bazy wiedzy
 - **⚡ Agent Wykonawczy** - Wykonuje obliczenia SymPy z komentarzami wyjaśniającymi każdy krok lub tworzy formalne dowody
 - **🤖 Agent Podsumowujący** - Przedstawia rozwiązanie krok po kroku, wyjaśniając proces rozumowania
 
@@ -56,6 +57,12 @@ System wykorzystuje **trzy wyspecjalizowane agenty AI**:
 - Dowody przez indukcję
 - Dowody własności funkcji (monotoniczność, ciągłość)
 - Twierdzenia geometryczne
+
+**Baza wiedzy (RAG Service)**:
+- Metody matematyczne z informatora maturalnego
+- Podobne zadania z poprzednich matur
+- Wskazówki i porady dla typowych problemów
+- Kontekst egzaminacyjny i wymagania CKE
 
 ### 📈 Skuteczność na zadaniach maturalnych
 
@@ -151,6 +158,7 @@ Skrypt automatycznie:
 - ✅ Sprawdzi wymagane zależności (Node.js, Python)
 - ✅ Zainstaluje zależności Node.js
 - ✅ Skonfiguruje środowisko Python z SymPy
+- ✅ Zainstaluje RAG Service (baza wiedzy)
 - ✅ Zbuduje serwery MCP
 
 ### Uruchomienie
@@ -167,8 +175,9 @@ start.bat
 
 Skrypt automatycznie:
 - ✅ Uruchomi MCP Proxy (SymPy) - port 3001
+- ✅ Uruchomi Lean Proxy (weryfikacja) - port 3002
+- ✅ Uruchomi RAG Service (baza wiedzy) - port 3003
 - ✅ Uruchomi aplikację webową - port 5173
-- ✅ Otworzy przeglądarkę automatycznie
 
 ## 💻 Jak używać?
 
@@ -246,13 +255,15 @@ System ma dostęp do **9 narzędzi matematycznych**:
 ```
 1. Wpisujesz zadanie maturalne
    ↓
-2. Agent Analityczny rozbija problem na kroki
+2. RAG Service wyszukuje relevantne metody i podobne zadania
    ↓
-3. Agent Wykonawczy oblicza używając SymPy (z komentarzami)
+3. Agent Analityczny rozbija problem na kroki (z kontekstem RAG)
    ↓
-4. Agent Podsumowujący wyjaśnia rozwiązanie krok po kroku
+4. Agent Wykonawczy oblicza używając SymPy (z komentarzami)
    ↓
-5. Widzisz pełne rozwiązanie z uzasadnieniem
+5. Agent Podsumowujący wyjaśnia rozwiązanie krok po kroku
+   ↓
+6. Widzisz pełne rozwiązanie z uzasadnieniem
 ```
 
 ### Struktura projektu
@@ -262,11 +273,16 @@ bielik-m-poc/
 ├── src/
 │   ├── services/
 │   │   ├── threeAgentSystem.ts      # System trzech agentów
+│   │   ├── ragService.ts             # RAG Service client
 │   │   ├── mcpClientBrowser.ts      # Klient MCP
 │   │   └── mlxAgent.ts               # Agent MLX
 │   ├── components/                   # Komponenty UI
 │   └── App.tsx                       # Główna aplikacja
 ├── mcp-sympy-server/                # Serwer SymPy
+├── rag_service/                      # RAG Service (baza wiedzy)
+│   ├── main.py                      # FastAPI server
+│   ├── indexer.py                   # TF-IDF indexer
+│   └── data/                        # Dane źródłowe
 ├── prompts.json                      # Prompty dla agentów
 ├── start.sh / start.bat             # Uruchamianie
 └── setup.sh / setup.bat             # Instalacja
@@ -278,6 +294,7 @@ bielik-m-poc/
 - **TypeScript** - Typy statyczne
 - **Bielik 11B** - Polski model LLM
 - **SymPy** - Obliczenia symboliczne
+- **FastAPI + scikit-learn** - RAG Service (TF-IDF retrieval)
 - **Lean Prover** - Weryfikacja dowodów (opcjonalnie)
 - **MCP** - Model Context Protocol
 

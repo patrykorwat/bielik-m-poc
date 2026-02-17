@@ -10,8 +10,9 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "mcp-proxy": "node mcp-proxy-server.js",
     "lean-proxy": "node lean-proxy-server.js",
+    "rag-service": "cd rag_service && source venv/bin/activate && python main.py",
     "start:proxies": "concurrently \"npm run mcp-proxy\" \"npm run lean-proxy\"",
-    "start:all": "concurrently \"npm run dev\" \"npm run mcp-proxy\" \"npm run lean-proxy\""
+    "start:all": "concurrently \"npm run dev\" \"npm run mcp-proxy\" \"npm run lean-proxy\" \"npm run rag-service\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

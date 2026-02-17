@@ -136,7 +136,48 @@ deactivate
 cd ..
 echo ""
 
-# Step 4: MANDATORY Lean Prover Installation
+# Step 4: Setup RAG Service (Knowledge Base)
+echo "📚 Setting up RAG Service (Mathematical Knowledge Base)..."
+cd rag_service
+
+# Create Python virtual environment if it doesn't exist
+if [ ! -d "venv" ]; then
+    echo "   Creating Python virtual environment..."
+    python3 -m venv venv
+    if [ $? -eq 0 ]; then
+        print_success "Python virtual environment created"
+    else
+        print_error "Failed to create Python virtual environment"
+        exit 1
+    fi
+else
+    print_info "Python virtual environment already exists"
+fi
+
+# Activate virtual environment and install Python dependencies
+echo "   Installing RAG dependencies (FastAPI, scikit-learn)..."
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows
+    source venv/Scripts/activate
+else
+    # Unix-like (Linux, macOS)
+    source venv/bin/activate
+fi
+
+pip install --upgrade pip > /dev/null 2>&1
+pip install -r requirements.txt
+if [ $? -eq 0 ]; then
+    print_success "RAG dependencies installed"
+else
+    print_error "Failed to install RAG dependencies"
+    exit 1
+fi
+
+deactivate
+cd ..
+echo ""
+
+# Step 5: MANDATORY Lean Prover Installation
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🎯 MANDATORY: Lean Prover Installation"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -265,7 +306,7 @@ fi
 print_success "Lean Prover verification passed"
 echo ""
 
-# Step 5: Summary
+# Step 6: Summary
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ Setup complete!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -273,6 +314,7 @@ echo ""
 echo "📚 Installed components:"
 echo "   ✓ Node.js dependencies"
 echo "   ✓ MCP SymPy Server (symbolic mathematics)"
+echo "   ✓ RAG Service (mathematical knowledge base)"
 echo "   ✓ Lean Prover (formal verification)"
 echo ""
 echo "📚 Next steps:"
@@ -283,7 +325,8 @@ echo ""
 echo "   Or start them manually:"
 echo "      Terminal 1: ${GREEN}npm run mcp-proxy${NC}     # SymPy backend (port 3001)"
 echo "      Terminal 2: ${GREEN}npm run lean-proxy${NC}    # Lean backend (port 3002)"
-echo "      Terminal 3: ${GREEN}npm run dev${NC}           # Web app (port 5173)"
+echo "      Terminal 3: ${GREEN}cd rag_service && source venv/bin/activate && python main.py${NC}  # RAG (port 3003)"
+echo "      Terminal 4: ${GREEN}npm run dev${NC}           # Web app (port 5173)"
 echo ""
 echo "   2. Open browser at: ${BLUE}http://localhost:5173${NC}"
 echo ""
