@@ -110,39 +110,64 @@ export class RAGService {
 
     const sections: string[] = [];
 
-    // Metody matematyczne (z methods source)
-    const methods = results.filter(r => r.source === 'methods' && r.score > 0.15);
+    // Metody matematyczne — najcenniejsze (how to solve, not what the answer is)
+    const methods = results.filter(r => r.source === 'methods' && r.score > 0.10);
     if (methods.length > 0) {
-      const methodLines = methods.map(m => {
-        let line = `- ${m.title}: ${m.content.substring(0, 200)}`;
-        if (m.sympy_hint) line += `\n  SymPy: ${m.sympy_hint.substring(0, 150)}`;
-        if (m.tips) line += `\n  Tip: ${m.tips.substring(0, 150)}`;
+      const methodLines = methods.slice(0, 2).map(m => {
+        let line = `- ${m.title}`;
+        if (m.tips) line += `: ${m.tips.substring(0, 120)}`;
+        if (m.sympy_hint) line += `\n  SymPy: ${m.sympy_hint.substring(0, 120)}`;
         return line;
       });
       sections.push(`METODY:\n${methodLines.join('\n')}`);
     }
 
-    // Podobne zadania historyczne (z dataset source)
-    const examples = results.filter(r => r.source === 'dataset' && r.score > 0.2);
+    // Podobne zadania — only the category/title, never the answer
+    const examples = results.filter(r =>
+      (r.source === 'dataset' || r.source === 'informator_pdf') && r.score > 0.15
+    );
     if (examples.length > 0) {
       const exLines = examples.slice(0, 2).map(e =>
-        `- ${e.title}: ${e.content.substring(0, 150)}`
+        `- ${e.title} [${e.category}]`
       );
       sections.push(`PODOBNE ZADANIA:\n${exLines.join('\n')}`);
     }
 
-    // Informacje z informatora
-    const informator = results.filter(r => r.source === 'informator' && r.score > 0.2);
-    if (informator.length > 0) {
-      const infLines = informator.slice(0, 1).map(i =>
-        `- ${i.title}: ${i.tips || i.content.substring(0, 150)}`
-      );
-      sections.push(`KONTEKST EGZAMINACYJNY:\n${infLines.join('\n')}`);
-    }
-
     if (!sections.length) return '';
 
-    return `\n--- KONTEKST Z BAZY WIEDZY ---\n${sections.join('\n\n')}\n--- KONIEC KONTEKSTU ---\n`;
+    return `\n--- KONTEKST ---\n${sections.join('\n')}\n---\n`;
+  }
+
+  /**
+   * Wyciągnij podpowiedzi SymPy z wyników RAG (dla Agenta Executor).
+   */
+  formatSymPyHints(results: RAGResult[]): string {
+    const hints = results
+      .filter(r => r.sympy_hint && r.score > 0.10)
+      .map(r => r.sympy_hint)
+      .slice(0, 3);
+
+    if (!hints.length) return '';
+
+    return `\n--- PODPOWIEDZI SYMPY ---\n${hints.join('\n')}\n--- KONIEC PODPOWIEDZI ---\n`;
+  }
+
+  /**
+   * Compact retry hint: pick the single best SymPy snippet for the problem.
+   * Designed to be tiny — just a one-liner injected into a retry prompt.
+   * Returns empty string if nothing relevant.
+   */
+  formatRetryHint(results: RAGResult[]): string {
+    // Pick the single highest-scoring result that has a sympy_hint
+    const best = results
+      .filter(r => r.sympy_hint && r.score > 0.10)
+      .sort((a, b) => b.score - a.score)[0];
+
+    if (!best) return '';
+
+    // Trim to just the essential SymPy call, max ~120 chars
+    const hint = best.sympy_hint.substring(0, 120).trim();
+    return `Podpowiedź: ${hint}`;
   }
 
   /**

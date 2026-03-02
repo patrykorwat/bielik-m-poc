@@ -86,31 +86,60 @@ class TFIDFIndex:
 
         print(f"✅ Indeks zbudowany: {self.tfidf_matrix.shape[0]} docs × {self.tfidf_matrix.shape[1]} features")
 
+    # Source boost factors — metody i informator PDF są cenniejsze niż surowe datasety
+    SOURCE_BOOST = {
+        "methods": 1.35,        # metody z SymPy hints — najcenniejsze dla agenta
+        "informator_pdf": 1.20, # zadania z informatora rozszerzonego
+        "informator": 1.10,     # analiza informatora
+        "dataset": 1.00,        # historyczne zadania — bazowy score
+    }
+
     def query(self, query_text: str, top_k: int = 3) -> List[SearchResult]:
-        """Wyszukaj najbardziej pasujące chunki."""
+        """Wyszukaj najbardziej pasujące chunki z source-aware boosting."""
         if not self._initialized:
             raise RuntimeError("Indeks nie jest zbudowany. Wywołaj build() najpierw.")
 
         query_vec = self.vectorizer.transform([query_text])
         similarities = cosine_similarity(query_vec, self.tfidf_matrix).flatten()
 
-        # Top-K indeksów
-        top_indices = np.argsort(similarities)[-top_k:][::-1]
+        # Apply source-based boosting
+        boosted = similarities.copy()
+        for i, chunk in enumerate(self.chunks):
+            boost = self.SOURCE_BOOST.get(chunk.source, 1.0)
+            boosted[i] *= boost
 
+        # Top-K indeksów (wewnątrz bierzemy więcej, potem zapewniamy różnorodność)
+        fetch_k = min(top_k * 3, len(self.chunks))
+        top_indices = np.argsort(boosted)[-fetch_k:][::-1]
+
+        # Zapewnij różnorodność źródeł: max 60% z jednego source
         results = []
+        source_counts: dict = {}
+        max_per_source = max(2, int(top_k * 0.6))
+
         for idx in top_indices:
-            score = float(similarities[idx])
-            if score < 0.01:  # Odrzuć zbyt niskie wyniki
+            if len(results) >= top_k:
+                break
+
+            score = float(boosted[idx])
+            if score < 0.01:
                 continue
 
             chunk = self.chunks[idx]
+            src = chunk.source
+            source_counts[src] = source_counts.get(src, 0) + 1
+
+            # Jeśli jedno źródło dominuje, pomiń (chyba że to jedyne trafienie)
+            if source_counts[src] > max_per_source and len(results) >= 2:
+                continue
+
             results.append(SearchResult(
                 chunk_id=chunk.id,
                 score=score,
                 source=chunk.source,
                 category=chunk.category,
                 title=chunk.title,
-                content=chunk.content[:500],  # Ogranicz długość
+                content=chunk.content[:500],
                 sympy_hint=chunk.sympy_hint,
                 tips=chunk.tips,
                 metadata=chunk.metadata,

@@ -1,0 +1,1570 @@
+{
+  "benchmark_id": "bench_20260217_115655",
+  "timestamp": "2026-02-17T11:56:55.798067",
+  "components": {
+    "rag": {
+      "status": "ok",
+      "aggregates": {
+        "total_queries": 45,
+        "hit_at_1": 0.7555555555555555,
+        "hit_at_3": 0.9333333333333333,
+        "hit_at_5": 0.9777777777777777,
+        "mean_mrr": 0.8422222222222223,
+        "avg_top_score": 0.4480888888888887,
+        "source_distribution": {
+          "dataset": 126,
+          "methods": 29,
+          "informator_pdf": 45,
+          "informator": 1
+        },
+        "per_category": {
+          "algebra": {
+            "total": 8,
+            "hit@1": 0.5,
+            "hit@3": 0.875,
+            "hit@5": 1.0
+          },
+          "ciągi": {
+            "total": 2,
+            "hit@1": 0.5,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "funkcje": {
+            "total": 4,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "geometria analityczna": {
+            "total": 3,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "geometria_analityczna": {
+            "total": 1,
+            "hit@1": 0.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "geometria_płaska": {
+            "total": 1,
+            "hit@1": 0.0,
+            "hit@3": 0.0,
+            "hit@5": 1.0
+          },
+          "kombinatoryka": {
+            "total": 1,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "logarytmy": {
+            "total": 1,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "optymalizacja": {
+            "total": 1,
+            "hit@1": 0.0,
+            "hit@3": 0.0,
+            "hit@5": 0.0
+          },
+          "potęgi i pierwiastki": {
+            "total": 2,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "prawdopodobieństwo": {
+            "total": 1,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "procenty": {
+            "total": 1,
+            "hit@1": 0.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "procenty i zastosowania": {
+            "total": 3,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "rachunek_różniczkowy": {
+            "total": 1,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "równania": {
+            "total": 2,
+            "hit@1": 0.5,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "równania i nierówności": {
+            "total": 10,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "stereometria": {
+            "total": 1,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "trygonometria": {
+            "total": 1,
+            "hit@1": 1.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          },
+          "wielomiany": {
+            "total": 1,
+            "hit@1": 0.0,
+            "hit@3": 1.0,
+            "hit@5": 1.0
+          }
+        }
+      },
+      "details": [
+        {
+          "query": "Oblicz wartość logarytmu log_3(81)",
+          "expected_category": "logarytmy",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "logarytmy",
+            "logarytmy",
+            "logarytmy",
+            "Wyrażenia algebraiczne",
+            "logarytmy"
+          ],
+          "top_k_scores": [
+            0.4858,
+            0.4096,
+            0.4051,
+            0.3747,
+            0.3239
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Rozwiąż równanie kwadratowe x^2 - 5x + 6 = 0",
+          "expected_category": "równania",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "równania i nierówności",
+            "funkcje"
+          ],
+          "top_k_scores": [
+            0.3387,
+            0.304,
+            0.274,
+            0.2387
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Oblicz pole trójkąta o bokach 3, 4, 5",
+          "expected_category": "geometria_płaska",
+          "top_k_sources": [
+            "dataset",
+            "informator_pdf",
+            "dataset",
+            "dataset",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "trygonometria",
+            "trygonometria",
+            "trygonometria",
+            "trygonometria",
+            "geometria analityczna"
+          ],
+          "top_k_scores": [
+            0.2834,
+            0.2498,
+            0.2464,
+            0.2374,
+            0.2281
+          ],
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "mrr": 0.2
+        },
+        {
+          "query": "Wyznacz pochodną funkcji f(x) = x^3 + 2x",
+          "expected_category": "rachunek_różniczkowy",
+          "top_k_sources": [
+            "methods",
+            "dataset",
+            "methods",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "Pochodne i rachunek różniczkowy",
+            "funkcje",
+            "Funkcje",
+            "równania i nierówności",
+            "rachunek różniczkowy"
+          ],
+          "top_k_scores": [
+            0.3018,
+            0.2826,
+            0.2808,
+            0.275,
+            0.2728
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Ile jest trzycyfrowych liczb podzielnych przez 5?",
+          "expected_category": "kombinatoryka",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "kombinatoryka",
+            "kombinatoryka",
+            "kombinatoryka",
+            "Dowody i rozumowanie",
+            "prawdopodobieństwo"
+          ],
+          "top_k_scores": [
+            0.388,
+            0.2683,
+            0.2632,
+            0.1799,
+            0.1744
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Prawdopodobieństwo wylosowania kuli czerwonej z urny",
+          "expected_category": "prawdopodobieństwo",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "methods"
+          ],
+          "top_k_categories": [
+            "prawdopodobieństwo",
+            "prawdopodobieństwo",
+            "prawdopodobieństwo",
+            "prawdopodobieństwo",
+            "mapowanie"
+          ],
+          "top_k_scores": [
+            0.56,
+            0.5095,
+            0.4137,
+            0.36,
+            0.3402
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Oblicz sumę ciągu arytmetycznego",
+          "expected_category": "ciągi",
+          "top_k_sources": [
+            "methods",
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods"
+          ],
+          "top_k_categories": [
+            "mapowanie",
+            "ciągi",
+            "ciągi",
+            "ciągi",
+            "Ciągi i szeregi"
+          ],
+          "top_k_scores": [
+            0.3513,
+            0.3495,
+            0.3312,
+            0.329,
+            0.312
+          ],
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 0.5
+        },
+        {
+          "query": "Wyznacz równanie prostej przechodzącej przez punkty A i B",
+          "expected_category": "geometria_analityczna",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "informator_pdf",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "geometria analityczna",
+            "rachunek różniczkowy",
+            "algebra",
+            "geometria analityczna"
+          ],
+          "top_k_scores": [
+            0.3466,
+            0.2696,
+            0.2628,
+            0.2627,
+            0.2552
+          ],
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 0.5
+        },
+        {
+          "query": "Oblicz objętość stożka o promieniu 3 i wysokości 4",
+          "expected_category": "stereometria",
+          "top_k_sources": [
+            "dataset",
+            "informator_pdf",
+            "dataset",
+            "dataset",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "stereometria",
+            "trygonometria",
+            "stereometria",
+            "stereometria",
+            "algebra"
+          ],
+          "top_k_scores": [
+            0.332,
+            0.3052,
+            0.3049,
+            0.3042,
+            0.2946
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Cenę towaru podwyższono o 20% a potem obniżono o 10%",
+          "expected_category": "procenty",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "algebra",
+            "procenty i zastosowania",
+            "procenty i zastosowania",
+            "struktura_egzaminu",
+            "rachunek różniczkowy"
+          ],
+          "top_k_scores": [
+            0.3684,
+            0.2535,
+            0.172,
+            0.0771,
+            0.0743
+          ],
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 0.5
+        },
+        {
+          "query": "Wyznacz dziedzinę funkcji f(x) = sqrt(x-2)",
+          "expected_category": "funkcje",
+          "top_k_sources": [
+            "methods",
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods"
+          ],
+          "top_k_categories": [
+            "Funkcje",
+            "funkcje",
+            "funkcje",
+            "funkcje",
+            "Funkcje"
+          ],
+          "top_k_scores": [
+            0.2549,
+            0.2335,
+            0.2158,
+            0.2157,
+            0.1866
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Oblicz sin(30°) + cos(60°)",
+          "expected_category": "trygonometria",
+          "top_k_sources": [
+            "methods",
+            "informator_pdf",
+            "informator_pdf",
+            "methods",
+            "methods"
+          ],
+          "top_k_categories": [
+            "Trygonometria",
+            "stereometria",
+            "stereometria",
+            "Trygonometria",
+            "Trygonometria"
+          ],
+          "top_k_scores": [
+            0.2432,
+            0.1598,
+            0.1598,
+            0.1444,
+            0.1335
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Znajdź największą wartość funkcji na przedziale",
+          "expected_category": "optymalizacja",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "funkcje",
+            "funkcje",
+            "funkcje",
+            "Pochodne i rachunek różniczkowy",
+            "funkcje"
+          ],
+          "top_k_scores": [
+            0.5586,
+            0.5337,
+            0.491,
+            0.3578,
+            0.2925
+          ],
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": false,
+          "mrr": 0.0
+        },
+        {
+          "query": "Wyznacz pierwiastki wielomianu W(x) = x^3 - 6x^2 + 11x - 6",
+          "expected_category": "wielomiany",
+          "top_k_sources": [
+            "methods",
+            "informator_pdf",
+            "informator_pdf",
+            "informator_pdf",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "Równania i nierówności",
+            "rachunek różniczkowy",
+            "wielomiany",
+            "rachunek różniczkowy",
+            "równania i nierówności"
+          ],
+          "top_k_scores": [
+            0.3182,
+            0.3083,
+            0.2998,
+            0.2673,
+            0.2356
+          ],
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 0.3333333333333333
+        },
+        {
+          "query": "Uzasadnij że dla każdej liczby naturalnej n wyrażenie jest podzielne",
+          "expected_category": "równania",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "methods"
+          ],
+          "top_k_categories": [
+            "algebra",
+            "ciągi",
+            "równania i nierówności",
+            "rachunek różniczkowy",
+            "Wyrażenia algebraiczne"
+          ],
+          "top_k_scores": [
+            0.2808,
+            0.2408,
+            0.2376,
+            0.2325,
+            0.2229
+          ],
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 0.3333333333333333
+        },
+        {
+          "query": "Na początku sezonu letniego cenę x pary sandałów podwyższono o 20\\%. Po miesiącu",
+          "expected_category": "procenty i zastosowania",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "procenty i zastosowania",
+            "algebra",
+            "procenty i zastosowania",
+            "algebra",
+            "prawdopodobieństwo"
+          ],
+          "top_k_scores": [
+            0.6765,
+            0.2349,
+            0.2164,
+            0.1111,
+            0.1089
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Liczba ((1)/(16) )^8 8^16 jest równa",
+          "expected_category": "potęgi i pierwiastki",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "potęgi i pierwiastki",
+            "potęgi i pierwiastki",
+            "ciągi"
+          ],
+          "top_k_scores": [
+            0.1993,
+            0.1486,
+            0.1325
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Liczba _sqrt(3) 9 jest równa",
+          "expected_category": "algebra",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "logarytmy",
+            "algebra"
+          ],
+          "top_k_scores": [
+            0.2324,
+            0.2184,
+            0.2059
+          ],
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 0.3333333333333333
+        },
+        {
+          "query": "Dla każdej liczby rzeczywistej a i dla każdej liczby rzeczywistej b wartość wyra",
+          "expected_category": "algebra",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "methods"
+          ],
+          "top_k_categories": [
+            "algebra",
+            "równania i nierówności",
+            "równania i nierówności",
+            "rachunek różniczkowy",
+            "Wyrażenia algebraiczne"
+          ],
+          "top_k_scores": [
+            0.7197,
+            0.4156,
+            0.3738,
+            0.24,
+            0.2247
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Zbiorem wszystkich rozwiązań nierówności 1 - (3)/(2)x < (2)/(3) - x jest przedzi",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "równania i nierówności",
+            "Równania i nierówności",
+            "prawdopodobieństwo"
+          ],
+          "top_k_scores": [
+            0.3192,
+            0.3121,
+            0.2957,
+            0.2273,
+            0.1988
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Największą liczbą będącą rozwiązaniem rzeczywistym równania x(x+2)(x^2+9)=0 jest",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "równania i nierówności",
+            "Pochodne i rachunek różniczkowy"
+          ],
+          "top_k_scores": [
+            0.7771,
+            0.2899,
+            0.2327,
+            0.1733
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Równanie (x+1)/((x+2)(x-3)) = 0 w zbiorze liczb rzeczywistych",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "równania i nierówności",
+            "struktura_egzaminu",
+            "logarytmy"
+          ],
+          "top_k_scores": [
+            0.368,
+            0.3453,
+            0.2922,
+            0.1897,
+            0.1834
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "W październiku 2022 roku założono dwa sady, w których posadzono łącznie 1960 drz",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "informator_pdf",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "rachunek różniczkowy",
+            "struktura_egzaminu",
+            "struktura_egzaminu"
+          ],
+          "top_k_scores": [
+            0.5277,
+            0.1403,
+            0.1208,
+            0.1174
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Średnia arytmetyczna trzech liczb: a, b, c, jest równa 9. Średnia arytmetyczna s",
+          "expected_category": "ciągi",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods",
+            "methods"
+          ],
+          "top_k_categories": [
+            "ciągi",
+            "ciągi",
+            "ciągi",
+            "mapowanie",
+            "Ciągi i szeregi"
+          ],
+          "top_k_scores": [
+            0.4977,
+            0.3558,
+            0.3143,
+            0.2575,
+            0.2022
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Na rysunku przedstawiono dwie proste równoległe, które są interpretacją geometry",
+          "expected_category": "geometria analityczna",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "dataset",
+            "methods"
+          ],
+          "top_k_categories": [
+            "geometria analityczna",
+            "geometria analityczna",
+            "geometria analityczna",
+            "ciągi",
+            "Strategie egzaminacyjne"
+          ],
+          "top_k_scores": [
+            0.475,
+            0.369,
+            0.3455,
+            0.2781,
+            0.2596
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Liczba _9 27 + _9 3 jest równa",
+          "expected_category": "algebra",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "logarytmy",
+            "algebra",
+            "ciągi"
+          ],
+          "top_k_scores": [
+            0.375,
+            0.1683,
+            0.1513
+          ],
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 0.5
+        },
+        {
+          "query": "Liczba ((27)/(16))**(1/3) (2)**(1/3) jest równa",
+          "expected_category": "algebra",
+          "top_k_sources": [
+            "methods",
+            "dataset",
+            "methods",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "Geometria przestrzenna (stereometria)",
+            "ciągi",
+            "Ciągi i szeregi",
+            "logarytmy",
+            "algebra"
+          ],
+          "top_k_scores": [
+            0.1609,
+            0.1014,
+            0.0902,
+            0.0832,
+            0.0827
+          ],
+          "hit_at_1": false,
+          "hit_at_3": false,
+          "hit_at_5": true,
+          "mrr": 0.2
+        },
+        {
+          "query": "Cenę aparatu fotograficznego obniżono o 15\\%, a następnie -20\\% w odniesieniu do",
+          "expected_category": "procenty i zastosowania",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "procenty i zastosowania",
+            "procenty i zastosowania",
+            "algebra",
+            "rachunek różniczkowy",
+            "struktura_egzaminu"
+          ],
+          "top_k_scores": [
+            0.6912,
+            0.3765,
+            0.2635,
+            0.1762,
+            0.1569
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Dla każdej liczby rzeczywistej a wyrażenie (2a-3)^2-(2a+3)^2 jest równe",
+          "expected_category": "algebra",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "algebra",
+            "algebra",
+            "równania i nierówności",
+            "rachunek różniczkowy"
+          ],
+          "top_k_scores": [
+            0.6679,
+            0.4173,
+            0.2841,
+            0.1644
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Na rysunku przedstawiono interpretację geometryczną jednego z niżej zapisanych u",
+          "expected_category": "geometria analityczna",
+          "top_k_sources": [
+            "dataset",
+            "informator_pdf",
+            "dataset",
+            "dataset",
+            "methods"
+          ],
+          "top_k_categories": [
+            "geometria analityczna",
+            "geometria analityczna",
+            "ciągi",
+            "geometria analityczna",
+            "Geometria analityczna"
+          ],
+          "top_k_scores": [
+            0.5878,
+            0.4136,
+            0.3967,
+            0.3128,
+            0.3069
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Zbiorem wszystkich rozwiązań nierówności -2(x+3) <= (2-x)/(3) jest przedział",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "równania i nierówności",
+            "Równania i nierówności"
+          ],
+          "top_k_scores": [
+            0.4653,
+            0.3364,
+            0.3166,
+            0.2321
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Jednym z rozwiązań równania sqrt(3)(x^2-2)(x+3)=0 jest liczba",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "równania i nierówności"
+          ],
+          "top_k_scores": [
+            0.5864,
+            0.2947,
+            0.2722
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Równanie ((x+1)(x-1)^2)/((x-1)(x+1)^2)=0 w zbiorze liczb rzeczywistych",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "funkcje",
+            "równania i nierówności",
+            "struktura_egzaminu"
+          ],
+          "top_k_scores": [
+            0.4685,
+            0.3644,
+            0.2995,
+            0.1513
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Miejscem zerowym funkcji liniowej f(x) = (2p-1)x + p jest liczba -4. Wtedy",
+          "expected_category": "funkcje",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "funkcje",
+            "funkcje",
+            "funkcje",
+            "funkcje",
+            "funkcje"
+          ],
+          "top_k_scores": [
+            0.5484,
+            0.4369,
+            0.4237,
+            0.2757,
+            0.2673
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Funkcja liniowa f jest określona wzorem f(x) = ax + b, gdzie a i b są pewnymi li",
+          "expected_category": "geometria analityczna",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "geometria analityczna",
+            "funkcje",
+            "geometria analityczna",
+            "rachunek różniczkowy",
+            "rachunek różniczkowy"
+          ],
+          "top_k_scores": [
+            0.5461,
+            0.4352,
+            0.4264,
+            0.3669,
+            0.2909
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Liczba (2sqrt(8) - 3sqrt(2) )^2 jest równa",
+          "expected_category": "algebra",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "algebra",
+            "równania i nierówności",
+            "algebra"
+          ],
+          "top_k_scores": [
+            0.2471,
+            0.2068,
+            0.2015
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Dodatnie liczby x i y spełniają warunek 2x = 3y. Wynika stąd, że wartość wyrażen",
+          "expected_category": "algebra",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "methods"
+          ],
+          "top_k_categories": [
+            "algebra",
+            "równania i nierówności",
+            "równania i nierówności",
+            "geometria analityczna",
+            "Wyrażenia algebraiczne"
+          ],
+          "top_k_scores": [
+            0.4702,
+            0.2196,
+            0.216,
+            0.1904,
+            0.1826
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Liczba 4 _4 2 + 2 _4 8 jest równa",
+          "expected_category": "algebra",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "logarytmy",
+            "algebra",
+            "ciągi"
+          ],
+          "top_k_scores": [
+            0.3166,
+            0.1956,
+            0.1679
+          ],
+          "hit_at_1": false,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 0.5
+        },
+        {
+          "query": "Cena działki po kolejnych dwóch obniżkach, za każdym razem o 10\\% w odniesieniu ",
+          "expected_category": "procenty i zastosowania",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "procenty i zastosowania",
+            "procenty i zastosowania",
+            "procenty i zastosowania",
+            "struktura_egzaminu",
+            "rachunek różniczkowy"
+          ],
+          "top_k_scores": [
+            0.6715,
+            0.4038,
+            0.212,
+            0.1658,
+            0.1489
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Liczba 3^2 + (1)/(4) jest równa",
+          "expected_category": "potęgi i pierwiastki",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "potęgi i pierwiastki",
+            "algebra",
+            "ciągi"
+          ],
+          "top_k_scores": [
+            0.2688,
+            0.1444,
+            0.1273
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Rozwiązaniem układu równań cases 11x - 11y = 1 22x + 22y = -1 cases jest para li",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "geometria analityczna",
+            "Równania i nierówności",
+            "wielomiany"
+          ],
+          "top_k_scores": [
+            0.5248,
+            0.3083,
+            0.2027,
+            0.1799,
+            0.1696
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Zbiorem wszystkich rozwiązań nierówności (2)/(5) - (x)/(3) > (x)/(5) jest przedz",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "równania i nierówności",
+            "Równania i nierówności"
+          ],
+          "top_k_scores": [
+            0.2915,
+            0.2843,
+            0.2728,
+            0.2245
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Iloczyn wszystkich rozwiązań równania 2x(x^2 - 9)(x + 1) = 0 jest równy",
+          "expected_category": "równania i nierówności",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "informator_pdf",
+            "informator_pdf"
+          ],
+          "top_k_categories": [
+            "równania i nierówności",
+            "równania i nierówności",
+            "równania i nierówności",
+            "rachunek różniczkowy",
+            "kombinatoryka"
+          ],
+          "top_k_scores": [
+            0.7095,
+            0.3347,
+            0.2685,
+            0.2056,
+            0.2049
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Na rysunku przedstawiono wykres funkcji f. [Rysunek: wykres funkcji f - wykres ł",
+          "expected_category": "funkcje",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset",
+            "methods"
+          ],
+          "top_k_categories": [
+            "funkcje",
+            "funkcje",
+            "funkcje",
+            "Funkcje"
+          ],
+          "top_k_scores": [
+            0.6683,
+            0.4166,
+            0.337,
+            0.217
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        },
+        {
+          "query": "Na rysunku 1. przedstawiono wykres funkcji f określonej na zbiorze (-4, 5). [Rys",
+          "expected_category": "funkcje",
+          "top_k_sources": [
+            "dataset",
+            "dataset",
+            "dataset"
+          ],
+          "top_k_categories": [
+            "funkcje",
+            "funkcje",
+            "funkcje"
+          ],
+          "top_k_scores": [
+            0.6939,
+            0.4057,
+            0.3729
+          ],
+          "hit_at_1": true,
+          "hit_at_3": true,
+          "hit_at_5": true,
+          "mrr": 1.0
+        }
+      ]
+    }
+  },
+  "dataset_info": {
+    "2015": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "równania i nierówności": 6,
+        "algebra": 3,
+        "procenty i zastosowania": 1,
+        "geometria analityczna": 3,
+        "funkcje": 5,
+        "rachunek różniczkowy": 1,
+        "ciągi": 3,
+        "trygonometria": 4,
+        "potęgi i pierwiastki": 1,
+        "geometria płaska": 1,
+        "stereometria": 4,
+        "prawdopodobieństwo": 2
+      }
+    },
+    "2016": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "potęgi i pierwiastki": 2,
+        "algebra": 3,
+        "równania i nierówności": 6,
+        "trygonometria": 8,
+        "funkcje": 4,
+        "ciągi": 5,
+        "geometria analityczna": 1,
+        "prawdopodobieństwo": 2,
+        "stereometria": 3
+      }
+    },
+    "2017": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "potęgi i pierwiastki": 3,
+        "algebra": 5,
+        "równania i nierówności": 4,
+        "funkcje": 4,
+        "ciągi": 4,
+        "trygonometria": 8,
+        "stereometria": 4,
+        "prawdopodobieństwo": 2
+      }
+    },
+    "2018": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "logarytmy": 1,
+        "algebra": 1,
+        "potęgi i pierwiastki": 1,
+        "procenty i zastosowania": 1,
+        "równania i nierówności": 5,
+        "funkcje": 4,
+        "geometria analityczna": 1,
+        "ciągi": 4,
+        "trygonometria": 7,
+        "geometria płaska": 1,
+        "stereometria": 4,
+        "statystyka": 1,
+        "kombinatoryka": 1,
+        "prawdopodobieństwo": 2
+      }
+    },
+    "2019": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "algebra": 3,
+        "potęgi i pierwiastki": 1,
+        "procenty i zastosowania": 1,
+        "równania i nierówności": 5,
+        "funkcje": 4,
+        "ciągi": 3,
+        "trygonometria": 5,
+        "geometria płaska": 2,
+        "geometria analityczna": 4,
+        "rachunek różniczkowy": 1,
+        "statystyka": 1,
+        "kombinatoryka": 1,
+        "prawdopodobieństwo": 2,
+        "stereometria": 1
+      }
+    },
+    "2020": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "algebra": 2,
+        "potęgi i pierwiastki": 1,
+        "logarytmy": 1,
+        "równania i nierówności": 7,
+        "funkcje": 6,
+        "geometria płaska": 1,
+        "ciągi": 3,
+        "trygonometria": 7,
+        "geometria analityczna": 1,
+        "kombinatoryka": 1,
+        "statystyka": 1,
+        "stereometria": 2,
+        "prawdopodobieństwo": 1
+      }
+    },
+    "2021": {
+      "total": 35,
+      "mc": 28,
+      "open": 7,
+      "points": 45,
+      "categories": {
+        "potęgi i pierwiastki": 2,
+        "algebra": 2,
+        "kombinatoryka": 2,
+        "równania i nierówności": 4,
+        "funkcje": 4,
+        "ciągi": 5,
+        "geometria płaska": 2,
+        "geometria analityczna": 1,
+        "trygonometria": 11,
+        "prawdopodobieństwo": 2
+      }
+    },
+    "2022": {
+      "total": 35,
+      "mc": 28,
+      "open": 7,
+      "points": 45,
+      "categories": {
+        "algebra": 3,
+        "procenty i zastosowania": 1,
+        "potęgi i pierwiastki": 2,
+        "równania i nierówności": 6,
+        "funkcje": 5,
+        "ciągi": 5,
+        "trygonometria": 7,
+        "geometria analityczna": 2,
+        "stereometria": 2,
+        "kombinatoryka": 1,
+        "prawdopodobieństwo": 1
+      }
+    },
+    "2023": {
+      "total": 32,
+      "mc": 25,
+      "open": 7,
+      "points": 42,
+      "categories": {
+        "algebra": 4,
+        "procenty i zastosowania": 1,
+        "geometria analityczna": 7,
+        "równania i nierówności": 5,
+        "funkcje": 3,
+        "ciągi": 2,
+        "trygonometria": 8,
+        "prawdopodobieństwo": 1,
+        "stereometria": 1
+      }
+    },
+    "2024": {
+      "total": 33,
+      "mc": 26,
+      "open": 7,
+      "points": 43,
+      "categories": {
+        "procenty i zastosowania": 1,
+        "potęgi i pierwiastki": 2,
+        "algebra": 3,
+        "równania i nierówności": 7,
+        "ciągi": 5,
+        "geometria analityczna": 1,
+        "funkcje": 6,
+        "trygonometria": 3,
+        "geometria płaska": 2,
+        "stereometria": 2,
+        "prawdopodobieństwo": 1
+      }
+    }
+  },
+  "components_run": [
+    "rag"
+  ]
+}

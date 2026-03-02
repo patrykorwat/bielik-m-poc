@@ -346,11 +346,46 @@ ${result.error || ''}`;
       return line;
     });
 
-    // 7. Fix Pi → pi
+    // 7. Fix Pi → pi, Infinity → oo, math.* → sympy
     lines = lines.map(line => {
       const trimmed = line.trim();
       if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
-      return line.replace(/\bPi\b/g, 'pi');
+      line = line.replace(/\bPi\b/g, 'pi');
+      line = line.replace(/\bInfinity\b/g, 'oo');
+      line = line.replace(/\bmath\.sqrt\b/g, 'sqrt');
+      line = line.replace(/\bmath\.pi\b/g, 'pi');
+      line = line.replace(/\bmath\.log\b/g, 'log');
+      line = line.replace(/\bmath\.sin\b/g, 'sin');
+      line = line.replace(/\bmath\.cos\b/g, 'cos');
+      return line;
+    });
+
+    // 7b. Remove input() calls
+    lines = lines.filter(line => !line.includes('input('));
+
+    // 7c. Fix bare math expressions with = that should be Eq()
+    // Only catches: `<math expr> = <value>` where LHS has math operators (+,-,*,/) but NO function calls
+    // e.g. `a**2 + b**2 = 0` → `eq_expr = Eq(a**2 + b**2, 0)`
+    // Skips: `n = symbols(...)`, `result = solve(...)`, keyword args, etc.
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ')) return line;
+      if (trimmed.startsWith('if ') || trimmed.startsWith('elif ') || trimmed.startsWith('while ') || trimmed.startsWith('return ')) return line;
+      if (trimmed.includes('==') || trimmed.includes('Eq(')) return line;
+      // Skip any line with function calls — parens followed by content is almost always a call
+      if (/\w+\(/.test(trimmed)) return line;
+      // Match: <expr with math ops> = <value>
+      // LHS must contain +, -, or ** (actual math, not just parens)
+      const badEqMatch = trimmed.match(/^([^=]+[+\-]|[^=]+\*\*[^=]*)\s*=\s*(\S.*)$/);
+      if (badEqMatch) {
+        const lhs = badEqMatch[1].replace(/\s*=?\s*$/, '').trim();
+        const rhs = badEqMatch[2].trim();
+        // Extra safety: skip if RHS looks like a function call
+        if (/^\w+\(/.test(rhs)) return line;
+        const indent = line.match(/^(\s*)/)?.[1] || '';
+        return `${indent}eq_expr = Eq(${lhs}, ${rhs})`;
+      }
+      return line;
     });
 
     // 8. Ensure print statement exists
@@ -409,41 +444,22 @@ ${result.error || ''}`;
    * Format RAG results for user display (not for agent prompt)
    */
   private formatRAGForDisplay(results: any[]): string {
-    if (!results.length) return 'Brak pasujących informacji w bazie wiedzy.';
+    if (!results.length) return '';
 
-    const lines: string[] = ['**Znaleziono pasujące informacje w bazie wiedzy:**\n'];
+    const lines: string[] = [];
 
-    // Group by source
+    // Only show methods (teaching value) — not dataset matches (no answer leaking)
     const methods = results.filter(r => r.source === 'methods' && r.score > 0.15);
-    const examples = results.filter(r => r.source === 'dataset' && r.score > 0.2);
-    const informator = results.filter(r => r.source === 'informator' && r.score > 0.2);
 
     if (methods.length > 0) {
-      lines.push('**Metody matematyczne:**');
-      methods.slice(0, 2).forEach((m, idx) => {
-        lines.push(`${idx + 1}. **${m.title}** (relevance: ${(m.score * 100).toFixed(0)}%)`);
-        if (m.tips) lines.push(`   💡 ${m.tips.substring(0, 150)}`);
+      lines.push('**Metoda rozwiązania:**');
+      methods.slice(0, 2).forEach((m) => {
+        lines.push(`• **${m.title}**`);
+        if (m.tips) lines.push(`  💡 ${m.tips.substring(0, 120)}`);
       });
-      lines.push('');
     }
 
-    if (examples.length > 0) {
-      lines.push('**Podobne zadania z matur:**');
-      examples.slice(0, 2).forEach((e, idx) => {
-        lines.push(`${idx + 1}. ${e.title} (relevance: ${(e.score * 100).toFixed(0)}%)`);
-      });
-      lines.push('');
-    }
-
-    if (informator.length > 0) {
-      lines.push('**Kontekst egzaminacyjny:**');
-      informator.slice(0, 1).forEach((i, idx) => {
-        lines.push(`${idx + 1}. ${i.title}`);
-        if (i.tips) lines.push(`   ${i.tips.substring(0, 200)}`);
-      });
-      lines.push('');
-    }
-
+    if (!lines.length) return '';
     return lines.join('\n');
   }
 
@@ -527,6 +543,37 @@ ${result.error || ''}`;
     // Fix 5: tuple/dict indexing with symbol
     if (errorMsg.includes('tuple indices must be integers') || errorMsg.includes('list indices must be integers')) {
       fixedCode = fixedCode.replace(/(\w+)\[(\w+)\](?!\s*if)/g, '$1[0]');
+    }
+
+    // Fix 6: SyntaxError "cannot assign to expression" — bare `expr = value` should be Eq()
+    if (errorMsg.includes('cannot assign to expression') || errorMsg.includes("Maybe you meant '=='")) {
+      const lines = fixedCode.split('\n');
+      fixedCode = lines.map(line => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ')) return line;
+        if (trimmed.includes('==') || trimmed.includes('Eq(')) return line;
+        if (/\w+\(/.test(trimmed)) return line; // skip function calls
+        const badEq = trimmed.match(/^([^=]+[+\-]|[^=]+\*\*[^=]*)\s*=\s*(\S.*)$/);
+        if (badEq) {
+          const lhs = badEq[1].replace(/\s*=?\s*$/, '').trim();
+          const rhs = badEq[2].trim();
+          if (/^\w+\(/.test(rhs)) return line;
+          const indent = line.match(/^(\s*)/)?.[1] || '';
+          return `${indent}eq_expr = Eq(${lhs}, ${rhs})`;
+        }
+        return line;
+      }).join('\n');
+    }
+
+    // Fix 7: SympifyError / LaTeX in code
+    if (errorMsg.includes('SympifyError') || errorMsg.includes('could not parse')) {
+      fixedCode = fixedCode
+        .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, 'Rational($1, $2)')
+        .replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)')
+        .replace(/\\pi\b/g, 'pi')
+        .replace(/\\cdot/g, '*')
+        .replace(/\\left\(/g, '(')
+        .replace(/\\right\)/g, ')');
     }
 
     return fixedCode;
@@ -666,9 +713,21 @@ ${result.error || ''}`;
     console.log('\n=== AGENT 2: Executor (SymPy) ===');
 
     // Choose MC or standard executor prompt
-    const executorPrompt = isMultipleChoice && (prompts as any).executor_sympy_mc
+    let executorPrompt = isMultipleChoice && (prompts as any).executor_sympy_mc
       ? (prompts as any).executor_sympy_mc
       : prompts.executor_sympy;
+
+    // Add strict instruction to start with code immediately
+    executorPrompt = `NATYCHMIAST zacznij od \`\`\`python - BEZ zadnego tekstu!\n\n${executorPrompt}`;
+
+    // Inject SymPy hints from RAG into executor prompt
+    if (ragResults.length > 0) {
+      const sympyHints = this.ragService.formatSymPyHints(ragResults);
+      if (sympyHints) {
+        executorPrompt = `${executorPrompt}\n${sympyHints}`;
+        console.log('📚 RAG SymPy hints injected into executor prompt');
+      }
+    }
 
     if (isMultipleChoice) {
       console.log('📋 MC question — using MC executor prompt');
@@ -705,11 +764,57 @@ ${result.error || ''}`;
         finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
         finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA:**\n${result}`;
       } catch (error) {
-        const errorMsg = `❌ Błąd wykonania: ${error instanceof Error ? error.message : String(error)}`;
-        executionResults.push(errorMsg);
-        finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
-        finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
-        finalExecutorContent += `\n\n---\n**BŁĄD WYKONANIA:**\n${errorMsg}`;
+        const firstErrorMsg = error instanceof Error ? error.message : String(error);
+        console.warn('⚠️ First execution failed, attempting RAG-guided retry...');
+
+        // ── RAG-guided retry: re-generate code with compact hint + short error ──
+        let retrySucceeded = false;
+        if (ragResults.length > 0) {
+          try {
+            const retryHint = this.ragService.formatRetryHint(ragResults);
+            if (retryHint) {
+              // Keep it short: base prompt + one-line hint + short error
+              const shortError = firstErrorMsg.replace(/^.*?Error:\s*/i, '').substring(0, 80);
+              const retryPrompt = `${executorPrompt}\n${retryHint}\nBłąd poprzedniego kodu: ${shortError}. Napraw.`;
+
+              console.log('📚 RAG retry: re-calling Executor with compact hint');
+
+              const retryResponse = await this.executeAgentTurn(
+                'Agent Wykonawczy (retry)',
+                retryPrompt,
+                this.getAgentContext(),
+                { maxTokens: prompts.agents.executor.max_tokens, temperature: prompts.agents.executor.temperature }
+              );
+
+              const retryCodeBlocks = this.extractCode(retryResponse);
+              if (retryCodeBlocks.length > 0) {
+                const retryCode = this.sanitizeCode(retryCodeBlocks[0]);
+                console.log('📤 RAG retry code sent to MCP:', retryCode.substring(0, 100));
+
+                const retryResult = await this.executeWithRetry(retryCode);
+                executionResults.push(`📊 Wyniki wykonania (RAG retry):\n${retryResult}`);
+
+                finalExecutorContent = this.cleanMalformedLatex(this.truncateAfterFirstCodeBlock(retryResponse));
+                finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
+                finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+                finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA (retry z podpowiedziami RAG):**\n${retryResult}`;
+                retrySucceeded = true;
+
+                console.log('✅ RAG-guided retry succeeded!');
+              }
+            }
+          } catch (retryError) {
+            console.warn('⚠️ RAG-guided retry also failed:', retryError);
+          }
+        }
+
+        if (!retrySucceeded) {
+          const errorMsg = `❌ Błąd wykonania: ${firstErrorMsg}`;
+          executionResults.push(errorMsg);
+          finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
+          finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+          finalExecutorContent += `\n\n---\n**BŁĄD WYKONANIA:**\n${errorMsg}`;
+        }
       }
     } else if (codeBlocks.length === 0) {
       console.warn('⚠️ No code blocks found in executor response');

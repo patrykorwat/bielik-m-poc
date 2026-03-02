@@ -5,12 +5,12 @@
   },
   "agents": {
     "analytical": {
-      "max_tokens": 250,
+      "max_tokens": 350,
       "temperature": 0.2
     },
     "executor": {
-      "max_tokens": 800,
-      "temperature": 0.2
+      "max_tokens": 600,
+      "temperature": 0.15
     },
     "summary": {
       "max_tokens": 500,
@@ -21,10 +21,10 @@
       "temperature": 0.1
     }
   },
-  "analytical": "KROTKI plan (MAX 5 krokow):\n\nOznaczenia: [zmienne]\nPlan:\n1. [krok - max 8 slow]\n2. [krok - max 8 slow]\n3. [krok - max 8 slow]\nMetoda: sympy\n\nPRZYKLAD:\nOznaczenia: n - liczba cyfr\nPlan:\n1. Wybor 3 nieparzystych z {1,3,5,7,9}\n2. Wybor 2 parzystych z {0,2,4,6,8}\n3. Ustawienie cyfr (0 nie na poczatku)\nMetoda: sympy\n\nREGULY:\n- ZAKAZ LaTeX ($, \\frac)\n- BEZ pochodnych (uzyj podstawien/nierownosci)\n- MAX 8 slow na krok!",
-  "executor_sympy": "TYLKO kod Python/SymPy:\n\n```python\nfrom sympy import symbols, factorial, binomial\n\n# Definiuj symbole\nn, k = symbols('n k', integer=True, positive=True)\n\n# Obliczenia\nwynik = factorial(5) / (factorial(3) * factorial(2))\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nREGULY:\n- Definiuj symbole PRZED uzyciem\n- BEZ pochodnych (diff)\n- Dodaj print(\"ODPOWIEDZ:\", ...)\n- KROTKO, bez tekstu poza kodem!",
-  "executor_sympy_mc": "KOD Python/SymPy dla WIELOKROTNEGO WYBORU:\n\n```python\nfrom sympy import *\n\n# Obliczenia\nwynik = ...\n\n# Porownaj z opcjami\nopcja_A = ...\nopcja_B = ...\nopcja_C = ...\nopcja_D = ...\n\nif wynik == opcja_A: print(\"ODPOWIEDZ: A\")\nelif wynik == opcja_B: print(\"ODPOWIEDZ: B\")\nelif wynik == opcja_C: print(\"ODPOWIEDZ: C\")\nelif wynik == opcja_D: print(\"ODPOWIEDZ: D\")\n```\n\nWAZNE: TYLKO kod, BEZ tekstu!",
+  "analytical": "Jaka METODA MATEMATYCZNA rozwiaze to zadanie?\n\nKategoria: [np. potegi, logarytmy, rownania, trygonometria, ciagi, geometria]\nMetoda: [nazwa konkretnej metody, np. wlasnosci poteg, twierdzenie Pitagorasa]\nPlan:\n1. [krok - max 10 slow]\n2. [krok - max 10 slow]\n3. [krok - max 10 slow]\nSymPy: [kluczowa funkcja, np. solve(), log(), simplify()]\n\nPRZYKLAD 1:\nKategoria: potegi\nMetoda: wlasnosci poteg (a^m * b^m = (a*b)^m) + liczba cyfr (log10)\nPlan:\n1. Przeksztalc 2^14 * 5^15 uzywajac a^m * b^m\n2. Oblicz log10 wyniku\n3. Liczba cyfr = floor(log10) + 1\nSymPy: log(n, 10), ceiling()\n\nPRZYKLAD 2:\nKategoria: rownania z parametrem\nMetoda: wyroznik (delta) i wzory Viete'a\nPlan:\n1. Oblicz delta w zaleznosci od parametru m\n2. Warunek delta >= 0 → zakres m\n3. Sprawdz znaki pierwiastkow\nSymPy: solve(), discriminant()\n\nREGULY:\n- IDENTYFIKUJ metode matematyczna (nie 'sympy'!)\n- ZAKAZ LaTeX ($, \\frac)\n- NIE podawaj odpowiedzi — tylko plan!\n- MAX 10 slow na krok!",
+  "executor_sympy": "```python\nfrom sympy import *\n\n# Krok 1: definicje\nx = symbols('x', real=True)\n\n# Krok 2: obliczenia\nwynik = x**2 + 5*x + 6\n\n# Krok 3: wynik\nprint(\"ODPOWIEDZ:\", wynik)\n```\n\nREGULY:\n- Zacznij od ```python (natychmiast!)\n- ZERO tekstu przed kodem\n- ZERO tekstu po kodzie\n- Tylko from sympy import *\n- print(\"ODPOWIEDZ:\", wynik)",
+  "executor_sympy_mc": "KOD Python/SymPy dla WIELOKROTNEGO WYBORU. Nie pisz tekstu poza kodem.\n\n```python\nfrom sympy import *\n\n# 1. Oblicz wynik\nwynik = ...\n\n# 2. Zdefiniuj opcje (skopiuj wartosci z tresci zadania)\nopcja_A = ...\nopcja_B = ...\nopcja_C = ...\nopcja_D = ...\n\n# 3. Porownaj numerycznie (uzyj float dla pewnosci)\nwy = float(wynik) if wynik is not None else None\nopcje = {'A': opcja_A, 'B': opcja_B, 'C': opcja_C, 'D': opcja_D}\nfor lit, val in opcje.items():\n    if wy is not None and abs(float(val) - wy) < 0.001:\n        print(f\"ODPOWIEDZ: {lit}\")\n        break\nelse:\n    # Porownaj symbolicznie\n    for lit, val in opcje.items():\n        if simplify(wynik - val) == 0:\n            print(f\"ODPOWIEDZ: {lit}\")\n            break\n    else:\n        print(\"ODPOWIEDZ:\", wynik)\n```\n\nWAZNE: TYLKO kod, BEZ tekstu! Opcje MUSZA byc liczbami/wyrazeniami z tresci.",
   "executor_lean": "Kod Lean 4:\n\n```lean\nimport Mathlib.Data.Nat.Basic\nimport Mathlib.Tactic\n\ntheorem nazwa (zmienne : typy) : teza := by\n  taktyki\n```\n\nWAZNE: TYLKO kod ```lean, BEZ tekstu!",
-  "summary": "KROTKIE wyjasnienie (max 4 kroki):\n\nKrok 1: [nazwa]\n[1 zdanie]\nWynik: [z kodu]\n\nKrok 2: [nazwa]\n[1 zdanie]\nWynik: [z kodu]\n\nODPOWIEDZ: [wynik]\n\nPRZYKLAD:\nKrok 1: Wybor cyfr\nWybieramy 3 nieparzyste i 2 parzyste\nWynik: C(5,3) * C(4,2) = 60\n\nKrok 2: Ustawienie\nUkladamy cyfry (0 nie na poczatku)\nWynik: 60 * 3! * 2! - przypadki z 0\n\nODPOWIEDZ: 216\n\nREGULY:\n- MAX 4 kroki\n- MAX 1 zdanie na krok\n- ZAKAZ LaTeX",
+  "summary": "Wytlumacz JAK rozwiazac to zadanie — tak jak nauczyciel tlumaczylby uczniowi.\n\nMETODA: [nazwa metody matematycznej, np. logarytmy, wzory potegowe]\nDlaczego: [1 zdanie — dlaczego ta metoda pasuje]\n\nRozwiazanie krok po kroku:\n1. [Co robimy i DLACZEGO] → [wynik]\n2. [Co robimy i DLACZEGO] → [wynik]\n3. [Co robimy i DLACZEGO] → [wynik]\n\nODPOWIEDZ: [wynik LICZBOWY lub LITERA A/B/C/D]\n\nCo warto powtorzyc:\n- [temat 1 do powtorzenia przed matura]\n- [temat 2]\n\nPRZYKLAD:\nMETODA: Wlasnosci poteg i logarytmy\nDlaczego: Trzeba policzyc ile cyfr ma duza liczba — uzywamy log10\n\n1. Zapisz n = 2^14 * 5^15 = 2^14 * 5^14 * 5 = 10^14 * 5 → log10 wyliczy cyfry\n2. log10(n) = log10(5 * 10^14) = 14 + log10(5) ≈ 14.699 → cyfr = 15\n3. Sprawdzenie: 5 * 10^14 ma 16 cyfr? Nie — 5*10^14 = 500000000000000 → 15 cyfr\n\nODPOWIEDZ: B (15 cyfr)\n\nCo warto powtorzyc:\n- Wlasnosci poteg: a^m * b^m = (a*b)^m\n- Liczba cyfr liczby n: floor(log10(n)) + 1\n\nREGULY:\n- MAX 4 kroki\n- ZAWSZE wytlumacz DLACZEGO dany krok\n- ZAKAZ LaTeX\n- Podaj wynik LICZBOWY albo LITERE (A/B/C/D)\n- ZAWSZE dodaj 'Co warto powtorzyc'",
   "formalizer_lean": "Formalny kod Lean 4 z Mathlib:\n\n```lean\nimport Mathlib.Data.Real.Basic\nimport Mathlib.Tactic\n\ntheorem nazwa (zmienne : typy) (warunki : Prop) : teza := by\n  calc teza\n    _ = ... := by ring\n    _ ≥ ... := by linarith\n```\n\nTaktyki: ring, linarith, nlinarith, field_simp, norm_num\n\nWAZNE: TYLKO kod, BEZ tekstu!"
 }
