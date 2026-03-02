@@ -1,18 +1,20 @@
 #!/bin/bash
 
-# Start script for Bielik-M multi-agent math solver
-# Starts all required servers with proper error handling
+# Start script for Bielik Matura - REQUIRES Lean Prover
+# Starts all required servers with strict error handling
 #
-# Components:
-#   1. MLX Server (port 8011) — LLM inference (must be started separately)
-#   2. MCP Proxy  (port 3001) — SymPy math backend
-#   3. Lean Proxy (port 3002) — Formal proof verification (optional)
-#   4. Vite Dev   (port 5173) — Web UI
+# MANDATORY Components:
+#   1. MCP Proxy  (port 3001) — SymPy math backend
+#   2. Lean Proxy (port 3002) — Formal proof verification (REQUIRED)
+#   3. Vite Dev   (port 5173) — Web UI
+#
+# Optional:
+#   - MLX Server (port 8011) — LLM inference (can use Claude instead)
 
 set -e  # Exit on error
 
-echo "🚀 Starting Bielik-M"
-echo "==================="
+echo "🎓 Starting Bielik Matura"
+echo "========================="
 echo ""
 
 # Colors for output
@@ -85,6 +87,7 @@ cleanup() {
     # Kill specific ports (only our servers, NOT MLX)
     kill_port 3001 2>/dev/null || true
     kill_port 3002 2>/dev/null || true
+    kill_port 3003 2>/dev/null || true
     kill_port 5173 2>/dev/null || true
 
     print_success "Servers stopped"
@@ -100,34 +103,65 @@ echo ""
 
 if ! command_exists node; then
     print_error "Node.js is not installed"
+    echo ""
+    echo "Please install Node.js 18+ and run ./setup.sh"
     exit 1
 fi
 print_success "Node.js $(node --version)"
 
 if ! command_exists python3; then
     print_error "Python 3 is not installed"
+    echo ""
+    echo "Please install Python 3.8+ and run ./setup.sh"
     exit 1
 fi
 print_success "Python 3 found"
 
 if [ ! -d "node_modules" ]; then
-    print_warning "Dependencies not installed. Running npm install..."
-    npm install
-    if [ $? -ne 0 ]; then
-        print_error "npm install failed. Run: ./setup.sh"
-        exit 1
-    fi
+    print_error "Dependencies not installed"
+    echo ""
+    echo "Please run: ./setup.sh"
+    exit 1
 fi
 print_success "Main dependencies installed"
 
 echo ""
 
-# ── Step 2: Build MCP SymPy server if needed ─────────────────────────────
+# ── Step 2: MANDATORY Lean Prover Check ──────────────────────────────────
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🎯 MANDATORY: Lean Prover Verification"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+if ! command_exists lean; then
+    print_error "CRITICAL: Lean Prover is NOT installed!"
+    echo ""
+    echo "Lean Prover is MANDATORY for this application."
+    echo "It provides formal mathematical verification."
+    echo ""
+    echo "Please run the setup script to install Lean:"
+    echo "   ${GREEN}./setup.sh${NC}"
+    echo ""
+    echo "Or install manually:"
+    echo "   macOS: ${GREEN}brew install elan-init && elan default leanprover/lean4:stable${NC}"
+    echo "   Linux: ${GREEN}curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh${NC}"
+    echo "          ${GREEN}elan default leanprover/lean4:stable${NC}"
+    echo ""
+    exit 1
+fi
+
+LEAN_VERSION=$(lean --version 2>&1 | head -n 1 || echo "unknown")
+print_success "Lean Prover installed: $LEAN_VERSION"
+echo ""
+
+# ── Step 3: Build MCP SymPy server if needed ─────────────────────────────
 echo "🔧 Checking MCP SymPy server..."
 
 if [ ! -d "mcp-sympy-server/node_modules" ]; then
-    print_info "Installing MCP server dependencies..."
-    (cd mcp-sympy-server && npm install)
+    print_error "MCP server dependencies not installed"
+    echo ""
+    echo "Please run: ./setup.sh"
+    exit 1
 fi
 
 # Rebuild if source is newer than dist
@@ -149,8 +183,8 @@ fi
 
 echo ""
 
-# ── Step 3: Check MLX server ─────────────────────────────────────────────
-echo "🤖 Checking MLX/Bielik LLM server (port $MLX_PORT)..."
+# ── Step 4: Check MLX server (optional) ──────────────────────────────────
+echo "🤖 Checking MLX/Bielik LLM server (port $MLX_PORT) [OPTIONAL]..."
 
 MLX_READY=false
 if port_in_use $MLX_PORT; then
@@ -164,32 +198,12 @@ if port_in_use $MLX_PORT; then
         print_warning "Port $MLX_PORT is in use but MLX API not responding"
     fi
 else
-    print_warning "MLX server not running on port $MLX_PORT"
-fi
-
-if [ "$MLX_READY" = false ]; then
-    echo ""
-    print_info "The MLX server provides LLM inference (Bielik-11B)."
-    print_info "Start it in a separate terminal:"
-    echo ""
-    echo -e "    ${GREEN}mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port $MLX_PORT${NC}"
-    echo ""
-    echo -e "    Or if you have a different model:"
-    echo -e "    ${GREEN}mlx_lm.server --model <your-model> --port $MLX_PORT${NC}"
-    echo ""
-    echo "Continue starting other services anyway? (y/n)"
-    read -p "> " -n 1 -r
-    echo ""
-
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        print_info "Start MLX server first, then re-run ./start.sh"
-        exit 0
-    fi
+    print_info "MLX server not running (you can use Claude instead)"
 fi
 
 echo ""
 
-# ── Step 4: Check for port conflicts ─────────────────────────────────────
+# ── Step 5: Check for port conflicts ─────────────────────────────────────
 echo "🔍 Checking for port conflicts..."
 
 PORTS_TO_CHECK=(3001 3002 5173)
@@ -224,17 +238,6 @@ fi
 
 echo ""
 
-# ── Step 5: Check Lean installation ──────────────────────────────────────
-LEAN_AVAILABLE=false
-if command_exists lean; then
-    LEAN_AVAILABLE=true
-    print_success "Lean Prover available"
-else
-    print_info "Lean Prover not installed (optional — proofs won't be verified)"
-fi
-
-echo ""
-
 # ── Step 6: Start servers ────────────────────────────────────────────────
 echo "🚀 Starting servers..."
 echo ""
@@ -242,7 +245,7 @@ echo ""
 # Create log directory
 mkdir -p logs
 
-# Start MCP Proxy (SymPy)
+# Start MCP Proxy (SymPy) - MANDATORY
 print_info "Starting MCP Proxy (SymPy) on port 3001..."
 npm run mcp-proxy > logs/mcp-proxy.log 2>&1 &
 MCP_PID=$!
@@ -251,28 +254,68 @@ sleep 2
 if kill -0 $MCP_PID 2>/dev/null && port_in_use 3001; then
     print_success "MCP Proxy started (PID: $MCP_PID)"
 else
-    print_error "MCP Proxy failed to start"
-    echo "   Check logs/mcp-proxy.log for details"
-    cat logs/mcp-proxy.log 2>/dev/null | tail -10
+    print_error "CRITICAL: MCP Proxy failed to start"
+    echo ""
+    echo "Check logs/mcp-proxy.log for details:"
+    cat logs/mcp-proxy.log 2>/dev/null | tail -20
+    echo ""
     cleanup
     exit 1
 fi
 
-# Start Lean Proxy (if available)
-if [ "$LEAN_AVAILABLE" = true ]; then
-    print_info "Starting Lean Proxy on port 3002..."
-    npm run lean-proxy > logs/lean-proxy.log 2>&1 &
-    LEAN_PID=$!
-    sleep 2
+# Start Lean Proxy - MANDATORY
+print_info "Starting Lean Proxy on port 3002..."
+npm run lean-proxy > logs/lean-proxy.log 2>&1 &
+LEAN_PID=$!
+sleep 3
 
-    if kill -0 $LEAN_PID 2>/dev/null && port_in_use 3002; then
-        print_success "Lean Proxy started (PID: $LEAN_PID)"
-    else
-        print_warning "Lean Proxy failed to start (non-critical)"
-    fi
+if kill -0 $LEAN_PID 2>/dev/null && port_in_use 3002; then
+    print_success "Lean Proxy started (PID: $LEAN_PID)"
+else
+    print_error "CRITICAL: Lean Proxy failed to start"
+    echo ""
+    echo "Lean Prover backend is MANDATORY for this application."
+    echo ""
+    echo "Check logs/lean-proxy.log for details:"
+    cat logs/lean-proxy.log 2>/dev/null | tail -20
+    echo ""
+    echo "Troubleshooting:"
+    echo "  1. Verify Lean is installed: ${GREEN}lean --version${NC}"
+    echo "  2. Check if lean-proxy-server.js exists"
+    echo "  3. Try running manually: ${GREEN}npm run lean-proxy${NC}"
+    echo ""
+    cleanup
+    exit 1
 fi
 
-# Start Vite dev server
+# Start RAG Service (mathematical methods knowledge base) - OPTIONAL
+print_info "Starting RAG Service on port 3003..."
+if [ -f "$SCRIPT_DIR/rag_service/main.py" ]; then
+    # Check if venv exists
+    if [ -f "$SCRIPT_DIR/rag_service/venv/bin/activate" ]; then
+        cd "$SCRIPT_DIR/rag_service"
+        source venv/bin/activate
+        python3 main.py > "$SCRIPT_DIR/logs/rag-service.log" 2>&1 &
+        RAG_PID=$!
+        deactivate
+        cd "$SCRIPT_DIR"
+        sleep 2
+
+        if kill -0 $RAG_PID 2>/dev/null && port_in_use 3003; then
+            print_success "RAG Service started (PID: $RAG_PID)"
+        else
+            print_warning "RAG Service failed to start (agent will work without knowledge base)"
+            echo "  Check logs/rag-service.log for details"
+        fi
+    else
+        print_warning "RAG Service venv not found. Run: cd rag_service && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
+    fi
+else
+    print_warning "RAG Service not found (rag_service/main.py missing)"
+fi
+echo ""
+
+# Start Vite dev server - MANDATORY
 print_info "Starting Vite dev server on port 5173..."
 npm run dev > logs/vite.log 2>&1 &
 VITE_PID=$!
@@ -281,9 +324,11 @@ sleep 3
 if kill -0 $VITE_PID 2>/dev/null; then
     print_success "Vite dev server started (PID: $VITE_PID)"
 else
-    print_error "Vite dev server failed to start"
-    echo "   Check logs/vite.log for details"
-    cat logs/vite.log 2>/dev/null | tail -10
+    print_error "CRITICAL: Vite dev server failed to start"
+    echo ""
+    echo "Check logs/vite.log for details:"
+    cat logs/vite.log 2>/dev/null | tail -20
+    echo ""
     cleanup
     exit 1
 fi
@@ -297,27 +342,33 @@ echo ""
 if [ "$MLX_READY" = true ]; then
     echo -e "  🤖 MLX Server (LLM):   ${GREEN}http://localhost:${MLX_PORT}${NC}  ✓ $MLX_MODEL"
 else
-    echo -e "  🤖 MLX Server (LLM):   ${RED}http://localhost:${MLX_PORT}${NC}  ✗ NOT RUNNING"
+    echo -e "  🤖 MLX Server (LLM):   ${YELLOW}Not running (use Claude instead)${NC}"
 fi
-echo -e "  🔌 MCP Proxy (SymPy):  ${GREEN}http://localhost:3001${NC}"
-if [ "$LEAN_AVAILABLE" = true ]; then
-    echo -e "  🎯 Lean Proxy:         ${GREEN}http://localhost:3002${NC}"
+echo -e "  🔌 MCP Proxy (SymPy):  ${GREEN}http://localhost:3001${NC}  ✓ RUNNING"
+echo -e "  🎯 Lean Proxy:         ${GREEN}http://localhost:3002${NC}  ✓ RUNNING"
+if port_in_use 3003; then
+    echo -e "  📚 RAG Service:        ${GREEN}http://localhost:3003${NC}  ✓ RUNNING"
+else
+    echo -e "  📚 RAG Service:        ${YELLOW}Not running (optional)${NC}"
 fi
-echo -e "  🌐 Web Application:    ${GREEN}http://localhost:5173${NC}"
+echo -e "  🌐 Web Application:    ${GREEN}http://localhost:5173${NC}  ✓ RUNNING"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
 if [ "$MLX_READY" = false ]; then
-    echo -e "  ${YELLOW}⚠  MLX server not detected! Start it in another terminal:${NC}"
-    echo -e "     mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port $MLX_PORT"
+    echo -e "  ${BLUE}ℹ  MLX server not detected (optional)${NC}"
+    echo "     You can use Claude API instead, or start MLX:"
+    echo -e "     ${GREEN}mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port $MLX_PORT${NC}"
     echo ""
 fi
 
-echo "📝 Logs:  logs/mcp-proxy.log  |  logs/lean-proxy.log  |  logs/vite.log"
+echo "✅ All mandatory services are running!"
 echo ""
-echo -e "🧪 Test:  python3 test-dataset.py --use-mcp --year 2024 --all"
+echo "📝 Logs:  logs/mcp-proxy.log  |  logs/lean-proxy.log  |  logs/rag-service.log  |  logs/vite.log"
+echo ""
+echo -e "🌐 Open:  ${BLUE}http://localhost:5173${NC}"
 echo ""
 echo -e "🛑 Press ${RED}Ctrl+C${NC} to stop all servers"
 echo ""

@@ -86,6 +86,7 @@ DATASETS_DIR = os.path.join(os.path.dirname(__file__), "datasets")
 PROMPTS_FILE = os.path.join(os.path.dirname(__file__), "prompts.json")
 MCP_PROXY_URL = "http://localhost:3001"
 LEAN_PROXY_URL = "http://localhost:3002"
+RAG_SERVICE_URL = "http://localhost:3003"
 
 # ── Config (loaded from shared prompts.json) ─────────────────────────────
 
@@ -168,6 +169,26 @@ def check_lean_proxy():
         return False
 
 
+def query_rag_hints(question_text):
+    """Query the RAG service for SymPy hints related to the question. Returns hint string or empty."""
+    try:
+        payload = json.dumps({"query": question_text, "k": 3}).encode("utf-8")
+        req = Request(f"{RAG_SERVICE_URL}/query", data=payload,
+                     headers={"Content-Type": "application/json"})
+        with urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+            results = data.get("results", [])
+            hints = []
+            for r in results:
+                if r.get("sympy_hint"):
+                    hints.append(f"# Metoda: {r.get('title', '')}\n# {r['sympy_hint']}")
+                if r.get("tips"):
+                    hints.append(f"# Tip: {r['tips'][:120]}")
+            return "\n".join(hints[:6]) if hints else ""
+    except:
+        return ""
+
+
 def call_mcp_sympy(code):
     """Execute SymPy code via MCP proxy server (same as UI). Returns (output, error, returncode)."""
     sanitized = _sanitize_code(code)
@@ -202,25 +223,38 @@ def call_mcp_sympy(code):
 # ── Helpers ──────────────────────────────────────────────────────────────
 
 def clean_latex_for_display(text):
-    """Convert LaTeX to plain text for display."""
+    """Convert LaTeX to plain text for display (v2 — better coverage)."""
     t = text
     t = re.sub(r'\$\$?', '', t)
     # Remove \boxed{...} → content
     t = re.sub(r'\\boxed\{([^}]*)\}', r'\1', t)
-    # Fractions
-    t = re.sub(r'\\d?frac\{([^}]*)\}\{([^}]*)\}', r'(\1)/(\2)', t)
+    # Nested fractions (handle 2 levels)
+    for _ in range(2):
+        t = re.sub(r'\\d?frac\{([^{}]*)\}\{([^{}]*)\}', r'(\1)/(\2)', t)
     # Roots: \sqrt[n]{x} → x**(1/n), \sqrt{x} → sqrt(x)
     t = re.sub(r'\\sqrt\[(\d+)\]\{([^}]*)\}', r'(\2)**(1/\1)', t)
     t = re.sub(r'\\sqrt\{([^}]*)\}', r'sqrt(\1)', t)
+    # Subscripts: a_{n} → a_n, log_{b} → log_b
+    t = re.sub(r'_\{([^}]*)\}', r'_\1', t)
+    # Superscripts: x^{2} → x**2
+    t = re.sub(r'\^\{([^}]*)\}', r'**(\1)', t)
+    t = re.sub(r'\^(\d+)', r'**\1', t)
     # Operators and formatting
-    t = re.sub(r'\\(left|right|cdot|times|text|mathrm|quad|,|\\)', ' ', t)
+    t = re.sub(r'\\cdot', '*', t)
+    t = re.sub(r'\\times', '*', t)
+    t = re.sub(r'\\(left|right|text|mathrm|quad|,|;|!|\\)', ' ', t)
     t = re.sub(r'\\langle', '<', t)
     t = re.sub(r'\\rangle', '>', t)
     t = re.sub(r'\\infty', 'inf', t)
-    t = re.sub(r'\\leq', '<=', t)
-    t = re.sub(r'\\geq', '>=', t)
-    t = re.sub(r'\\in', ' in ', t)
+    t = re.sub(r'\\leq?', '<=', t)
+    t = re.sub(r'\\geq?', '>=', t)
+    t = re.sub(r'\\neq?', '!=', t)
+    t = re.sub(r'\\in\b', ' in ', t)
+    t = re.sub(r'\\pi\b', 'pi', t)
     t = re.sub(r'\\log_\{([^}]*)\}', r'log_\1', t)
+    t = re.sub(r'\\log\b', 'log', t)
+    t = re.sub(r'\\ln\b', 'ln', t)
+    t = re.sub(r'\\(sin|cos|tg|ctg|tan|cot|arcsin|arccos|arctg|arctan)\b', r'\1', t)
     # Remove remaining LaTeX commands
     t = re.sub(r'\\[a-zA-Z]+', '', t)
     # Clean braces and formatting
@@ -254,7 +288,7 @@ def truncate_after_first_code_block(text):
 
 
 def extract_answer_from_output(output):
-    """Extract ODPOWIEDZ/ODPOWIEDŹ value from SymPy output."""
+    """Extract ODPOWIEDZ/ODPOWIEDŹ value from SymPy output (v2 — better MC extraction)."""
     # Try both ASCII and Polish versions
     match = re.search(r'ODPOWIED[ZŹ]:\s*(.+)', output, re.IGNORECASE)
     if match:
@@ -266,11 +300,27 @@ def extract_answer_from_output(output):
         if m:
             answer = m.group(1)
         # Skip None / empty
-        if answer.lower() in ('none', 'null', '[]', '{}', ''):
+        if answer.lower() in ('none', 'null', '[]', '{}', '', 'set()'):
             return None
         return answer
-    # Look for the last printed value
+
+    # Try alternative labels: "Wynik:", "Odpowiedź:", "Answer:", "Result:"
+    for pattern in [r'(?:wynik|result|answer|odp):\s*(.+)',
+                    r'(?:poprawna odpowied[zź]|correct answer).*?:\s*(.+)',
+                    r'(?:opcja|option):\s*([A-Da-d])\b']:
+        match = re.search(pattern, output, re.IGNORECASE)
+        if match:
+            answer = match.group(1).strip()
+            if answer.lower() not in ('none', 'null', '[]', '{}', '', 'set()'):
+                return answer
+
+    # Look for MC letter pattern in output: "A", "B", "C", "D" on its own line
     lines = [l.strip() for l in output.strip().split('\n') if l.strip()]
+    for line in reversed(lines):
+        if re.match(r'^[A-Da-d]$', line):
+            return line.upper()
+
+    # Look for the last printed value
     if lines:
         # Prefer lines with values (not just text)
         for line in reversed(lines):
@@ -280,7 +330,7 @@ def extract_answer_from_output(output):
                 if cleaned:
                     # Unwrap lists
                     cleaned = re.sub(r'^\[(.+)\]$', r'\1', cleaned)
-                    if cleaned.lower() not in ('none', 'null', '[]', '{}', ''):
+                    if cleaned.lower() not in ('none', 'null', '[]', '{}', '', 'set()'):
                         return cleaned
         return lines[-1]
     return None
@@ -540,13 +590,16 @@ def available_years(datasets_dir):
 
 
 def _sanitize_code(code):
-    """Sanitize Python/SymPy code — fix common Bielik patterns."""
+    """Sanitize Python/SymPy code — fix common Bielik patterns (v2 — extended)."""
     lines = code.split('\n')
 
     # Remove assert statements
     lines = [l for l in lines if not l.strip().startswith('assert ')]
 
-    # Fix ^ → **
+    # Remove input() calls (Bielik sometimes adds interactive input)
+    lines = [l for l in lines if 'input(' not in l]
+
+    # Fix ^ → ** (outside strings and comments)
     new_lines = []
     for line in lines:
         t = line.strip()
@@ -554,34 +607,73 @@ def _sanitize_code(code):
             line = re.sub(r'(\w)\^(\w)', r'\1**\2', line)
             line = re.sub(r'\)\^(\w)', r')**\1', line)
             line = re.sub(r'(\w)\^\(', r'\1**(', line)
+            line = re.sub(r'\)\^\(', r')**(', line)
+            # Also handle ^{...} LaTeX remnants in code
+            line = re.sub(r'\^\{(\d+)\}', r'**\1', line)
         new_lines.append(line)
     lines = new_lines
 
-    # Fix wrong imports (Simplify → simplify, Greater → Gt, etc.)
+    # Fix wrong imports and common name mistakes
     import_fixes = {
         'Simplify': 'simplify',
         'Greater': 'Gt',
         'Less': 'Lt',
         'GreaterEqual': 'Ge',
         'LessEqual': 'Le',
+        'Solve': 'solve',
+        'Factor': 'factor',
+        'Expand': 'expand',
+        'Limit': 'limit',
+        'Integrate': 'integrate',
+        'Derivative': 'diff',
+        'Trigsimp': 'trigsimp',
     }
     result_lines = []
     for line in lines:
         for old, new in import_fixes.items():
-            if old in line:
+            if old in line and 'import' not in line:
                 line = line.replace(old, new)
         # Fix Pi → pi (common Bielik mistake)
         if 'Pi' in line and 'import' not in line:
             line = re.sub(r'\bPi\b', 'pi', line)
+        # Fix Infinity → oo
+        if 'Infinity' in line and 'import' not in line:
+            line = re.sub(r'\bInfinity\b', 'oo', line)
+        # Fix True/False in SymPy context (S.true → True already works)
+        # Fix math.sqrt → sqrt (when sympy is imported)
+        line = re.sub(r'\bmath\.sqrt\b', 'sqrt', line)
+        line = re.sub(r'\bmath\.pi\b', 'pi', line)
+        line = re.sub(r'\bmath\.e\b', 'E', line)
+        line = re.sub(r'\bmath\.log\b', 'log', line)
+        line = re.sub(r'\bmath\.sin\b', 'sin', line)
+        line = re.sub(r'\bmath\.cos\b', 'cos', line)
         result_lines.append(line)
     lines = result_lines
+
+    # Remove `import math` if we've replaced all math.* calls
+    code_text = '\n'.join(lines)
+    if 'math.' not in code_text:
+        lines = [l for l in lines if l.strip() not in ('import math', 'from math import *')]
 
     # Ensure sympy import exists
     code_text = '\n'.join(lines)
     if 'from sympy' not in code_text and 'import sympy' not in code_text:
         lines.insert(0, 'from sympy import *')
 
+    # Fix common syntax: == in equation definition (should be Eq())
+    # Only fix standalone equation assignments, not comparisons in if/while
+    new_lines2 = []
+    for line in lines:
+        t = line.strip()
+        # Pattern: var = expr1 == expr2 (not in if/elif/while/assert/return)
+        if (re.match(r'\w+\s*=\s*.+==.+', t) and
+            not t.startswith(('if ', 'elif ', 'while ', 'return ', 'assert '))):
+            line = re.sub(r'(\w+\s*=\s*)(.+?)\s*==\s*(.+)', r'\1Eq(\2, \3)', line)
+        new_lines2.append(line)
+    lines = new_lines2
+
     # Ensure there's a print statement for ODPOWIEDZ
+    code_text = '\n'.join(lines)
     if 'print(' not in code_text:
         # Find last assignment variable
         for i in range(len(lines) - 1, -1, -1):
@@ -652,6 +744,33 @@ def _fix_code_from_error(code, error_msg):
     # Fix 7: Pi (capitalized) not defined — use pi
     if "name 'Pi' is not defined" in error_msg:
         fixed = fixed.replace('Pi', 'pi')
+
+    # Fix 8: SympifyError or 'could not parse' — likely LaTeX in code
+    if 'SympifyError' in error_msg or 'could not parse' in error_msg:
+        # Replace \frac{a}{b} with Rational(a,b) or (a)/(b)
+        fixed = re.sub(r'\\frac\{([^}]+)\}\{([^}]+)\}', r'Rational(\1, \2)', fixed)
+        fixed = re.sub(r'\\sqrt\{([^}]+)\}', r'sqrt(\1)', fixed)
+        fixed = re.sub(r'\\pi\b', 'pi', fixed)
+        fixed = re.sub(r'\\cdot', '*', fixed)
+        fixed = fixed.replace('\\left(', '(').replace('\\right)', ')')
+        fixed = fixed.replace('\\', '')
+
+    # Fix 9: TypeError — 'Symbol' object cannot be interpreted as integer
+    if "'Symbol' object cannot be interpreted as an integer" in error_msg:
+        # Likely range(n) where n is a Symbol — use int()
+        fixed = re.sub(r'range\((\w+)\)', r'range(int(\1))', fixed)
+
+    # Fix 10: AttributeError on common misused methods
+    if "has no attribute 'evalf'" in error_msg:
+        fixed = re.sub(r'\.evalf\(\)', '.n()', fixed)
+    if "has no attribute 'simplify'" in error_msg:
+        fixed = re.sub(r'(\w+)\.simplify\(\)', r'simplify(\1)', fixed)
+
+    # Fix 11: ZeroDivisionError — wrap in try/except
+    if 'ZeroDivisionError' in error_msg:
+        lines = fixed.split('\n')
+        # Find the problematic line and add a guard
+        fixed = re.sub(r'/\s*0\b', '/ S(0)', fixed)  # literal /0
 
     # Fix N: Ensure print statement exists
     if 'print(' not in fixed:
@@ -849,9 +968,27 @@ def test_question(q, base_url, model, verbose=True, use_mcp=False):
     if is_mc and not result['answer_got'] and executor:
         # Look for letter answers in raw executor output (outside code blocks)
         raw_text = re.sub(r'```[\s\S]*?```', '', executor)
+        # Pattern 1: explicit "odpowiedź: X" or "opcja X"
         letter_in_text = re.search(r'(?:odpowied[zź]|answer|opcja|option)[:\s]*([a-dA-D])\b', raw_text, re.IGNORECASE)
         if letter_in_text:
             result['answer_got'] = letter_in_text.group(1).upper()
+        else:
+            # Pattern 2: "poprawna jest X" or "prawidłowa X"
+            letter_in_text = re.search(r'(?:poprawna|prawidłowa|właściwa|correct)\s+(?:jest\s+|to\s+)?(?:odpowied[zź]\s+)?([a-dA-D])\b', raw_text, re.IGNORECASE)
+            if letter_in_text:
+                result['answer_got'] = letter_in_text.group(1).upper()
+            else:
+                # Pattern 3: standalone letter at end of text like "## A" or "**B**"
+                letter_in_text = re.search(r'(?:^|\n)\s*(?:\*\*)?([A-Da-d])(?:\*\*)?\.?\s*$', raw_text)
+                if letter_in_text:
+                    result['answer_got'] = letter_in_text.group(1).upper()
+
+    # For open-ended: if no answer from SymPy, try to extract from raw executor text
+    if not is_mc and not result['answer_got'] and executor:
+        raw_text = re.sub(r'```[\s\S]*?```', '', executor)
+        answer_in_text = re.search(r'ODPOWIED[ZŹ]:\s*(.+)', raw_text, re.IGNORECASE)
+        if answer_in_text:
+            result['answer_got'] = answer_in_text.group(1).strip()
 
     # Check answer
     if result['answer_got']:

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Setup script for Bielik-M with Lean Prover
-# Automates installation of all dependencies
+# Setup script for Bielik Matura - requires Lean Prover for formal verification
+# Automates installation of all dependencies including MANDATORY Lean Prover
 
 set -e  # Exit on error
 
-echo "🚀 Bielik-M Setup Script"
-echo "========================"
+echo "🎓 Bielik Matura - Setup Script"
+echo "==============================="
 echo ""
 
 # Colors for output
@@ -136,91 +136,186 @@ deactivate
 cd ..
 echo ""
 
-# Step 4: Check/Install Lean Prover (optional)
-echo "🎯 Checking Lean Prover installation..."
+# Step 4: Setup RAG Service (Knowledge Base)
+echo "📚 Setting up RAG Service (Mathematical Knowledge Base)..."
+cd rag_service
+
+# Create Python virtual environment if it doesn't exist
+if [ ! -d "venv" ]; then
+    echo "   Creating Python virtual environment..."
+    python3 -m venv venv
+    if [ $? -eq 0 ]; then
+        print_success "Python virtual environment created"
+    else
+        print_error "Failed to create Python virtual environment"
+        exit 1
+    fi
+else
+    print_info "Python virtual environment already exists"
+fi
+
+# Activate virtual environment and install Python dependencies
+echo "   Installing RAG dependencies (FastAPI, scikit-learn)..."
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+    # Windows
+    source venv/Scripts/activate
+else
+    # Unix-like (Linux, macOS)
+    source venv/bin/activate
+fi
+
+pip install --upgrade pip > /dev/null 2>&1
+pip install -r requirements.txt
+if [ $? -eq 0 ]; then
+    print_success "RAG dependencies installed"
+else
+    print_error "Failed to install RAG dependencies"
+    exit 1
+fi
+
+deactivate
+cd ..
+echo ""
+
+# Step 5: MANDATORY Lean Prover Installation
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🎯 MANDATORY: Lean Prover Installation"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+print_info "Lean Prover is REQUIRED for formal mathematical verification."
+print_info "It ensures correctness of mathematical proofs and reasoning."
+echo ""
+
 if command_exists lean; then
     LEAN_VERSION=$(lean --version 2>&1 | head -n 1 || echo "unknown")
     print_success "Lean Prover is already installed: $LEAN_VERSION"
+    echo ""
 else
-    print_warning "Lean Prover is not installed"
+    print_error "Lean Prover is NOT installed"
     echo ""
-    echo "   Lean Prover enables formal mathematical theorem proving."
-    echo "   It's used in academic research for rigorous proof verification."
+    echo "   Lean Prover is MANDATORY for this application."
+    echo "   It provides formal theorem proving and verification."
     echo ""
-    echo "   Would you like to install it now? (y/n)"
-    read -p "   > " -n 1 -r
+    echo "   Installing Lean Prover now..."
     echo ""
 
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "   Installing Lean Prover via elan..."
+    # Check if elan is installed
+    if ! command_exists elan; then
+        print_info "Installing elan (Lean version manager)..."
+        echo ""
 
-        # Check if elan is installed
-        if ! command_exists elan; then
-            echo "   Installing elan (Lean version manager)..."
-
-            # Detect OS
-            if [[ "$OSTYPE" == "darwin"* ]]; then
-                # macOS - try Homebrew first
-                if command_exists brew; then
-                    brew install elan-init
-                    if [ $? -eq 0 ]; then
-                        print_success "elan installed via Homebrew"
-                    else
-                        print_error "Failed to install elan via Homebrew"
-                        print_info "You can install manually with:"
-                        echo "      curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh"
-                    fi
+        # Detect OS
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            # macOS - try Homebrew first
+            if command_exists brew; then
+                echo "   Using Homebrew to install elan..."
+                brew install elan-init
+                if [ $? -eq 0 ]; then
+                    print_success "elan installed via Homebrew"
                 else
-                    # Use curl method
+                    print_error "Failed to install elan via Homebrew"
+                    echo ""
+                    print_info "Trying alternative installation method..."
                     curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
-                    if [ $? -eq 0 ]; then
-                        print_success "elan installed"
-                        # Add elan to PATH for this session
-                        export PATH="$HOME/.elan/bin:$PATH"
-                    else
-                        print_error "Failed to install elan"
+                    if [ $? -ne 0 ]; then
+                        print_error "FAILED to install elan. Cannot continue."
+                        echo ""
+                        echo "Please install manually:"
+                        echo "   brew install elan-init"
+                        echo "   OR"
+                        echo "   curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh"
+                        exit 1
                     fi
                 fi
             else
-                # Linux
+                # No Homebrew, use curl method
+                print_info "Homebrew not found, using curl installation..."
                 curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
-                if [ $? -eq 0 ]; then
-                    print_success "elan installed"
-                    # Add elan to PATH for this session
-                    export PATH="$HOME/.elan/bin:$PATH"
-                else
-                    print_error "Failed to install elan"
+                if [ $? -ne 0 ]; then
+                    print_error "FAILED to install elan. Cannot continue."
+                    echo ""
+                    echo "Please install Homebrew first, then run:"
+                    echo "   brew install elan-init"
+                    exit 1
                 fi
             fi
+            # Add elan to PATH for this session
+            export PATH="$HOME/.elan/bin:$PATH"
+        else
+            # Linux
+            print_info "Installing elan via curl..."
+            curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+            if [ $? -ne 0 ]; then
+                print_error "FAILED to install elan. Cannot continue."
+                echo ""
+                echo "Please install manually:"
+                echo "   curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh"
+                exit 1
+            fi
+            # Add elan to PATH for this session
+            export PATH="$HOME/.elan/bin:$PATH"
         fi
 
-        # Install Lean 4 stable
-        if command_exists elan; then
-            echo "   Setting up Lean 4 stable..."
-            elan default leanprover/lean4:stable
-            if [ $? -eq 0 ]; then
-                print_success "Lean Prover installed successfully"
-                lean --version
-            else
-                print_error "Failed to set Lean 4 as default"
-                print_info "You can try manually: elan default leanprover/lean4:stable"
-            fi
+        print_success "elan installed successfully"
+        echo ""
+    else
+        print_success "elan is already installed"
+    fi
+
+    # Install Lean 4 stable
+    if command_exists elan; then
+        print_info "Setting up Lean 4 stable..."
+        elan default leanprover/lean4:stable
+        if [ $? -eq 0 ]; then
+            print_success "Lean Prover installed successfully"
+            echo ""
+            lean --version
+            echo ""
         else
-            print_error "elan not found. Please install manually:"
-            echo "      macOS: brew install elan-init"
-            echo "      Linux: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh"
+            print_error "FAILED to set Lean 4 as default"
+            echo ""
+            echo "Please try manually:"
+            echo "   elan default leanprover/lean4:stable"
+            exit 1
         fi
     else
-        print_info "Skipping Lean installation. You can install it later with:"
-        echo "      macOS: brew install elan-init && elan default leanprover/lean4:stable"
-        echo "      Linux: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh"
-        echo "             elan default leanprover/lean4:stable"
+        print_error "elan not found after installation. Cannot continue."
+        echo ""
+        echo "Please restart your terminal and run setup.sh again."
+        echo "Or add elan to PATH manually:"
+        echo "   export PATH=\"\$HOME/.elan/bin:\$PATH\""
+        exit 1
     fi
 fi
+
+# Verify Lean installation
+if ! command_exists lean; then
+    print_error "CRITICAL: Lean Prover installation failed!"
+    echo ""
+    echo "Lean Prover is MANDATORY for this application."
+    echo ""
+    echo "Manual installation:"
+    echo "   macOS: brew install elan-init && elan default leanprover/lean4:stable"
+    echo "   Linux: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh"
+    echo "          elan default leanprover/lean4:stable"
+    echo ""
+    echo "After installing Lean, please restart your terminal and run ./setup.sh again."
+    exit 1
+fi
+
+print_success "Lean Prover verification passed"
 echo ""
 
-# Step 5: Summary
+# Step 6: Summary
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "✅ Setup complete!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "📚 Installed components:"
+echo "   ✓ Node.js dependencies"
+echo "   ✓ MCP SymPy Server (symbolic mathematics)"
+echo "   ✓ RAG Service (mathematical knowledge base)"
+echo "   ✓ Lean Prover (formal verification)"
 echo ""
 echo "📚 Next steps:"
 echo ""
@@ -230,7 +325,8 @@ echo ""
 echo "   Or start them manually:"
 echo "      Terminal 1: ${GREEN}npm run mcp-proxy${NC}     # SymPy backend (port 3001)"
 echo "      Terminal 2: ${GREEN}npm run lean-proxy${NC}    # Lean backend (port 3002)"
-echo "      Terminal 3: ${GREEN}npm run dev${NC}           # Web app (port 5173)"
+echo "      Terminal 3: ${GREEN}cd rag_service && source venv/bin/activate && python main.py${NC}  # RAG (port 3003)"
+echo "      Terminal 4: ${GREEN}npm run dev${NC}           # Web app (port 5173)"
 echo ""
 echo "   2. Open browser at: ${BLUE}http://localhost:5173${NC}"
 echo ""
@@ -238,18 +334,7 @@ echo "   3. Configure your LLM provider:"
 echo "      - For Claude: Enter your Anthropic API key"
 echo "      - For MLX: Start MLX server and enter URL"
 echo ""
-echo "   4. Choose proving backend:"
-echo "      - ${GREEN}Both (SymPy + Lean)${NC} - Recommended"
-echo "      - SymPy only - For calculations"
-echo "      - Lean only - For formal proofs"
+echo "   4. Backend is automatically set to:"
+echo "      ${GREEN}Oba (SymPy + Lean)${NC} - Full verification enabled"
 echo ""
-
-if ! command_exists lean; then
-    print_warning "Note: Lean Prover is not installed. Formal proof verification will be limited."
-    echo "      Install with:"
-    echo "         macOS: ${GREEN}brew install elan-init && elan default leanprover/lean4:stable${NC}"
-    echo "         Linux: ${GREEN}curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh${NC}"
-    echo ""
-fi
-
-echo "🎉 Happy proving!"
+echo "🎉 Happy solving!"

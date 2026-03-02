@@ -242,7 +242,7 @@ function App() {
 
       // Add title
       const title = document.createElement('h2');
-      title.textContent = '🤖 Konwersacja - System Trzech Agentów';
+      title.textContent = '🎓 Konwersacja - Bielik Matura';
       title.style.marginBottom = '20px';
       title.style.color = '#333';
       exportWrapper.appendChild(title);
@@ -439,7 +439,7 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>🤖 System Trzech Agentów</h1>
+        <h1>🎓 Bielik Matura - Asystent Matematyczny</h1>
         <div className="header-controls">
           <button onClick={() => setShowHistory(true)} className="history-button">
             📚 Historia

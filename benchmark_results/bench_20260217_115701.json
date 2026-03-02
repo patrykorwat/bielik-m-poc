@@ -1,0 +1,322 @@
+{
+  "benchmark_id": "bench_20260217_115701",
+  "timestamp": "2026-02-17T11:57:01.108297",
+  "components": {
+    "validator": {
+      "status": "ok",
+      "accuracy": 1.0,
+      "total": 14,
+      "correct": 14,
+      "details": [
+        {
+          "question_id": "mc_letter_correct",
+          "expected_answer": "C",
+          "tested_answer": "C",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "mc_letter_wrong",
+          "expected_answer": "C",
+          "tested_answer": "A",
+          "should_match": false,
+          "did_match": false,
+          "correct_validation": true
+        },
+        {
+          "question_id": "mc_letter_case",
+          "expected_answer": "C",
+          "tested_answer": "c",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "mc_value_match",
+          "expected_answer": "C",
+          "tested_answer": "75",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "mc_value_wrong",
+          "expected_answer": "C",
+          "tested_answer": "45",
+          "should_match": false,
+          "did_match": false,
+          "correct_validation": true
+        },
+        {
+          "question_id": "numeric_exact",
+          "expected_answer": "4",
+          "tested_answer": "4",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "numeric_float",
+          "expected_answer": "4",
+          "tested_answer": "4.0",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "numeric_fraction",
+          "expected_answer": "0.5",
+          "tested_answer": "1/2",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "numeric_wrong",
+          "expected_answer": "4",
+          "tested_answer": "5",
+          "should_match": false,
+          "did_match": false,
+          "correct_validation": true
+        },
+        {
+          "question_id": "numeric_close",
+          "expected_answer": "3.14159",
+          "tested_answer": "3.1416",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "symbolic_sqrt",
+          "expected_answer": "sqrt(2)",
+          "tested_answer": "2**(1/2)",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "symbolic_fraction",
+          "expected_answer": "2/3",
+          "tested_answer": "2/3",
+          "should_match": true,
+          "did_match": true,
+          "correct_validation": true
+        },
+        {
+          "question_id": "no_answer",
+          "expected_answer": "4",
+          "tested_answer": "",
+          "should_match": false,
+          "did_match": false,
+          "correct_validation": true
+        },
+        {
+          "question_id": "answer_none",
+          "expected_answer": "4",
+          "tested_answer": "",
+          "should_match": false,
+          "did_match": false,
+          "correct_validation": true
+        }
+      ]
+    }
+  },
+  "dataset_info": {
+    "2015": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "równania i nierówności": 6,
+        "algebra": 3,
+        "procenty i zastosowania": 1,
+        "geometria analityczna": 3,
+        "funkcje": 5,
+        "rachunek różniczkowy": 1,
+        "ciągi": 3,
+        "trygonometria": 4,
+        "potęgi i pierwiastki": 1,
+        "geometria płaska": 1,
+        "stereometria": 4,
+        "prawdopodobieństwo": 2
+      }
+    },
+    "2016": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "potęgi i pierwiastki": 2,
+        "algebra": 3,
+        "równania i nierówności": 6,
+        "trygonometria": 8,
+        "funkcje": 4,
+        "ciągi": 5,
+        "geometria analityczna": 1,
+        "prawdopodobieństwo": 2,
+        "stereometria": 3
+      }
+    },
+    "2017": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "potęgi i pierwiastki": 3,
+        "algebra": 5,
+        "równania i nierówności": 4,
+        "funkcje": 4,
+        "ciągi": 4,
+        "trygonometria": 8,
+        "stereometria": 4,
+        "prawdopodobieństwo": 2
+      }
+    },
+    "2018": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "logarytmy": 1,
+        "algebra": 1,
+        "potęgi i pierwiastki": 1,
+        "procenty i zastosowania": 1,
+        "równania i nierówności": 5,
+        "funkcje": 4,
+        "geometria analityczna": 1,
+        "ciągi": 4,
+        "trygonometria": 7,
+        "geometria płaska": 1,
+        "stereometria": 4,
+        "statystyka": 1,
+        "kombinatoryka": 1,
+        "prawdopodobieństwo": 2
+      }
+    },
+    "2019": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "algebra": 3,
+        "potęgi i pierwiastki": 1,
+        "procenty i zastosowania": 1,
+        "równania i nierówności": 5,
+        "funkcje": 4,
+        "ciągi": 3,
+        "trygonometria": 5,
+        "geometria płaska": 2,
+        "geometria analityczna": 4,
+        "rachunek różniczkowy": 1,
+        "statystyka": 1,
+        "kombinatoryka": 1,
+        "prawdopodobieństwo": 2,
+        "stereometria": 1
+      }
+    },
+    "2020": {
+      "total": 34,
+      "mc": 25,
+      "open": 9,
+      "points": 50,
+      "categories": {
+        "algebra": 2,
+        "potęgi i pierwiastki": 1,
+        "logarytmy": 1,
+        "równania i nierówności": 7,
+        "funkcje": 6,
+        "geometria płaska": 1,
+        "ciągi": 3,
+        "trygonometria": 7,
+        "geometria analityczna": 1,
+        "kombinatoryka": 1,
+        "statystyka": 1,
+        "stereometria": 2,
+        "prawdopodobieństwo": 1
+      }
+    },
+    "2021": {
+      "total": 35,
+      "mc": 28,
+      "open": 7,
+      "points": 45,
+      "categories": {
+        "potęgi i pierwiastki": 2,
+        "algebra": 2,
+        "kombinatoryka": 2,
+        "równania i nierówności": 4,
+        "funkcje": 4,
+        "ciągi": 5,
+        "geometria płaska": 2,
+        "geometria analityczna": 1,
+        "trygonometria": 11,
+        "prawdopodobieństwo": 2
+      }
+    },
+    "2022": {
+      "total": 35,
+      "mc": 28,
+      "open": 7,
+      "points": 45,
+      "categories": {
+        "algebra": 3,
+        "procenty i zastosowania": 1,
+        "potęgi i pierwiastki": 2,
+        "równania i nierówności": 6,
+        "funkcje": 5,
+        "ciągi": 5,
+        "trygonometria": 7,
+        "geometria analityczna": 2,
+        "stereometria": 2,
+        "kombinatoryka": 1,
+        "prawdopodobieństwo": 1
+      }
+    },
+    "2023": {
+      "total": 32,
+      "mc": 25,
+      "open": 7,
+      "points": 42,
+      "categories": {
+        "algebra": 4,
+        "procenty i zastosowania": 1,
+        "geometria analityczna": 7,
+        "równania i nierówności": 5,
+        "funkcje": 3,
+        "ciągi": 2,
+        "trygonometria": 8,
+        "prawdopodobieństwo": 1,
+        "stereometria": 1
+      }
+    },
+    "2024": {
+      "total": 33,
+      "mc": 26,
+      "open": 7,
+      "points": 43,
+      "categories": {
+        "procenty i zastosowania": 1,
+        "potęgi i pierwiastki": 2,
+        "algebra": 3,
+        "równania i nierówności": 7,
+        "ciągi": 5,
+        "geometria analityczna": 1,
+        "funkcje": 6,
+        "trygonometria": 3,
+        "geometria płaska": 2,
+        "stereometria": 2,
+        "prawdopodobieństwo": 1
+      }
+    }
+  },
+  "components_run": [
+    "validator"
+  ]
+}
