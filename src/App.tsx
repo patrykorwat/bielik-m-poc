@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ThreeAgentOrchestrator, Message, MLXConfig, ProverBackend } from './services/threeAgentSystem';
+import { ThreeAgentOrchestrator, Message, MLXConfig, ProverBackend, LLMProvider } from './services/threeAgentSystem';
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
@@ -13,8 +13,20 @@ const LEAN_PROXY_URL = 'http://localhost:3002';
 
 function App() {
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
-  const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:8011');
-  const [mlxModel, setMlxModel] = useState('LibraxisAI/Bielik-11B-v3.0-mlx-q4');
+  const [llmProvider, setLlmProvider] = useState<LLMProvider>('ollama');
+  const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:11434');
+  const [mlxModel, setMlxModel] = useState('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
+
+  const handleProviderChange = (provider: LLMProvider) => {
+    setLlmProvider(provider);
+    if (provider === 'ollama') {
+      setMlxBaseUrl('http://localhost:11434');
+      setMlxModel('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
+    } else {
+      setMlxBaseUrl('http://localhost:8011');
+      setMlxModel('LibraxisAI/Bielik-11B-v3.0-mlx-q4');
+    }
+  };
   const [isConfigured, setIsConfigured] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -58,7 +70,7 @@ function App() {
     if (messages.length > 0 && currentChatId && isConfigured) {
       const session: ChatSession = {
         id: currentChatId,
-        provider: 'mlx',
+        provider: llmProvider,
         messages,
         createdAt: messages[0]?.timestamp.toISOString() || new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -71,12 +83,13 @@ function App() {
 
   const handleConfigure = async () => {
     if (!mlxBaseUrl.trim()) {
-      alert('Proszę wprowadzić URL serwera MLX');
+      alert('Proszę wprowadzić URL serwera LLM');
       return;
     }
 
     try {
       const mlxConfig: MLXConfig = {
+        provider: llmProvider,
         baseUrl: mlxBaseUrl,
         model: mlxModel,
         temperature: 0.7,
@@ -316,6 +329,17 @@ function App() {
           </p>
 
           <div className="config-form">
+            <label htmlFor="llmProvider">Provider LLM:</label>
+            <select
+              id="llmProvider"
+              value={llmProvider}
+              onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}
+              className="provider-select"
+            >
+              <option value="ollama">Ollama (wieloplatformowy) - Rekomendowane</option>
+              <option value="mlx">MLX (Apple Silicon - macOS)</option>
+            </select>
+
             <label htmlFor="proverBackend">Wybierz Backend Dowodzenia:</label>
             <select
               id="proverBackend"
@@ -342,23 +366,23 @@ function App() {
               </div>
             )}
 
-            <label htmlFor="mlxBaseUrl">URL serwera MLX:</label>
+            <label htmlFor="mlxBaseUrl">URL serwera {llmProvider === 'ollama' ? 'Ollama' : 'MLX'}:</label>
             <input
               id="mlxBaseUrl"
               type="text"
               value={mlxBaseUrl}
               onChange={(e) => setMlxBaseUrl(e.target.value)}
-              placeholder="http://localhost:8011"
+              placeholder={llmProvider === 'ollama' ? 'http://localhost:11434' : 'http://localhost:8011'}
               className="api-input"
             />
 
-            <label htmlFor="mlxModel">Model MLX:</label>
+            <label htmlFor="mlxModel">Model {llmProvider === 'ollama' ? 'Ollama' : 'MLX'}:</label>
             <input
               id="mlxModel"
               type="text"
               value={mlxModel}
               onChange={(e) => setMlxModel(e.target.value)}
-              placeholder="LibraxisAI/Bielik-11B-v3.0-mlx-q4"
+              placeholder={llmProvider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : 'LibraxisAI/Bielik-11B-v3.0-mlx-q4'}
               className="api-input"
             />
 
@@ -410,26 +434,61 @@ function App() {
                 </ul>
               </>
             )}
-            <div className="mlx-info">
-              <h3>ℹ️ Wymagania MLX:</h3>
-              <ul>
-                <li>Mac z Apple Silicon (M1/M2/M3/M4)</li>
-                <li>Darmowy, lokalny inference z akceleracją sprzętową</li>
-              </ul>
-              <div className="mlx-command">
-                <h4>Uruchom serwer MLX w nowym terminalu:</h4>
-                <div className="command-box">
-                  <code>mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011</code>
-                  <button
-                    onClick={() => copyToClipboard('mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011')}
-                    className="copy-button"
-                    title="Skopiuj do schowka"
-                  >
-                    📋 Kopiuj
-                  </button>
+            {llmProvider === 'ollama' ? (
+              <div className="mlx-info">
+                <h3>ℹ️ Wymagania Ollama:</h3>
+                <ul>
+                  <li>Działa na macOS, Linux i Windows</li>
+                  <li>Darmowy, lokalny inference</li>
+                  <li>Model GGUF 4-bit: <a href="https://huggingface.co/speakleash/Bielik-11B-v3.0-Instruct-GGUF" target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2' }}>speakleash/Bielik-11B-v3.0-Instruct-GGUF</a></li>
+                </ul>
+                <div className="mlx-command">
+                  <h4>1. Pobierz model Bielik:</h4>
+                  <div className="command-box">
+                    <code>ollama pull SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M</code>
+                    <button
+                      onClick={() => copyToClipboard('ollama pull SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M')}
+                      className="copy-button"
+                      title="Skopiuj do schowka"
+                    >
+                      📋 Kopiuj
+                    </button>
+                  </div>
+                  <h4>2. Uruchom serwer Ollama:</h4>
+                  <div className="command-box">
+                    <code>ollama serve</code>
+                    <button
+                      onClick={() => copyToClipboard('ollama serve')}
+                      className="copy-button"
+                      title="Skopiuj do schowka"
+                    >
+                      📋 Kopiuj
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="mlx-info">
+                <h3>ℹ️ Wymagania MLX:</h3>
+                <ul>
+                  <li>Mac z Apple Silicon (M1/M2/M3/M4)</li>
+                  <li>Darmowy, lokalny inference z akceleracją sprzętową</li>
+                </ul>
+                <div className="mlx-command">
+                  <h4>Uruchom serwer MLX w nowym terminalu:</h4>
+                  <div className="command-box">
+                    <code>mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011</code>
+                    <button
+                      onClick={() => copyToClipboard('mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011')}
+                      className="copy-button"
+                      title="Skopiuj do schowka"
+                    >
+                      📋 Kopiuj
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

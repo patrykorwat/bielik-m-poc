@@ -1,10 +1,10 @@
-import { MLXAgent } from './mlxAgent';
+import { LLMAgent, LLMProviderType } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
 import { LeanProverServiceBrowser } from './leanProverService.browser';
 import { RAGService } from './ragService';
 import prompts from '../../prompts.json';
 
-export type LLMProvider = 'mlx';
+export type LLMProvider = LLMProviderType;
 export type ProverBackend = 'sympy' | 'lean' | 'both';
 
 export interface Message {
@@ -31,6 +31,7 @@ export interface ToolResult {
 }
 
 export interface MLXConfig {
+  provider?: LLMProviderType;
   baseUrl: string;
   model: string;
   temperature: number;
@@ -47,7 +48,7 @@ export interface MLXConfig {
  *   4. Lean Verifier     — formally verifies the result (optional, proof problems only)
  */
 export class ThreeAgentOrchestrator {
-  private mlxAgent: MLXAgent;
+  private llmAgent: LLMAgent;
   private mcpClient: MCPClient | null = null;
   private leanClient: LeanProverServiceBrowser | null = null;
   private conversationHistory: Message[] = [];
@@ -63,9 +64,9 @@ export class ThreeAgentOrchestrator {
     this.proverBackend = proverBackend;
 
     if (!mlxConfig) {
-      throw new Error('MLX config is required');
+      throw new Error('LLM config is required');
     }
-    this.mlxAgent = new MLXAgent(mlxConfig);
+    this.llmAgent = new LLMAgent(mlxConfig);
 
     // Initialize RAG service (port 3003)
     this.ragService = new RAGService();
@@ -144,9 +145,9 @@ export class ThreeAgentOrchestrator {
     const maxTokens = options?.maxTokens || 2048;
     const temperature = options?.temperature ?? 0.3;
 
-    console.log(`🤖 [${agentName}] Calling MLX (maxTokens=${maxTokens}, temp=${temperature})...`);
+    console.log(`🤖 [${agentName}] Calling LLM (maxTokens=${maxTokens}, temp=${temperature})...`);
 
-    const content = await this.mlxAgent.execute(systemPrompt, contextMessages, {
+    const content = await this.llmAgent.execute(systemPrompt, contextMessages, {
       maxTokens,
       temperature,
     });

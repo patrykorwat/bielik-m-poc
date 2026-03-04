@@ -1,11 +1,14 @@
-export interface MLXConfig {
+export type LLMProviderType = 'mlx' | 'ollama';
+
+export interface LLMConfig {
+  provider?: LLMProviderType;
   baseUrl: string;
   model: string;
   temperature?: number;
   maxTokens?: number;
 }
 
-export interface MLXResponse {
+export interface LLMResponse {
   id?: string;
   choices?: Array<{
     message?: {
@@ -18,24 +21,25 @@ export interface MLXResponse {
 }
 
 /**
- * MLX Agent for Apple Silicon optimized inference
- * Based on magentic-agent pattern
+ * Unified LLM Agent supporting MLX and Ollama (both expose OpenAI-compatible API)
  */
-export class MLXAgent {
+export class LLMAgent {
+  private provider: LLMProviderType;
   private baseUrl: string;
   private model: string;
   private temperature: number;
   private maxTokens: number;
 
-  constructor(config: MLXConfig) {
-    this.baseUrl = config.baseUrl || 'http://localhost:8080';
-    this.model = config.model || 'mlx-community/Llama-3.2-3B-Instruct-4bit';
+  constructor(config: LLMConfig) {
+    this.provider = config.provider || 'mlx';
+    this.baseUrl = config.baseUrl || (this.provider === 'ollama' ? 'http://localhost:11434' : 'http://localhost:8080');
+    this.model = config.model || (this.provider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : 'mlx-community/Llama-3.2-3B-Instruct-4bit');
     this.temperature = config.temperature ?? 0.7;
     this.maxTokens = config.maxTokens || 4096;
   }
 
   /**
-   * Check if MLX server is available
+   * Check if LLM server is available
    */
   async isAvailable(): Promise<boolean> {
     try {
@@ -44,13 +48,13 @@ export class MLXAgent {
       });
       return response.ok;
     } catch (error) {
-      console.error('[MLXAgent] Server not available:', error);
+      console.error(`[LLMAgent:${this.provider}] Server not available:`, error);
       return false;
     }
   }
 
   /**
-   * Get list of available models from MLX server
+   * Get list of available models from LLM server
    */
   async listModels(): Promise<string[]> {
     try {
@@ -65,13 +69,13 @@ export class MLXAgent {
       const data = await response.json() as { data?: Array<{ id: string }> };
       return data.data?.map((m) => m.id) || [];
     } catch (error) {
-      console.error('[MLXAgent] Error listing models:', error);
+      console.error(`[LLMAgent:${this.provider}] Error listing models:`, error);
       return [];
     }
   }
 
   /**
-   * Execute MLX inference with chat completion
+   * Execute LLM inference with chat completion (OpenAI-compatible API)
    */
   async execute(
     systemPrompt: string,
@@ -79,7 +83,7 @@ export class MLXAgent {
     overrides?: { maxTokens?: number; temperature?: number }
   ): Promise<string> {
     try {
-      // Build MLX-compatible messages (OpenAI format)
+      // Build OpenAI-compatible messages
       const messagesWithSystem = [
         { role: 'system', content: systemPrompt },
         ...messages,
@@ -93,7 +97,7 @@ export class MLXAgent {
         max_tokens: overrides?.maxTokens ?? this.maxTokens,
       };
 
-      console.log('[MLXAgent] Sending request:', {
+      console.log(`[LLMAgent:${this.provider}] Sending request:`, {
         baseUrl: this.baseUrl,
         model: this.model,
         messagesCount: messagesWithSystem.length,
@@ -117,13 +121,13 @@ export class MLXAgent {
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`MLX API error (${response.status}): ${errorText}`);
+          throw new Error(`LLM API error (${response.status}): ${errorText}`);
         }
 
-        const data = await response.json() as MLXResponse;
+        const data = await response.json() as LLMResponse;
         const content = data.choices?.[0]?.message?.content || '';
 
-        console.log('[MLXAgent] Response received:', {
+        console.log(`[LLMAgent:${this.provider}] Response received:`, {
           contentLength: content.length,
           finishReason: data.choices?.[0]?.finish_reason,
         });
@@ -132,18 +136,18 @@ export class MLXAgent {
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
         if (fetchError.name === 'AbortError') {
-          throw new Error('MLX request timeout after 5 minutes. Try simpler query or smaller max_tokens.');
+          throw new Error(`${this.providerLabel()} request timeout after 5 minutes. Try simpler query or smaller max_tokens.`);
         }
         throw fetchError;
       }
     } catch (error) {
-      console.error('[MLXAgent] Error executing:', error);
+      console.error(`[LLMAgent:${this.provider}] Error executing:`, error);
 
       // Provide helpful error messages
       if (error instanceof Error) {
         if (error.message.includes('ECONNREFUSED') || error.message.includes('Failed to fetch')) {
           throw new Error(
-            'Cannot connect to MLX server. Make sure the MLX server is running at ' + this.baseUrl
+            `Cannot connect to ${this.providerLabel()} server. Make sure the server is running at ${this.baseUrl}`
           );
         }
       }
@@ -162,7 +166,7 @@ export class MLXAgent {
    * Set the model to use
    */
   setModel(model: string): void {
-    console.log(`[MLXAgent] Changing model from ${this.model} to ${model}`);
+    console.log(`[LLMAgent:${this.provider}] Changing model from ${this.model} to ${model}`);
     this.model = model;
   }
 
@@ -172,4 +176,19 @@ export class MLXAgent {
   getBaseUrl(): string {
     return this.baseUrl;
   }
+
+  /**
+   * Get provider type
+   */
+  getProvider(): LLMProviderType {
+    return this.provider;
+  }
+
+  private providerLabel(): string {
+    return this.provider === 'ollama' ? 'Ollama' : 'MLX';
+  }
 }
+
+// Backward-compatible aliases
+export { LLMAgent as MLXAgent };
+export type { LLMConfig as MLXConfig, LLMResponse as MLXResponse };

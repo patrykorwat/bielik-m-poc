@@ -344,12 +344,4 @@ Zachęcamy do zgłaszania issues i pull requestów!
 
 ## 📄 Licencja
 
-MIT
-
-## 👨‍💻 Autor
-
-Projekt stworzony jako narzędzie wspierające przygotowania do matury z matematyki rozszerzonej.
-
----
-
-**💡 Wskazówka**: Pamiętaj - system jest **asystentem**, nie zastępstwem dla nauki. Najlepsze rezultaty osiągniesz gdy będziesz analizować przedstawione rozwiązania i starać się je zrozumieć!
+AGPL3

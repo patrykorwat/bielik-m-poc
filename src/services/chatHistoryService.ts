@@ -2,7 +2,7 @@ import { Message } from './mcpAgentService';
 
 export interface ChatSession {
   id: string;
-  provider: 'claude' | 'mlx';
+  provider: 'claude' | 'mlx' | 'ollama';
   messages: Message[];
   createdAt: string;
   updatedAt: string;
