@@ -24,7 +24,7 @@ function App() {
       setMlxModel('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
     } else {
       setMlxBaseUrl('http://localhost:8011');
-      setMlxModel('LibraxisAI/Bielik-11B-v3.0-mlx-q4');
+      setMlxModel('speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit');
     }
   };
   const [isConfigured, setIsConfigured] = useState(false);
@@ -382,7 +382,7 @@ function App() {
               type="text"
               value={mlxModel}
               onChange={(e) => setMlxModel(e.target.value)}
-              placeholder={llmProvider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : 'LibraxisAI/Bielik-11B-v3.0-mlx-q4'}
+              placeholder={llmProvider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : 'speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit'}
               className="api-input"
             />
 
@@ -477,9 +477,9 @@ function App() {
                 <div className="mlx-command">
                   <h4>Uruchom serwer MLX w nowym terminalu:</h4>
                   <div className="command-box">
-                    <code>mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011</code>
+                    <code>mlx_lm.server --model speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit --port 8011</code>
                     <button
-                      onClick={() => copyToClipboard('mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port 8011')}
+                      onClick={() => copyToClipboard('mlx_lm.server --model speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit --port 8011')}
                       className="copy-button"
                       title="Skopiuj do schowka"
                     >

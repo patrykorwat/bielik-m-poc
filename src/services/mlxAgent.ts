@@ -33,7 +33,7 @@ export class LLMAgent {
   constructor(config: LLMConfig) {
     this.provider = config.provider || 'mlx';
     this.baseUrl = config.baseUrl || (this.provider === 'ollama' ? 'http://localhost:11434' : 'http://localhost:8080');
-    this.model = config.model || (this.provider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : 'mlx-community/Llama-3.2-3B-Instruct-4bit');
+    this.model = config.model || (this.provider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : 'speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit');
     this.temperature = config.temperature ?? 0.7;
     this.maxTokens = config.maxTokens || 4096;
   }
