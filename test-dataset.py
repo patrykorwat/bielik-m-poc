@@ -4,11 +4,12 @@ Dataset test harness for bielik-m-poc multi-agent system.
 Tests across the full Polish matura exam datasets.
 
 Usage:
-  python3 test-dataset.py                          # Test 5 random questions from 2024
+  python3 test-dataset.py                          # Test 5 random questions from 2024 (both levels)
   python3 test-dataset.py --year 2024              # Test 5 random from 2024
   python3 test-dataset.py --year 2024 --all        # Test ALL questions from 2024
   python3 test-dataset.py --year all --sample 3    # 3 random questions per year
   python3 test-dataset.py --year 2024 --task 1,2,5 # Specific tasks
+  python3 test-dataset.py --level rozszerzona      # Only extended level
   python3 test-dataset.py --only-mc                # Only multiple choice
   python3 test-dataset.py --only-open              # Only open-ended
   python3 test-dataset.py --use-mcp                # Use MCP proxy (same as UI)
@@ -578,12 +579,39 @@ def load_questions(year, datasets_dir):
         if os.path.exists(path):
             with open(path) as f:
                 return json.load(f)
-    print(f"ERROR: Dataset file not found for year {year} in {datasets_dir}")
-    sys.exit(1)
+    return []
+
+
+def load_questions_both_levels(year, base_dir):
+    """Load questions from both levels for a given year.
+    Returns (rozszerzona_questions, podstawowa_questions)."""
+    rozszerzona = []
+    podstawowa = []
+    roz_dir = os.path.join(base_dir, "rozszerzona")
+    pod_dir = os.path.join(base_dir, "podstawowa")
+    if os.path.isdir(roz_dir):
+        rozszerzona = load_questions(year, roz_dir)
+    if os.path.isdir(pod_dir):
+        podstawowa = load_questions(year, pod_dir)
+    return rozszerzona, podstawowa
+
+
+def available_years_all(base_dir):
+    """List available dataset years across both levels."""
+    years = set()
+    for level in ["rozszerzona", "podstawowa"]:
+        level_dir = os.path.join(base_dir, level)
+        if not os.path.isdir(level_dir):
+            continue
+        for f in sorted(os.listdir(level_dir)):
+            m = re.match(r'(\d{4})_\d\.json', f)
+            if m:
+                years.add(int(m.group(1)))
+    return sorted(years)
 
 
 def available_years(datasets_dir):
-    """List available dataset years."""
+    """List available dataset years in a single directory."""
     years = []
     if not os.path.exists(datasets_dir):
         return years
@@ -1027,9 +1055,9 @@ def main():
                         help="Test all questions (overrides --sample)")
     parser.add_argument("--task", type=str, default=None,
                         help="Specific task numbers, comma-separated (e.g. 1,2,5)")
-    parser.add_argument("--level", type=str, default="podstawowa",
+    parser.add_argument("--level", type=str, default=None,
                         choices=["podstawowa", "rozszerzona"],
-                        help="Exam level: podstawowa (basic) or rozszerzona (extended)")
+                        help="Filter by exam level (default: both, rozszerzona first)")
     parser.add_argument("--only-mc", action="store_true", help="Only multiple-choice")
     parser.add_argument("--only-open", action="store_true", help="Only open-ended")
     parser.add_argument("--quiet", action="store_true", help="Less verbose output")
@@ -1040,7 +1068,6 @@ def main():
     base_url = f"http://localhost:{args.port}"
     verbose = not args.quiet
     use_mcp = args.use_mcp
-    datasets_dir = os.path.join(DATASETS_BASE, args.level)
 
     # Check MLX server
     try:
@@ -1062,6 +1089,12 @@ def main():
             print(f"  Or run without --use-mcp to use local subprocess")
             sys.exit(1)
 
+    # Determine levels to test
+    if args.level:
+        levels = [args.level]
+    else:
+        levels = ["rozszerzona", "podstawowa"]  # extended first
+
     print("=" * 70)
     print("BIELIK-M-POC DATASET TESTER")
     print("=" * 70)
@@ -1069,11 +1102,15 @@ def main():
     print(f"Model:   {args.model}")
     print(f"Backend: {'MCP proxy' if use_mcp else 'local subprocess'}")
     print(f"Models available: {model_ids}")
-
-    print(f"Level:   {args.level}")
+    level_label = args.level if args.level else "rozszerzona + podstawowa"
+    print(f"Level:   {level_label}")
 
     # Determine years to test
-    all_years = available_years(datasets_dir)
+    if args.level:
+        datasets_dir = os.path.join(DATASETS_BASE, args.level)
+        all_years = available_years(datasets_dir)
+    else:
+        all_years = available_years_all(DATASETS_BASE)
     if args.year == "all":
         years = all_years
     else:
@@ -1088,67 +1125,82 @@ def main():
     for year in years:
         if interrupted:
             break
-        questions = load_questions(year, datasets_dir)
 
-        # Filter by type
-        if args.only_mc:
-            questions = [q for q in questions if q.get('options')]
-        elif args.only_open:
-            questions = [q for q in questions if not q.get('options')]
-
-        # Filter by task number
-        if args.task:
-            task_nums = [int(t) for t in args.task.split(',')]
-            questions = [q for q in questions if q['metadata']['task_number'] in task_nums]
-
-        # Sample
-        if not args.all and not args.task:
-            sample_size = min(args.sample, len(questions))
-            questions = random.sample(questions, sample_size)
-            questions.sort(key=lambda q: q['metadata']['task_number'])
-
-        print(f"{'='*70}")
-        print(f"YEAR {year} — {len(questions)} questions")
-        print(f"{'='*70}")
-
-        year_results = []
-        for q in questions:
+        for level in levels:
             if interrupted:
                 break
-            result = test_question(q, base_url, args.model, verbose=verbose, use_mcp=use_mcp)
-            year_results.append(result)
-            all_results.append(result)
 
-        # Year summary
-        correct = sum(1 for r in year_results if r['correct'])
-        has_code = sum(1 for r in year_results if r['has_code'])
-        code_valid = sum(1 for r in year_results if r['code_valid'])
-        analytical_ok = sum(1 for r in year_results if r['analytical_ok'])
-        total = len(year_results)
-        total_time = sum(r['time_total'] for r in year_results)
+            level_dir = os.path.join(DATASETS_BASE, level)
+            questions = load_questions(year, level_dir)
 
-        print(f"\n{'─'*60}")
-        print(f"  YEAR {year} SUMMARY ({total} questions, {total_time:.0f}s total):")
-        print(f"  Analytical OK:  {analytical_ok}/{total}")
-        print(f"  Has code:       {has_code}/{total}")
-        print(f"  Code valid:     {code_valid}/{total}")
-        print(f"  Correct answer: {correct}/{total}")
+            if not questions:
+                continue
 
-        # Breakdown by type
-        mc_results = [r for r in year_results if r['type'] == 'MC']
-        open_results = [r for r in year_results if r['type'] == 'OPEN']
-        if mc_results:
-            mc_correct = sum(1 for r in mc_results if r['correct'])
-            print(f"    MC:    {mc_correct}/{len(mc_results)}")
-        if open_results:
-            open_correct = sum(1 for r in open_results if r['correct'])
-            print(f"    Open:  {open_correct}/{len(open_results)}")
+            level_tag = "rozszerzona" if level == "rozszerzona" else "podstawowa"
 
-        # Points breakdown
-        points_earned = sum(r['points'] for r in year_results if r['correct'])
-        points_total = sum(r['points'] for r in year_results)
-        print(f"  Points: {points_earned}/{points_total}")
-        print()
+            # Filter by type
+            if args.only_mc:
+                questions = [q for q in questions if q.get('options')]
+            elif args.only_open:
+                questions = [q for q in questions if not q.get('options')]
+
+            # Filter by task number
+            if args.task:
+                task_nums = [int(t) for t in args.task.split(',')]
+                questions = [q for q in questions if q['metadata']['task_number'] in task_nums]
+
+            if not questions:
+                continue
+
+            # Sample
+            if not args.all and not args.task:
+                sample_size = min(args.sample, len(questions))
+                questions = random.sample(questions, sample_size)
+                questions.sort(key=lambda q: q['metadata']['task_number'])
+
+            print(f"{'='*70}")
+            print(f"YEAR {year} [{level_tag}] — {len(questions)} questions")
+            print(f"{'='*70}")
+
+            year_level_results = []
+            for q in questions:
+                if interrupted:
+                    break
+                result = test_question(q, base_url, args.model, verbose=verbose, use_mcp=use_mcp)
+                result['level'] = level_tag
+                year_level_results.append(result)
+                all_results.append(result)
+
+            # Year+level summary
+            correct = sum(1 for r in year_level_results if r['correct'])
+            has_code = sum(1 for r in year_level_results if r['has_code'])
+            code_valid = sum(1 for r in year_level_results if r['code_valid'])
+            analytical_ok = sum(1 for r in year_level_results if r['analytical_ok'])
+            total = len(year_level_results)
+            total_time = sum(r['time_total'] for r in year_level_results)
+
+            print(f"\n{'─'*60}")
+            print(f"  YEAR {year} [{level_tag}] SUMMARY ({total} questions, {total_time:.0f}s total):")
+            print(f"  Analytical OK:  {analytical_ok}/{total}")
+            print(f"  Has code:       {has_code}/{total}")
+            print(f"  Code valid:     {code_valid}/{total}")
+            print(f"  Correct answer: {correct}/{total}")
+
+            # Breakdown by type
+            mc_results = [r for r in year_level_results if r['type'] == 'MC']
+            open_results = [r for r in year_level_results if r['type'] == 'OPEN']
+            if mc_results:
+                mc_correct = sum(1 for r in mc_results if r['correct'])
+                print(f"    MC:    {mc_correct}/{len(mc_results)}")
+            if open_results:
+                open_correct = sum(1 for r in open_results if r['correct'])
+                print(f"    Open:  {open_correct}/{len(open_results)}")
+
+            # Points breakdown
+            points_earned = sum(r['points'] for r in year_level_results if r['correct'])
+            points_total = sum(r['points'] for r in year_level_results)
+            print(f"  Points: {points_earned}/{points_total}")
+            print()
 
     # Overall summary
     if len(years) > 1 or len(all_results) > 5:
@@ -1182,13 +1234,23 @@ def main():
             open_correct = sum(1 for r in open_results if r['correct'])
             print(f"  Open accuracy:   {open_correct}/{len(open_results)} ({100*open_correct/len(open_results):.0f}%)")
 
+        # Per-level breakdown
+        for lvl in ["rozszerzona", "podstawowa"]:
+            lvl_results = [r for r in all_results if r.get('level') == lvl]
+            if lvl_results:
+                lvl_correct = sum(1 for r in lvl_results if r['correct'])
+                lvl_points_earned = sum(r['points'] for r in lvl_results if r['correct'])
+                lvl_points_total = sum(r['points'] for r in lvl_results)
+                print(f"  [{lvl}] {lvl_correct}/{len(lvl_results)} correct, {lvl_points_earned}/{lvl_points_total} pts")
+
         # Failed questions list
         failed = [r for r in all_results if not r['correct']]
         if failed:
             print(f"\n  Failed questions:")
             for r in failed:
                 errs = f" [{'; '.join(r['errors'])}]" if r['errors'] else ""
-                print(f"    {r['year']} task {r['task']} ({r['type']}, {r['points']}pt){errs}")
+                lvl = r.get('level', '?')
+                print(f"    {r['year']} task {r['task']} [{lvl}] ({r['type']}, {r['points']}pt){errs}")
 
     print(f"\n{'='*70}")
     print("DONE")
