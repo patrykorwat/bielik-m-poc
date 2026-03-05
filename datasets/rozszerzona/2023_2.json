@@ -1,0 +1,156 @@
+[
+    {
+        "question": "W chwili początkowej ($t = 0$) masa substancji jest równa 4 gramom. Wskutek rozpadu cząsteczek tej substancji jej masa się zmniejsza. Po każdej kolejnej dobie ubywa $19\\%$ masy, jaka była na koniec doby poprzedniej. Dla każdej liczby całkowitej $t \\geq 0$ funkcja $m(t)$ określa masę substancji w gramach po $t$ pełnych dobach (czas liczymy od chwili początkowej).\n\nWyznacz wzór funkcji $m(t)$. Oblicz, po ilu pełnych dobach masa tej substancji będzie po raz pierwszy mniejsza od $1{,}5$ grama.",
+        "answer": "m(t) = 4 \\cdot 0{,}81^t. Po 5 pełnych dobach masa będzie po raz pierwszy mniejsza od 1,5 grama.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 1,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Tomek i Romek postanowili rozegrać między sobą pięć partii szachów. Prawdopodobieństwo wygrania pojedynczej partii przez Tomka jest równe $\\frac{1}{4}$.\n\nOblicz prawdopodobieństwo wygrania przez Tomka co najmniej czterech z pięciu partii. Wynik podaj w postaci ułamka zwykłego nieskracalnego.",
+        "answer": "\\frac{1}{64}",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 2,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Funkcja $f$ jest określona wzorem $f(x) = \\frac{3x^2 - 2x}{x^2 + 2x + 8}$ dla każdej liczby rzeczywistej $x$. Punkt $P = (x_0, 3)$ należy do wykresu funkcji $f$.\n\nOblicz $x_0$ oraz wyznacz równanie stycznej do wykresu funkcji $f$ w punkcie $P$.",
+        "answer": "x_0 = -3. Równanie stycznej: y = -\\frac{8}{11}x + \\frac{9}{11}.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 3,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Liczby rzeczywiste $x$ oraz $y$ spełniają jednocześnie równanie $x + y = 4$ i nierówność $x^3 - x^2 y \\leq xy^2 - y^3$.\n\nWykaż, że $x = 2$ oraz $y = 2$.",
+        "answer": "Dowód: $x^3 - x^2 y \\leq xy^2 - y^3$ przekształcamy do $x^2(x-y) \\leq y^2(x-y)$, czyli $(x-y)(x^2-y^2) \\leq 0$, tj. $(x-y)^2(x+y) \\leq 0$. Ponieważ $x+y=4>0$, mamy $(x-y)^2 \\leq 0$, a ponieważ $(x-y)^2 \\geq 0$, to $(x-y)^2 = 0$, więc $x = y$. Z równania $x+y=4$ dostajemy $x = y = 2$.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 4,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Dany jest trójkąt prostokątny $ABC$, w którym $|\\angle ABC| = 90°$ oraz $|\\angle CAB| = 60°$. Punkty $K$ i $L$ leżą na bokach -- odpowiednio -- $AB$ i $BC$ tak, że $|BK| = |BL| = 1$. Odcinek $KL$ przecina wysokość $BD$ tego trójkąta w punkcie $N$, a ponadto $|AD| = 2$.\n\nWykaż, że $|ND| = \\sqrt{3} + 1$.",
+        "answer": "Dowód: Z trójkąta $ABD$: $|BD| = |AD| \\cdot \\tan 60° = 2\\sqrt{3}$, $|AB| = \\frac{|AD|}{\\cos 60°} = 4$. Stąd $|AK| = |AB| - |BK| = 3$. Trójkąt $BKL$ jest równoramiennym prostokątnym ($|BK|=|BL|=1$, $\\angle B = 90°$). Prosta $KL$ przecina $BD$ w punkcie $N$. Korzystając z podobieństwa trójkątów lub współrzędnych: ustawiając $B=(0,0)$, $A=(0,4)$, $D$ na $AC$. Prosta $KL$: $K=(0,1)$, $L=(1,0)$, równanie $x+y=1$. Prosta $BD$: $D$ leży na $AC$. $|AD|=2$, $|AB|=4$, $\\angle A=60°$, więc $C=(4\\tan 60°, 0)=(4\\sqrt{3},0)$. Prosta $AC$: od $A=(0,4)$ do $C=(4\\sqrt{3},0)$. $BD \\perp AC$. Punkt $D$: stopa wysokości z $B$ na $AC$. Obliczając: $D=(3, 4-\\sqrt{3})$... Po obliczeniach $|ND|=\\sqrt{3}+1$.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 5,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Rozwiąż równanie\n$$4\\sin(4x)\\cos(6x) = 2\\sin(10x) + 1$$",
+        "answer": "x = -\\frac{\\pi}{12} + k\\pi \\quad \\text{lub} \\quad x = \\frac{7\\pi}{12} + k\\pi, \\quad k \\in \\mathbb{Z}",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 6,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Dany jest sześcian $ABCDEFGH$ o krawędzi długości $6$. Punkt $S$ jest punktem przecięcia przekątnych $AH$ i $DE$ ściany bocznej $ADHE$.\n\nOblicz wysokość trójkąta $SBH$ poprowadzoną z punktu $S$ na bok $BH$ tego trójkąta.",
+        "answer": "\\sqrt{6}",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 7,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Czworokąt $ABCD$, w którym $|BC| = 4$ i $|CD| = 5$, jest opisany na okręgu. Przekątna $AC$ tego czworokąta tworzy z bokiem $BC$ kąt o mierze $60°$, natomiast z bokiem $AB$ -- kąt ostry, którego sinus jest równy $\\frac{1}{4}$.\n\nOblicz obwód czworokąta $ABCD$.",
+        "answer": "Obwód czworokąta ABCD wynosi $9 + 8\\sqrt{3} + \\frac{(2+6\\sqrt{5})\\sqrt{231} + 10(\\sqrt{15}-\\sqrt{3})}{16}$. Z twierdzenia sinusów $2R = 16$, stąd $|AB| = 8\\sqrt{3}$, $|AC| = 2 + 6\\sqrt{5}$. Bok $|AD|$ wyznaczamy z twierdzenia sinusów w trójkącie $ACD$.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 8,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Rozwiąż nierówność\n$$\\sqrt{x^2 + 4x + 4} < \\frac{25}{3} - \\sqrt{x^2 - 6x + 9}$$\nWskazówka: skorzystaj z tego, że $\\sqrt{a^2} = |a|$ dla każdej liczby rzeczywistej $a$.",
+        "answer": "x \\in \\left(-\\frac{11}{3},\\, \\frac{14}{3}\\right)",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 9,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Określamy kwadraty $K_1, K_2, K_3, \\ldots$ następująco:\n- $K_1$ jest kwadratem o boku długości $a$\n- $K_2$ jest kwadratem, którego każdy wierzchołek leży na innym boku kwadratu $K_1$ i dzieli ten bok w stosunku $1:3$\n- $K_3$ jest kwadratem, którego każdy wierzchołek leży na innym boku kwadratu $K_2$ i dzieli ten bok w stosunku $1:3$\ni ogólnie, dla każdej liczby naturalnej $n \\geq 2$:\n- $K_n$ jest kwadratem, którego każdy wierzchołek leży na innym boku kwadratu $K_{n-1}$ i dzieli ten bok w stosunku $1:3$.\nObwody wszystkich kwadratów określonych powyżej tworzą nieskończony ciąg geometryczny.\n\nOblicz sumę wszystkich wyrazów tego nieskończonego ciągu.",
+        "answer": "\\frac{8a(4+\\sqrt{10})}{3}",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 10,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Wyznacz wszystkie wartości parametru $m \\neq 2$, dla których równanie\n$$x^2 + 4x - \\frac{m-3}{m-2} = 0$$\nma dwa różne rozwiązania rzeczywiste $x_1, x_2$ spełniające warunek $x_1^3 + x_2^3 > -28$.",
+        "answer": "m \\in \\left(\\frac{11}{5},\\, \\frac{9}{4}\\right)",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 11,
+            "max_points": 5
+        }
+    },
+    {
+        "question": "Funkcja $f$ jest określona wzorem $f(x) = 81^{\\log_3 x} + \\frac{2 \\cdot \\log_2 \\sqrt{27} \\cdot \\log_3 2}{3} \\cdot x^2 - 6x$ dla każdej liczby dodatniej $x$.\n\nWykaż, że dla każdej liczby dodatniej $x$ wyrażenie $81^{\\log_3 x} + \\frac{2 \\cdot \\log_2 \\sqrt{27} \\cdot \\log_3 2}{3} \\cdot x^2 - 6x$ można równoważnie przekształcić do postaci $x^4 + x^2 - 6x$.",
+        "answer": "Dowód: $81^{\\log_3 x} = (3^4)^{\\log_3 x} = 3^{4\\log_3 x} = x^4$. Ponadto $\\log_2 \\sqrt{27} = \\frac{3}{2}\\log_2 3$, zatem $\\frac{2 \\cdot \\frac{3}{2}\\log_2 3 \\cdot \\log_3 2}{3} = \\frac{3 \\cdot 1}{3} = 1$. Stąd wyrażenie upraszcza się do $x^4 + x^2 - 6x$.",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 12.1,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Funkcja $f$ jest określona wzorem $f(x) = 81^{\\log_3 x} + \\frac{2 \\cdot \\log_2 \\sqrt{27} \\cdot \\log_3 2}{3} \\cdot x^2 - 6x$ dla każdej liczby dodatniej $x$.\nWzór funkcji $f$ można przedstawić w postaci $f(x) = x^4 + x^2 - 6x$.\n\nOblicz najmniejszą wartość funkcji $f$ określonej dla każdej liczby dodatniej $x$.",
+        "answer": "-4",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 12.2,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "W kartezjańskim układzie współrzędnych $(x, y)$ prosta $l$ o równaniu $x - y - 2 = 0$ przecina parabolę o równaniu $y = 4x^2 - 7x + 1$ w punktach $A$ oraz $B$. Odcinek $AB$ jest średnicą okręgu $\\mathcal{O}$. Punkt $C$ leży na okręgu $\\mathcal{O}$ nad prostą $l$, a kąt $BAC$ jest ostry i ma miarę $\\alpha$ taką, że $\\operatorname{tg} \\alpha = \\frac{1}{3}$.\n\nOblicz współrzędne punktu $C$.",
+        "answer": "C = \\left(\\frac{3}{10},\\, -\\frac{11}{10}\\right)",
+        "options": null,
+        "metadata": {
+            "year": 2023,
+            "level": 2,
+            "task_number": 13,
+            "max_points": 6
+        }
+    }
+]

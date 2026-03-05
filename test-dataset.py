@@ -82,7 +82,8 @@ signal.signal(signal.SIGINT, signal_handler)
 
 # ── Configuration ────────────────────────────────────────────────────────
 
-DATASETS_DIR = os.path.join(os.path.dirname(__file__), "datasets")
+DATASETS_BASE = os.path.join(os.path.dirname(__file__), "datasets")
+DATASETS_DIR = os.path.join(DATASETS_BASE, "podstawowa")  # default: basic level
 PROMPTS_FILE = os.path.join(os.path.dirname(__file__), "prompts.json")
 MCP_PROXY_URL = "http://localhost:3001"
 LEAN_PROXY_URL = "http://localhost:3002"
@@ -571,21 +572,27 @@ def check_answer(expected, got, question):
 
 def load_questions(year, datasets_dir):
     """Load questions from a specific year's dataset."""
-    path = os.path.join(datasets_dir, f"{year}_1.json")
-    if not os.path.exists(path):
-        print(f"ERROR: Dataset file not found: {path}")
-        sys.exit(1)
-    with open(path) as f:
-        return json.load(f)
+    # Try level-specific suffix first (_1 for basic, _2 for extended)
+    for suffix in ['_1', '_2']:
+        path = os.path.join(datasets_dir, f"{year}{suffix}.json")
+        if os.path.exists(path):
+            with open(path) as f:
+                return json.load(f)
+    print(f"ERROR: Dataset file not found for year {year} in {datasets_dir}")
+    sys.exit(1)
 
 
 def available_years(datasets_dir):
     """List available dataset years."""
     years = []
+    if not os.path.exists(datasets_dir):
+        return years
     for f in sorted(os.listdir(datasets_dir)):
-        m = re.match(r'(\d{4})_1\.json', f)
+        m = re.match(r'(\d{4})_\d\.json', f)
         if m:
-            years.append(int(m.group(1)))
+            y = int(m.group(1))
+            if y not in years:
+                years.append(y)
     return years
 
 
@@ -1020,6 +1027,9 @@ def main():
                         help="Test all questions (overrides --sample)")
     parser.add_argument("--task", type=str, default=None,
                         help="Specific task numbers, comma-separated (e.g. 1,2,5)")
+    parser.add_argument("--level", type=str, default="podstawowa",
+                        choices=["podstawowa", "rozszerzona"],
+                        help="Exam level: podstawowa (basic) or rozszerzona (extended)")
     parser.add_argument("--only-mc", action="store_true", help="Only multiple-choice")
     parser.add_argument("--only-open", action="store_true", help="Only open-ended")
     parser.add_argument("--quiet", action="store_true", help="Less verbose output")
@@ -1030,6 +1040,7 @@ def main():
     base_url = f"http://localhost:{args.port}"
     verbose = not args.quiet
     use_mcp = args.use_mcp
+    datasets_dir = os.path.join(DATASETS_BASE, args.level)
 
     # Check MLX server
     try:
@@ -1059,8 +1070,10 @@ def main():
     print(f"Backend: {'MCP proxy' if use_mcp else 'local subprocess'}")
     print(f"Models available: {model_ids}")
 
+    print(f"Level:   {args.level}")
+
     # Determine years to test
-    all_years = available_years(DATASETS_DIR)
+    all_years = available_years(datasets_dir)
     if args.year == "all":
         years = all_years
     else:
@@ -1075,7 +1088,7 @@ def main():
     for year in years:
         if interrupted:
             break
-        questions = load_questions(year, DATASETS_DIR)
+        questions = load_questions(year, datasets_dir)
 
         # Filter by type
         if args.only_mc:

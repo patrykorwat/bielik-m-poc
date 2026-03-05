@@ -1,0 +1,156 @@
+[
+    {
+        "question": "W chwili początkowej ($t = 0$) filiżanka z gorącą kawą znajduje się w pokoju, a temperatura tej kawy jest równa $80$ °C. Temperatura w pokoju (temperatura otoczenia) jest stała i równa $20$ °C. Temperatura $T$ tej kawy zmienia się w czasie zgodnie z zależnością\n$$T(t) = (T_p - T_z) \\cdot k^{-t} + T_z$$\ndla $t \\geq 0$, gdzie:\n$T$ -- temperatura kawy wyrażona w stopniach Celsjusza,\n$t$ -- czas wyrażony w minutach, liczony od chwili początkowej,\n$T_p$ -- temperatura początkowa kawy wyrażona w stopniach Celsjusza,\n$T_z$ -- temperatura otoczenia wyrażona w stopniach Celsjusza,\n$k$ -- stała charakterystyczna dla danej cieczy.\nPo $10$ minutach, licząc od chwili początkowej, kawa ostygła do temperatury $65$ °C.\nOblicz temperaturę tej kawy po następnych pięciu minutach. Wynik podaj w stopniach Celsjusza, w zaokrągleniu do jedności. Zapisz obliczenia.",
+        "answer": "59 °C",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 1,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Oblicz granicę\n$$\\lim_{x \\to 2^{-}} \\frac{x^3 - 8}{(x - 2)^2}$$\nZapisz obliczenia.",
+        "answer": "$-\\infty$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 2,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "W pewnym zakładzie mleczarskim śmietana produkowana jest w $200$-gramowych opakowaniach. Prawdopodobieństwo zdarzenia, że w losowo wybranym opakowaniu śmietana zawiera mniej niż $36\\%$ tłuszczu, jest równe $0{,}01$. Kontroli poddajemy $10$ losowo wybranych opakowań ze śmietaną.\nOblicz prawdopodobieństwo zdarzenia polegającego na tym, że wśród opakowań poddanych tej kontroli będzie co najwyżej jedno opakowanie ze śmietaną, która zawiera mniej niż $36\\%$ tłuszczu. Wynik zapisz w postaci ułamka dziesiętnego w zaokrągleniu do części tysięcznych. Zapisz obliczenia.",
+        "answer": "$0{,}996$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 3,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Funkcja $f$ jest określona wzorem\n$$f(x) = \\frac{x^3 - 3x + 2}{x}$$\ndla każdej liczby rzeczywistej $x$ różnej od zera. W kartezjańskim układzie współrzędnych $(x, y)$ punkt $P$, o pierwszej współrzędnej równej $2$, należy do wykresu funkcji $f$. Prosta o równaniu $y = ax + b$ jest styczna do wykresu funkcji $f$ w punkcie $P$.\nOblicz współczynniki $a$ oraz $b$ w równaniu tej stycznej. Zapisz obliczenia.",
+        "answer": "$a = \\frac{7}{2}$ oraz $b = -5$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 4,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Wykaż, że jeżeli $\\log_5 4 = a$ oraz $\\log_4 3 = b$, to\n$$\\log_{12} 80 = \\frac{2a + 1}{a \\cdot (1 + b)}$$",
+        "answer": "Dowód (wykazanie tożsamości $\\log_{12} 80 = \\frac{2a+1}{a(1+b)}$).",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 5,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Rozważamy wszystkie liczby naturalne, w których zapisie dziesiętnym nie powtarza się jakakolwiek cyfra oraz dokładnie trzy cyfry są nieparzyste i dokładnie dwie cyfry są parzyste.\nOblicz, ile jest wszystkich takich liczb. Zapisz obliczenia.",
+        "answer": "$11\\,040$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 6,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Trzywyrazowy ciąg $(x, y, z)$ jest geometryczny i rosnący. Suma wyrazów tego ciągu jest równa $105$. Liczby $x$, $y$ oraz $z$ są -- odpowiednio -- pierwszym, drugim oraz szóstym wyrazem ciągu arytmetycznego $(a_n)$, określonego dla każdej liczby naturalnej $n \\geq 1$.\nOblicz $x$, $y$ oraz $z$. Zapisz obliczenia.",
+        "answer": "$x = 5$, $y = 20$, $z = 80$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 7,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Dany jest trójkąt $ABC$, który nie jest równoramienny. W tym trójkącie miara kąta $ABC$ jest dwa razy większa od miary kąta $BAC$.\nWykaż, że długości boków tego trójkąta spełniają warunek\n$$|AC|^2 = |BC|^2 + |AB| \\cdot |BC|$$",
+        "answer": "Dowód (wykazanie, że $|AC|^2 = |BC|^2 + |AB| \\cdot |BC|$).",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 8,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Dany jest kwadrat $ABCD$ o boku długości $a$. Punkt $E$ jest środkiem boku $CD$. Przekątna $BD$ dzieli trójkąt $ACE$ na dwie figury: $AGF$ oraz $CEFG$.\nOblicz pola figur $AGF$ oraz $CEFG$. Zapisz obliczenia.",
+        "answer": "$P_{AGF} = \\frac{1}{12}a^2$ oraz $P_{CEFG} = \\frac{1}{6}a^2$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 9,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Rozwiąż równanie\n$$\\sin(4x) - \\sin(2x) = 4\\cos^2 x - 3$$\nw zbiorze $[0, 2\\pi]$. Zapisz obliczenia.",
+        "answer": "$x \\in \\left\\{\\frac{\\pi}{6},\\ \\frac{\\pi}{4},\\ \\frac{5\\pi}{6},\\ \\frac{7\\pi}{6},\\ \\frac{5\\pi}{4},\\ \\frac{11\\pi}{6}\\right\\}$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 10,
+            "max_points": 5
+        }
+    },
+    {
+        "question": "W kartezjańskim układzie współrzędnych $(x, y)$ środek $S$ okręgu o promieniu $\\sqrt{5}$ leży na prostej o równaniu $y = x + 1$. Przez punkt $A = (1, 2)$, którego odległość od punktu $S$ jest większa od $\\sqrt{5}$, poprowadzono dwie proste styczne do tego okręgu w punktach -- odpowiednio -- $B$ i $C$. Pole czworokąta $ABSC$ jest równe $15$.\nOblicz współrzędne punktu $S$. Rozważ wszystkie przypadki. Zapisz obliczenia.",
+        "answer": "$S = (6, 7)$ oraz $S = (-4, -3)$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 11,
+            "max_points": 5
+        }
+    },
+    {
+        "question": "Wyznacz wszystkie wartości parametru $m$, dla których równanie\n$$x^2 - (3m + 1) \\cdot x + 2m^2 + m + 1 = 0$$\nma dwa różne rozwiązania rzeczywiste $x_1$, $x_2$ spełniające warunek\n$$x_1^3 + x_2^3 + 3 \\cdot x_1 \\cdot x_2 \\cdot (x_1 + x_2 - 3) \\leq 3m - 7$$\nZapisz obliczenia.",
+        "answer": "$m \\in (-\\infty, -3)$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": 12,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Rozważamy wszystkie graniastosłupy prawidłowe trójkątne o objętości $3456$, których krawędź podstawy ma długość nie większą niż $8\\sqrt{3}$.\nWykaż, że pole $P$ powierzchni całkowitej graniastosłupa w zależności od długości $a$ krawędzi podstawy graniastosłupa jest określone wzorem\n$$P(a) = \\frac{a^2 \\sqrt{3}}{2} + \\frac{13824\\sqrt{3}}{a}$$",
+        "answer": "Dowód (wykazanie wzoru $P(a) = \\frac{a^2\\sqrt{3}}{2} + \\frac{13824\\sqrt{3}}{a}$).",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": "13.1",
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Pole $P$ powierzchni całkowitej graniastosłupa w zależności od długości $a$ krawędzi podstawy graniastosłupa jest określone wzorem\n$$P(a) = \\frac{a^2 \\sqrt{3}}{2} + \\frac{13824\\sqrt{3}}{a}$$\ndla $a \\in (0,\\, 8\\sqrt{3}\\,]$.\nWyznacz długość krawędzi podstawy tego z rozważanych graniastosłupów, którego pole powierzchni całkowitej jest najmniejsze. Oblicz to najmniejsze pole. Zapisz obliczenia.",
+        "answer": "Krawędź podstawy: $a = 8\\sqrt{3}$, najmniejsze pole: $P = 96\\sqrt{3} + 1728$",
+        "options": null,
+        "metadata": {
+            "year": 2024,
+            "level": 2,
+            "task_number": "13.2",
+            "max_points": 4
+        }
+    }
+]

@@ -1,0 +1,203 @@
+[
+    {
+        "question": "W rozwinieciu wyrazenia $(2\\sqrt{3}x + 4y)^3$ wspolczynnik przy iloczynie $xy^2$ jest rowny",
+        "answer": "D",
+        "options": {
+            "A": "$32\\sqrt{3}$",
+            "B": "$48$",
+            "C": "$96\\sqrt{3}$",
+            "D": "$144$"
+        },
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wielomian $W(x) = 6x^3 + 3x^2 - 5x + p$ jest podzielny przez dwumian $x - 1$ dla $p$ rownego",
+        "answer": "D",
+        "options": {
+            "A": "$4$",
+            "B": "$-2$",
+            "C": "$2$",
+            "D": "$-4$"
+        },
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono fragment wykresu funkcji homograficznej $y = f(x)$, ktorej dziedzina jest zbior $D = (-\\infty, 3) \\cup (3, +\\infty)$. Rownanie $f(x) = p$ z niewiadoma $x$ ma dokladnie jedno rozwiazanie",
+        "answer": "D",
+        "options": {
+            "A": "w dwóch przypadkach: $p = 0$ lub $p = 3$",
+            "B": "w dwóch przypadkach: $p = 0$ lub $p = 2$",
+            "C": "tylko wtedy, gdy $p = 3$",
+            "D": "tylko wtedy, gdy $p = 2$"
+        },
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Funkcja $f(x) = \\frac{3x - 1}{x^2 + 4}$ jest okreslona dla kazdej liczby rzeczywistej $x$. Pochodna tej funkcji jest okreslona wzorem",
+        "answer": "A",
+        "options": {
+            "A": "$f'(x) = \\frac{-3x^2 + 2x + 12}{(x^2 + 4)^2}$",
+            "B": "$f'(x) = \\frac{-9x^2 + 2x - 12}{(x^2 + 4)^2}$",
+            "C": "$f'(x) = \\frac{3x^2 - 2x - 12}{(x^2 + 4)^2}$",
+            "D": "$f'(x) = \\frac{9x^2 - 2x + 12}{(x^2 + 4)^2}$"
+        },
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Granica $\\lim_{n \\to \\infty} \\frac{pn^3 + 4n}{5n^6 - 4} = -8$. Wynika stad, ze",
+        "answer": "D",
+        "options": {
+            "A": "$p = -8$",
+            "B": "$p = 4$",
+            "C": "$p = 2$",
+            "D": "$p = -2$"
+        },
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 5,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wsrod $10$ tysiecy mieszkancow pewnego miasta przeprowadzono sondaz dotyczacy budowy przedszkola publicznego. Wyniki sondazu przedstawiono w tabeli: Kobiety -- 5140 popierajacych, 1860 niepopierajacych; Mezczyzni -- 2260 popierajacych, 740 niepopierajacych. Oblicz prawdopodobienstwo zdarzenia polegajacego na tym, ze losowo wybrana osoba, sposrod ankietowanych, popiera budowe przedszkola, jesli wiadomo, ze jest mezczyzna.",
+        "answer": "$P(\\text{popiera}|\\text{mezczyzna}) = \\frac{2260}{3000} = \\frac{113}{150} \\approx 0.753...$. Trzy pierwsze cyfry po przecinku: $753$.",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 6,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Dany jest ciag geometryczny $(a_n)$ okreslony wzorem $a_n = \\left(\\frac{1}{2x - 371}\\right)^n$ dla $n \\geq 1$. Wszystkie wyrazy tego ciagu sa dodatnie. Wyznacz najmniejsza liczbe calkowita $x$, dla ktorej nieskoczony szereg $a_1 + a_2 + a_3 + \\ldots$ jest zbiezny.",
+        "answer": "$x = 187$",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 7,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Wykaz, ze dla dowolnych dodatnich liczb rzeczywistych $x$ i $y$ takich, ze $x^2 + y^2 = 2$, prawdziwa jest nierownosc $x + y \\leq 2$.",
+        "answer": "Dowod: Z nierownosci Cauchy'ego-Schwarza lub z faktu, ze $(x - y)^2 \\geq 0$, wiec $x^2 + y^2 \\geq 2xy$, czyli $2 \\geq 2xy$, a zatem $(x + y)^2 = x^2 + 2xy + y^2 = 2 + 2xy \\leq 2 + 2 = 4$. Stad $x + y \\leq 2$.",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 8,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Dany jest prostokat $ABCD$. Okrag wpisany w trojkat $BCD$ jest styczny do przekatnej $BD$ w punkcie $N$. Okrag wpisany w trojkat $ABD$ jest styczny do boku $AD$ w punkcie $M$, a srodek $S$ tego okregu lezy na odcinku $MN$ (jak na rysunku). Wykaz, ze $MN = AD$.",
+        "answer": "Dowod: Korzystajac z wlasnosci stycznych do okregu z jednego punktu i z polozenia srodka okregu wpisanego na odcinku $MN$, wykazujemy, ze $MN = AD$.",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 9,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Wyznacz wszystkie wartosci parametru $a$, dla ktorych wykresy funkcji $f$ i $g$, okreslonych wzorami $f(x) = |x - 2|$ oraz $g(x) = 5 - ax$, przecinaja sie w punkcie o obu wspolrzednych dodatnich.",
+        "answer": "$a \\in (-\\infty, 1) \\cup (1, \\frac{5}{2})$",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 10,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Rozwiaz nierownosc $\\frac{2\\cos x - \\sqrt{3}}{\\cos 2x} < 0$ w przedziale $\\langle 0, 2\\pi \\rangle$.",
+        "answer": "$x \\in \\left(\\frac{\\pi}{4}, \\frac{\\pi}{6}\\right)$ -- poprawna odpowiedz po rozwiazaniu: $x \\in \\left(\\frac{\\pi}{6}, \\frac{\\pi}{4}\\right) \\cup \\left(\\frac{3\\pi}{4}, \\frac{5\\pi}{4}\\right) \\cup \\left(\\frac{11\\pi}{6}, 2\\pi\\right)$",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 11,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Dany jest trojmian kwadratowy $f(x) = x^2 + 2(m + 1)x + 6m + 1$. Wyznacz wszystkie rzeczywiste wartosci parametru $m$, dla ktorych ten trojmian ma dwa rozne pierwiastki $x_1$, $x_2$ tego samego znaku, spelniajace warunek $|x_1 - x_2| < 3$.",
+        "answer": "$m \\in \\left(\\frac{5}{4}, 4\\right)$",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 12,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Punkty $A = (30, 32)$ i $B = (0, 8)$ sa sasiednimi wierzcholkami czworokata $ABCD$ wpisanego w okrag. Prosta o rownaniu $x - y + 2 = 0$ jest jedyna osia symetrii tego czworokata i zawiera przekatna $AC$. Oblicz wspolrzedne wierzcholkow $C$ i $D$ tego czworokata.",
+        "answer": "$C = (-6, -4)$, $D = (24, 2)$",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 13,
+            "max_points": 5
+        }
+    },
+    {
+        "question": "Rozpatrujemy wszystkie liczby naturalne dziesieciocyfrowe, w zapisie ktorych moga wystepowac wylacznie cyfry $1$, $2$, $3$, przy czym cyfra $1$ wystepuje dokladnie trzy razy. Uzasadnij, ze takich liczb jest $15\\,360$.",
+        "answer": "Dowod: Wybieramy 3 pozycje na cyfre $1$ sposrod 10 pozycji: $\\binom{10}{3}$ sposobow. Pozostale 7 pozycji wypelniamy cyframi $2$ lub $3$: $2^7$ sposobow. Razem $\\binom{10}{3} \\cdot 2^7 = 120 \\cdot 128 = 15\\,360$.",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 14,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "W ostroslupie prawidlowym czworokatnym $ABCDS$ o podstawie $ABCD$ wysokosc jest rowna $5$, a kat miedzy sasiednimi scianami bocznymi ostroslupa ma miare $120°$. Oblicz objetosc tego ostroslupa.",
+        "answer": "$V = \\frac{500\\sqrt{3}}{9}$",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 15,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Parabola o rownaniu $y = 2 - \\frac{1}{2}x^2$ przecina os $Ox$ ukladu wspolrzednych w punktach $A = (-2, 0)$ i $B = (2, 0)$. Rozpatrujemy wszystkie trapezy rownramienne $ABCD$, ktorych dluzsza podstawa jest odcinek $AB$, a konce $C$ i $D$ krotszej podstawy leza na paraboli. Wyznacz pole trapezu $ABCD$ w zaleznosci od pierwszej wspolrzednej wierzcholka $C$. Oblicz wspolrzedne wierzcholka $C$ tego z rozpatrywanych trapezow, ktorego pole jest najwieksze.",
+        "answer": "$C = \\left(\\frac{2}{\\sqrt{3}},\\ 2 - \\frac{2}{3}\\right) = \\left(\\frac{2\\sqrt{3}}{3},\\ \\frac{4}{3}\\right)$",
+        "options": null,
+        "metadata": {
+            "year": 2016,
+            "level": 2,
+            "task_number": 16,
+            "max_points": 7
+        }
+    }
+]

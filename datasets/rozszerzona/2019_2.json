@@ -1,0 +1,187 @@
+[
+    {
+        "question": "Dla dowolnych liczb $x > 0$, $x \\neq 1$, $y > 0$, $y \\neq 1$ wartość wyrażenia $\\log_{\\frac{1}{x}} y \\cdot \\log_{\\frac{1}{y}} x$ jest równa",
+        "answer": "D",
+        "options": {
+            "A": "$x \\cdot y$",
+            "B": "$\\frac{1}{x \\cdot y}$",
+            "C": "$-1$",
+            "D": "$1$"
+        },
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Liczba $\\cos^2 105° - \\sin^2 105°$ jest równa",
+        "answer": "A",
+        "options": {
+            "A": "$-\\frac{\\sqrt{3}}{2}$",
+            "B": "$-\\frac{1}{2}$",
+            "C": "$\\frac{1}{2}$",
+            "D": "$\\frac{\\sqrt{3}}{2}$"
+        },
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Na rysunku przedstawiono fragment wykresu funkcji $y = f(x)$, który jest złożony z dwóch półprostych $AD$ i $CE$ oraz dwóch odcinków $AB$ i $BC$, gdzie $A = (-1, 0)$, $B = (1, 2)$, $C = (3, 0)$, $D = (-4, 3)$, $E = (6, 3)$. Wzór funkcji $f$ to",
+        "answer": "B",
+        "options": {
+            "A": "$f(x) = |x + 1| + |x - 1|$",
+            "B": "$f(x) = \\big| |x - 1| - 2 \\big|$",
+            "C": "$f(x) = -|x - 1| + 2$",
+            "D": "$f(x) = |x - 1| + 2$"
+        },
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Zdarzenia losowe $A$ i $B$ zawarte w $\\Omega$ są takie, że prawdopodobieństwo $P(B')$ zdarzenia $B'$, przeciwnego do zdarzenia $B$, jest równe $\\frac{1}{4}$. Ponadto prawdopodobieństwo warunkowe $P(A | B) = \\frac{1}{5}$. Wynika stąd, że",
+        "answer": "C",
+        "options": {
+            "A": "$P(A \\cap B) = \\frac{1}{20}$",
+            "B": "$P(A \\cap B) = \\frac{4}{15}$",
+            "C": "$P(A \\cap B) = \\frac{3}{20}$",
+            "D": "$P(A \\cap B) = \\frac{4}{5}$"
+        },
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Oblicz granicę $\\displaystyle\\lim_{n \\to \\infty} \\left( \\frac{9n^3 + 11n^2}{7n^3 + 5n^2 + 3n + 1} - \\frac{n^2}{3n^2 + 1} \\right)$. Wpisz w poniższe kratki – od lewej do prawej – trzy kolejne cyfry po przecinku rozwinięcia dziesiętnego otrzymanego wyniku.",
+        "answer": "952",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 5,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Rozważamy wszystkie liczby naturalne pięciocyfrowe zapisane przy użyciu cyfr $1, 3, 5, 7, 9$, bez powtarzania jakiejkolwiek cyfry. Oblicz sumę wszystkich takich liczb.",
+        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 6,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Punkt $P = (10, 2429)$ leży na paraboli o równaniu $y = 2x^2 + x + 2219$. Prosta o równaniu kierunkowym $y = ax + b$ jest styczna do tej paraboli w punkcie $P$. Oblicz współczynnik $b$.",
+        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 7,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Udowodnij, że dla dowolnych dodatnich liczb rzeczywistych $x$ i $y$, takich że $x < y$, i dowolnej dodatniej liczby rzeczywistej $a$, prawdziwa jest nierówność $\\frac{x + a}{y + a} + \\frac{y}{x} > 2$.",
+        "answer": "Dowód (zadanie otwarte).",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 8,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Dany jest trójkąt równoramienny $ABC$, w którym $|AC| = |BC|$. Na ramieniu $AC$ tego trójkąta wybrano punkt $M$ ($M \\neq A$ i $M \\neq C$), a na ramieniu $BC$ wybrano punkt $N$, w taki sposób, że $|AM| = |CN|$. Przez punkty $M$ i $N$ poprowadzono proste prostopadłe do podstawy $AB$ tego trójkąta, które wyznaczają na niej punkty $S$ i $T$. Udowodnij, że $ST = \\frac{1}{2} AB$.",
+        "answer": "Dowód (zadanie otwarte).",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 9,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Punkt $D$ leży na boku $AB$ trójkąta $ABC$ oraz $AC = 16$, $AD = 6$, $CD = 14$ i $BC = BD$. Oblicz obwód trójkąta $ABC$.",
+        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 10,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Dane są okręgi o równaniach $x^2 + y^2 - 12x - 8y + 43 = 0$ i $x^2 + y^2 - 2ax + 4y + a^2 - 77 = 0$. Wyznacz wszystkie wartości parametru $a$, dla których te okręgi mają dokładnie jeden punkt wspólny. Rozważ wszystkie przypadki.",
+        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 11,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Trzywyrazowy ciąg $(a, b, c)$ o wyrazach dodatnich jest arytmetyczny, natomiast ciąg $\\left( \\frac{1}{a},\\ \\frac{1}{3b},\\ \\frac{2}{a + 2b + c} \\right)$ jest geometryczny. Oblicz iloraz ciągu geometrycznego.",
+        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 12,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Wielomian określony wzorem $W(x) = 2x^3 + (m^3 + 2)x^2 - 11x - 2(2m + 1)$ jest podzielny przez dwumian $(x - 2)$ oraz przy dzieleniu przez dwumian $(x + 1)$ daje resztę $6$. Oblicz $m$ i dla wyznaczonej wartości $m$ rozwiąż nierówność $W(x) \\leq 0$.",
+        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 13,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Rozwiąż równanie $\\cos x \\cdot \\sin\\left(x - \\frac{\\pi}{3}\\right) + \\sin\\left(x + \\frac{\\pi}{3}\\right) = \\frac{1}{2} \\sin x$.",
+        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 14,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Rozważmy wszystkie graniastosłupy prawidłowe trójkątne o objętości $V = 2$. Wyznacz długości krawędzi tego z rozważanych graniastosłupów, którego pole powierzchni całkowitej jest najmniejsze. Oblicz to najmniejsze pole.",
+        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "options": null,
+        "metadata": {
+            "year": 2019,
+            "level": 2,
+            "task_number": 15,
+            "max_points": 7
+        }
+    }
+]

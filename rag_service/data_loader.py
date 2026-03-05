@@ -251,14 +251,14 @@ def load_informator_chunks() -> List[Chunk]:
 
 
 def load_dataset_chunks() -> List[Chunk]:
-    """Ładuj chunki z historycznych zestawów maturalnych (datasets/*.json)."""
+    """Ładuj chunki z historycznych zestawów maturalnych (datasets/**/*.json)."""
     chunks = []
 
     if not DATASETS_DIR.exists():
         print(f"⚠️  Brak katalogu {DATASETS_DIR}")
         return chunks
 
-    for json_file in sorted(DATASETS_DIR.glob("*.json")):
+    for json_file in sorted(DATASETS_DIR.glob("**/*.json")):
         try:
             with open(json_file, "r", encoding="utf-8") as f:
                 tasks = json.load(f)

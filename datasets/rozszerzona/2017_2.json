@@ -1,0 +1,187 @@
+[
+    {
+        "question": "Liczba $\\left(\\sqrt{2 - \\sqrt{3}} - \\sqrt{2 + \\sqrt{3}}\\right)^2$ jest rowna",
+        "answer": "C",
+        "options": {
+            "A": "$2$",
+            "B": "$\\frac{2}{3}$",
+            "C": "$4$",
+            "D": "$2\\sqrt{3}$"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Nieskoczony ciag liczbowy jest okreslony wzorem $a_n = \\frac{(n^2 - 10n)(2 - 3n)}{2n^3 + n^2 + 3}$ dla $n \\geq 1$. Wtedy",
+        "answer": "D",
+        "options": {
+            "A": "$\\lim_{n \\to \\infty} a_n = \\frac{1}{2}$",
+            "B": "$\\lim_{n \\to \\infty} a_n = 0$",
+            "C": "$\\lim_{n \\to \\infty} a_n = -\\infty$",
+            "D": "$\\lim_{n \\to \\infty} a_n = -\\frac{3}{2}$"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Odcinek $CD$ jest wysokoscia trojkata $ABC$, w ktorym $AD = CD = \\frac{1}{2}BC$. Okrag o srodku $C$ i promieniu $CD$ jest styczny do prostej $AB$. Okrag ten przecina boki $AC$ i $BC$ trojkata odpowiednio w punktach $K$ i $L$. Zaznaczony na rysunku kat $\\alpha$ wpisany w okrag jest rowny",
+        "answer": "C",
+        "options": {
+            "A": "$37{,}5°$",
+            "B": "$45°$",
+            "C": "$52{,}5°$",
+            "D": "$60°$"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Dane sa punkt $B = (-4, 7)$ i wektor $\\vec{u} = [-3, 5]$. Punkt $A$, taki, ze $\\vec{AB} = -3\\vec{u}$, ma wspolrzedne",
+        "answer": "A",
+        "options": {
+            "A": "$A = (5, -8)$",
+            "B": "$A = (-13, 22)$",
+            "C": "$A = (9, -15)$",
+            "D": "$A = (12, 24)$"
+        },
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Reszta z dzielenia wielomianu $W(x) = x^3 - 2x^2 + ax + 34$ przez dwumian $x - 2$ jest rowna $1$. Oblicz wartosc wspolczynnika $a$.",
+        "answer": "$a = -\\frac{37}{2}$, czyli $a = -18.5$. Trzy pierwsze cyfry po przecinku rozwinicia dziesietnego: $500$.",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 5,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Funkcja $f$ jest okreslona wzorem $f(x) = \\frac{x - 1}{x^2 + 1}$ dla kazdej liczby rzeczywistej $x$. Wyznacz rownanie stycznej do wykresu tej funkcji w punkcie $P = (1, 0)$.",
+        "answer": "$y = \\frac{1}{2}(x - 1)$, czyli $y = \\frac{1}{2}x - \\frac{1}{2}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 6,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Udowodnij, ze dla dowolnych roznych liczb rzeczywistych $x$, $y$ prawdziwa jest nierownosc $x^2 y^2 + 2x^2 + 2y^2 - 8xy + 4 > 0$.",
+        "answer": "Dowod: Wyrazenie mozna przeksztalcic do postaci $(xy - 4)^2 + 2(x - y)^2 - 12$, lub alternatywnie, uzyc grupowania $x^2 y^2 - 2xy + 1 + 2(x^2 - 2xy + y^2) + (4 - 6xy + ...)$. Kluczowe jest pokazanie, ze wyrazenie jest zawsze dodatnie dla $x \\neq y$.",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 7,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "W trojkacie ostrokatnym $ABC$ bok $AB$ ma dlugosc $c$, dlugosc boku $BC$ jest rowna $a$ oraz $\\angle ABC = \\beta$. Dwusieczna kata $ABC$ przecina bok $AC$ trojkata w punkcie $E$. Wykaz, ze dlugosc odcinka $BE$ jest rowna $\\frac{2ac \\cdot \\cos \\frac{\\beta}{2}}{a + c}$.",
+        "answer": "Dowod: Pole trojkata $ABC$ mozna wyrazic jako sume pol trojkatow $ABE$ i $CBE$: $\\frac{1}{2}ac\\sin\\beta = \\frac{1}{2}c \\cdot BE \\cdot \\sin\\frac{\\beta}{2} + \\frac{1}{2}a \\cdot BE \\cdot \\sin\\frac{\\beta}{2}$. Stad $ac\\sin\\beta = BE(a+c)\\sin\\frac{\\beta}{2}$. Poniewaz $\\sin\\beta = 2\\sin\\frac{\\beta}{2}\\cos\\frac{\\beta}{2}$, otrzymujemy $BE = \\frac{2ac\\cos\\frac{\\beta}{2}}{a+c}$.",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 8,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "W czworoscianie, ktorego wszystkie krawedzie maja taka sama dlugosc $6$, umieszczono kule tak, ze ma ona dokladnie jeden punkt wspolny z kazda sciana czworoscianu. Plaszczyzna $\\pi$, rownlegla do podstawy tego czworoscianu, dzieli go na dwie bryly: ostroslup o objetosci rownej $\\frac{8}{27}$ objetosci dzielonego czworoscianu i ostroslup sciety. Oblicz odleglosc srodka $S$ kuli od plaszczyzny $\\pi$.",
+        "answer": "$\\frac{2\\sqrt{6}}{9}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 9,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Rozwiaz rownanie $\\cos 2x + 3\\cos x = -2$ w przedziale $\\langle 0, 2\\pi \\rangle$.",
+        "answer": "$x \\in \\left\\{\\frac{2\\pi}{3},\\ \\pi,\\ \\frac{4\\pi}{3}\\right\\}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 10,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "W pudelku znajduje sie $8$ pileczek oznaczonych kolejnymi liczbami naturalnymi od $1$ do $8$. Losujemy jedna pileczke, zapisujemy liczbe na niej wystepujaca, a nastepnie zwracamy pileczke do urny. Te procedure wykonujemy jeszcze dwa razy i tym samym otrzymujemy zapisane trzy liczby. Oblicz prawdopodobienstwo wylosowania takich pileczek, ze iloczyn trzech zapisanych liczb jest podzielny przez $4$. Wynik podaj w postaci ulamka zwyklego.",
+        "answer": "$\\frac{37}{64}$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 11,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Wyznacz wszystkie wartosci parametru $m$, dla ktorych rownanie $4x^2 - 6mx + (2m + 3)(m - 3) = 0$ ma dwa rozne rozwiazania rzeczywiste $x_1$ i $x_2$, przy czym $x_1 < x_2$, spelniajace warunek $(4x_1 - 4x_2 - 1)(4x_1 - 4x_2 + 1) < 0$.",
+        "answer": "$m \\in \\left(-\\frac{11}{3}, -3\\right) \\cup \\left(3, \\frac{11}{3}\\right)$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 12,
+            "max_points": 5
+        }
+    },
+    {
+        "question": "Wyznacz rownanie okregu przechodzacego przez punkty $A = (-5, 3)$ i $B = (0, 6)$, ktorego srodek lezy na prostej o rownaniu $x - 3y + 1 = 0$.",
+        "answer": "$(x + 2)^2 + (y - (-\\frac{1}{3}))^2 = ...$, tj. $(x + 2)^2 + (y + \\frac{1}{3})^2 = \\frac{190}{9}$, lub rownowazne: srodek $S = (-2, -\\frac{1}{3})$, promien $r = \\frac{\\sqrt{190}}{3}$.",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 13,
+            "max_points": 5
+        }
+    },
+    {
+        "question": "Liczby $a$, $b$, $c$ sa -- odpowiednio -- pierwszym, drugim i trzecim wyrazem ciagu arytmetycznego. Suma tych liczb jest rowna $27$. Ciag $(a - 2,\\ b,\\ 2c + 1)$ jest geometryczny. Wyznacz liczby $a$, $b$, $c$.",
+        "answer": "$a = 3,\\ b = 9,\\ c = 15$ lub $a = 15,\\ b = 9,\\ c = 3$",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 14,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Rozpatrujemy wszystkie walce o danym polu powierzchni calkowitej $P$. Oblicz wysokosc i promien podstawy tego walca, ktorego objetosc jest najwieksza. Oblicz te najwieksza objetosc.",
+        "answer": "Promien $r = \\sqrt{\\frac{P}{6\\pi}}$, wysokosc $h = \\sqrt{\\frac{P}{6\\pi}} = r$. Najwieksza objetosc $V = \\frac{P}{6}\\sqrt{\\frac{P}{6\\pi}}$.",
+        "options": null,
+        "metadata": {
+            "year": 2017,
+            "level": 2,
+            "task_number": 15,
+            "max_points": 7
+        }
+    }
+]

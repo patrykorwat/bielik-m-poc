@@ -1,0 +1,209 @@
+[
+    {
+        "question": "Dane sa liczby: $a = \\frac{\\sqrt{48}}{2}$, $b = \\frac{1}{2^{-1}}$, $c = \\sqrt[4]{48}$, $d = \\sqrt[4]{\\frac{48}{2^{48}}}$ oraz $k = 2\\sqrt[4]{3}$. Prawdziwa jest rownosc",
+        "answer": "C",
+        "options": {
+            "A": "$k = a$",
+            "B": "$k = b$",
+            "C": "$k = c$",
+            "D": "$k = d$"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 1,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Rownanie $|x - 2| = x + 2$",
+        "answer": "B",
+        "options": {
+            "A": "nie ma rozwiązań",
+            "B": "ma dokładnie jedno rozwiązanie",
+            "C": "ma dokładnie dwa rozwiązania",
+            "D": "ma dokładnie cztery rozwiązania"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 2,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Wartosc wyrazenia $2\\log_5 10 - \\frac{1}{\\log_{20} 5}$ jest rowna",
+        "answer": "C",
+        "options": {
+            "A": "$-1$",
+            "B": "$0$",
+            "C": "$1$",
+            "D": "$2$"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 3,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Granica $\\lim_{x \\to 3^{-}} \\frac{-x + 2}{x^2 - 5x + 6}$ jest rowna",
+        "answer": "D",
+        "options": {
+            "A": "$-\\infty$",
+            "B": "$-1$",
+            "C": "$0$",
+            "D": "$+\\infty$"
+        },
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 4,
+            "max_points": 1
+        }
+    },
+    {
+        "question": "Punkt $A = (-5, 3)$ jest srodkiem symetrii wykresu funkcji homograficznej okreslonej wzorem $f(x) = \\frac{ax + 7}{x + d}$, gdy $x \\neq -d$. Oblicz iloraz $\\frac{d}{a}$.",
+        "answer": "Iloraz $\\frac{d}{a}$ wynosi $3.\\overline{571428}$ (tj. $\\frac{25}{7}$). Cyfra jednosci to 3, pierwsze dwie cyfry po przecinku to 57.",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 5,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Styczna do paraboli o rownaniu $y = 3x^2 - 1$ w punkcie $P = (x_0, y_0)$ jest nachylona do osi $Ox$ pod katem $30°$. Oblicz wspolrzedne punktu $P$.",
+        "answer": "$P = \\left(\\frac{\\sqrt{3}}{6},\\ -\\frac{11}{12}\\right)$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 6,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Trojkat $ABC$ jest ostrokatny oraz $AC > BC$. Dwusieczna $d_C$ kata $ACB$ przecina bok $AB$ w punkcie $K$. Punkt $L$ jest obrazem punktu $K$ w symetrii osiowej wzgledem dwusiecznej $d_A$ kata $BAC$, punkt $M$ jest obrazem punktu $L$ w symetrii osiowej wzgledem dwusiecznej $d_C$ kata $ACB$, a punkt $N$ jest obrazem punktu $M$ w symetrii osiowej wzgledem dwusiecznej $d_B$ kata $ABC$. Udowodnij, ze na czworokacie $KNML$ mozna opisac okrag.",
+        "answer": "Dowod: Nalezy wykazac, ze suma przeciwleglych katow czworokata KNML wynosi $180°$. Korzystajac z wlasnosci symetrii osiowych wzgledem dwusiecznych katow trojkata, pokazujemy, ze odpowiednie katy czworokata sumuja sie do $180°$, co jest warunkiem koniecznym i wystarczajacym istnienia okragu opisanego na czworokacie.",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 7,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Udowodnij, ze dla kazdej liczby calkowitej $k$ i dla kazdej liczby calkowitej $m$ liczba $k^3 m - km^3$ jest podzielna przez $6$.",
+        "answer": "Dowod: $k^3 m - km^3 = km(k^2 - m^2) = km(k - m)(k + m)$. Iloczyn trzech kolejnych czynnikow $km(k-m)(k+m)$ jest podzielny zarowno przez $2$ jak i przez $3$, wiec jest podzielny przez $6$. Podzielnosc przez $2$: sposrod czterech czynnikow $k$, $m$, $k-m$, $k+m$ co najmniej jeden jest parzysty. Podzielnosc przez $3$: sposrod $k$, $m$, $k-m$ co najmniej jeden jest podzielny przez $3$ (rozpatrujemy reszty z dzielenia $k$ i $m$ przez $3$).",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 8,
+            "max_points": 3
+        }
+    },
+    {
+        "question": "Z liczb osmioelementowego zbioru $Z = \\{1, 2, 3, 4, 5, 6, 7, 9\\}$ tworzymy osmiowyrazowy ciag, ktorego wyrazy sie nie powtarzaja. Oblicz prawdopodobienstwo zdarzenia polegajacego na tym, ze zadne dwie liczby parzyste nie sa sasiednimi wyrazami utworzonego ciagu. Wynik przedstaw w postaci ulamka zwyklego nieskracalnego.",
+        "answer": "$\\frac{5}{14}$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 9,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Objetosc stozka scietego mozna obliczyc ze wzoru $V = \\frac{1}{3}\\pi H(r^2 + rR + R^2)$, gdzie $r$ i $R$ sa promieniami podstaw ($r < R$), a $H$ jest wysokoscia bryly. Dany jest stozek sciety, ktorego wysokosc jest rowna $10$, objetosc $840\\pi$, a $r = 6$. Oblicz cosinus kata nachylenia przekatnej przekroju osiowego tej bryly do jednej z jej podstaw.",
+        "answer": "$\\cos \\alpha = \\frac{5\\sqrt{29}}{29}$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 10,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Rozwiaz rownanie $\\sin 6x + \\cos 3x = 2\\sin 3x + 1$ w przedziale $\\langle 0, \\pi \\rangle$.",
+        "answer": "$x \\in \\left\\{\\frac{\\pi}{6},\\ \\frac{\\pi}{2},\\ \\frac{5\\pi}{6}\\right\\}$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 11,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Wyznacz wszystkie wartosci parametru $m$, dla ktorych rownanie $x^2 + (m+1)x - m^2 + 1 = 0$ ma dwa rozwiazania rzeczywiste $x_1$ i $x_2$ ($x_1 \\neq x_2$), spelniajace warunek $x_1^3 + x_2^3 > -7x_1 x_2$.",
+        "answer": "$m \\in (-\\infty, -3) \\cup (-3, -1) \\cup (1, +\\infty)$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 12,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Wyrazy ciagu geometrycznego $(a_n)$, okreslonego dla $n \\geq 1$, spelniaja uklad rownan $\\begin{cases} a_3 + a_6 = -84 \\\\ a_4 + a_7 = 168 \\end{cases}$. Wyznacz liczbe $n$ poczatkowych wyrazow tego ciagu, ktorych suma $S_n$ jest rowna $32769$.",
+        "answer": "$n = 15$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 13,
+            "max_points": 4
+        }
+    },
+    {
+        "question": "Punkt $A = (7, -1)$ jest wierzcholkiem trojkata rownramiennego $ABC$, w ktorym $AC = BC$. Obie wspolrzedne wierzcholka $C$ sa liczbami ujemnymi. Okrag wpisany w trojkat $ABC$ ma rownanie $x^2 + y^2 = 10$. Oblicz wspolrzedne wierzcholkow $B$ i $C$ tego trojkata.",
+        "answer": "$B = (-1, -7)$, $C = (-3, -1)$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 14,
+            "max_points": 6
+        }
+    },
+    {
+        "question": "Rozpatrujemy wszystkie trapezy rownramienne, w ktore mozna wpisac okrag, spelniajace warunek: suma dlugosci dluzszej podstawy $a$ i wysokosci trapezu jest rowna $2$.\na) Wyznacz wszystkie wartosci $a$, dla ktorych istnieje trapez o podanych wlasnosciach.",
+        "answer": "$a \\in (1, 2)$",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 15,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Rozpatrujemy wszystkie trapezy rownramienne, w ktore mozna wpisac okrag, spelniajace warunek: suma dlugosci dluzszej podstawy $a$ i wysokosci trapezu jest rowna $2$.\nb) Wykaz, ze obwod $L$ takiego trapezu, jako funkcja dlugosci $a$ dluzszej podstawy trapezu, wyraza sie wzorem $L(a) = \\frac{4a^2 - 8a + 8}{a}$.",
+        "answer": "Dowod: W trapez rownramienny wpisany jest okrag, wiec suma dlugosci podstaw rowna sie sumie dlugosci ramion, tj. $a + b = 2l$, gdzie $b$ to krotsza podstawa, $l$ to ramie. Wysokosc $h = 2 - a$. Z twierdzenia Pitagorasa: $l^2 = h^2 + \\left(\\frac{a-b}{2}\\right)^2$. Po obliczeniach otrzymujemy $L(a) = 2(a + l) = \\frac{4a^2 - 8a + 8}{a}$.",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 15,
+            "max_points": 2
+        }
+    },
+    {
+        "question": "Rozpatrujemy wszystkie trapezy rownramienne, w ktore mozna wpisac okrag, spelniajace warunek: suma dlugosci dluzszej podstawy $a$ i wysokosci trapezu jest rowna $2$.\nc) Oblicz tangens kata ostrego tego sposrod rozpatrywanych trapezow, ktorego obwod jest najmniejszy.",
+        "answer": "$\\tan \\alpha = \\sqrt{3}$, czyli kat ostry trapezu o najmniejszym obwodzie wynosi $60°$.",
+        "options": null,
+        "metadata": {
+            "year": 2018,
+            "level": 2,
+            "task_number": 15,
+            "max_points": 3
+        }
+    }
+]
