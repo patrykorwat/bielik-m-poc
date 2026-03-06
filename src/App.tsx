@@ -8,23 +8,32 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './App.css';
 
-const MCP_PROXY_URL = 'http://localhost:3001';
-const LEAN_PROXY_URL = 'http://localhost:3002';
+const MCP_PROXY_URL = import.meta.env.VITE_MCP_PROXY_URL || 'http://localhost:3001';
+const LEAN_PROXY_URL = import.meta.env.VITE_LEAN_PROXY_URL || 'http://localhost:3002';
+const DEFAULT_REMOTE_API_URL = import.meta.env.VITE_REMOTE_API_URL ;
+const DEFAULT_REMOTE_MODEL = import.meta.env.VITE_REMOTE_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
 
 function App() {
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('ollama');
   const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:11434');
   const [mlxModel, setMlxModel] = useState('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
+  const [apiKey, setApiKey] = useState('');
+  const [proxyHasApiKey, setProxyHasApiKey] = useState(false);
 
   const handleProviderChange = (provider: LLMProvider) => {
     setLlmProvider(provider);
     if (provider === 'ollama') {
       setMlxBaseUrl('http://localhost:11434');
       setMlxModel('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
-    } else {
+      setApiKey('');
+    } else if (provider === 'mlx') {
       setMlxBaseUrl('http://localhost:8011');
       setMlxModel('speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit');
+      setApiKey('');
+    } else if (provider === 'remote') {
+      setMlxBaseUrl(DEFAULT_REMOTE_API_URL);
+      setMlxModel(DEFAULT_REMOTE_MODEL);
     }
   };
   const [isConfigured, setIsConfigured] = useState(false);
@@ -58,6 +67,21 @@ function App() {
       textarea.style.height = `${newHeight}px`;
     }
   }, [inputMessage]);
+
+  // Check if proxy has API key configured (key stays server-side)
+  useEffect(() => {
+    fetch(`${MCP_PROXY_URL}/llm-proxy/config`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.hasApiKey) {
+          setProxyHasApiKey(true);
+          setLlmProvider('remote');
+          setMlxBaseUrl(DEFAULT_REMOTE_API_URL);
+          setMlxModel(DEFAULT_REMOTE_MODEL);
+        }
+      })
+      .catch(() => { /* proxy not ready yet, ignore */ });
+  }, []);
 
   // Load chat sessions on mount
   useEffect(() => {
@@ -94,6 +118,7 @@ function App() {
         model: mlxModel,
         temperature: 0.7,
         maxTokens: 4096,
+        ...(apiKey ? { apiKey } : {}),
       };
 
       orchestratorRef.current = new ThreeAgentOrchestrator(
@@ -338,6 +363,7 @@ function App() {
             >
               <option value="ollama">Ollama (wieloplatformowy) - Rekomendowane</option>
               <option value="mlx">MLX (Apple Silicon - macOS)</option>
+              <option value="remote">Zdalne API (np. Cyfronet LLM Lab)</option>
             </select>
 
             <label htmlFor="proverBackend">Wybierz Backend Dowodzenia:</label>
@@ -366,23 +392,42 @@ function App() {
               </div>
             )}
 
-            <label htmlFor="mlxBaseUrl">URL serwera {llmProvider === 'ollama' ? 'Ollama' : 'MLX'}:</label>
+            <label htmlFor="mlxBaseUrl">URL serwera {llmProvider === 'ollama' ? 'Ollama' : llmProvider === 'remote' ? 'API' : 'MLX'}:</label>
             <input
               id="mlxBaseUrl"
               type="text"
               value={mlxBaseUrl}
               onChange={(e) => setMlxBaseUrl(e.target.value)}
-              placeholder={llmProvider === 'ollama' ? 'http://localhost:11434' : 'http://localhost:8011'}
+              placeholder={llmProvider === 'ollama' ? 'http://localhost:11434' : llmProvider === 'remote' ? DEFAULT_REMOTE_API_URL : 'http://localhost:8011'}
               className="api-input"
             />
 
-            <label htmlFor="mlxModel">Model {llmProvider === 'ollama' ? 'Ollama' : 'MLX'}:</label>
+            {llmProvider === 'remote' && !proxyHasApiKey && (
+              <>
+                <label htmlFor="apiKey">Klucz API (Bearer token):</label>
+                <input
+                  id="apiKey"
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="np. plg-xxx..."
+                  className="api-input"
+                />
+              </>
+            )}
+            {llmProvider === 'remote' && proxyHasApiKey && (
+              <p style={{ color: '#4caf50', fontSize: '0.9em', margin: '4px 0' }}>
+                Klucz API skonfigurowany na serwerze proxy (--api-key)
+              </p>
+            )}
+
+            <label htmlFor="mlxModel">Model {llmProvider === 'ollama' ? 'Ollama' : llmProvider === 'remote' ? 'API' : 'MLX'}:</label>
             <input
               id="mlxModel"
               type="text"
               value={mlxModel}
               onChange={(e) => setMlxModel(e.target.value)}
-              placeholder={llmProvider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : 'speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit'}
+              placeholder={llmProvider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : llmProvider === 'remote' ? 'speakleash/Bielik-11B-v3.0-Instruct' : 'speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit'}
               className="api-input"
             />
 
@@ -434,7 +479,30 @@ function App() {
                 </ul>
               </>
             )}
-            {llmProvider === 'ollama' ? (
+            {llmProvider === 'remote' ? (
+              <div className="mlx-info">
+                <h3>ℹ️ Zdalne API (OpenAI-compatible):</h3>
+                <ul>
+                  <li>Obsługuje dowolne API zgodne z formatem OpenAI (np. Cyfronet LLM Lab, vLLM, TGI)</li>
+                  <li>Wymaga klucza API (Bearer token) do uwierzytelnienia</li>
+                  <li>URL powinien wskazywać na bazę API (przed <code>/v1/...</code>)</li>
+                  <li><strong>Wymaga uruchomienia MCP proxy</strong> (obsługa CORS): <code>npm run mcp-proxy</code></li>
+                </ul>
+                <div className="mlx-command">
+                  <h4>Cyfronet LLM Lab:</h4>
+                  <div className="command-box">
+                    <code>URL: {DEFAULT_REMOTE_API_URL}</code>
+                    <button
+                      onClick={() => copyToClipboard(DEFAULT_REMOTE_API_URL)}
+                      className="copy-button"
+                      title="Skopiuj do schowka"
+                    >
+                      📋 Kopiuj
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : llmProvider === 'ollama' ? (
               <div className="mlx-info">
                 <h3>ℹ️ Wymagania Ollama:</h3>
                 <ul>

@@ -16,6 +16,7 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = 3001;
+const DEFAULT_API_KEY = process.env.LLM_API_KEY || '';
 
 // Enable CORS for browser access
 app.use(cors());
@@ -206,6 +207,88 @@ app.post('/tools/call', async (req, res) => {
   }
 });
 
+/**
+ * POST /llm-proxy - Forward LLM API requests to remote server (bypasses CORS)
+ * Body: { targetUrl: string, apiKey?: string, payload: object }
+ */
+app.post('/llm-proxy', async (req, res) => {
+  try {
+    const { targetUrl, apiKey: reqApiKey, payload } = req.body;
+    const apiKey = reqApiKey || DEFAULT_API_KEY;
+
+    if (!targetUrl) {
+      return res.status(400).json({ error: 'targetUrl is required' });
+    }
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(targetUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('LLM proxy error:', error);
+    res.status(502).json({
+      error: error instanceof Error ? error.message : 'LLM proxy request failed',
+    });
+  }
+});
+
+/**
+ * GET /llm-proxy/models - Forward model list request to remote server
+ * Query: ?targetUrl=...&apiKey=...
+ */
+app.get('/llm-proxy/models', async (req, res) => {
+  try {
+    const { targetUrl, apiKey: reqApiKey } = req.query;
+    const apiKey = reqApiKey || DEFAULT_API_KEY;
+
+    if (!targetUrl) {
+      return res.status(400).json({ error: 'targetUrl query param is required' });
+    }
+
+    const headers = {};
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    const response = await fetch(targetUrl, { method: 'GET', headers });
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json(data);
+    }
+
+    res.json(data);
+  } catch (error) {
+    console.error('LLM proxy models error:', error);
+    res.status(502).json({
+      error: error instanceof Error ? error.message : 'LLM proxy request failed',
+    });
+  }
+});
+
+/**
+ * GET /llm-proxy/config - Check if server-side API key is configured
+ */
+app.get('/llm-proxy/config', (_req, res) => {
+  res.json({
+    hasApiKey: !!DEFAULT_API_KEY,
+  });
+});
+
 // Start server
 startMCPServer();
 
@@ -215,4 +298,6 @@ app.listen(PORT, () => {
   console.log('  GET  /health - Health check');
   console.log('  GET  /tools - List available tools');
   console.log('  POST /tools/call - Call a tool');
+  console.log('  POST /llm-proxy - Forward LLM requests (CORS bypass)');
+  console.log('  GET  /llm-proxy/models - List remote models');
 });

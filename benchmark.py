@@ -703,6 +703,10 @@ def main():
                         choices=["all", "rag", "validator", "e2e", "dataset"],
                         help="Which component to benchmark")
     parser.add_argument("--port", type=int, default=8011)
+    parser.add_argument("--api-url", type=str, default=os.environ.get("BIELIK_API_URL"),
+                        help="Full API base URL. Overrides --port. Env: BIELIK_API_URL")
+    parser.add_argument("--api-key", type=str, default=os.environ.get("BIELIK_API_KEY"),
+                        help="API key/token for Bearer auth. Env: BIELIK_API_KEY")
     parser.add_argument("--model", type=str, default="LibraxisAI/Bielik-11B-v3.0-mlx-q4")
     parser.add_argument("--year", type=str, default="2024")
     parser.add_argument("--sample", type=int, default=5)
@@ -716,7 +720,11 @@ def main():
     args = parser.parse_args()
 
     verbose = not args.quiet
-    base_url = f"http://localhost:{args.port}"
+    if args.api_url:
+        base_url = args.api_url.rstrip('/')
+    else:
+        base_url = f"http://localhost:{args.port}"
+    api_key = args.api_key
     now = datetime.now()
     bench_id = f"bench_{now.strftime('%Y%m%d_%H%M%S')}"
 

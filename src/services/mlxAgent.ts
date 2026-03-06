@@ -1,4 +1,4 @@
-export type LLMProviderType = 'mlx' | 'ollama';
+export type LLMProviderType = 'mlx' | 'ollama' | 'remote';
 
 export interface LLMConfig {
   provider?: LLMProviderType;
@@ -6,6 +6,7 @@ export interface LLMConfig {
   model: string;
   temperature?: number;
   maxTokens?: number;
+  apiKey?: string;
 }
 
 export interface LLMResponse {
@@ -20,8 +21,11 @@ export interface LLMResponse {
   usage?: any;
 }
 
+const LLM_PROXY_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_MCP_PROXY_URL) || 'http://localhost:3001';
+
 /**
- * Unified LLM Agent supporting MLX and Ollama (both expose OpenAI-compatible API)
+ * Unified LLM Agent supporting MLX, Ollama, and Remote APIs (all OpenAI-compatible)
+ * Remote API requests are proxied through MCP proxy server to avoid CORS issues.
  */
 export class LLMAgent {
   private provider: LLMProviderType;
@@ -29,6 +33,7 @@ export class LLMAgent {
   private model: string;
   private temperature: number;
   private maxTokens: number;
+  private apiKey?: string;
 
   constructor(config: LLMConfig) {
     this.provider = config.provider || 'mlx';
@@ -36,15 +41,31 @@ export class LLMAgent {
     this.model = config.model || (this.provider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : 'speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit');
     this.temperature = config.temperature ?? 0.7;
     this.maxTokens = config.maxTokens || 4096;
+    this.apiKey = config.apiKey;
+  }
+
+  private get useProxy(): boolean {
+    return this.provider === 'remote';
   }
 
   /**
    * Check if LLM server is available
    */
+  private authHeaders(): Record<string, string> {
+    return this.apiKey ? { 'Authorization': `Bearer ${this.apiKey}` } : {};
+  }
+
   async isAvailable(): Promise<boolean> {
     try {
+      if (this.useProxy) {
+        const params = new URLSearchParams({ targetUrl: `${this.baseUrl}/v1/models` });
+        if (this.apiKey) params.set('apiKey', this.apiKey);
+        const response = await fetch(`${LLM_PROXY_URL}/llm-proxy/models?${params}`);
+        return response.ok;
+      }
       const response = await fetch(`${this.baseUrl}/v1/models`, {
         method: 'GET',
+        headers: this.authHeaders(),
       });
       return response.ok;
     } catch (error) {
@@ -58,15 +79,23 @@ export class LLMAgent {
    */
   async listModels(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/v1/models`, {
-        method: 'GET',
-      });
+      let data: { data?: Array<{ id: string }> };
 
-      if (!response.ok) {
-        return [];
+      if (this.useProxy) {
+        const params = new URLSearchParams({ targetUrl: `${this.baseUrl}/v1/models` });
+        if (this.apiKey) params.set('apiKey', this.apiKey);
+        const response = await fetch(`${LLM_PROXY_URL}/llm-proxy/models?${params}`);
+        if (!response.ok) return [];
+        data = await response.json();
+      } else {
+        const response = await fetch(`${this.baseUrl}/v1/models`, {
+          method: 'GET',
+          headers: this.authHeaders(),
+        });
+        if (!response.ok) return [];
+        data = await response.json();
       }
 
-      const data = await response.json() as { data?: Array<{ id: string }> };
       return data.data?.map((m) => m.id) || [];
     } catch (error) {
       console.error(`[LLMAgent:${this.provider}] Error listing models:`, error);
@@ -101,6 +130,7 @@ export class LLMAgent {
         baseUrl: this.baseUrl,
         model: this.model,
         messagesCount: messagesWithSystem.length,
+        proxied: this.useProxy,
       });
 
       // Create abort controller with 5 minute timeout
@@ -108,14 +138,31 @@ export class LLMAgent {
       const timeoutId = setTimeout(() => controller.abort(), 300000);
 
       try {
-        const response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        });
+        let response: Response;
+
+        if (this.useProxy) {
+          // Route through MCP proxy to avoid CORS
+          response = await fetch(`${LLM_PROXY_URL}/llm-proxy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              targetUrl: `${this.baseUrl}/v1/chat/completions`,
+              apiKey: this.apiKey,
+              payload: requestBody,
+            }),
+            signal: controller.signal,
+          });
+        } else {
+          response = await fetch(`${this.baseUrl}/v1/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...this.authHeaders(),
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+          });
+        }
 
         clearTimeout(timeoutId);
 
@@ -146,9 +193,10 @@ export class LLMAgent {
       // Provide helpful error messages
       if (error instanceof Error) {
         if (error.message.includes('ECONNREFUSED') || error.message.includes('Failed to fetch')) {
-          throw new Error(
-            `Cannot connect to ${this.providerLabel()} server. Make sure the server is running at ${this.baseUrl}`
-          );
+          const hint = this.useProxy
+            ? `Make sure MCP proxy is running (npm run mcp-proxy) and remote API is accessible at ${this.baseUrl}`
+            : `Make sure the server is running at ${this.baseUrl}`;
+          throw new Error(`Cannot connect to ${this.providerLabel()} server. ${hint}`);
         }
       }
       throw error;
@@ -185,7 +233,7 @@ export class LLMAgent {
   }
 
   private providerLabel(): string {
-    return this.provider === 'ollama' ? 'Ollama' : 'MLX';
+    return this.provider === 'ollama' ? 'Ollama' : this.provider === 'remote' ? 'Remote API' : 'MLX';
   }
 }
 

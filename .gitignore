@@ -47,3 +47,5 @@ coverage/
 .tmp
 
 __pycache__
+
+benchmark*

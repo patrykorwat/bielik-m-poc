@@ -13,6 +13,39 @@
 
 set -e  # Exit on error
 
+# Parse CLI arguments
+API_KEY=""
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --api-key)
+            API_KEY="$2"
+            shift 2
+            ;;
+        --api-key=*)
+            API_KEY="${1#*=}"
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --api-key KEY   Set API key for remote LLM provider (e.g. Cyfronet LLM Lab)"
+            echo "  -h, --help      Show this help"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
+# Also accept API_KEY from environment variable
+if [ -z "$API_KEY" ] && [ -n "$BIELIK_API_KEY" ]; then
+    API_KEY="$BIELIK_API_KEY"
+fi
+
 echo "🎓 Starting Bielik Matura"
 echo "========================="
 echo ""
@@ -247,7 +280,7 @@ mkdir -p logs
 
 # Start MCP Proxy (SymPy) - MANDATORY
 print_info "Starting MCP Proxy (SymPy) on port 3001..."
-npm run mcp-proxy > logs/mcp-proxy.log 2>&1 &
+LLM_API_KEY="$API_KEY" npm run mcp-proxy > logs/mcp-proxy.log 2>&1 &
 MCP_PID=$!
 sleep 2
 
@@ -361,6 +394,16 @@ if [ "$MLX_READY" = false ]; then
     echo -e "  ${BLUE}ℹ  MLX server not detected (optional)${NC}"
     echo "     You can use Claude API instead, or start MLX:"
     echo -e "     ${GREEN}mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port $MLX_PORT${NC}"
+    echo ""
+fi
+
+if [ -n "$API_KEY" ]; then
+    print_success "API key configured (passed to UI)"
+else
+    echo -e "  ${BLUE}ℹ  No API key configured${NC}"
+    echo "     To use remote API (e.g. Cyfronet LLM Lab), restart with:"
+    echo -e "     ${GREEN}./start.sh --api-key YOUR_KEY${NC}"
+    echo "     or set BIELIK_API_KEY environment variable"
     echo ""
 fi
 

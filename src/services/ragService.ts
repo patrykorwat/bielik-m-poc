@@ -113,43 +113,76 @@ export class RAGService {
     // Metody matematyczne — najcenniejsze (how to solve, not what the answer is)
     const methods = results.filter(r => r.source === 'methods' && r.score > 0.10);
     if (methods.length > 0) {
-      const methodLines = methods.slice(0, 2).map(m => {
+      const methodLines = methods.slice(0, 3).map(m => {
         let line = `- ${m.title}`;
-        if (m.tips) line += `: ${m.tips.substring(0, 120)}`;
-        if (m.sympy_hint) line += `\n  SymPy: ${m.sympy_hint.substring(0, 120)}`;
+        if (m.tips) line += `\n  Wskazowki: ${m.tips.substring(0, 200)}`;
+        if (m.sympy_hint) line += `\n  SymPy: ${m.sympy_hint.substring(0, 200)}`;
         return line;
       });
-      sections.push(`METODY:\n${methodLines.join('\n')}`);
+      sections.push(`METODY ROZWIAZANIA:\n${methodLines.join('\n')}`);
     }
 
-    // Podobne zadania — only the category/title, never the answer
-    const examples = results.filter(r =>
-      (r.source === 'dataset' || r.source === 'informator_pdf') && r.score > 0.15
-    );
+    // Informator PDF — rozwiązania wzorcowe z informatora CKE
+    const pdfChunks = results.filter(r => r.source === 'informator_pdf' && r.score > 0.15);
+    if (pdfChunks.length > 0) {
+      const pdfLines = pdfChunks.slice(0, 2).map(p => {
+        let line = `- ${p.title} [${p.category}]`;
+        if (p.sympy_hint) line += `\n  SymPy: ${p.sympy_hint.substring(0, 150)}`;
+        return line;
+      });
+      sections.push(`PODOBNE ZADANIA (informator CKE):\n${pdfLines.join('\n')}`);
+    }
+
+    // Podobne zadania z datasetów — only the category/title, never the answer
+    const examples = results.filter(r => r.source === 'dataset' && r.score > 0.15);
     if (examples.length > 0) {
       const exLines = examples.slice(0, 2).map(e =>
         `- ${e.title} [${e.category}]`
       );
-      sections.push(`PODOBNE ZADANIA:\n${exLines.join('\n')}`);
+      sections.push(`PODOBNE ZADANIA HISTORYCZNE:\n${exLines.join('\n')}`);
     }
 
     if (!sections.length) return '';
 
-    return `\n--- KONTEKST ---\n${sections.join('\n')}\n---\n`;
+    return `\n--- KONTEKST RAG ---\n${sections.join('\n')}\n---\n`;
   }
 
   /**
    * Wyciągnij podpowiedzi SymPy z wyników RAG (dla Agenta Executor).
+   * Enhanced: provides concrete code patterns + common pitfalls.
    */
   formatSymPyHints(results: RAGResult[]): string {
     const hints = results
       .filter(r => r.sympy_hint && r.score > 0.10)
-      .map(r => r.sympy_hint)
+      .sort((a, b) => b.score - a.score)
       .slice(0, 3);
 
     if (!hints.length) return '';
 
-    return `\n--- PODPOWIEDZI SYMPY ---\n${hints.join('\n')}\n--- KONIEC PODPOWIEDZI ---\n`;
+    const sections: string[] = [];
+
+    for (const h of hints) {
+      let section = `# ${h.title || h.category}`;
+      section += `\n${h.sympy_hint}`;
+
+      // Add tips as code comments if available
+      if (h.tips) {
+        const tipLines = h.tips.substring(0, 200).split(/[.;]/).filter(t => t.trim());
+        if (tipLines.length > 0) {
+          section += '\n# WAZNE: ' + tipLines[0].trim();
+        }
+      }
+      sections.push(section);
+    }
+
+    // Add universal patterns for common pitfalls
+    const pitfallHints = [
+      '# PAMIETAJ: solve() moze zwrocic liste, And, Or, lub Relational — zawsze sprawdz typ!',
+      '# PAMIETAJ: Uzyj Line() nie line(), Point() nie point() (wielka litera)',
+      '# PAMIETAJ: cos(x)**2 nie cos**2(x)',
+    ];
+
+    return `\n--- PODPOWIEDZI SYMPY ---\n${sections.join('\n\n')}\n\n${pitfallHints.join('\n')}\n--- KONIEC PODPOWIEDZI ---\n`;
   }
 
   /**
@@ -158,16 +191,16 @@ export class RAGService {
    * Returns empty string if nothing relevant.
    */
   formatRetryHint(results: RAGResult[]): string {
-    // Pick the single highest-scoring result that has a sympy_hint
+    // Pick the top 2 highest-scoring results with sympy_hints
     const best = results
       .filter(r => r.sympy_hint && r.score > 0.10)
-      .sort((a, b) => b.score - a.score)[0];
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2);
 
-    if (!best) return '';
+    if (!best.length) return '';
 
-    // Trim to just the essential SymPy call, max ~120 chars
-    const hint = best.sympy_hint.substring(0, 120).trim();
-    return `Podpowiedź: ${hint}`;
+    const hints = best.map(b => b.sympy_hint.substring(0, 150).trim()).join('\n');
+    return `\nPodpowiedzi SymPy:\n${hints}\n# WAZNE: solve() zwraca liste — uzyj [0] i sprawdz czy nie pusta. Uzyj Line() nie line().`;
   }
 
   /**

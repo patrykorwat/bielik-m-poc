@@ -36,6 +36,7 @@ export interface MLXConfig {
   model: string;
   temperature: number;
   maxTokens: number;
+  apiKey?: string;
 }
 
 /**
@@ -330,6 +331,92 @@ ${result.error || ''}`;
       return line;
     });
 
+    // 5a. Strip unavailable modules
+    lines = lines.filter(line => {
+      const t = line.trim();
+      if (t.startsWith('import matplotlib') || t.startsWith('from matplotlib')) return false;
+      if (t.startsWith('import scipy') || t.startsWith('from scipy')) return false;
+      if (t.startsWith('import numpy') || t.startsWith('from numpy')) return false;
+      if (t.startsWith('plt.')) return false;
+      return true;
+    });
+
+    // 5b. Proactive fix: Piecewise chained comparisons → And()
+    // Python disallows chained comparisons in Piecewise conditions: -6 <= x < 0 → And(-6 <= x, x < 0)
+    lines = lines.map(line => {
+      if (line.includes('Piecewise') || line.includes('piecewise')) {
+        // Replace chained comparisons: NUM <= VAR < NUM → And(NUM <= VAR, VAR < NUM)
+        line = line.replace(
+          /(-?\d+\.?\d*)\s*(<=?)\s*(\w+)\s*(<|<=)\s*(-?\d+\.?\d*)/g,
+          'And($1 $2 $3, $3 $4 $5)'
+        );
+        // Also handle: NUM < VAR <= NUM
+        line = line.replace(
+          /(-?\d+\.?\d*)\s*(<|<=)\s*(\w+)\s*(<=?)\s*(-?\d+\.?\d*)/g,
+          'And($1 $2 $3, $3 $4 $5)'
+        );
+      }
+      return line;
+    });
+
+    // 5c. Proactive fix: implicit multiplication (3BC → 3*BC, 3x → 3*x)
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
+      // Fix digit followed directly by uppercase letter (3BC → 3*BC, 4AB → 4*AB)
+      line = line.replace(/(\d)([A-Z]{2,})/g, '$1*$2');
+      // Fix digit followed by single lowercase letter that's likely a variable (3x → 3*x)
+      // Only when NOT part of a longer identifier (3x but not 3x_val), and not hex like 0x
+      line = line.replace(/(\d)([a-z])(?![a-zA-Z0-9_])/g, (match, digit, letter, offset, str) => {
+        // Don't fix hex literals (0x...), or inside function names
+        if (digit === '0' && letter === 'x') return match;
+        // Don't fix if preceded by a letter (part of identifier like var3x)
+        if (offset > 0 && /[a-zA-Z_]/.test(str[offset - 1])) return match;
+        return digit + '*' + letter;
+      });
+      return line;
+    });
+
+    // 5d. Proactive fix: _N M log notation → log(M, N)
+    // Model writes: a = _5 4 meaning log₅(4), or _12 80 meaning log₁₂(80)
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ')) return line;
+      // Pattern: _NUMBER SPACE NUMBER (standalone or in assignment)
+      line = line.replace(/\b_(\d+)\s+(\d+)\b/g, 'log($2, $1)');
+      return line;
+    });
+
+    // 5e. Proactive fix: cos**2(x) → cos(x)**2, sin**2(x) → sin(x)**2, tan**2(x) → tan(x)**2
+    // Model writes cos**2(x) thinking it means cos²(x), but Python sees int**2 then call
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
+      // Fix: cos**2(x) → cos(x)**2, handles any power and any trig function
+      line = line.replace(/\b(sin|cos|tan|cot|sec|csc)\*\*(\d+)\(([^)]+)\)/g, '$1($3)**$2');
+      return line;
+    });
+
+    // 5g. Proactive fix: solve(eq)**[0] → solve(eq)[0] (typo: ** before index)
+    lines = lines.map(line => {
+      // Fix )**[N] → )[N] — model writes **[ instead of just [
+      line = line.replace(/\)\*\*\[(\d+)\]/g, ')[$1]');
+      return line;
+    });
+
+    // 5f. Proactive fix: Polish text in code → remove or translate
+    lines = lines.filter(line => {
+      const trimmed = line.trim();
+      // Remove lines starting with Polish keywords that are syntax errors
+      if (/^(jeśli|jesli|więc|wiec|zatem|czyli|ponieważ|poniewaz)\s/i.test(trimmed)) return false;
+      return true;
+    });
+    // Translate Polish for/in loops: "dla X w Y:" → "for X in Y:"
+    lines = lines.map(line => {
+      line = line.replace(/\bdla\s+(.+?)\s+w\s+(.+?):/g, 'for $1 in $2:');
+      return line;
+    });
+
     // 6. Fix wrong SymPy names
     const importFixes: Record<string, string> = {
       'Simplify': 'simplify',
@@ -337,6 +424,9 @@ ${result.error || ''}`;
       'Less': 'Lt',
       'GreaterEqual': 'Ge',
       'LessEqual': 'Le',
+      'Power': 'Pow',
+      'Discrimant': 'discriminant',
+      'Discriminant': 'discriminant',
     };
     lines = lines.map(line => {
       for (const [wrong, correct] of Object.entries(importFixes)) {
@@ -355,24 +445,112 @@ ${result.error || ''}`;
       line = line.replace(/\bInfinity\b/g, 'oo');
       line = line.replace(/\bmath\.sqrt\b/g, 'sqrt');
       line = line.replace(/\bmath\.pi\b/g, 'pi');
+      line = line.replace(/\bmath\.e\b/g, 'E');
       line = line.replace(/\bmath\.log\b/g, 'log');
       line = line.replace(/\bmath\.sin\b/g, 'sin');
       line = line.replace(/\bmath\.cos\b/g, 'cos');
       return line;
     });
 
-    // 7b. Remove input() calls
+    // 7a. Fix .simplify() method → simplify() function call
+    // Handles: expr.simplify(), (complex_expr).simplify(), wynik.simplify()
+    lines = lines.map(line => {
+      if (line.includes('.simplify()')) {
+        const assignMatch = line.match(/^(\s*\w+\s*=\s*)(.+)\.simplify\(\)\s*$/);
+        if (assignMatch) {
+          // Assignment: var = EXPR.simplify() → var = simplify(EXPR)
+          line = `${assignMatch[1]}simplify(${assignMatch[2]})`;
+        } else {
+          // Standalone or in-expression: var.simplify() → simplify(var)
+          line = line.replace(/(\w+)\.simplify\(\)/g, 'simplify($1)');
+          // Handle (...).simplify() → just keep the closing paren
+          line = line.replace(/\)\.simplify\(\)/g, ')');
+        }
+      }
+      return line;
+    });
+
+    // 7b. Fix .evalf() → N()
+    lines = lines.map(line => {
+      return line.replace(/(\w+)\.evalf\(\)/g, 'N($1)');
+    });
+
+    // 7c. Fix Interval.from_ends(a, b) → Interval(a, b)
+    lines = lines.map(line => {
+      return line.replace(/Interval\.from_ends\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2)');
+    });
+
+    // 7d. Fix float() wrapping symbolic expressions → float(N(expr))
+    lines = lines.map(line => {
+      if (line.includes('float(')) {
+        // Replace float(wynik) → float(N(wynik))
+        line = line.replace(/float\(wynik\)/g, 'float(N(wynik))');
+        // Replace float(val) → float(N(val))
+        line = line.replace(/float\(val\)/g, 'float(N(val))');
+      }
+      return line;
+    });
+
+    // 7e. Fix truth-value testing of symbolic comparisons → wrap in bool()
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      // Pattern: if/elif/while <symbolic_expr> > 0 or <symbolic_expr> < 0
+      if ((trimmed.startsWith('if ') || trimmed.startsWith('elif ') || trimmed.startsWith('while '))
+          && /\.\w+\([^)]*\)\s*[<>]=?\s*\d/.test(trimmed)) {
+        // Wrap the condition in bool()
+        line = line.replace(/(if|elif|while)\s+(.+?):/g, '$1 bool($2):');
+      }
+      return line;
+    });
+
+    // 7f. Fix Eq() with single argument → Eq(expr, 0)
+    // Check for Eq() with single arg (no top-level comma within parens)
+    lines = lines.map(line => {
+      if (line.includes('Eq(')) {
+        const eqMatch = line.match(/\bEq\(/);
+        if (eqMatch) {
+          const start = eqMatch.index! + eqMatch[0].length;
+          let depth = 1;
+          let pos = start;
+          let hasComma = false;
+
+          while (pos < line.length && depth > 0) {
+            if (line[pos] === '(') {
+              depth++;
+            } else if (line[pos] === ')') {
+              depth--;
+            } else if (line[pos] === ',' && depth === 1) {
+              hasComma = true;
+              break;
+            }
+            pos++;
+          }
+
+          if (!hasComma && depth === 0) {
+            const inner = line.substring(start, pos - 1);
+            line = line.substring(0, eqMatch.index!) + `Eq(${inner}, 0)` + line.substring(pos);
+          }
+        }
+      }
+      return line;
+    });
+
+    // 7f. Remove input() calls
     lines = lines.filter(line => !line.includes('input('));
 
     // 7c. Fix bare math expressions with = that should be Eq()
     // Only catches: `<math expr> = <value>` where LHS has math operators (+,-,*,/) but NO function calls
     // e.g. `a**2 + b**2 = 0` → `eq_expr = Eq(a**2 + b**2, 0)`
-    // Skips: `n = symbols(...)`, `result = solve(...)`, keyword args, etc.
+    // Skips: `n = symbols(...)`, `result = solve(...)`, keyword args, +=/-= operators, etc.
     lines = lines.map(line => {
       const trimmed = line.trim();
       if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ')) return line;
       if (trimmed.startsWith('if ') || trimmed.startsWith('elif ') || trimmed.startsWith('while ') || trimmed.startsWith('return ')) return line;
       if (trimmed.includes('==') || trimmed.includes('Eq(')) return line;
+      // Skip augmented assignment operators: +=, -=, *=, /=, **=
+      if (/[+\-*\/]=/.test(trimmed)) return line;
+      // Skip for/in loops
+      if (trimmed.startsWith('for ')) return line;
       // Skip any line with function calls — parens followed by content is almost always a call
       if (/\w+\(/.test(trimmed)) return line;
       // Match: <expr with math ops> = <value>
@@ -389,7 +567,48 @@ ${result.error || ''}`;
       return line;
     });
 
-    // 8. Ensure print statement exists
+    // 8. Fix truncated code
+    {
+      const lastLine = lines[lines.length - 1]?.trim() || '';
+      const codeStr = lines.join('\n');
+      const openParens = (codeStr.match(/\(/g) || []).length;
+      const closeParens = (codeStr.match(/\)/g) || []).length;
+
+      const isTruncated = (
+        lastLine.endsWith(',') || lastLine.endsWith('(') || lastLine.endsWith('+') ||
+        lastLine.endsWith('*') || lastLine.endsWith('-') || lastLine.endsWith('=') ||
+        lastLine.endsWith('.') || lastLine.endsWith('\\') ||
+        (openParens > closeParens + 1)
+      );
+
+      if (isTruncated && lines.length > 3) {
+        while (lines.length > 3) {
+          const ll = lines[lines.length - 1].trim();
+          if (ll.endsWith(',') || ll.endsWith('(') || ll.endsWith('+') ||
+              ll.endsWith('*') || ll.endsWith('-') || ll.endsWith('=') ||
+              ll.endsWith('.') || ll === '') {
+            lines.pop();
+          } else {
+            break;
+          }
+        }
+      }
+
+      const finalCode = lines.join('\n');
+      const op = (finalCode.match(/\(/g) || []).length;
+      const cp = (finalCode.match(/\)/g) || []).length;
+      const ob = (finalCode.match(/\[/g) || []).length;
+      const cb = (finalCode.match(/\]/g) || []).length;
+
+      if (op > cp) {
+        lines[lines.length - 1] += ')'.repeat(op - cp);
+      }
+      if (ob > cb) {
+        lines[lines.length - 1] += ']'.repeat(ob - cb);
+      }
+    }
+
+    // 9. Ensure print statement exists
     const hasPrint = lines.some(line => line.trim().startsWith('print(') || line.trim().startsWith('print ('));
     if (!hasPrint) {
       for (let i = lines.length - 1; i >= 0; i--) {
@@ -405,9 +624,10 @@ ${result.error || ''}`;
   }
 
   /**
-   * Extract first valid code block from response
+   * Extract first valid code block from response (v3 — fenceless support)
    */
   private extractCode(response: string): string[] {
+    // 1. Standard markdown fences
     const pythonMatch = /```python\s*\n([\s\S]*?)\n```/.exec(response);
     if (pythonMatch) return [pythonMatch[1].trim()];
 
@@ -419,7 +639,162 @@ ${result.error || ''}`;
       }
     }
 
+    // 2. Fenceless extraction: find consecutive Python-like lines
+    // (common with FP16 Bielik on remote APIs that ignore fence instructions)
+    const lines = response.split('\n');
+    const pyLines: string[] = [];
+    let inBlock = false;
+
+    for (const line of lines) {
+      const stripped = line.trim();
+      const isPy = (
+        stripped.startsWith('from ') ||
+        stripped.startsWith('import ') ||
+        stripped.startsWith('print(') ||
+        stripped.startsWith('#') ||
+        /^[a-zA-Z_]\w*\s*=\s*/.test(stripped) ||
+        /^(?:for |if |elif |else:|while |try:|except |def |return |with )/.test(stripped) ||
+        /^(?:wynik|opcja_|result|answer)/.test(stripped) ||
+        (stripped === '' && inBlock)
+      );
+
+      if (isPy) {
+        pyLines.push(line);
+        inBlock = true;
+      } else if (inBlock && stripped === '') {
+        pyLines.push(line); // allow one blank line
+      } else {
+        // End of block — if we have enough, stop
+        const nonEmpty = pyLines.filter(l => l.trim()).length;
+        if (nonEmpty >= 3) break;
+        if (!inBlock) {
+          pyLines.length = 0; // reset
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Filter and validate
+    const codeLines = pyLines.filter(l => l.trim());
+    if (codeLines.length >= 3) {
+      const hasImport = codeLines.some(l => l.includes('import') || l.includes('from '));
+      const hasCompute = codeLines.some(l => /[=+\-*/()]/.test(l));
+      if (hasImport || hasCompute) {
+        let code = pyLines.join('\n').trim();
+        // Remove trailing blank lines
+        while (code.endsWith('\n')) {
+          code = code.replace(/\n\s*$/, '');
+        }
+        return [code];
+      }
+    }
+
     return [];
+  }
+
+  /**
+   * Generate fallback SymPy code from analytical response when executor fails to produce code.
+   * Extracts mathematical expressions and equations from LaTeX/text and builds a simple script.
+   */
+  private generateFallbackCode(analyticalResponse: string, executorResponse: string, question: string): string | null {
+    // Combine all text to mine for math expressions
+    const allText = `${analyticalResponse}\n${executorResponse}\n${question}`;
+
+    // Try to detect key math operations from analytical plan
+    const lines: string[] = ['from sympy import *'];
+    const symbols = new Set<string>();
+
+    // Extract variable names from the text (x, y, a, b, n, m, k, t, r, p, q)
+    const varMatches = allText.match(/\b([xyzabcnmktpqr])\b/g);
+    if (varMatches) {
+      for (const v of new Set(varMatches)) {
+        if (!['i', 'e'].includes(v)) { // skip 'i' (imaginary) and 'e' (Euler)
+          symbols.add(v);
+        }
+      }
+    }
+
+    if (symbols.size === 0) symbols.add('x');
+    const symbolList = [...symbols];
+    lines.push(`${symbolList.join(', ')} = symbols('${symbolList.join(' ')}', real=True)`);
+
+    // Try to extract equations from LaTeX
+    const equations: string[] = [];
+
+    // Match LaTeX equations: \( ... \), $...$, or plain text equations with =
+    const latexPatterns = [
+      /\\\((.+?)\\\)/g,                    // \( ... \)
+      /\$\$(.+?)\$\$/g,                    // $$ ... $$
+      /\$(.+?)\$/g,                        // $ ... $
+    ];
+
+    for (const pattern of latexPatterns) {
+      let m;
+      while ((m = pattern.exec(allText)) !== null) {
+        const expr = m[1].trim();
+        // Only take equations (contain =) that aren't too long
+        if (expr.includes('=') && expr.length < 200) {
+          equations.push(expr);
+        }
+      }
+    }
+
+    // Convert basic LaTeX to SymPy
+    const latexToSympy = (latex: string): string => {
+      let s = latex;
+      s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, 'Rational($1, $2)');
+      s = s.replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)');
+      s = s.replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, 'root($2, $1)');
+      s = s.replace(/\\pi\b/g, 'pi');
+      s = s.replace(/\\cdot/g, '*');
+      s = s.replace(/\\times/g, '*');
+      s = s.replace(/\\left\(/g, '(');
+      s = s.replace(/\\right\)/g, ')');
+      s = s.replace(/\\left\[/g, '[');
+      s = s.replace(/\\right\]/g, ']');
+      s = s.replace(/\^{(\d+)}/g, '**$1');
+      s = s.replace(/\^(\d)/g, '**$1');
+      s = s.replace(/\\log_\{?(\d+)\}?\s*/g, 'log($1, ');  // crude
+      s = s.replace(/\\ln\b/g, 'log');
+      s = s.replace(/\\sin\b/g, 'sin');
+      s = s.replace(/\\cos\b/g, 'cos');
+      s = s.replace(/\\tan\b/g, 'tan');
+      s = s.replace(/\\infty/g, 'oo');
+      s = s.replace(/\\le\b/g, '<=');
+      s = s.replace(/\\ge\b/g, '>=');
+      s = s.replace(/\\neq\b/g, '!=');
+      s = s.replace(/\\[a-zA-Z]+/g, ''); // strip remaining LaTeX commands
+      return s.trim();
+    };
+
+    // If we found equations, build a solve script
+    if (equations.length > 0) {
+      const eq = latexToSympy(equations[0]);
+      const parts = eq.split('=').map(p => p.trim());
+      if (parts.length === 2 && parts[0] && parts[1]) {
+        lines.push(`eq = Eq(${parts[0]}, ${parts[1]})`);
+        lines.push(`wynik = solve(eq, ${symbolList[0]})`);
+        lines.push('print("ODPOWIEDZ:", wynik)');
+        return lines.join('\n');
+      }
+    }
+
+    // Try to detect key SymPy function from analytical response
+    const sympyHint = analyticalResponse.match(/SymPy:\s*(.+)/i);
+    if (sympyHint) {
+      const hint = sympyHint[1].trim();
+      // If it mentions specific functions, try to build code
+      if (hint.includes('solve')) {
+        lines.push(`# Based on analytical hint: ${hint}`);
+        lines.push(`wynik = ${hint}`);
+        lines.push('print("ODPOWIEDZ:", wynik)');
+        return lines.join('\n');
+      }
+    }
+
+    // Cannot generate meaningful fallback
+    return null;
   }
 
   /**
@@ -528,12 +903,23 @@ ${result.error || ''}`;
       );
     }
 
-    // Fix 3: 'And'/'Or' object not iterable
+    // Fix 3: 'And'/'Or' object — not iterable or not subscriptable
     if (errorMsg.includes("'And' object") || errorMsg.includes("'Or' object")) {
       fixedCode = fixedCode.replace(
         /for\s+(\w+)\s+in\s+(\w+)/g,
         'for $1 in ([$2] if not hasattr($2, "__iter__") else $2)'
       );
+      // Fix subscripting: solve()[0] when result is And/Or
+      fixedCode = fixedCode.replace(
+        /(\w+)\s*=\s*solve\(([^)]+)\)\[(\d+)\]/g,
+        '_raw = solve($2)\n$1 = _raw.args[$3] if hasattr(_raw, "args") and not isinstance(_raw, list) else (_raw[$3] if isinstance(_raw, list) else _raw)'
+      );
+      if (errorMsg.includes('not subscriptable')) {
+        fixedCode = fixedCode.replace(
+          /(\w+)\[(\d+)\]/g,
+          '($1.args[$2] if hasattr($1, "args") else $1[$2])'
+        );
+      }
     }
 
     // Fix 4: 'bool' object has no attribute 'subs'
@@ -577,12 +963,404 @@ ${result.error || ''}`;
         .replace(/\\right\)/g, ')');
     }
 
+    // Fix 8: TypeError — Symbol object cannot be interpreted as integer
+    if (errorMsg.includes("'Symbol' object cannot be interpreted as an integer")) {
+      fixedCode = fixedCode.replace(/range\((\w+)\)/g, 'range(int($1))');
+    }
+
+    // Fix 9: AttributeError — missing or wrong method names
+    if (errorMsg.includes("has no attribute 'evalf'")) {
+      fixedCode = fixedCode.replace(/(\w+)\.evalf\(\)/g, 'N($1)');
+    }
+    if (errorMsg.includes("has no attribute 'simplify'")) {
+      fixedCode = fixedCode.replace(/(\w+)\.simplify\(\)/g, 'simplify($1)');
+    }
+    if (errorMsg.includes("'float' object has no attribute 'subs'") ||
+        errorMsg.includes("'Float' object has no attribute 'subs'")) {
+      fixedCode = fixedCode.replace(/(\w+)\s*=\s*float\(([^)]+)\)/g, '$1 = S($2)');
+    }
+
+    // Fix 9a: cannot import name — model hallucinated a SymPy name
+    const importNameMatch = errorMsg.match(/cannot import name '(\w+)' from/);
+    if (importNameMatch) {
+      const badName = importNameMatch[1];
+      const renames: Record<string, string> = {
+        'Power': 'Pow', 'Logarithm': 'log', 'Sine': 'sin', 'Cosine': 'cos',
+        'Tangent': 'tan', 'ArcSin': 'asin', 'ArcCos': 'acos', 'ArcTan': 'atan',
+      };
+      if (renames[badName]) {
+        fixedCode = fixedCode.replace(new RegExp(`\\b${badName}\\b`, 'g'), renames[badName]);
+      } else {
+        // Remove bad import, ensure wildcard
+        fixedCode = fixedCode.replace(new RegExp(`from sympy import.*\\b${badName}\\b,?\\s*`, 'g'), (match) => {
+          const remaining = match.replace(badName, '').replace(/,\s*,/g, ',').replace(/import\s*,/, 'import ').replace(/,\s*$/, '');
+          return remaining.includes('import ') ? remaining : '';
+        });
+        if (!fixedCode.includes('from sympy import *')) {
+          fixedCode = 'from sympy import *\n' + fixedCode;
+        }
+      }
+    }
+
+    // Fix 10: ZeroDivisionError — replace /0 with /S(0)
+    if (errorMsg.includes('ZeroDivisionError')) {
+      fixedCode = fixedCode.replace(/\/\s*0\b/g, '/ S(0)');
+    }
+
+    // Fix 11: Interval.from_ends → Interval
+    if (errorMsg.includes("has no attribute 'from_ends'")) {
+      fixedCode = fixedCode.replace(/Interval\.from_ends\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2)');
+    }
+
+    // Fix 12: Cannot convert expression to float → wrap in N()
+    if (errorMsg.includes('Cannot convert expression to float')) {
+      fixedCode = fixedCode.replace(/float\((\w+)\)/g, 'float(N($1))');
+    }
+
+    // Fix 13: unsupported operand type for -: 'And'/'Or'/'Equality'/'Add'
+    if (errorMsg.includes("unsupported operand type(s) for -:") &&
+        (errorMsg.includes("'And'") || errorMsg.includes("'Or'") ||
+         errorMsg.includes("'Equality'") || errorMsg.includes("'Add'"))) {
+      fixedCode = fixedCode.replace(
+        /if simplify\(wynik - val\) == 0:/g,
+        'if str(wynik) == str(val) or (hasattr(wynik, "equals") and wynik.equals(val)):'
+      );
+      fixedCode = fixedCode.replace(
+        /if simplify\(N\(wynik\) - N\(val\)\) == 0/g,
+        'if str(N(wynik)) == str(N(val))'
+      );
+    }
+
+    // Fix 14: cannot determine truth value of Relational → wrap in bool()
+    if (errorMsg.includes('cannot determine truth value of Relational')) {
+      fixedCode = fixedCode.replace(/if\s+(.+?)\s*([<>]=?)\s*(\d+)\s*:/g, 'if bool($1 $2 $3):');
+    }
+
+    // Fix 15: could not convert string to float → use N() wrapper
+    if (errorMsg.includes('could not convert string to float')) {
+      fixedCode = fixedCode.replace(/float\((\w+)\)/g, 'float(N($1))');
+    }
+
+    // Fix 16: object is not callable — 'Symbol', 'Add', 'Float', etc.
+    if (errorMsg.includes('object is not callable')) {
+      if (fixedCode.includes('combinations(') && !fixedCode.includes('from itertools')) {
+        fixedCode = 'from itertools import combinations, permutations\n' + fixedCode;
+      }
+      if (fixedCode.includes('intersect(') || fixedCode.includes('.intersect(')) {
+        fixedCode = fixedCode.replace(/intersect\(([^,]+),\s*([^)]+)\)/g, 'Intersection($1, $2)');
+      }
+      const symbolCallMatch = errorMsg.match(/(\w+)\(/);
+      if (symbolCallMatch) {
+        const funcName = symbolCallMatch[1];
+        if (fixedCode.includes(`${funcName} = symbols`)) {
+          fixedCode = fixedCode.replace(new RegExp(`^.*${funcName}\\s*=\\s*symbols.*$`, 'gm'), '');
+        }
+      }
+    }
+
+    // Fix 17: Any object not subscriptable
+    if (errorMsg.includes('not subscriptable')) {
+      fixedCode = fixedCode.replace(
+        /(\w+)\s*=\s*solve\(([^)]+)\)\[(\d+)\]/g,
+        '_sol = solve($2)\n$1 = _sol[$3] if isinstance(_sol, list) else _sol'
+      );
+      fixedCode = fixedCode.replace(
+        /(\w+)\[(\d+)\]/g,
+        '($1[$2] if isinstance($1, (list, tuple)) else $1)'
+      );
+    }
+
+    // Fix 18: 'list' object has no attribute 'subs'
+    if (errorMsg.includes("'list' object has no attribute 'subs'")) {
+      fixedCode = fixedCode.replace(
+        /(\w+)\.subs\(/g,
+        '($1[0] if isinstance($1, list) else $1).subs('
+      );
+    }
+
+    // Fix 19: div() used as division
+    if (errorMsg.includes('ComputationFailed') && fixedCode.includes('div(')) {
+      fixedCode = fixedCode.replace(/\bdiv\(([^,]+),\s*([^)]+)\)/g, 'Rational($1, $2)');
+    }
+
+    // Fix 20: unsupported operand with 'str' (MC comparing numeric with string options)
+    if (errorMsg.includes("'str'") && errorMsg.includes('unsupported operand')) {
+      fixedCode = fixedCode.replace(
+        /abs\(float\(N\((\w+)\[?\d?\]?\)\) - float\(N\(val[^)]*\)\)\)/g,
+        'abs(float(N($1[0] if isinstance($1, list) else $1)) - float(N(val))) if not isinstance(val, str) else float("inf")'
+      );
+      fixedCode = fixedCode.replace(
+        /simplify\((\w+) - val\) == 0/g,
+        '(str($1) == str(val) if isinstance(val, str) else simplify($1 - val) == 0)'
+      );
+    }
+
+    // Fix 22a: cos**2(x) → cos(x)**2 — 'int' object is not callable
+    if (errorMsg.includes("'int' object is not callable") || errorMsg.includes("'float' object is not callable")) {
+      fixedCode = fixedCode.replace(/(sin|cos|tan|cot|sec|csc)\*\*(\d+)\(([^)]+)\)/g, '$1($3)**$2');
+    }
+
+    // Fix 22b: 'LessThan'/'GreaterThan' object is not iterable
+    if (errorMsg.includes('is not iterable') &&
+        (errorMsg.includes('LessThan') || errorMsg.includes('GreaterThan') ||
+         errorMsg.includes('StrictLessThan') || errorMsg.includes('StrictGreaterThan'))) {
+      fixedCode = fixedCode.replace(
+        /for\s+(\w+)\s+in\s+(solutions?\w*|results?\w*|sols?\w*):/g,
+        'for $1 in ([$2] if not isinstance($2, (list, tuple, set)) else $2):'
+      );
+      fixedCode = fixedCode.replace(
+        /\(float\((\w+)\[0\]\),\s*float\((\w+)\[1\]\)\)/g,
+        '(float($1.lhs if hasattr($1, "lhs") else $1[0]), float($1.rhs if hasattr($1, "rhs") else $1[1]))'
+      );
+    }
+
+    // Fix 22c: Chained comparison in Piecewise: -6 <= x < 0 → And(-6 <= x, x < 0)
+    if (errorMsg.includes('Piecewise') || errorMsg.includes('chained comparison') ||
+        (errorMsg.includes('TypeError') && fixedCode.includes('Piecewise'))) {
+      fixedCode = fixedCode.replace(
+        /(-?\d+\.?\d*)\s*(<=?)\s*(\w+)\s*(<=?)\s*(-?\d+\.?\d*)/g,
+        'And($1 $2 $3, $3 $4 $5)'
+      );
+    }
+
+    // Fix 22d: 'And' object has no attribute 'lhs'/'rhs'
+    if (errorMsg.includes("has no attribute 'lhs'") || errorMsg.includes("has no attribute 'rhs'")) {
+      fixedCode = fixedCode.replace(
+        /(\w+)\.lhs/g,
+        '($1.args[0].lhs if hasattr($1, "args") and hasattr($1.args[0], "lhs") else $1.lhs if hasattr($1, "lhs") else $1)'
+      );
+      fixedCode = fixedCode.replace(
+        /(\w+)\.rhs/g,
+        '($1.args[0].rhs if hasattr($1, "args") and hasattr($1.args[0], "rhs") else $1.rhs if hasattr($1, "rhs") else $1)'
+      );
+    }
+
+    // Fix 22e: .subs(x == value) → .subs(x, value)
+    if (errorMsg.includes('not subscriptable') || errorMsg.includes('cannot determine truth') ||
+        errorMsg.includes('new pairs or an iterable of (old, new) tuples') ||
+        fixedCode.match(/\.subs\(\w+\s*==\s*[^,)]+\)/)) {
+      fixedCode = fixedCode.replace(
+        /\.subs\((\w+)\s*==\s*([^)]+)\)/g,
+        '.subs($1, $2)'
+      );
+      // Also fix .subs({x: val}) when it fails — convert dict subs to chained .subs(x, val)
+      // Fix .subs(Eq(x, val)) → .subs(x, val)
+      fixedCode = fixedCode.replace(
+        /\.subs\(Eq\((\w+),\s*([^)]+)\)\)/g,
+        '.subs($1, $2)'
+      );
+    }
+
+    // Fix 22f: No output — add print statement
+    if (errorMsg.includes('produced no output') || errorMsg.includes('no output')) {
+      if (!fixedCode.includes('print(')) {
+        const lines = fixedCode.split('\n');
+        const lastAssign = [...lines].reverse().find(l => /^\s*\w+\s*=/.test(l) && !l.includes('symbols('));
+        if (lastAssign) {
+          const varName = lastAssign.match(/^\s*(\w+)\s*=/)?.[1];
+          if (varName) {
+            fixedCode += `\nprint("ODPOWIEDZ:", ${varName})`;
+          }
+        } else {
+          fixedCode += '\nprint("ODPOWIEDZ:", result if "result" in dir() else wynik if "wynik" in dir() else "BRAK")';
+        }
+      }
+    }
+
+    // Fix 22g: line() lowercase → Line() from geometry
+    if (errorMsg.includes("'Symbol' object is not callable") && fixedCode.includes('line(')) {
+      fixedCode = fixedCode.replace(/\bline\(/g, 'Line(');
+      if (!fixedCode.includes('from sympy.geometry')) {
+        fixedCode = 'from sympy.geometry import *\n' + fixedCode;
+      }
+    }
+
+    // Fix 22h: KeyError on variable name or integer — solve() may return dict
+    if (errorMsg.includes('KeyError:')) {
+      const keyMatch = errorMsg.match(/KeyError:\s*(\w+)/);
+      if (keyMatch) {
+        const badKey = keyMatch[1];
+        if (/^\d+$/.test(badKey)) {
+          // KeyError: 0 — solve() returned dict, not list
+          fixedCode = fixedCode.replace(
+            /(\w+)\[0\]/g,
+            '(list($1.values())[0] if isinstance($1, dict) else $1[0])'
+          );
+          fixedCode = fixedCode.replace(
+            /(\w+)\[1\]/g,
+            '(list($1.values())[1] if isinstance($1, dict) else $1[1])'
+          );
+        } else {
+          fixedCode = fixedCode.replace(
+            new RegExp(`(\\w+)\\[${badKey}\\]`, 'g'),
+            `($1[Symbol('${badKey}')] if Symbol('${badKey}') in $1 else ($1[0] if isinstance($1, (list, tuple)) else $1))`
+          );
+        }
+      }
+    }
+
+    // Fix 22i: 'tuple' object has no attribute 'subs'
+    if (errorMsg.includes("'tuple' object has no attribute 'subs'")) {
+      fixedCode = fixedCode.replace(
+        /\(([^,]+),\s*([^)]+)\)\.subs\(/g,
+        '$2.subs('
+      );
+    }
+
+    // Fix 22j: 'Float' object is not subscriptable — solve() returned dict with scalar values
+    // e.g. solution[a1] returns Float, then code tries solution[a1][0]
+    if (errorMsg.includes("'Float' object is not subscriptable") || errorMsg.includes("'Integer' object is not subscriptable") || errorMsg.includes("'Rational' object is not subscriptable")) {
+      // Replace solution[var][0] with solution[var]
+      fixedCode = fixedCode.replace(/(\w+\[\w+\])\[0\]/g, '$1');
+      // Also replace result[0][0] patterns
+      fixedCode = fixedCode.replace(/(\w+)\[0\]\[0\]/g, '$1[0]');
+    }
+
+    // Fix 22k: 'StrictLessThan'/'LessThan'/'GreaterThan' not subscriptable
+    // solve() for inequalities returns Relational, not a list — only replace solve-result vars
+    if (errorMsg.includes("object is not subscriptable") && (errorMsg.includes('LessThan') || errorMsg.includes('GreaterThan') || errorMsg.includes('StrictLessThan') || errorMsg.includes('StrictGreaterThan'))) {
+      fixedCode = fixedCode.replace(/\b(solution|solutions|rozwiazanie|rozwiązanie|result|results|sol|wynik|answer|roots|rozwiazania|rozwiązania|rozwiązanie_uproszczone|uproszczone_rozwiązanie)\[0\]/g, '$1');
+    }
+
+    // Fix 22l: object of type 'StrictLessThan' has no len()
+    if (errorMsg.includes("has no len()") && (errorMsg.includes('LessThan') || errorMsg.includes('GreaterThan'))) {
+      // Replace len(solution) checks with hasattr or type checks
+      fixedCode = fixedCode.replace(/if\s+len\((\w+)\)/g, 'if hasattr($1, "__iter__") and len(list($1.args))');
+      // Replace len(result) == 1 patterns
+      fixedCode = fixedCode.replace(/len\((\w+)\)\s*==\s*(\d+)/g, 'hasattr($1, "__iter__") and len(list($1.args)) == $2');
+    }
+
+    // Fix 22m: 'BooleanAtom not allowed in this context' or BooleanTrue/BooleanFalse
+    // Happens when passing True/False equality result to N() or float()
+    if (errorMsg.includes('BooleanAtom') || errorMsg.includes('BooleanTrue') || errorMsg.includes('BooleanFalse')) {
+      // Replace N(val) where val might be boolean → check with bool() first
+      fixedCode = fixedCode.replace(/float\(N\((\w+)\)\)/g, 'float($1) if not isinstance($1, (bool, BooleanTrue, BooleanFalse)) else (1.0 if $1 else 0.0)');
+    }
+
+    // Fix 22n: 'Symbol' object is not callable — model declares variable then calls it as function
+    // Common case: distance = symbols('distance') then distance(A, B)
+    // Also: model uses non-existent functions like Pochhammer
+    if (errorMsg.includes("'Symbol' object is not callable")) {
+      // Replace distance(A, B) with sqrt((A[0]-B[0])**2 + (A[1]-B[1])**2) for Point-like args
+      fixedCode = fixedCode.replace(
+        /\bdistance\(([^,]+),\s*([^)]+)\)/g,
+        'sqrt(($1[0]-$2[0])**2 + ($1[1]-$2[1])**2)'
+      );
+      // Replace Pochhammer(base, arg) with log(arg, base) — model often confuses log notation
+      fixedCode = fixedCode.replace(
+        /\bPochhammer\((\d+),\s*(\d+)\)/g,
+        'log($2, $1)'
+      );
+    }
+
+    // Fix 22o: 'Add'/'Mul' object has no attribute 'zero'/'coeffs'
+    // Model calls nonexistent methods on SymPy expressions
+    if (errorMsg.includes("has no attribute 'zero'")) {
+      fixedCode = fixedCode.replace(/\.zero\(\)/g, '');
+    }
+    if (errorMsg.includes("has no attribute 'coeffs'")) {
+      fixedCode = fixedCode.replace(/\.coeffs\b/g, '.as_coefficients_dict()');
+    }
+
+    // Fix 22p: 'Piecewise'/'Function' object has no attribute 'range'/'zeros'/etc
+    // .range() doesn't exist on Piecewise — remove the call, let LLM retry handle it
+    if (errorMsg.includes("has no attribute 'range'")) {
+      // Comment out the line with .range() so code continues
+      fixedCode = fixedCode.replace(/^(.*\.range\(\).*)$/gm, '# $1  # .range() not available');
+    }
+
+    // Fix 22q: 'Symbol' object is not callable — f(x) where f is a symbol
+    // Different from 22n: here model defines f = symbols('f') then uses f(x)
+    if (errorMsg.includes("'Symbol' object is not callable") && fixedCode.includes("symbols('f')")) {
+      // Replace f = symbols('f') ... f(expr) with Function('f') pattern
+      fixedCode = fixedCode.replace(/(\w+)\s*=\s*symbols\('f'\)/, "f = Function('f')(x)");
+    }
+
+    // Fix 21: Equality.__new__() missing argument → Eq() needs 2 args
+    if (errorMsg.includes("Equality.__new__() missing")) {
+      // Find Eq(...) with only one arg (no comma at top level)
+      const fixEqOneArg = (code: string): string => {
+        let result = '';
+        let i = 0;
+
+        while (i < code.length) {
+          if (code.substring(i, i + 3) === 'Eq(' && (i === 0 || !/\w/.test(code[i - 1]))) {
+            // Find matching close paren
+            let depth = 1;
+            let j = i + 3;
+            while (j < code.length && depth > 0) {
+              if (code[j] === '(') {
+                depth++;
+              } else if (code[j] === ')') {
+                depth--;
+              }
+              j++;
+            }
+
+            const inner = code.substring(i + 3, j - 1);
+
+            // Check if there's a comma at top-level
+            let d = 0;
+            let hasComma = false;
+            for (const ch of inner) {
+              if (ch === '(') d++;
+              else if (ch === ')') d--;
+              else if (ch === ',' && d === 0) {
+                hasComma = true;
+                break;
+              }
+            }
+
+            if (!hasComma) {
+              result += `Eq(${inner}, 0)`;
+            } else {
+              result += code.substring(i, j);
+            }
+            i = j;
+          } else {
+            result += code[i];
+            i++;
+          }
+        }
+
+        return result;
+      };
+
+      fixedCode = fixEqOneArg(fixedCode);
+    }
+
     return fixedCode;
   }
 
   /**
    * Execute SymPy code with auto-retry on failure
    */
+  /**
+   * Check if output looks like it contains an error rather than a real answer.
+   */
+  private isOutputSuspicious(stdout: string): string | null {
+    const trimmed = stdout.trim();
+    const errorPatterns = [
+      /Traceback \(most recent/i,
+      /Error:/i,
+      /object is not (callable|subscriptable|iterable)/i,
+      /cannot determine truth value/i,
+      /unsupported operand type/i,
+      /has no attribute/i,
+      /invalid syntax/i,
+      /not defined/i,
+    ];
+    for (const pat of errorPatterns) {
+      if (pat.test(trimmed)) {
+        return `Output contains error: ${trimmed.substring(0, 120)}`;
+      }
+    }
+    if (/^(?:ODPOWIEDZ:\s*)?None\s*$/i.test(trimmed)) {
+      return 'Output is None';
+    }
+    return null;
+  }
+
   private async executeWithRetry(code: string, maxRetries: number = 3): Promise<string> {
     let currentCode = code;
     let lastError: unknown = null;
@@ -590,6 +1368,21 @@ ${result.error || ''}`;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const result = await this.executeSymPyCalculation(currentCode);
+
+        // Check if output looks like an error (code ran but produced error text)
+        const suspicion = this.isOutputSuspicious(result);
+        if (suspicion && attempt < maxRetries) {
+          console.warn(`⚠️ Attempt ${attempt + 1}: ${suspicion}`);
+          const fixedCode = this.tryFixCode(currentCode, result);
+          if (fixedCode !== currentCode) {
+            console.log('📤 Retrying with fix for suspicious output...');
+            currentCode = fixedCode;
+            continue;
+          }
+          // No fix — return as-is (might still be valid)
+          return result;
+        }
+
         return result; // Success
       } catch (error) {
         lastError = error;
@@ -719,7 +1512,7 @@ ${result.error || ''}`;
       : prompts.executor_sympy;
 
     // Add strict instruction to start with code immediately
-    executorPrompt = `NATYCHMIAST zacznij od \`\`\`python - BEZ zadnego tekstu!\n\n${executorPrompt}`;
+    executorPrompt = `WAZNE: Jestes kompilatorem. Twoja odpowiedz to WYLACZNIE blok kodu Python.\nNIE pisz tekstu. NIE pisz wyjasnien. NIE uzywaj LaTeX.\nOdpowiedz MUSI zaczynac sie od \`\`\`python i konczyc na \`\`\`.\n\n${executorPrompt}`;
 
     // Inject SymPy hints from RAG into executor prompt
     if (ragResults.length > 0) {
@@ -748,74 +1541,150 @@ ${result.error || ''}`;
 
     let finalExecutorContent = cleanedExecutorResponse;
     const executionResults: string[] = [];
-    const codeBlocks = this.extractCode(executorResponse);
+    let codeBlocks = this.extractCode(executorResponse);
 
     console.log(`📝 Found ${codeBlocks.length} code blocks to execute`);
 
-    if (codeBlocks.length > 0 && this.mcpClient) {
-      const combinedCode = this.sanitizeCode(codeBlocks[0]);
-      console.log('📤 Code sent to MCP sympy_calculate:', combinedCode);
+    // ── No-code retry: if executor produced no code, re-prompt with stricter instruction ──
+    if (codeBlocks.length === 0 && this.mcpClient) {
+      console.warn('⚠️ No code in executor response — retrying with stricter prompt...');
+
+      const retryCodePrompt = `ODPOWIEDZ TYLKO KODEM PYTHON. Zadanie:\n${userMessage}\n\nPlan:\n${analyticalResponse}\n\n\`\`\`python\nfrom sympy import *\n`;
 
       try {
-        const result = await this.executeWithRetry(combinedCode);
-        executionResults.push(`📊 Wyniki wykonania:\n${result}`);
+        const retryExecResponse = await this.executeAgentTurn(
+          'Agent Wykonawczy (code-retry)',
+          retryCodePrompt,
+          [{ role: 'user', content: userMessage }],
+          { maxTokens: prompts.agents.executor.max_tokens, temperature: 0.1 }
+        );
 
-        // Remove code blocks from displayed content (shown in toolCalls instead)
-        finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
-        finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
-        finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA:**\n${result}`;
-      } catch (error) {
-        const firstErrorMsg = error instanceof Error ? error.message : String(error);
-        console.warn('⚠️ First execution failed, attempting RAG-guided retry...');
+        const retryBlocks = this.extractCode(retryExecResponse);
+        if (retryBlocks.length > 0) {
+          codeBlocks = retryBlocks;
+          console.log('✅ Code retry succeeded — got code on 2nd attempt');
+          const retryTruncated = this.truncateAfterFirstCodeBlock(retryExecResponse);
+          finalExecutorContent = this.cleanMalformedLatex(retryTruncated);
+        } else {
+          console.warn('⚠️ Code retry also produced no code — trying fallback generation...');
 
-        // ── RAG-guided retry: re-generate code with compact hint + short error ──
-        let retrySucceeded = false;
-        if (ragResults.length > 0) {
+          // Last resort: generate simple code from analytical response + question
+          const fallbackCode = this.generateFallbackCode(analyticalResponse, executorResponse, userMessage);
+          if (fallbackCode) {
+            codeBlocks = [fallbackCode];
+            console.log('🔧 Fallback code generated from analytical response');
+          }
+        }
+      } catch (retryErr) {
+        console.warn('⚠️ Code retry failed:', retryErr);
+
+        // Still try fallback
+        const fallbackCode = this.generateFallbackCode(analyticalResponse, executorResponse, userMessage);
+        if (fallbackCode) {
+          codeBlocks = [fallbackCode];
+          console.log('🔧 Fallback code generated from analytical response');
+        }
+      }
+    }
+
+    // ── Aggressive LLM retry loop: keep calling Bielik until SymPy succeeds ──
+    const MAX_LLM_RETRIES = 3; // up to 3 full LLM re-generations on failure
+    if (codeBlocks.length > 0 && this.mcpClient) {
+      let currentCode = codeBlocks[0];
+      let executionSuccess = false;
+      let lastErrorMsg = '';
+
+      for (let llmAttempt = 0; llmAttempt <= MAX_LLM_RETRIES; llmAttempt++) {
+        const sanitizedCode = this.sanitizeCode(currentCode);
+        console.log(`📤 [Attempt ${llmAttempt + 1}/${MAX_LLM_RETRIES + 1}] Code sent to MCP sympy_calculate:`, sanitizedCode.substring(0, 120));
+
+        try {
+          const result = await this.executeWithRetry(sanitizedCode);
+
+          // Check if result looks like an error that leaked through
+          const suspicion = this.isOutputSuspicious(result);
+          if (suspicion && llmAttempt < MAX_LLM_RETRIES) {
+            console.warn(`⚠️ Attempt ${llmAttempt + 1}: Suspicious output — ${suspicion}`);
+            lastErrorMsg = suspicion;
+            // Fall through to LLM re-generation below
+          } else {
+            // Success (or last attempt — accept what we have)
+            executionResults.push(`📊 Wyniki wykonania:\n${result}`);
+            finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
+            finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+            const retryLabel = llmAttempt > 0 ? ` (LLM retry #${llmAttempt})` : '';
+            finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA${retryLabel}:**\n${result}`;
+            executionSuccess = true;
+            if (llmAttempt > 0) console.log(`✅ LLM retry #${llmAttempt} succeeded!`);
+            break;
+          }
+        } catch (error) {
+          lastErrorMsg = error instanceof Error ? error.message : String(error);
+          console.warn(`⚠️ Attempt ${llmAttempt + 1} failed:`, lastErrorMsg.substring(0, 120));
+        }
+
+        // ── Re-generate code via LLM ──
+        if (llmAttempt < MAX_LLM_RETRIES) {
           try {
-            const retryHint = this.ragService.formatRetryHint(ragResults);
-            if (retryHint) {
-              // Keep it short: base prompt + one-line hint + short error
-              const shortError = firstErrorMsg.replace(/^.*?Error:\s*/i, '').substring(0, 80);
-              const retryPrompt = `${executorPrompt}\n${retryHint}\nBłąd poprzedniego kodu: ${shortError}. Napraw.`;
+            const shortError = lastErrorMsg.replace(/^.*?Error:\s*/i, '').substring(0, 150);
+            const failedCode = currentCode.substring(0, 600);
 
-              console.log('📚 RAG retry: re-calling Executor with compact hint');
+            // Alternate between fix-retry (attempt 1) and fresh generation (attempt 2+)
+            let retryPrompt: string;
+            if (llmAttempt === 0) {
+              // First retry: ask to fix the specific error
+              retryPrompt = `Ten kod Python ZWROCIL BLAD. Napraw go i zwroc TYLKO poprawiony kod.\n\nBLAD: ${shortError}\n\nKOD Z BLEDEM:\n\`\`\`python\n${failedCode}\n\`\`\`\n\nZwroc TYLKO poprawiony kod w bloku \`\`\`python. ZERO tekstu poza kodem.`;
+            } else {
+              // Subsequent retries: generate fresh code from scratch with the problem description
+              retryPrompt = `Napisz od nowa kod SymPy rozwiazujacy to zadanie. Poprzednie proby nie dzialaly.\n\nZADANIE: ${userMessage}\n\nPLAN ROZWIAZANIA:\n${analyticalResponse.substring(0, 300)}\n\nOSTATNI BLAD: ${shortError}\n\nNapisz PROSTY, DZIALAJACY kod. Unikaj zlozonych konstrukcji.\n\`\`\`python\nfrom sympy import *\n`;
+            }
 
-              const retryResponse = await this.executeAgentTurn(
-                'Agent Wykonawczy (retry)',
-                retryPrompt,
-                this.getAgentContext(),
-                { maxTokens: prompts.agents.executor.max_tokens, temperature: prompts.agents.executor.temperature }
-              );
+            // Add RAG hints
+            if (ragResults.length > 0) {
+              const retryHint = this.ragService.formatRetryHint(ragResults);
+              if (retryHint) retryPrompt += `\n${retryHint}`;
+            }
 
-              const retryCodeBlocks = this.extractCode(retryResponse);
-              if (retryCodeBlocks.length > 0) {
-                const retryCode = this.sanitizeCode(retryCodeBlocks[0]);
-                console.log('📤 RAG retry code sent to MCP:', retryCode.substring(0, 100));
+            console.log(`🔄 LLM retry #${llmAttempt + 1}: re-calling Executor${llmAttempt === 0 ? ' (fix mode)' : ' (fresh generation)'}`);
 
-                const retryResult = await this.executeWithRetry(retryCode);
-                executionResults.push(`📊 Wyniki wykonania (RAG retry):\n${retryResult}`);
+            const retryResponse = await this.executeAgentTurn(
+              `Agent Wykonawczy (retry-${llmAttempt + 1})`,
+              retryPrompt,
+              [{ role: 'user', content: userMessage }],
+              { maxTokens: prompts.agents.executor.max_tokens, temperature: 0.1 + llmAttempt * 0.05 }
+            );
 
-                finalExecutorContent = this.cleanMalformedLatex(this.truncateAfterFirstCodeBlock(retryResponse));
-                finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
-                finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
-                finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA (retry z podpowiedziami RAG):**\n${retryResult}`;
-                retrySucceeded = true;
-
-                console.log('✅ RAG-guided retry succeeded!');
+            const retryCodeBlocks = this.extractCode(retryResponse);
+            if (retryCodeBlocks.length > 0) {
+              currentCode = retryCodeBlocks[0];
+              console.log(`📝 Got new code from LLM retry #${llmAttempt + 1}`);
+              // Update displayed content
+              const retryTruncated = this.truncateAfterFirstCodeBlock(retryResponse);
+              finalExecutorContent = this.cleanMalformedLatex(retryTruncated);
+            } else {
+              console.warn(`⚠️ LLM retry #${llmAttempt + 1} produced no code — trying fallback generation...`);
+              const fallbackCode = this.generateFallbackCode(analyticalResponse, '', userMessage);
+              if (fallbackCode) {
+                currentCode = fallbackCode;
+                console.log('🔧 Using fallback-generated code');
+              } else {
+                // No code at all — break out
+                break;
               }
             }
           } catch (retryError) {
-            console.warn('⚠️ RAG-guided retry also failed:', retryError);
+            console.warn(`⚠️ LLM retry #${llmAttempt + 1} call failed:`, retryError);
+            break;
           }
         }
+      }
 
-        if (!retrySucceeded) {
-          const errorMsg = `❌ Błąd wykonania: ${firstErrorMsg}`;
-          executionResults.push(errorMsg);
-          finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
-          finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
-          finalExecutorContent += `\n\n---\n**BŁĄD WYKONANIA:**\n${errorMsg}`;
-        }
+      if (!executionSuccess) {
+        const errorMsg = `❌ Błąd wykonania (po ${MAX_LLM_RETRIES + 1} próbach): ${lastErrorMsg}`;
+        executionResults.push(errorMsg);
+        finalExecutorContent = finalExecutorContent.replace(/```python[\s\S]*?```/g, '');
+        finalExecutorContent = finalExecutorContent.replace(/```[\s\S]*?```/g, '');
+        finalExecutorContent += `\n\n---\n**BŁĄD WYKONANIA:**\n${errorMsg}`;
       }
     } else if (codeBlocks.length === 0) {
       console.warn('⚠️ No code blocks found in executor response');

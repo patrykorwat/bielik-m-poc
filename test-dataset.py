@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
 Dataset test harness for bielik-m-poc multi-agent system.
-Tests across the full Polish matura exam datasets.
+Thin harness — all code sanitization, error fixing, and retry logic
+lives in the production MCP SymPy server. This script only handles:
+  - LLM API calls (direct to model endpoint)
+  - Code extraction from LLM responses
+  - Answer checking / scoring
+  - Result reporting
+
+REQUIRES: MCP proxy running on port 3001 (npm run mcp-proxy)
 
 Usage:
   python3 test-dataset.py                          # Test 5 random questions from 2024 (both levels)
@@ -12,12 +19,20 @@ Usage:
   python3 test-dataset.py --level rozszerzona      # Only extended level
   python3 test-dataset.py --only-mc                # Only multiple choice
   python3 test-dataset.py --only-open              # Only open-ended
-  python3 test-dataset.py --use-mcp                # Use MCP proxy (same as UI)
+  python3 test-dataset.py --api-url URL --api-key KEY --model MODEL  # Remote API
 
-To test via UI infrastructure (MCP proxy):
+Setup:
   1. Start MCP proxy: npm run mcp-proxy  (port 3001)
-  2. Start MLX server: mlx_lm.server ... (port 8011)
-  3. Run: python3 test-dataset.py --use-mcp --year 2024 --all
+  2. Start LLM server: mlx_lm.server ... (port 8011) or use --api-url for remote
+  3. Run: python3 test-dataset.py --year 2024 --all
+
+Remote API (e.g. Cyfronet LLM Lab):
+  export BIELIK_API_URL=https://xxx
+  export BIELIK_API_KEY=YOUR_TOKEN
+  python3 test-dataset.py --model speakleash/Bielik-11B-v3.0-Instruct --year 2024 --all
+
+  Or via CLI args:
+  python3 test-dataset.py --api-url $BIELIK_API_URL --api-key $BIELIK_API_KEY --model speakleash/Bielik-11B-v3.0-Instruct --year 2024 --all
 """
 
 import json
@@ -114,7 +129,7 @@ AGENT_CONFIG = _CONFIG["agents"]
 
 # ── API Call ─────────────────────────────────────────────────────────────
 
-def call_bielik(system_prompt, messages, base_url, model, max_tokens=2048, temperature=None):
+def call_bielik(system_prompt, messages, base_url, model, max_tokens=2048, temperature=None, api_key=None):
     """Call Bielik via OpenAI-compatible API."""
     url = f"{base_url}/v1/chat/completions"
     all_messages = [{"role": "system", "content": system_prompt}]
@@ -128,7 +143,11 @@ def call_bielik(system_prompt, messages, base_url, model, max_tokens=2048, tempe
         "max_tokens": max_tokens,
     }).encode("utf-8")
 
-    req = Request(url, data=payload, headers={"Content-Type": "application/json"})
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+
+    req = Request(url, data=payload, headers=headers)
 
     try:
         with urlopen(req, timeout=300) as resp:
@@ -192,12 +211,13 @@ def query_rag_hints(question_text):
 
 
 def call_mcp_sympy(code):
-    """Execute SymPy code via MCP proxy server (same as UI). Returns (output, error, returncode)."""
-    sanitized = _sanitize_code(code)
+    """Execute SymPy code via MCP proxy server (same as UI).
+    Sanitization, retry and error fixing are handled server-side by the MCP SymPy server.
+    Returns (output, error, returncode)."""
     url = f"{MCP_PROXY_URL}/tools/call"
     payload = json.dumps({
         "name": "sympy_calculate",
-        "arguments": {"expression": sanitized}
+        "arguments": {"expression": code}
     }).encode("utf-8")
 
     req = Request(url, data=payload, headers={"Content-Type": "application/json"})
@@ -268,13 +288,55 @@ def clean_latex_for_display(text):
 
 
 def extract_first_code_block(text):
-    """Extract first Python code block."""
+    """Extract first Python code block (v3 — also extracts fenceless Python)."""
+    # 1. Standard markdown fences
     match = re.search(r'```python\s*\n([\s\S]*?)\n```', text)
     if match:
         return match.group(1).strip()
     match = re.search(r'```\s*\n([\s\S]*?)\n```', text)
     if match:
         return match.group(1).strip()
+
+    # 2. Fenceless extraction: find consecutive Python-like lines
+    # (common with FP16 Bielik on remote APIs that ignore fence instructions)
+    lines = text.split('\n')
+    py_lines = []
+    in_block = False
+    for line in lines:
+        stripped = line.strip()
+        is_py = bool(
+            stripped.startswith(('from ', 'import ', 'print(', '#')) or
+            re.match(r'^[a-zA-Z_]\w*\s*=\s*', stripped) or
+            re.match(r'^(?:for |if |elif |else:|while |try:|except |def |return |with )', stripped) or
+            re.match(r'^(?:wynik|opcja_|wy |result|answer)', stripped) or
+            stripped == '' and in_block  # blank lines inside block
+        )
+        if is_py:
+            py_lines.append(line)
+            in_block = True
+        elif in_block and stripped == '':
+            py_lines.append(line)  # allow one blank line
+        else:
+            # End of block — if we have enough, stop
+            if len([l for l in py_lines if l.strip()]) >= 3:
+                break
+            if not in_block:
+                py_lines = []  # reset if we haven't started
+            else:
+                break  # end of a started block
+
+    # Filter and validate
+    code_lines = [l for l in py_lines if l.strip()]
+    if len(code_lines) >= 3:
+        has_import = any('import' in l or 'from ' in l for l in code_lines)
+        has_compute = any(re.search(r'[=+\-*/()]', l) for l in code_lines)
+        if has_import or has_compute:
+            code = '\n'.join(py_lines).strip()
+            # Remove trailing non-code lines
+            while code and not code.split('\n')[-1].strip():
+                code = '\n'.join(code.split('\n')[:-1])
+            return code
+
     return None
 
 
@@ -624,281 +686,40 @@ def available_years(datasets_dir):
     return years
 
 
-def _sanitize_code(code):
-    """Sanitize Python/SymPy code — fix common Bielik patterns (v2 — extended)."""
-    lines = code.split('\n')
+def _execute_via_mcp(code, verbose, result):
+    """Execute SymPy code via MCP proxy (prod path — sanitization and retry handled server-side).
+    Returns output or None."""
+    try:
+        stdout, stderr, rc = call_mcp_sympy(code)
 
-    # Remove assert statements
-    lines = [l for l in lines if not l.strip().startswith('assert ')]
-
-    # Remove input() calls (Bielik sometimes adds interactive input)
-    lines = [l for l in lines if 'input(' not in l]
-
-    # Fix ^ → ** (outside strings and comments)
-    new_lines = []
-    for line in lines:
-        t = line.strip()
-        if not t.startswith('#') and not t.startswith('"') and not t.startswith("'"):
-            line = re.sub(r'(\w)\^(\w)', r'\1**\2', line)
-            line = re.sub(r'\)\^(\w)', r')**\1', line)
-            line = re.sub(r'(\w)\^\(', r'\1**(', line)
-            line = re.sub(r'\)\^\(', r')**(', line)
-            # Also handle ^{...} LaTeX remnants in code
-            line = re.sub(r'\^\{(\d+)\}', r'**\1', line)
-        new_lines.append(line)
-    lines = new_lines
-
-    # Fix wrong imports and common name mistakes
-    import_fixes = {
-        'Simplify': 'simplify',
-        'Greater': 'Gt',
-        'Less': 'Lt',
-        'GreaterEqual': 'Ge',
-        'LessEqual': 'Le',
-        'Solve': 'solve',
-        'Factor': 'factor',
-        'Expand': 'expand',
-        'Limit': 'limit',
-        'Integrate': 'integrate',
-        'Derivative': 'diff',
-        'Trigsimp': 'trigsimp',
-    }
-    result_lines = []
-    for line in lines:
-        for old, new in import_fixes.items():
-            if old in line and 'import' not in line:
-                line = line.replace(old, new)
-        # Fix Pi → pi (common Bielik mistake)
-        if 'Pi' in line and 'import' not in line:
-            line = re.sub(r'\bPi\b', 'pi', line)
-        # Fix Infinity → oo
-        if 'Infinity' in line and 'import' not in line:
-            line = re.sub(r'\bInfinity\b', 'oo', line)
-        # Fix True/False in SymPy context (S.true → True already works)
-        # Fix math.sqrt → sqrt (when sympy is imported)
-        line = re.sub(r'\bmath\.sqrt\b', 'sqrt', line)
-        line = re.sub(r'\bmath\.pi\b', 'pi', line)
-        line = re.sub(r'\bmath\.e\b', 'E', line)
-        line = re.sub(r'\bmath\.log\b', 'log', line)
-        line = re.sub(r'\bmath\.sin\b', 'sin', line)
-        line = re.sub(r'\bmath\.cos\b', 'cos', line)
-        result_lines.append(line)
-    lines = result_lines
-
-    # Remove `import math` if we've replaced all math.* calls
-    code_text = '\n'.join(lines)
-    if 'math.' not in code_text:
-        lines = [l for l in lines if l.strip() not in ('import math', 'from math import *')]
-
-    # Ensure sympy import exists
-    code_text = '\n'.join(lines)
-    if 'from sympy' not in code_text and 'import sympy' not in code_text:
-        lines.insert(0, 'from sympy import *')
-
-    # Fix common syntax: == in equation definition (should be Eq())
-    # Only fix standalone equation assignments, not comparisons in if/while
-    new_lines2 = []
-    for line in lines:
-        t = line.strip()
-        # Pattern: var = expr1 == expr2 (not in if/elif/while/assert/return)
-        if (re.match(r'\w+\s*=\s*.+==.+', t) and
-            not t.startswith(('if ', 'elif ', 'while ', 'return ', 'assert '))):
-            line = re.sub(r'(\w+\s*=\s*)(.+?)\s*==\s*(.+)', r'\1Eq(\2, \3)', line)
-        new_lines2.append(line)
-    lines = new_lines2
-
-    # Ensure there's a print statement for ODPOWIEDZ
-    code_text = '\n'.join(lines)
-    if 'print(' not in code_text:
-        # Find last assignment variable
-        for i in range(len(lines) - 1, -1, -1):
-            m = re.match(r'^(\w+)\s*=', lines[i].strip())
-            if m and not lines[i].strip().startswith(('from ', 'import ')):
-                lines.append(f'print("ODPOWIEDZ:", {m.group(1)})')
-                break
-
-    return '\n'.join(lines)
-
-
-def _fix_code_from_error(code, error_msg):
-    """Try to fix code based on the error message."""
-    fixed = code
-
-    # Fix 1: NameError — add missing symbol definition
-    name_match = re.search(r"NameError: name '(\w+)' is not defined", error_msg)
-    if name_match:
-        missing = name_match.group(1)
-        # Add symbol definition after imports
-        lines = fixed.split('\n')
-        insert_idx = 0
-        for i, line in enumerate(lines):
-            if line.strip().startswith('from ') or line.strip().startswith('import '):
-                insert_idx = i + 1
-        lines.insert(insert_idx, f"{missing} = symbols('{missing}')")
-        fixed = '\n'.join(lines)
-
-    # Fix 2: IndexError on solve()[0] — use safe indexing
-    if 'IndexError: list index out of range' in error_msg:
-        fixed = re.sub(
-            r'(\w+)\s*=\s*solve\(([^)]+)\)\[0\]',
-            r'_sols = solve(\2)\n\1 = _sols[0] if _sols else None',
-            fixed
-        )
-        # Also handle patterns like wynik[0]
-        fixed = re.sub(
-            r'(\w+)\[0\]',
-            r'(\1[0] if \1 else None)',
-            fixed
-        )
-
-    # Fix 3: 'And' object is not subscriptable/iterable — inequality result
-    if "'And' object" in error_msg or "'Or' object" in error_msg:
-        # Replace solve_univariate_inequality patterns with solve
-        # Or wrap result printing
-        if 'is not subscriptable' in error_msg or 'is not iterable' in error_msg:
-            fixed = re.sub(
-                r'for\s+\w+\s+in\s+(\w+)',
-                r'for _item in ([\1] if not hasattr(\1, "__iter__") else \1)',
-                fixed
-            )
-
-    # Fix 4: Wrong import names
-    fixed = fixed.replace('from sympy import Simplify', 'from sympy import simplify')
-    fixed = fixed.replace('from sympy import Greater', 'from sympy import Gt')
-
-    # Fix 5: 'bool' object has no attribute 'subs' — comparison instead of equation
-    if "'bool' object has no attribute 'subs'" in error_msg:
-        # Replace == with Eq() in equation definitions
-        fixed = re.sub(r'(\w+)\s*=\s*(.+?)\s*==\s*(.+)', r'\1 = Eq(\2, \3)', fixed)
-
-    # Fix 6: tuple/dict indexing errors — variable name collision with symbol
-    if 'tuple indices must be integers' in error_msg or 'list indices must be integers' in error_msg:
-        # Pattern: solutions[symbol] → solutions[0] or solutions.values()
-        fixed = re.sub(r'(\w+)\[(\w+)\](?!\s*if)', r'\1[0]', fixed, count=1)
-
-    # Fix 7: Pi (capitalized) not defined — use pi
-    if "name 'Pi' is not defined" in error_msg:
-        fixed = fixed.replace('Pi', 'pi')
-
-    # Fix 8: SympifyError or 'could not parse' — likely LaTeX in code
-    if 'SympifyError' in error_msg or 'could not parse' in error_msg:
-        # Replace \frac{a}{b} with Rational(a,b) or (a)/(b)
-        fixed = re.sub(r'\\frac\{([^}]+)\}\{([^}]+)\}', r'Rational(\1, \2)', fixed)
-        fixed = re.sub(r'\\sqrt\{([^}]+)\}', r'sqrt(\1)', fixed)
-        fixed = re.sub(r'\\pi\b', 'pi', fixed)
-        fixed = re.sub(r'\\cdot', '*', fixed)
-        fixed = fixed.replace('\\left(', '(').replace('\\right)', ')')
-        fixed = fixed.replace('\\', '')
-
-    # Fix 9: TypeError — 'Symbol' object cannot be interpreted as integer
-    if "'Symbol' object cannot be interpreted as an integer" in error_msg:
-        # Likely range(n) where n is a Symbol — use int()
-        fixed = re.sub(r'range\((\w+)\)', r'range(int(\1))', fixed)
-
-    # Fix 10: AttributeError on common misused methods
-    if "has no attribute 'evalf'" in error_msg:
-        fixed = re.sub(r'\.evalf\(\)', '.n()', fixed)
-    if "has no attribute 'simplify'" in error_msg:
-        fixed = re.sub(r'(\w+)\.simplify\(\)', r'simplify(\1)', fixed)
-
-    # Fix 11: ZeroDivisionError — wrap in try/except
-    if 'ZeroDivisionError' in error_msg:
-        lines = fixed.split('\n')
-        # Find the problematic line and add a guard
-        fixed = re.sub(r'/\s*0\b', '/ S(0)', fixed)  # literal /0
-
-    # Fix N: Ensure print statement exists
-    if 'print(' not in fixed:
-        lines = fixed.strip().split('\n')
-        # Find last assignment
-        for i in range(len(lines) - 1, -1, -1):
-            m = re.match(r'^(\w+)\s*=', lines[i].strip())
-            if m and not lines[i].strip().startswith('from ') and not lines[i].strip().startswith('import '):
-                lines.append(f'print("ODPOWIEDZ:", {m.group(1)})')
-                break
-        fixed = '\n'.join(lines)
-
-    return fixed
-
-
-def _run_sympy(code):
-    """Run code with sympy, return (stdout, stderr, returncode)."""
-    sanitized = _sanitize_code(code)
-    full_code = f"from sympy import *\nimport sys\nsys.set_int_max_str_digits(0)\n\n{sanitized}"
-    proc = subprocess.run(
-        ["python3", "-c", full_code],
-        capture_output=True, text=True, timeout=30
-    )
-    return proc.stdout.strip(), proc.stderr.strip(), proc.returncode
-
-
-def _run_sympy_with_retry(code, verbose, result, use_mcp=False):
-    """Run SymPy code with auto-retry on failure. Returns output or None."""
-    MAX_RETRIES = 3
-    current_code = code
-    backend_label = "MCP" if use_mcp else "SymPy"
-
-    for attempt in range(MAX_RETRIES + 1):
-        try:
-            if use_mcp:
-                stdout, stderr, rc = call_mcp_sympy(current_code)
-            else:
-                stdout, stderr, rc = _run_sympy(current_code)
-
-            if rc == 0 and stdout:
-                result['answer_got'] = extract_answer_from_output(stdout)
-                if verbose:
-                    answer_line = result['answer_got'] or stdout[-80:]
-                    retry_tag = f" (retry {attempt})" if attempt > 0 else ""
-                    print(f"  {backend_label}:     ✅ → {answer_line[:60]}{retry_tag}")
-                return stdout
-            elif rc == 0 and not stdout:
-                # Code ran but produced no output
-                if verbose:
-                    print(f"  {backend_label}:     ❌ no output (code ran without print)")
-                result['errors'].append(f"{backend_label}: no output produced")
-                return None
-            else:
-                if attempt < MAX_RETRIES:
-                    fixed_code = _fix_code_from_error(current_code, stderr)
-                    if fixed_code == current_code:
-                        # No fix found, don't retry
-                        if verbose:
-                            err = stderr[-120:] if stderr else "unknown error"
-                            print(f"  {backend_label}:     ❌ {err}")
-                        result['errors'].append(f"{backend_label} error: {stderr[:100]}")
-                        return None
-                    if verbose:
-                        print(f"  {backend_label}:     ⚠️  retrying ({stderr[-60:].strip()})")
-                    current_code = fixed_code
-                    continue
-                else:
-                    if verbose:
-                        err = stderr[-120:] if stderr else "no output"
-                        print(f"  {backend_label}:     ❌ {err}")
-                    result['errors'].append(f"{backend_label} error: {stderr[:100]}")
-                    return None
-
-        except subprocess.TimeoutExpired:
-            result['errors'].append(f"{backend_label} timeout")
+        if rc == 0 and stdout:
+            result['answer_got'] = extract_answer_from_output(stdout)
             if verbose:
-                print(f"  {backend_label}:     ❌ timeout")
+                answer_line = result['answer_got'] or stdout[-80:]
+                print(f"  MCP:       ✅ → {answer_line[:60]}")
+            return stdout
+        elif rc == 0 and not stdout:
+            if verbose:
+                print(f"  MCP:       ❌ no output (code ran without print)")
+            result['errors'].append("MCP: no output produced")
             return None
-        except Exception as e:
-            result['errors'].append(f"{backend_label} exception: {e}")
+        else:
+            err = stderr[-120:] if stderr else "unknown error"
             if verbose:
-                print(f"  {backend_label}:     ❌ exception: {e}")
+                print(f"  MCP:       ❌ {err}")
+            result['errors'].append(f"MCP error: {stderr[:200]}")
             return None
 
-    # Exhausted retries without fix
-    if verbose:
-        print(f"  {backend_label}:     ❌ unfixable error after {MAX_RETRIES} retries")
-    return None
+    except Exception as e:
+        result['errors'].append(f"MCP exception: {e}")
+        if verbose:
+            print(f"  MCP:       ❌ exception: {e}")
+        return None
 
 
 # ── Test Runner ──────────────────────────────────────────────────────────
 
-def test_question(q, base_url, model, verbose=True, use_mcp=False):
+def test_question(q, base_url, model, verbose=True, api_key=None):
     """Test a single question through the 3-agent pipeline. Returns result dict."""
     task_num = q['metadata']['task_number']
     year = q['metadata']['year']
@@ -920,6 +741,12 @@ def test_question(q, base_url, model, verbose=True, use_mcp=False):
         'summary_ok': False,
         'time_total': 0,
         'errors': [],
+        # Raw responses for later analysis
+        'question_text': question_text,
+        'raw_analytical': None,
+        'raw_executor': None,
+        'extracted_code': None,
+        'sympy_stdout': None,
     }
 
     if verbose:
@@ -936,9 +763,12 @@ def test_question(q, base_url, model, verbose=True, use_mcp=False):
         [{"role": "user", "content": question_text}],
         base_url, model,
         max_tokens=AGENT_CONFIG["analytical"]["max_tokens"],
-        temperature=AGENT_CONFIG["analytical"]["temperature"]
+        temperature=AGENT_CONFIG["analytical"]["temperature"],
+        api_key=api_key
     )
     t_analytical = time.time() - t0
+
+    result['raw_analytical'] = analytical
 
     if not analytical:
         result['errors'].append("Analytical agent failed")
@@ -965,9 +795,12 @@ def test_question(q, base_url, model, verbose=True, use_mcp=False):
         ],
         base_url, model,
         max_tokens=AGENT_CONFIG["executor"]["max_tokens"],
-        temperature=AGENT_CONFIG["executor"]["temperature"]
+        temperature=AGENT_CONFIG["executor"]["temperature"],
+        api_key=api_key
     )
     t_executor = time.time() - t0
+
+    result['raw_executor'] = executor
 
     if not executor:
         result['errors'].append("Executor agent failed")
@@ -977,6 +810,7 @@ def test_question(q, base_url, model, verbose=True, use_mcp=False):
     # Extract and check code
     code = extract_first_code_block(executor)
     result['has_code'] = code is not None
+    result['extracted_code'] = code
 
     if code:
         # Basic validity checks
@@ -992,12 +826,11 @@ def test_question(q, base_url, model, verbose=True, use_mcp=False):
               f"valid={'✅' if result['code_valid'] else '❌'} "
               f"({len(truncated)} chars)")
 
-    # Try to execute code via MCP proxy or locally
+    # Execute code via MCP proxy (prod path — sanitization + retry handled server-side)
     sympy_output = None
-    if code and use_mcp:
-        sympy_output = _run_sympy_with_retry(code, verbose, result, use_mcp=True)
-    elif code and SYMPY_AVAILABLE:
-        sympy_output = _run_sympy_with_retry(code, verbose, result, use_mcp=False)
+    if code:
+        sympy_output = _execute_via_mcp(code, verbose, result)
+    result['sympy_stdout'] = sympy_output
 
     # For MC: if no answer from SymPy, try to extract letter from raw executor output
     if is_mc and not result['answer_got'] and executor:
@@ -1061,33 +894,39 @@ def main():
     parser.add_argument("--only-mc", action="store_true", help="Only multiple-choice")
     parser.add_argument("--only-open", action="store_true", help="Only open-ended")
     parser.add_argument("--quiet", action="store_true", help="Less verbose output")
-    parser.add_argument("--use-mcp", action="store_true",
-                        help="Use MCP proxy (localhost:3001) for SymPy execution instead of local subprocess")
+    parser.add_argument("--api-url", type=str, default=os.environ.get("BIELIK_API_URL"),
+                        help="Full API base URL. Overrides --port. Env: BIELIK_API_URL")
+    parser.add_argument("--api-key", type=str, default=os.environ.get("BIELIK_API_KEY"),
+                        help="API key/token for Bearer auth. Env: BIELIK_API_KEY")
     args = parser.parse_args()
 
-    base_url = f"http://localhost:{args.port}"
+    if args.api_url:
+        base_url = args.api_url.rstrip('/')
+    else:
+        base_url = f"http://localhost:{args.port}"
+    api_key = args.api_key
     verbose = not args.quiet
-    use_mcp = args.use_mcp
 
-    # Check MLX server
+    # Check LLM server
     try:
-        req = Request(f"{base_url}/v1/models")
-        with urlopen(req, timeout=5) as resp:
+        headers = {}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        req = Request(f"{base_url}/v1/models", headers=headers)
+        with urlopen(req, timeout=10) as resp:
             models = json.loads(resp.read())
             model_ids = [m['id'] for m in models.get('data', [])]
     except Exception as e:
-        print(f"ERROR: Cannot reach MLX server at {base_url}: {e}")
+        print(f"ERROR: Cannot reach LLM server at {base_url}: {e}")
         sys.exit(1)
 
-    # Check MCP proxy if requested
-    if use_mcp:
-        if check_mcp_proxy():
-            print(f"✅ MCP proxy connected at {MCP_PROXY_URL}")
-        else:
-            print(f"ERROR: MCP proxy not available at {MCP_PROXY_URL}")
-            print(f"  Start it with: npm run mcp-proxy")
-            print(f"  Or run without --use-mcp to use local subprocess")
-            sys.exit(1)
+    # Check MCP proxy (required — all code execution goes through prod path)
+    if check_mcp_proxy():
+        print(f"✅ MCP proxy connected at {MCP_PROXY_URL}")
+    else:
+        print(f"ERROR: MCP proxy not available at {MCP_PROXY_URL}")
+        print(f"  Start it with: npm run mcp-proxy")
+        sys.exit(1)
 
     # Determine levels to test
     if args.level:
@@ -1100,7 +939,9 @@ def main():
     print("=" * 70)
     print(f"Server:  {base_url}")
     print(f"Model:   {args.model}")
-    print(f"Backend: {'MCP proxy' if use_mcp else 'local subprocess'}")
+    if api_key:
+        print(f"Auth:    Bearer ***{api_key[-6:]}")
+    print(f"Backend: MCP proxy (prod path)")
     print(f"Models available: {model_ids}")
     level_label = args.level if args.level else "rozszerzona + podstawowa"
     print(f"Level:   {level_label}")
@@ -1166,7 +1007,7 @@ def main():
             for q in questions:
                 if interrupted:
                     break
-                result = test_question(q, base_url, args.model, verbose=verbose, use_mcp=use_mcp)
+                result = test_question(q, base_url, args.model, verbose=verbose, api_key=api_key)
                 result['level'] = level_tag
                 year_level_results.append(result)
                 all_results.append(result)
@@ -1251,6 +1092,32 @@ def main():
                 errs = f" [{'; '.join(r['errors'])}]" if r['errors'] else ""
                 lvl = r.get('level', '?')
                 print(f"    {r['year']} task {r['task']} [{lvl}] ({r['type']}, {r['points']}pt){errs}")
+
+    # ── Save results log ──────────────────────────────────────────────────
+    if all_results:
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        model_short = args.model.split('/')[-1].replace('.', '-')
+        log_filename = f"benchmark_{timestamp}_{model_short}.json"
+        log_path = os.path.join(os.path.dirname(__file__), log_filename)
+
+        log_data = {
+            'timestamp': timestamp,
+            'model': args.model,
+            'api_url': base_url,
+            'backend': 'mcp',
+            'total_questions': len(all_results),
+            'correct': sum(1 for r in all_results if r['correct']),
+            'has_code': sum(1 for r in all_results if r['has_code']),
+            'code_valid': sum(1 for r in all_results if r['code_valid']),
+            'points_earned': sum(r['points'] for r in all_results if r['correct']),
+            'points_total': sum(r['points'] for r in all_results),
+            'results': all_results,
+        }
+
+        with open(log_path, 'w', encoding='utf-8') as f:
+            json.dump(log_data, f, ensure_ascii=False, indent=2)
+        print(f"\n📝 Results saved to: {log_filename}")
+        print(f"   ({len(all_results)} questions, all raw responses included)")
 
     print(f"\n{'='*70}")
     print("DONE")
