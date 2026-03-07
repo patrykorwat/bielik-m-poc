@@ -2,6 +2,9 @@ import { LLMAgent, LLMProviderType } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
 import { LeanProverServiceBrowser } from './leanProverService.browser';
 import { RAGService } from './ragService';
+import { classifyProblem, shouldUseFallback } from './classifierService';
+import { routeAndSolveWithRetry } from './solverRouter';
+import { ClassificationResult, SolverResult } from './classifierTypes';
 import prompts from '../../prompts.json';
 
 export type LLMProvider = LLMProviderType;
@@ -57,12 +60,15 @@ export class ThreeAgentOrchestrator {
   private availableTools: MCPTool[] = [];
   private leanAvailable: boolean = false;
   private ragService: RAGService;
+  private classifierMode: boolean = false;
 
   constructor(
     proverBackend: ProverBackend = 'both',
-    mlxConfig: MLXConfig
+    mlxConfig: MLXConfig,
+    classifierMode: boolean = false,
   ) {
     this.proverBackend = proverBackend;
+    this.classifierMode = classifierMode;
 
     if (!mlxConfig) {
       throw new Error('LLM config is required');
@@ -417,6 +423,32 @@ ${result.error || ''}`;
       return line;
     });
 
+    // 5h. Proactive fix: lambdify(..., 'numpy') → direct SymPy computation
+    // numpy is not available; lambdify with 'numpy' fails. Replace with 'math' or remove lambdify.
+    lines = lines.map(line => {
+      // Replace lambdify(x, expr, 'numpy') → lambdify(x, expr, 'math')
+      line = line.replace(/lambdify\(([^,]+),\s*([^,]+),\s*['"]numpy['"]\)/g, 'lambdify($1, $2, "math")');
+      return line;
+    });
+
+    // 5i-pre. Proactive fix: Interval.open_left/open_right don't exist → Interval(a, b, left_open=True)
+    lines = lines.map(line => {
+      line = line.replace(/Interval\.open_left\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2, left_open=True)');
+      line = line.replace(/Interval\.open_right\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2, right_open=True)');
+      line = line.replace(/Interval\.open\(([^,]+),\s*([^)]+)\)/g, 'Interval.open($1, $2)');
+      // Single-arg versions: Interval.open_left(a) → Interval(a, oo, left_open=True)
+      line = line.replace(/Interval\.open_left\(([^)]+)\)/g, 'Interval($1, oo, left_open=True)');
+      line = line.replace(/Interval\.open_right\(([^)]+)\)/g, 'Interval(-oo, $1, right_open=True)');
+      return line;
+    });
+
+    // 5i. Proactive fix: format(sympy_expr, '.Nf') → format(float(sympy_expr), '.Nf')
+    // SymPy Rational/Integer don't support format specifiers; wrap in float()
+    lines = lines.map(line => {
+      line = line.replace(/format\((\w+),\s*(['"][^'"]+['"])\)/g, 'format(float($1), $2)');
+      return line;
+    });
+
     // 6. Fix wrong SymPy names
     const importFixes: Record<string, string> = {
       'Simplify': 'simplify',
@@ -449,6 +481,11 @@ ${result.error || ''}`;
       line = line.replace(/\bmath\.log\b/g, 'log');
       line = line.replace(/\bmath\.sin\b/g, 'sin');
       line = line.replace(/\bmath\.cos\b/g, 'cos');
+      // S.Interval → Interval (S registry doesn't have Interval)
+      line = line.replace(/\bS\.Interval\b/g, 'Interval');
+      // S.Reals → Reals, S.Integers → Integers etc.
+      line = line.replace(/\bS\.Reals\b/g, 'Reals');
+      line = line.replace(/\bS\.Integers\b/g, 'Integers');
       return line;
     });
 
@@ -564,6 +601,68 @@ ${result.error || ''}`;
         const indent = line.match(/^(\s*)/)?.[1] || '';
         return `${indent}eq_expr = Eq(${lhs}, ${rhs})`;
       }
+      return line;
+    });
+
+    // 7g. Strip non-ASCII / unicode characters from code (≠, ≥, ≤, →, etc.)
+    // Model sometimes outputs Polish unicode or math symbols that cause SyntaxError
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#')) return line; // allow unicode in comments
+      // Replace common math unicode with Python equivalents
+      line = line.replace(/≠/g, '!=');
+      line = line.replace(/≥/g, '>=');
+      line = line.replace(/≤/g, '<=');
+      line = line.replace(/→/g, '');
+      line = line.replace(/×/g, '*');
+      line = line.replace(/÷/g, '/');
+      line = line.replace(/·/g, '*');
+      line = line.replace(/²/g, '**2');
+      line = line.replace(/³/g, '**3');
+      line = line.replace(/√/g, 'sqrt');
+      line = line.replace(/π/g, 'pi');
+      line = line.replace(/∞/g, 'oo');
+      // Strip any remaining non-ASCII that would cause SyntaxError (except in strings)
+      // Only strip if not inside quotes
+      if (!trimmed.startsWith('"') && !trimmed.startsWith("'") && !trimmed.includes('print(')) {
+        line = line.replace(/[^\x00-\x7F]/g, '');
+      }
+      return line;
+    });
+
+    // 7h. Fix Relational arithmetic: inequality = expr <= val; inequality = inequality - x
+    // Relational objects (LessThan, GreaterThan, etc.) don't support arithmetic.
+    // Rewrite: `ineq = lhs <= rhs; ineq = ineq - expr` → use solve() directly
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ')) return line;
+      // Detect: variable = relational_variable OP expr (where OP is +,-,*,/)
+      // This pattern is always wrong — you can't do arithmetic on a Relational
+      // Fix by rewriting the comparison itself
+      const relArithMatch = trimmed.match(/^(\w+)\s*=\s*(\w+)\s*([+\-*/])\s*(.+)$/);
+      if (relArithMatch) {
+        const [, lhs, rhs_var, , ] = relArithMatch;
+        // Only fix if lhs == rhs_var (same variable, like: inequality = inequality - 3*x)
+        if (lhs === rhs_var) {
+          const indent = line.match(/^(\s*)/)?.[1] || '';
+          return `${indent}# ${trimmed}  # REMOVED: cannot do arithmetic on Relational`;
+        }
+      }
+      return line;
+    });
+
+    // 7i. Fix N(expr).round(n) → round(float(N(expr)), n) for symbolic expressions
+    lines = lines.map(line => {
+      // Pattern: N(expr).round(n) → round(float(N(expr)), n)
+      line = line.replace(/N\(([^)]+)\)\.round\((\d+)\)/g, 'round(float(N($1)), $2)');
+      // Pattern: expr.round(n) → round(float(N(expr)), n) when not on a plain number
+      line = line.replace(/(\w+)\.round\((\d+)\)/g, (match, varName, digits) => {
+        // Don't replace if it's a plain Python float/int method
+        if (['result', 'wynik', 'answer', 'odpowiedz', 'T_new_rounded'].includes(varName)) {
+          return `round(float(N(${varName})), ${digits})`;
+        }
+        return match;
+      });
       return line;
     });
 
@@ -1208,10 +1307,10 @@ ${result.error || ''}`;
     }
 
     // Fix 22j: 'Float' object is not subscriptable — solve() returned dict with scalar values
-    // e.g. solution[a1] returns Float, then code tries solution[a1][0]
+    // e.g. solution[a1] returns Float, then code tries solution[a1][0] or solution[a1][d]
     if (errorMsg.includes("'Float' object is not subscriptable") || errorMsg.includes("'Integer' object is not subscriptable") || errorMsg.includes("'Rational' object is not subscriptable")) {
-      // Replace solution[var][0] with solution[var]
-      fixedCode = fixedCode.replace(/(\w+\[\w+\])\[0\]/g, '$1');
+      // Replace solution[var][anything] with solution[var] — double indexing on scalar
+      fixedCode = fixedCode.replace(/(\w+\[\w+\])\[\w+\]/g, '$1');
       // Also replace result[0][0] patterns
       fixedCode = fixedCode.replace(/(\w+)\[0\]\[0\]/g, '$1[0]');
     }
@@ -1276,6 +1375,45 @@ ${result.error || ''}`;
       fixedCode = fixedCode.replace(/(\w+)\s*=\s*symbols\('f'\)/, "f = Function('f')(x)");
     }
 
+    // Fix 22r-pre: 'Or'/'And' object has no attribute 'intersection' — use Intersection() function
+    if (errorMsg.includes("has no attribute 'intersection'")) {
+      fixedCode = fixedCode.replace(
+        /(\w+)\.intersection\((\w+)\)/g,
+        'Intersection($1, $2)'
+      );
+    }
+
+    // Fix 22r-pre2: cannot unpack non-iterable Integer/Float — solve() returned dict, not list of tuples
+    if (errorMsg.includes('cannot unpack non-iterable') && (errorMsg.includes('Integer') || errorMsg.includes('Float') || errorMsg.includes('Rational'))) {
+      // Pattern: a_value, d_value = solutions[0] where solutions is a dict
+      fixedCode = fixedCode.replace(
+        /(\w+),\s*(\w+)\s*=\s*(\w+)\[0\]/g,
+        '_vals = list($3.values()) if isinstance($3, dict) else $3[0] if isinstance($3, list) else ($3,)\n$1, $2 = _vals[0], _vals[1] if len(_vals) > 1 else _vals[0]'
+      );
+    }
+
+    // Fix 22r: 'NoneType' — solve() returned None, wrap solve() in safety
+    if (errorMsg.includes("'NoneType'") && (errorMsg.includes('unsupported operand') || errorMsg.includes('not subscriptable') || errorMsg.includes('not iterable'))) {
+      // Wrap solve() results with safety: if None → []
+      fixedCode = fixedCode.replace(
+        /(\w+)\s*=\s*solve\(([^)]+)\)(\[(\d+)\])?/g,
+        (_match, varName, args, indexPart, idx) => {
+          if (indexPart) {
+            return `_tmp = solve(${args})\n${varName} = _tmp[${idx}] if _tmp else 0`;
+          }
+          return `${varName} = solve(${args}) or []`;
+        }
+      );
+    }
+
+    // Fix 22s: Interval.open_left/open_right don't exist
+    if (errorMsg.includes("has no attribute 'open_left'") || errorMsg.includes("has no attribute 'open_right'")) {
+      fixedCode = fixedCode.replace(/Interval\.open_left\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2, left_open=True)');
+      fixedCode = fixedCode.replace(/Interval\.open_right\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2, right_open=True)');
+      fixedCode = fixedCode.replace(/Interval\.open_left\(([^)]+)\)/g, 'Interval($1, oo, left_open=True)');
+      fixedCode = fixedCode.replace(/Interval\.open_right\(([^)]+)\)/g, 'Interval(-oo, $1, right_open=True)');
+    }
+
     // Fix 21: Equality.__new__() missing argument → Eq() needs 2 args
     if (errorMsg.includes("Equality.__new__() missing")) {
       // Find Eq(...) with only one arg (no comma at top level)
@@ -1327,6 +1465,114 @@ ${result.error || ''}`;
       };
 
       fixedCode = fixEqOneArg(fixedCode);
+    }
+
+    // Fix 22t: "Relational cannot be used in Mul" — model multiplied/compared a Relational object
+    // Common pattern: if simplify(delta.subs(m, sol)) > 0: — fails because subs() returns Relational
+    // Or: condition_delta * something
+    if (errorMsg.includes('Relational cannot be used in')) {
+      // Fix: if expr > 0 → if (expr).is_positive or if bool(expr > 0)
+      fixedCode = fixedCode.replace(
+        /if\s+(simplify\([^)]+\))\s*([<>]=?)\s*(\d+):/g,
+        'if bool($1 $2 $3):'
+      );
+      // General fix: wrap relational comparisons with symbolic expressions in bool()
+      fixedCode = fixedCode.replace(
+        /if\s+([^:]+?)\s*([<>]=?)\s*(\d+)\s*:/g,
+        (match, expr, op, val) => {
+          if (expr.includes('bool(')) return match; // already wrapped
+          return `if bool(${expr} ${op} ${val}):`;
+        }
+      );
+    }
+
+    // Fix 22u: .subs(Eq(...)) or .subs(prosta) where prosta = Eq(y, expr) → .subs(y, expr)
+    if (errorMsg.includes('old: new pairs') || errorMsg.includes('old, new') || errorMsg.includes('should be a dictionary')) {
+      // Fix .subs(Eq(var, expr)) → .subs(var, expr)
+      fixedCode = fixedCode.replace(
+        /\.subs\(Eq\((\w+),\s*([^)]+)\)\)/g,
+        '.subs($1, $2)'
+      );
+      // Fix .subs(variable_holding_Eq) → need to extract from Eq
+      // Common pattern: prosta = Eq(y, x+1); expr.subs(prosta)
+      // Replace: .subs(prosta) → .subs(y, prosta.rhs) if prosta is likely an Eq
+      const eqVars: string[] = [];
+      const lines = fixedCode.split('\n');
+      for (const line of lines) {
+        const m = line.match(/(\w+)\s*=\s*Eq\((\w+),/);
+        if (m) eqVars.push(m[1]);
+      }
+      for (const eqVar of eqVars) {
+        const re = new RegExp(`\\.subs\\(${eqVar}\\)`, 'g');
+        fixedCode = fixedCode.replace(re, `.subs(${eqVar}.lhs, ${eqVar}.rhs)`);
+      }
+    }
+
+    // Fix 22v: "Cannot round symbolic expression" — N(expr).round() on symbolic
+    if (errorMsg.includes('Cannot round symbolic')) {
+      fixedCode = fixedCode.replace(
+        /N\(([^)]+)\)\.round\((\d+)\)/g,
+        'round(float(N($1)), $2)'
+      );
+      // Also fix: expr.round(N) where expr is a variable
+      fixedCode = fixedCode.replace(
+        /(\w+)\.round\((\d+)\)/g,
+        'round(float(N($1)), $2)'
+      );
+    }
+
+    // Fix 22w: unsupported operand type for -/+/*: 'LessThan'/'GreaterThan'/etc and Mul/int
+    // Pattern: inequality = x**2 - 4 <= 3*x; inequality = inequality - 3*x + 4
+    if (errorMsg.includes('unsupported operand type') &&
+        (errorMsg.includes("'LessThan'") || errorMsg.includes("'GreaterThan'") ||
+         errorMsg.includes("'StrictLessThan'") || errorMsg.includes("'StrictGreaterThan'") ||
+         errorMsg.includes("'NegativeOne'"))) {
+      // Find lines doing arithmetic on a relational, comment them out
+      const fixLines = fixedCode.split('\n');
+      for (let i = 0; i < fixLines.length; i++) {
+        const t = fixLines[i].trim();
+        // Pattern: var = var OP expr (where var was previously a Relational)
+        if (/^\w+\s*=\s*\w+\s*[+\-*/]\s*.+/.test(t)) {
+          const m = t.match(/^(\w+)\s*=\s*(\w+)\s*[+\-*/]/);
+          if (m && m[1] === m[2]) {
+            fixLines[i] = `# ${t}  # SKIP: Relational arithmetic`;
+          }
+        }
+      }
+      fixedCode = fixLines.join('\n');
+      // Also, if error involves NegativeOne and str, it's likely MC option comparison
+      if (errorMsg.includes("'NegativeOne'") && errorMsg.includes("'str'")) {
+        fixedCode = fixedCode.replace(
+          /(\w+)\s*-\s*['"]([^'"]+)['"]/g,
+          'str($1) == "$2"'
+        );
+      }
+    }
+
+    // Fix 22x: 'StrictLessThan'/'LessThan' object is not iterable
+    // Pattern: for x in solve(inequality): where solve returned a Relational
+    if (errorMsg.includes('not iterable') &&
+        (errorMsg.includes("'StrictLessThan'") || errorMsg.includes("'LessThan'") ||
+         errorMsg.includes("'GreaterThan'") || errorMsg.includes("'StrictGreaterThan'"))) {
+      // Fix: solve(inequality) should use solveset or reduce_inequalities
+      fixedCode = fixedCode.replace(
+        /solve\(([^,)]+\s*[<>]=?\s*[^,)]+)\)/g,
+        'solve($1)'
+      );
+      // Wrap in list() for iteration safety
+      fixedCode = fixedCode.replace(
+        /for\s+(\w+)\s+in\s+solve\(([^)]+)\):/g,
+        '_sol = solve($2)\nfor $1 in (_sol if hasattr(_sol, "__iter__") else [_sol]):'
+      );
+    }
+
+    // Fix 22y: SympifyError on list/tuple — solve() returned list, passed to sympify
+    if (errorMsg.includes('SympifyError')) {
+      // Often: Sympify of [(x, y)] — result of solve was a list of tuples
+      fixedCode = fixedCode.replace(
+        /sympify\((\w+)\)/g,
+        '$1  # removed sympify() wrapper'
+      );
     }
 
     return fixedCode;
@@ -1450,10 +1696,14 @@ ${result.error || ''}`;
     // ═══════════════════════════════════════════════════════════════════
     let ragContext = '';
     let ragResults: any[] = [];
+    const problemCategories = this.ragService.detectCategories(userMessage);
+    if (problemCategories.length > 0) {
+      console.log(`🏷️ Detected problem categories: ${problemCategories.join(' + ')}`);
+    }
     try {
       ragResults = await this.ragService.query(userMessage, 5);
       if (ragResults.length > 0) {
-        ragContext = this.ragService.formatContextForAgent(ragResults);
+        ragContext = this.ragService.formatContextForAgent(ragResults, problemCategories.length > 0 ? problemCategories : null);
         console.log(`📚 RAG: ${ragResults.length} wyników znalezionych`);
 
         // Dodaj wiadomość RAG do konwersacji (wyświetlana użytkownikowi)
@@ -1471,6 +1721,117 @@ ${result.error || ''}`;
       }
     } catch (err) {
       console.warn('⚠️ RAG unavailable (continuing without):', err);
+    }
+
+    // If RAG returned nothing but we detected categories, still inject strategies
+    if (!ragContext && problemCategories.length > 0) {
+      ragContext = this.ragService.formatContextForAgent([], problemCategories);
+      if (ragContext) {
+        console.log(`📚 Injecting category strategies (no RAG results) for: ${problemCategories.join(' + ')}`);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // CLASSIFIER MODE: Skip Agent 1+2, use deterministic solver instead
+    // ═══════════════════════════════════════════════════════════════════
+    if (this.classifierMode && this.mcpClient) {
+      console.log('\n=== CLASSIFIER MODE ===');
+
+      try {
+        // Step 1: Classify the problem
+        const classifierPromptText = (prompts as any).classifier || '';
+        const classification: ClassificationResult = await classifyProblem(
+          userMessage,
+          classifierPromptText,
+          this.llmAgent,
+          ragContext || undefined,
+          { maxTokens: (prompts.agents as any).classifier?.max_tokens || 500, temperature: (prompts.agents as any).classifier?.temperature || 0.1 }
+        );
+
+        console.log(`🏷️ Classification: type=${classification.type}, confidence=${classification.confidence}, MC=${classification.isMultipleChoice}`);
+
+        // Show classification to user
+        const classifierMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `Typ zadania: **${classification.type}** (pewność: ${(classification.confidence * 100).toFixed(0)}%)`,
+          agentName: '🔍 Klasyfikator',
+          timestamp: new Date(),
+        };
+        this.conversationHistory.push(classifierMsg);
+        newMessages.push(classifierMsg);
+        if (onMessageCallback) onMessageCallback(classifierMsg);
+
+        // Step 2: Check if we should use fallback (old pipeline)
+        if (!shouldUseFallback(classification)) {
+          // Step 3: Route through deterministic solver
+          const solverResult: SolverResult = await routeAndSolveWithRetry(
+            classification,
+            this.mcpClient,
+            (code: string) => this.sanitizeCode(code),
+            2
+          );
+
+          console.log(`📊 Solver result: success=${solverResult.success}, answer=${solverResult.answer}`);
+
+          // Show solver code and result
+          const solverContent = solverResult.success
+            ? `\`\`\`python\n${solverResult.code}\n\`\`\`\n\n---\n**WYNIKI WYKONANIA:**\n${solverResult.output}`
+            : `\`\`\`python\n${solverResult.code}\n\`\`\`\n\n---\n**BŁĄD:** ${solverResult.error}`;
+
+          const solverMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: solverContent,
+            agentName: 'Agent Wykonawczy (deterministyczny)',
+            timestamp: new Date(),
+            toolCalls: [{
+              id: 'classifier-exec-1',
+              name: 'sympy_calculate',
+              arguments: { expression: solverResult.code }
+            }],
+            toolResults: [{
+              toolCallId: 'classifier-exec-1',
+              toolName: 'sympy_calculate',
+              result: solverResult.output || solverResult.error || '',
+              isError: !solverResult.success,
+            }],
+          };
+          this.conversationHistory.push(solverMsg);
+          newMessages.push(solverMsg);
+          if (onMessageCallback) onMessageCallback(solverMsg);
+
+          // Step 4: Summary agent (same as old pipeline)
+          if (solverResult.success) {
+            console.log('\n=== AGENT 3: Summary (classifier mode) ===');
+            const summaryContext = this.getAgentContext();
+            const summaryResponse = await this.executeAgentTurn(
+              'Agent Podsumowujący',
+              prompts.summary,
+              summaryContext,
+              { maxTokens: prompts.agents.summary.max_tokens, temperature: prompts.agents.summary.temperature }
+            );
+
+            const summaryMsg: Message = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: this.cleanMalformedLatex(summaryResponse),
+              agentName: 'Agent Podsumowujący',
+              timestamp: new Date(),
+            };
+            this.conversationHistory.push(summaryMsg);
+            newMessages.push(summaryMsg);
+            if (onMessageCallback) onMessageCallback(summaryMsg);
+          }
+
+          // Done — skip old pipeline
+          return newMessages;
+        } else {
+          console.log(`⚠️ Classifier confidence too low (${classification.confidence}) or proof type — falling back to old pipeline`);
+        }
+      } catch (classifierError) {
+        console.warn('⚠️ Classifier failed, falling back to old pipeline:', classifierError);
+      }
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -1515,8 +1876,8 @@ ${result.error || ''}`;
     executorPrompt = `WAZNE: Jestes kompilatorem. Twoja odpowiedz to WYLACZNIE blok kodu Python.\nNIE pisz tekstu. NIE pisz wyjasnien. NIE uzywaj LaTeX.\nOdpowiedz MUSI zaczynac sie od \`\`\`python i konczyc na \`\`\`.\n\n${executorPrompt}`;
 
     // Inject SymPy hints from RAG into executor prompt
-    if (ragResults.length > 0) {
-      const sympyHints = this.ragService.formatSymPyHints(ragResults);
+    {
+      const sympyHints = this.ragService.formatSymPyHints(ragResults, problemCategories.length > 0 ? problemCategories : null);
       if (sympyHints) {
         executorPrompt = `${executorPrompt}\n${sympyHints}`;
         console.log('📚 RAG SymPy hints injected into executor prompt');

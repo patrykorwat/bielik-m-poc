@@ -365,6 +365,28 @@ function sanitizeCode(code: string): string {
     return line;
   });
 
+  // 5h. Proactive fix: lambdify(..., 'numpy') → direct SymPy computation
+  lines = lines.map(line => {
+    line = line.replace(/lambdify\(([^,]+),\s*([^,]+),\s*['"]numpy['"]\)/g, 'lambdify($1, $2, "math")');
+    return line;
+  });
+
+  // 5i-pre. Proactive fix: Interval.open_left/open_right don't exist
+  lines = lines.map(line => {
+    line = line.replace(/Interval\.open_left\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2, left_open=True)');
+    line = line.replace(/Interval\.open_right\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2, right_open=True)');
+    line = line.replace(/Interval\.open\(([^,]+),\s*([^)]+)\)/g, 'Interval.open($1, $2)');
+    line = line.replace(/Interval\.open_left\(([^)]+)\)/g, 'Interval($1, oo, left_open=True)');
+    line = line.replace(/Interval\.open_right\(([^)]+)\)/g, 'Interval(-oo, $1, right_open=True)');
+    return line;
+  });
+
+  // 5i. Proactive fix: format(sympy_expr, '.Nf') → format(float(sympy_expr), '.Nf')
+  lines = lines.map(line => {
+    line = line.replace(/format\((\w+),\s*(['"][^'"]+['"])\)/g, 'format(float($1), $2)');
+    return line;
+  });
+
   // 6. Fix wrong SymPy names
   const importFixes: Record<string, string> = {
     'Simplify': 'simplify', 'Greater': 'Gt', 'Less': 'Lt',
@@ -394,6 +416,10 @@ function sanitizeCode(code: string): string {
     line = line.replace(/\bmath\.log\b/g, 'log');
     line = line.replace(/\bmath\.sin\b/g, 'sin');
     line = line.replace(/\bmath\.cos\b/g, 'cos');
+    // S.Interval → Interval (S registry doesn't have Interval)
+    line = line.replace(/\bS\.Interval\b/g, 'Interval');
+    line = line.replace(/\bS\.Reals\b/g, 'Reals');
+    line = line.replace(/\bS\.Integers\b/g, 'Integers');
     return line;
   });
 
@@ -520,6 +546,55 @@ function sanitizeCode(code: string): string {
   if (codeText.includes('math.') && !codeText.includes('import math')) {
     lines.splice(1, 0, 'import math');
   }
+
+  // 7g. Strip non-ASCII / unicode characters from code
+  lines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#')) return line;
+    line = line.replace(/≠/g, '!=');
+    line = line.replace(/≥/g, '>=');
+    line = line.replace(/≤/g, '<=');
+    line = line.replace(/→/g, '');
+    line = line.replace(/×/g, '*');
+    line = line.replace(/÷/g, '/');
+    line = line.replace(/·/g, '*');
+    line = line.replace(/²/g, '**2');
+    line = line.replace(/³/g, '**3');
+    line = line.replace(/√/g, 'sqrt');
+    line = line.replace(/π/g, 'pi');
+    line = line.replace(/∞/g, 'oo');
+    if (!trimmed.startsWith('"') && !trimmed.startsWith("'") && !trimmed.includes('print(')) {
+      line = line.replace(/[^\x00-\x7F]/g, '');
+    }
+    return line;
+  });
+
+  // 7h. Fix Relational arithmetic: inequality = inequality - expr (impossible on Relational)
+  lines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ')) return line;
+    const relArithMatch = trimmed.match(/^(\w+)\s*=\s*(\w+)\s*([+\-*/])\s*(.+)$/);
+    if (relArithMatch) {
+      const [, lhs, rhs_var] = relArithMatch;
+      if (lhs === rhs_var) {
+        const indent = line.match(/^(\s*)/)?.[1] || '';
+        return `${indent}# ${trimmed}  # REMOVED: cannot do arithmetic on Relational`;
+      }
+    }
+    return line;
+  });
+
+  // 7i. Fix N(expr).round(n) → round(float(N(expr)), n)
+  lines = lines.map(line => {
+    line = line.replace(/N\(([^)]+)\)\.round\((\d+)\)/g, 'round(float(N($1)), $2)');
+    line = line.replace(/(\w+)\.round\((\d+)\)/g, (match, varName, digits) => {
+      if (['result', 'wynik', 'answer', 'odpowiedz', 'T_new_rounded'].includes(varName)) {
+        return `round(float(N(${varName})), ${digits})`;
+      }
+      return match;
+    });
+    return line;
+  });
 
   // Fix truncated code: close unbalanced parens/brackets, remove incomplete last line
   {
@@ -943,9 +1018,9 @@ function tryFixCode(code: string, errorMsg: string): string {
     );
   }
 
-  // Fix 22j: 'Float' object is not subscriptable
+  // Fix 22j: 'Float' object is not subscriptable — double indexing on scalar
   if (errorMsg.includes("'Float' object is not subscriptable") || errorMsg.includes("'Integer' object is not subscriptable") || errorMsg.includes("'Rational' object is not subscriptable")) {
-    fixedCode = fixedCode.replace(/(\w+\[\w+\])\[0\]/g, '$1');
+    fixedCode = fixedCode.replace(/(\w+\[\w+\])\[\w+\]/g, '$1');
     fixedCode = fixedCode.replace(/(\w+)\[0\]\[0\]/g, '$1[0]');
   }
 
@@ -995,6 +1070,43 @@ function tryFixCode(code: string, errorMsg: string): string {
     fixedCode = fixedCode.replace(/(\w+)\s*=\s*symbols\('f'\)/, "f = Function('f')(x)");
   }
 
+  // Fix 22r-pre: 'Or'/'And' object has no attribute 'intersection'
+  if (errorMsg.includes("has no attribute 'intersection'")) {
+    fixedCode = fixedCode.replace(
+      /(\w+)\.intersection\((\w+)\)/g,
+      'Intersection($1, $2)'
+    );
+  }
+
+  // Fix 22r-pre2: cannot unpack non-iterable Integer/Float
+  if (errorMsg.includes('cannot unpack non-iterable') && (errorMsg.includes('Integer') || errorMsg.includes('Float') || errorMsg.includes('Rational'))) {
+    fixedCode = fixedCode.replace(
+      /(\w+),\s*(\w+)\s*=\s*(\w+)\[0\]/g,
+      '_vals = list($3.values()) if isinstance($3, dict) else $3[0] if isinstance($3, list) else ($3,)\n$1, $2 = _vals[0], _vals[1] if len(_vals) > 1 else _vals[0]'
+    );
+  }
+
+  // Fix 22r: 'NoneType' — solve() returned None
+  if (errorMsg.includes("'NoneType'") && (errorMsg.includes('unsupported operand') || errorMsg.includes('not subscriptable') || errorMsg.includes('not iterable'))) {
+    fixedCode = fixedCode.replace(
+      /(\w+)\s*=\s*solve\(([^)]+)\)(\[(\d+)\])?/g,
+      (match: string, varName: string, args: string, indexPart: string, idx: string) => {
+        if (indexPart) {
+          return `_tmp = solve(${args})\n${varName} = _tmp[${idx}] if _tmp else 0`;
+        }
+        return `${varName} = solve(${args}) or []`;
+      }
+    );
+  }
+
+  // Fix 22s: Interval.open_left/open_right don't exist
+  if (errorMsg.includes("has no attribute 'open_left'") || errorMsg.includes("has no attribute 'open_right'")) {
+    fixedCode = fixedCode.replace(/Interval\.open_left\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2, left_open=True)');
+    fixedCode = fixedCode.replace(/Interval\.open_right\(([^,]+),\s*([^)]+)\)/g, 'Interval($1, $2, right_open=True)');
+    fixedCode = fixedCode.replace(/Interval\.open_left\(([^)]+)\)/g, 'Interval($1, oo, left_open=True)');
+    fixedCode = fixedCode.replace(/Interval\.open_right\(([^)]+)\)/g, 'Interval(-oo, $1, right_open=True)');
+  }
+
   // Fix 22: Equality.__new__() missing argument
   if (errorMsg.includes("Equality.__new__() missing")) {
     const fixEqOneArg = (src: string): string => {
@@ -1031,6 +1143,93 @@ function tryFixCode(code: string, errorMsg: string): string {
       return result;
     };
     fixedCode = fixEqOneArg(fixedCode);
+  }
+
+  // Fix 22t: "Relational cannot be used in Mul"
+  if (errorMsg.includes('Relational cannot be used in')) {
+    fixedCode = fixedCode.replace(
+      /if\s+(simplify\([^)]+\))\s*([<>]=?)\s*(\d+):/g,
+      'if bool($1 $2 $3):'
+    );
+    fixedCode = fixedCode.replace(
+      /if\s+([^:]+?)\s*([<>]=?)\s*(\d+)\s*:/g,
+      (match, expr, op, val) => {
+        if (expr.includes('bool(')) return match;
+        return `if bool(${expr} ${op} ${val}):`;
+      }
+    );
+  }
+
+  // Fix 22u: .subs(Eq(...)) or .subs(prosta) where prosta = Eq(y, expr)
+  if (errorMsg.includes('old: new pairs') || errorMsg.includes('old, new') || errorMsg.includes('should be a dictionary')) {
+    fixedCode = fixedCode.replace(
+      /\.subs\(Eq\((\w+),\s*([^)]+)\)\)/g,
+      '.subs($1, $2)'
+    );
+    const eqVars: string[] = [];
+    const fixLines = fixedCode.split('\n');
+    for (const line of fixLines) {
+      const m = line.match(/(\w+)\s*=\s*Eq\((\w+),/);
+      if (m) eqVars.push(m[1]);
+    }
+    for (const eqVar of eqVars) {
+      const re = new RegExp(`\\.subs\\(${eqVar}\\)`, 'g');
+      fixedCode = fixedCode.replace(re, `.subs(${eqVar}.lhs, ${eqVar}.rhs)`);
+    }
+  }
+
+  // Fix 22v: "Cannot round symbolic expression"
+  if (errorMsg.includes('Cannot round symbolic')) {
+    fixedCode = fixedCode.replace(
+      /N\(([^)]+)\)\.round\((\d+)\)/g,
+      'round(float(N($1)), $2)'
+    );
+    fixedCode = fixedCode.replace(
+      /(\w+)\.round\((\d+)\)/g,
+      'round(float(N($1)), $2)'
+    );
+  }
+
+  // Fix 22w: unsupported operand type for -/+/*: 'LessThan'/'GreaterThan'/etc
+  if (errorMsg.includes('unsupported operand type') &&
+      (errorMsg.includes("'LessThan'") || errorMsg.includes("'GreaterThan'") ||
+       errorMsg.includes("'StrictLessThan'") || errorMsg.includes("'StrictGreaterThan'") ||
+       errorMsg.includes("'NegativeOne'"))) {
+    const fixLines = fixedCode.split('\n');
+    for (let i = 0; i < fixLines.length; i++) {
+      const t = fixLines[i].trim();
+      if (/^\w+\s*=\s*\w+\s*[+\-*/]\s*.+/.test(t)) {
+        const m = t.match(/^(\w+)\s*=\s*(\w+)\s*[+\-*/]/);
+        if (m && m[1] === m[2]) {
+          fixLines[i] = `# ${t}  # SKIP: Relational arithmetic`;
+        }
+      }
+    }
+    fixedCode = fixLines.join('\n');
+    if (errorMsg.includes("'NegativeOne'") && errorMsg.includes("'str'")) {
+      fixedCode = fixedCode.replace(
+        /(\w+)\s*-\s*['"]([^'"]+)['"]/g,
+        'str($1) == "$2"'
+      );
+    }
+  }
+
+  // Fix 22x: 'StrictLessThan'/'LessThan' object is not iterable
+  if (errorMsg.includes('not iterable') &&
+      (errorMsg.includes("'StrictLessThan'") || errorMsg.includes("'LessThan'") ||
+       errorMsg.includes("'GreaterThan'") || errorMsg.includes("'StrictGreaterThan'"))) {
+    fixedCode = fixedCode.replace(
+      /for\s+(\w+)\s+in\s+solve\(([^)]+)\):/g,
+      '_sol = solve($2)\nfor $1 in (_sol if hasattr(_sol, "__iter__") else [_sol]):'
+    );
+  }
+
+  // Fix 22y: SympifyError on list/tuple
+  if (errorMsg.includes('SympifyError')) {
+    fixedCode = fixedCode.replace(
+      /sympify\((\w+)\)/g,
+      '$1  # removed sympify() wrapper'
+    );
   }
 
   return fixedCode;

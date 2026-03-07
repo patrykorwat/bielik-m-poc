@@ -1,6 +1,6 @@
 {
   "source_pdf": "Informator_EM2024_matematyka_pr.pdf",
-  "total_chunks": 98,
+  "total_chunks": 120,
   "chunks": [
     {
       "id": "pdf_task_1",
@@ -8,7 +8,7 @@
       "category": "wielomiany",
       "title": "Informator 2024 - Zadanie 1 (6 pkt)",
       "content": "Zadanie 1. (0–6) \nDany jest układ równań \n \n{𝑚𝑥+ 𝑦= 𝑚2\n4𝑥+ 𝑚𝑦= 8 \n(1) \n \nz niewiadomymi  𝑥  i  𝑦  oraz parametrem  𝑚∈ℝ. \n \nWyznacz wszystkie wartości parametru  𝒎, dla których układ jest oznaczony, a para \nliczb  (𝒙, 𝒚)  będąca rozwiązaniem układu spełnia warunek  |𝒙+ 𝒚| < 𝟐. \nZapisz obliczenia.\n\nWymaganie ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n3. \nTworzenie pomocniczych obiektów matematycznych na podstawie istniejących, \nw celu przeprowadzenia argumentacji lub rozwiązania problemu. \n\nWymagania szczegółowe \nIII. Równania i nierówności. Zdający: \n1) \nprzekształca równania i nierówności w sposób równoważny […]. \n1R) rozwiązuje […] nierówności wielomianowe […]; \n2R) rozwiązuje równania i nierówności wymierne […]; \n4R) rozwiązuje równania i nierówności z wartością bezwzględną. \nIV. Układy równań. Zdający: \n1) \nrozwiązuje układy równań liniowych z dwiema niewiadomymi […].",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nm, x, y = symbols('m x y', real=True)\n# System: mx + y = m², 4x + my = 8\n# Det = m² - 4, system oznaczony gdy m² - 4 ≠ 0\neqs = [m*x + y - m**2, 4*x + m*y - 8]\nsol = solve(eqs, [x, y])\n# Warunek |x+y| < 2\nprint('x+y =', simplify(sol[x] + sol[y]))",
       "tips": "Matura rozszerzona, 6 pkt, kategoria: wielomiany",
       "metadata": {
         "task_number": 1,
@@ -22,7 +22,7 @@
       "category": "wielomiany",
       "title": "Informator 2024 - Kryteria oceniania zadania 1",
       "content": "Zasady oceniania \ndla rozwiązań sposobami 1. oraz 2. \n6 pkt – zastosowanie poprawnej metody i poprawny wynik. \n5 pkt – rozwiązanie nierówności  𝑚2−2𝑚+4\n𝑚+2\n> −2  oraz  𝑚2−2𝑚+4\n𝑚+2\n< 2 \nALBO \n– rozwiązanie nierówności  2𝑚+ 4 > 𝑚2 −2𝑚+ 4  oraz  2𝑚+ 4 < −𝑚2 + 2𝑚−4. \n4 pkt – rozwiązanie jednej z nierówności \n\n𝑚2 −2𝑚+ 4\n𝑚+ 2\n> −2             lub           𝑚2 −2𝑚+ 4\n𝑚+ 2\n< 2 \nALBO \n– zapisanie alternatywy  2𝑚+ 4 > 𝑚2 −2𝑚+ 4  lub  2𝑚+ 4 < −𝑚2 + 2𝑚−4. \n3 pkt – zapisanie dwóch nierówności \n\n𝑚2 −2𝑚+ 4\n𝑚+ 2\n> −2              i              𝑚2 −2𝑚+ 4\n𝑚+ 2\n< 2  \nALBO \n– uzasadnienie, że  𝑚2 −2𝑚+ 4 > 0  dla każdego  𝑚∈ℝ  oraz zapisanie \nnierówności  𝑚2−2𝑚+4\n|𝑚+2|\n< 2. \n2 pkt – wyznaczenie z układu (1)  𝑥  oraz  𝑦. \n1 pkt – określenie wartości parametru  𝑚, dla jakich układ jest oznaczony i wyznaczenie \nz układu (1)  𝑥  lub  𝑦. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania.  \n\nPrzykładowe pełne rozwiązanie \nSposób 1. \nRozwiązujemy układ (1) metodą podstawiania. ",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nm = symbols('m', real=True)\n# x+y = (m²+8)/(m+2), warunek |(m²+8)/(m+2)| < 2\nexpr = (m**2 + 8)/(m + 2)\n# Rozwiąż: -2 < expr < 2 AND m ≠ ±2\nineq1 = solve(expr > -2, m)\nineq2 = solve(expr < 2, m)\nprint('Warunki:', ineq1, ineq2)",
       "tips": "",
       "metadata": {
         "task_number": 1,
@@ -36,7 +36,7 @@
       "category": "logarytmy",
       "title": "Informator 2024 - Zadanie 2 (3 pkt)",
       "content": "Zadanie 2. (0–3)  \nDane są liczby  𝑎= (log√5 2) ⋅log2 25  i  𝑏= log5 6\nlog5 8 . \nOblicz  𝒂𝒃+𝟏.\n\nWymagania ogólne  \nI. \nSprawność rachunkowa. \nIII. Wykorzystanie i interpretowanie reprezentacji. \n1. \nStosowanie obiektów matematycznych i operowanie nimi, interpretowanie pojęć \nmatematycznych. \n \nWymagania szczegółowe \nI. \nLiczby rzeczywiste. Zdający:  \n1) \nwykonuje działania ([...] potęgowanie, pierwiastkowanie, logarytmowanie) \nw zbiorze liczb rzeczywistych; \nR) \nstosuje wzór na zamianę podstawy logarytmu.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# a = log_4(12), b = log_4(6/3) = log_4(2)\n# Wykaż: log_12(80) = (2a+1)/(a(1+b))\na_val = log(12, 4)\nb_val = log(2, 4)  # = 1/2\nresult = (2*a_val + 1) / (a_val * (1 + b_val))\nprint('log_12(80) =', simplify(result))\nprint('Check:', simplify(log(80, 12)))",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: logarytmy",
       "metadata": {
         "task_number": 2,
@@ -50,7 +50,7 @@
       "category": "logarytmy",
       "title": "Informator 2024 - Kryteria oceniania zadania 2",
       "content": "Zasady oceniania \n3 pkt – zastosowanie poprawnej metody i poprawny wynik. \n2 pkt – poprawne obliczenie  𝑎  oraz przekształcenie  𝑏  do postaci logarytmu o podstawie  2  \nlub  4, np.  𝑏= log2 √6\n3\n. \n1 pkt – poprawne obliczenie  𝑎  lub przekształcenie  𝑏  do postaci logarytmu o podstawie  2  \nlub  4, np.  𝑏= log2 √6\n3\n. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n \nPrzykładowe pełne rozwiązanie \nObliczamy  𝑎  oraz  𝑏  z wykorzystaniem wzoru na zamianę podstawy logarytmu: \n𝑎= log√5 2 ⋅log2 25 = log2 2\nlog2 √5\n⋅2 log2 5 = log2 2\n1\n2 log2 5\n⋅2 log2 5 = 4 \n𝑏= log5 6\nlog5 8 = log8 6 = log2 6\nlog2 8 = 1\n3 log2 6 = log2 √6\n3\n                                 \n \nObliczamy  𝑎𝑏+1: \n \n           𝑎𝑏+1 = 4log2 √6\n3\n+1 = 4log2 √6\n3\n⋅41 = 22 log2 √6\n3\n⋅4 = 2log2 √36\n3\n⋅4 = 4√36\n3",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# a = log_4(12), b = log_4(2) = 1/2\n# Zamiana podstawy: log_12(80) = log(80)/log(12)\n# log(80) = log(16*5) = 4*log(2) + log(5)\n# Wyrażenie przez a i b",
       "tips": "",
       "metadata": {
         "task_number": 2,
@@ -64,7 +64,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 3 (3 pkt)",
       "content": "Zadanie 3. (0–3)  \nNa rysunku obok przedstawiono fragment wykresu \nwielomianu  𝑊  określonego wzorem \n\n𝑊(𝑥) = 1\n8 𝑥3 −2𝑥2 + 67\n8 𝑥−3 \n\ndla każdego  𝑥∈ℝ.  \n\nOblicz wszystkie pierwiastki wielomianu  𝑾. \nZapisz obliczenia. \n\nWymagania ogólne  \nII. Wykorzystanie i tworzenie informacji. \n1. \nInterpretowanie i operowanie informacjami przedstawionymi […] w formie \nwykresów, diagramów, tabel. \nIII. Wykorzystanie i interpretowanie reprezentacji. \n2. \nDobieranie i tworzenie modeli matematycznych przy rozwiązywaniu problemów \npraktycznych i teoretycznych. \n\nWymagania szczegółowe \nII. Wyrażenia algebraiczne. Zdający: \n1R) dzieli wielomian jednej zmiennej  𝑊(𝑥)  przez dwumian postaci  𝑥−𝑎; \n3R) znajduje pierwiastki całkowite wielomianu o współczynnikach całkowitych. \n𝑦= 𝑊(𝑥) \n1 \n𝑥 \n𝑦 \n1",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x'); W = Poly(expr, x); roots_list = real_roots(W); # lub factor(W) + solve()",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 3,
@@ -92,7 +92,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 4 (3 pkt)",
       "content": "Zadanie 4. (0–3)  \nFunkcja  𝑓  jest określona wzorem  𝑓(𝑥) = −3𝑥+41\n𝑥−13   dla każdej liczby rzeczywistej  𝑥≠13. \n\nPunktem kratowym nazywamy punkt w kartezjańskim układzie współrzędnych, którego obie \nwspółrzędne są liczbami całkowitymi.  \n\nWyznacz wszystkie punkty kratowe należące do wykresu funkcji  𝒇. Zapisz obliczenia. \n\nWymagania ogólne  \nII. Wykorzystanie i tworzenie informacji. \n1. \nInterpretowanie i operowanie informacjami przedstawionymi w tekście […]. \nIV. Rozumowanie i argumentacja. \n3. \nDobieranie argumentów do uzasadnienia poprawności rozwiązywania problemów, \ntworzenie ciągu argumentów, gwarantujących poprawność rozwiązania […]. \n\nWymagania szczegółowe \nII. Wyrażenia algebraiczne. Zdający: \n4) \nmnoży i dzieli wyrażenia wymierne. \nV. Funkcje. Zdający: \n13) \nposługuje się funkcją  𝑓(𝑥) = 𝑎\n𝑥  […].",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x'); f = (-3*x+41)/(x-13); # asymptota pionowa: x=13, pozioma: y=-3; zbiór wartości: R\\{-3}",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 4,
@@ -120,7 +120,7 @@
       "category": "wielomiany",
       "title": "Informator 2024 - Zadanie 5 (3 pkt)",
       "content": "Zadanie 5. (0–3)  \nWielomian  𝑊  jest określony wzorem  𝑊(𝑥) = (𝑥−1)(𝑥2 −𝑚𝑥+ 𝑚−1)  dla  \nkażdego  𝑥∈ℝ. \n\nWyznacz wszystkie wartości parametru  𝒎, dla których wielomian  𝑾  ma dokładnie \njeden pierwiastek rzeczywisty. Zapisz obliczenia.\n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n1. \nPrzeprowadzanie rozumowań, także kilkuetapowych, podawanie argumentów \nuzasadniających poprawność rozumowania […]. \n\nWymaganie szczegółowe \nIII. Równania i nierówności. Zdający: \n5R) analizuje równania i nierówności liniowe z parametrami oraz równania \ni nierówności kwadratowe z parametrami, w szczególności wyznacza liczbę \nrozwiązań w zależności od parametrów […].",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nm = symbols('m', real=True)\n# f(x) = x² - mx + m - 1, warunek: brak miejsc zerowych\n# Delta < 0: m² - 4(m-1) < 0 → m² - 4m + 4 < 0 → (m-2)² < 0\ndelta = m**2 - 4*(m - 1)\nprint('Delta:', expand(delta))\nprint('Delta < 0:', solve(delta < 0, m))",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: wielomiany",
       "metadata": {
         "task_number": 5,
@@ -134,7 +134,7 @@
       "category": "wielomiany",
       "title": "Informator 2024 - Kryteria oceniania zadania 5",
       "content": "Zasady oceniania \n3 pkt – zastosowanie poprawnej metody i poprawny wynik. \n2 pkt – wyznaczenie tych wszystkich wartości parametru  𝑚, dla których funkcja kwadratowa   \n𝑓(𝑥) = 𝑥2 −𝑚𝑥+ 𝑚−1  nie ma miejsc zerowych \nALBO \n– wyznaczenie tych wszystkich wartości parametru  𝑚, dla których funkcja kwadratowa   \n𝑓(𝑥) = 𝑥2 −𝑚𝑥+ 𝑚−1  ma dokładnie jedno miejsce zerowe równe  1. \n1 pkt – zapisanie, że liczba  1  jest pierwiastkiem wielomianu  𝑊  i zapisanie warunków, jakie \nmuszą być spełnione, aby wielomian  𝑊  miał dokładnie jedno miejsce zerowe.  \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania.\n\nPrzykładowe pełne rozwiązanie \nZauważmy, że liczba  1  jest pierwiastkiem wielomianu  𝑊. Zatem wielomian  𝑊  ma \ndokładnie jeden pierwiastek rzeczywisty tylko wtedy, gdy funkcja kwadratowa   \n𝑓(𝑥) = 𝑥2 −𝑚𝑥+ 𝑚−1  ma dokładnie jedno miejsce zerowe równe  1  lub gdy funkcja  𝑓  \nnie ma miejsc zerowych. \nZatem \n               Δ < 0    lub    (Δ = 0    i    𝑥0 = 1) \n\n     ",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nm = symbols('m', real=True)\n# Delta = m² - 4m + 4 = (m-2)²\n# (m-2)² < 0 nigdy nie zachodzi → dodatkowy warunek\n# Ale a₁ > 0 (rosnący): f(0) > 0 i f(m) > 0\n# Odpowiedź: m ∈ ...",
       "tips": "",
       "metadata": {
         "task_number": 5,
@@ -148,7 +148,7 @@
       "category": "funkcje",
       "title": "Informator 2024 - Zadanie 6 (4 pkt)",
       "content": "Zadanie 6. (0–4)  \nFunkcja kwadratowa  𝑓  jest określona wzorem  𝑓(𝑥) = 𝑝𝑥2 + (𝑝−1)𝑥+ 1 −2𝑝  dla \nkażdego  𝑥∈ℝ. \n \nWyznacz wszystkie wartości parametru  𝒑, dla których funkcja  𝒇  ma dokładnie dwa \nmiejsca zerowe różniące się o  𝟏. Zapisz obliczenia.\n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n1. \nPrzeprowadzanie rozumowań, także kilkuetapowych, podawanie argumentów \nuzasadniających poprawność rozumowania […]. \n\nWymagania szczegółowe \nIII. Równania i nierówności. Zdający: \n3R) stosuje wzory Viète’a dla równań kwadratowych; \n5R) analizuje […] równania i nierówności kwadratowe z parametrami, w szczególności \nwyznacza liczbę rozwiązań w zależności od parametrów […] i wyznacza \nrozwiązania w zależności od parametrów.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\np = symbols('p', real=True)\nx = symbols('x', real=True)\n# f(x) = x² + px + p, x1 i x2 to pierwiastki\n# |x1 - x2| = 1 → (x1-x2)² = 1 → delta = 1\n# delta = p² - 4p = 1\nresult = solve(p**2 - 4*p - 1, p)\nprint('p =', result)",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: funkcje",
       "metadata": {
         "task_number": 6,
@@ -162,7 +162,7 @@
       "category": "funkcje",
       "title": "Informator 2024 - Kryteria oceniania zadania 6",
       "content": "Zasady oceniania \n4 pkt – zastosowanie poprawnej metody i poprawny wynik. \n3 pkt – rozwiązanie równania  |1 −1−2𝑝\n𝑝\n| = 1. \n2 pkt – zapisanie równania  |𝑥1 −𝑥2| = 1  w postaci równania z jedną niewiadomą  𝑝, np.   \n|1 −1−2𝑝\n𝑝\n| = 1. \n1 pkt – zapisanie i sprawdzenie rachunkiem, że liczba  𝑥1 = 1  jest miejscem zerowym \nfunkcji  𝑓  oraz wyznaczenie miejsca zerowego  𝑥2  funkcji  𝑓:  𝑥2 = 1−2𝑝\n𝑝\n . \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania.\n\nPrzykładowe pełne rozwiązanie \nPonieważ  𝑓  jest funkcją kwadratową, więc  𝑝≠0. \nZauważamy, że liczba  𝑥1 = 1  jest miejscem zerowym funkcji  𝑓: \n\n𝑓(1) = 𝑝⋅12 + (𝑝−1) ⋅1 + 1 −2𝑝= 0 \n\nKorzystamy ze wzorów Viète’a i wyznaczamy miejsce zerowe  𝑥2  funkcji  𝑓: \n\n𝑥1 ⋅𝑥2 = 1 −2𝑝\n𝑝\n\n𝑥2 = 1 −2𝑝\n𝑝\n\nMiejsca zerowe  𝑥1 , 𝑥2  funkcji  𝑓  różnią się o  1, gdy  |𝑥1 −𝑥2| = 1. \nRozwiązujemy równanie  |𝑥1 −𝑥2| = 1: \n|𝑥1 −𝑥2| = 1 \n\n|1 −1 −2𝑝\n𝑝\n| = 1 \n\n|3𝑝−1\n𝑝\n| = 1\n\nPrzykładowe zadania z rozwiązaniami \n25 \n3𝑝−1\n𝑝\n= 1   ∨   3𝑝−",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\np = symbols('p', real=True)\n# |x1-x2|² = (x1+x2)² - 4*x1*x2 = p²-4p\n# Równanie: |1 - (1-2p)/p| = 1\n# Uprość i rozwiąż",
       "tips": "",
       "metadata": {
         "task_number": 6,
@@ -176,7 +176,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 7 (3 pkt)",
       "content": "Zadanie 7. (0–3)  \nFunkcja  𝑓  jest określona wzorem  𝑓(𝑥) = 3𝑥\n𝑥+1  dla każdego  𝑥∈(−1, +∞).  \n\nWykaż, że  𝒇  jest funkcją rosnącą. \n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n1. \nPrzeprowadzanie rozumowań, także kilkuetapowych, podawanie argumentów \nuzasadniających poprawność rozumowania, odróżnianie dowodu od przykładu.  \n\nWymagania szczegółowe \nV. Funkcje. Zdający:  \n3R) dowodzi monotoniczności funkcji zadanej wzorem […]. \nXIII. Optymalizacja i rachunek różniczkowy. Zdający: \n5R) stosuje pochodną do badania monotoniczności funkcji.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x', positive=True); f = 3*x/(x+1); fp = diff(f, x); # f'(x)>0 na (-1,+inf) → f rosnąca; limit(f,x,oo)=3",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 7,
@@ -204,7 +204,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 8 (2 pkt)",
       "content": "Zadanie 8. (0–2)  \nOblicz granicę  𝐥𝐢𝐦\n𝒏→∞√𝟔𝒏+ 𝟕𝒏\n𝒏\n. Zapisz obliczenia.\n\nWymaganie ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n1. \nStosowanie obiektów matematycznych i operowanie nimi, interpretowanie pojęć \nmatematycznych.  \n\nWymaganie szczegółowe \nVI. Ciągi. Zdający:  \n1R) oblicza granice ciągów, korzystając z granic ciągów typu  1\n𝑛, √𝑎\n𝑛\n  oraz twierdzeń \no granicach sumy, różnicy, iloczynu i ilorazu ciągów zbieżnych, a także twierdzenia \no trzech ciągach.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; n = symbols('n', positive=True); a_n = (6**n + 7**n)**(1/n); # wyciągnij 7^n: a_n=7*(6/7)^n+1)^(1/n); limit → 7",
       "tips": "Matura rozszerzona, 2 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 8,
@@ -232,7 +232,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 9 (4 pkt)",
       "content": "Zadanie 9. (0–4)  \nSyzyf codziennie stoi przed zadaniem wtoczenia \nciężkiej kamiennej kuli na szczyt pewnej góry. \nW chwili  𝑡= 0  znajduje się on w punkcie  𝒪  \noddalonym od szczytu o  4  km, a położenie  𝑥  \nSyzyfa wtaczającego kulę jest opisane \nzależnością \n\n𝑥(𝑡) = −𝑡3 + 16,5𝑡2 + 180𝑡  dla  𝑡∈[0, 24] \n\ngdzie  𝑥  jest wyrażone w metrach, a  𝑡 – w godzinach. \nOś  𝒪𝑥  jest skierowana do wierzchołka góry i jest styczna w każdym punkcie do zbocza \ngóry. \n\nOblicz najmniejszą odległość, na jaką Syzyf zbliży się do wierzchołka góry, oraz \nnajwiększą prędkość, z jaką wtacza kamień pod górę. Zapisz obliczenia. \n\nWymaganie ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n1. \nStosowanie obiektów matematycznych i operowanie nimi, interpretowanie pojęć \nmatematycznych.\n\nWymagania szczegółowe \nXIII. Optymalizacja i rachunek różniczkowy. Zdający: \n3R) […] podaje interpretację geometryczną i fizyczną pochodnej; \n4R) oblicza pochodną funkcji potęgowej o wykładniku rzeczywistym […]; \n5R) stosuje pochodną do badania monotoniczności funkcji; \n6R) rozwiązuje zadania optymalizacyjne z zastosowaniem pochodnej.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x', positive=True); # ciąg geometryczny: a_n = a_1*q^(n-1); suma = a_1*(1-q^n)/(1-q); min odległość",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 9,
@@ -260,7 +260,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 10 (6 pkt)",
       "content": "Zadanie 10. (0–6)  \nCztery miasta  𝐴, 𝐵, 𝐶  i  𝐷  znajdują się w wierzchołkach kwadratu o boku  300  km. Pewna \nfirma dostała zlecenie na zaprojektowanie sieci dróg, która będzie łączyć każde dwa z tych \nmiast. Sieć ma posiadać dwa węzły, a łączna długość dróg w sieci ma być możliwie \nnajmniejsza. (Przykład sieci dróg z dwoma węzłami, łączącej każde dwa z miast, \nprzedstawiono na poniższym rysunku). \n  \n \n \n \n \n \n \n \n \n \n \n \n \n \n \nOblicz, jaka musi być długość najkrótszej takiej sieci dróg i gdzie muszą być \nzlokalizowane węzły tej sieci. Zapisz obliczenia. \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n𝐴 \n𝐶 \n𝐷 \n𝐵 \nwęzły \n300 km \n300 km\n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymagania szczegółowe \nXIII. Optymalizacja i rachunek różniczkowy. Zdający: \n4R) oblicza pochodną funkcji potęgowej o wykładniku rzeczywistym oraz oblicza \npochodną, korzystając z twierdzeń o pochodnej sumy, różnicy, iloczynu, ilorazu \ni funkcji złożonej; \n5R) stosuje pochodną do badania monotoniczności funkcji; \n6R) rozwiązuje zadania optymalizacyjne z zastosowaniem pochodnej.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x', positive=True); # Sieć drogowa: punkty Steinera; kąty 120°; optymalizacja z pochodną",
       "tips": "Matura rozszerzona, 6 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 10,
@@ -288,7 +288,7 @@
       "category": "funkcje",
       "title": "Informator 2024 - Zadanie 11 (3 pkt)",
       "content": "Zadanie 11. (0–3)  \nFunkcja  𝑓  jest określona wzorem  𝑓(𝑥) = 2𝑥 − 3\n𝑥 + 2 + 4 log1\n2\n𝑥  dla każdego  𝑥> 0. \n\nWykaż, że funkcja  𝒇  ma co najmniej jedno miejsce zerowe, które należy do \nprzedziału  [𝟏\n𝟐, 𝟒]. \n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n1. \nprzeprowadzanie rozumowań, także kilkuetapowych, podawanie argumentów \nuzasadniających poprawność rozumowania, odróżnianie dowodu od przykładu. \n\nWymaganie szczegółowe \nXIII. Optymalizacja i rachunek różniczkowy. Zdający: \n2R) stosuje własność Darboux do uzasadniania istnienia miejsca zerowego funkcji.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x', positive=True); f = 2**x - 3/(x+2) + 4*log(x, Rational(1,2)); # tw. Darboux: f(1/2)>0, f(4)<0 → ∃ miejsce zerowe",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: funkcje",
       "metadata": {
         "task_number": 11,
@@ -316,7 +316,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 12 (4 pkt)",
       "content": "Zadanie 12. (0–4)  \nFunkcja  𝑓  jest określona wzorem  𝑓(𝑥) = 𝑥4 + 0,5 ⋅(2𝑥+ 1)4  dla każdego  𝑥∈ℝ. \n\nOblicz najmniejszą wartość tej funkcji. Zapisz obliczenia.\n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymagania szczegółowe \nXIII. Optymalizacja i rachunek różniczkowy. Zdający: \n4R) oblicza pochodną funkcji potęgowej o wykładniku rzeczywistym oraz oblicza \npochodną, korzystając z twierdzeń o pochodnej sumy, różnicy, iloczynu, ilorazu \ni funkcji złożonej; \n5R) stosuje pochodną do badania monotoniczności funkcji; \n6R) rozwiązuje zadania optymalizacyjne z zastosowaniem pochodnej.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x'); f = x**4 + Rational(1,2)*(2*x+1)**4; fp = diff(f,x); solve(fp,x); # ekstrema: f''(x0) test",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 12,
@@ -344,7 +344,7 @@
       "category": "ciągi",
       "title": "Informator 2024 - Zadanie 13 (4 pkt)",
       "content": "Zadanie 13. (0–4)  \nW nieskończonym malejącym ciągu geometrycznym  (𝑎𝑛), określonym dla  𝑛≥1, jest \nspełniony warunek \n \n𝑎5 + 𝑎3\n𝑎3\n= 29\n25 \n \nSuma wszystkich wyrazów tego ciągu o numerach parzystych jest równa  6. \n \nWyznacz wzór ogólny na  𝒏–ty wyraz ciągu  (𝒂𝒏). Zapisz obliczenia.\n\nWymaganie ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n1. \nStosowanie obiektów matematycznych i operowanie nimi, interpretowanie pojęć \nmatematycznych. \n \nWymaganie szczegółowe \nVI. Ciągi. Zdający: \n2R) rozpoznaje zbieżne szeregi geometryczne i oblicza ich sumę.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\na1, q = symbols('a1 q', real=True)\n# Ciąg geometryczny: a1, a1*q, a1*q²\n# a1*q*(1-q²) = 6 (z warunków)\n# Rozwiąż układ\neqs = [a1*q*(1 - q**2) - 6]\nsol = solve(eqs, [a1, q])\nprint('Rozwiązania:', sol)",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: ciągi",
       "metadata": {
         "task_number": 13,
@@ -358,7 +358,7 @@
       "category": "ciągi",
       "title": "Informator 2024 - Kryteria oceniania zadania 13",
       "content": "Zasady oceniania \n4 pkt – zastosowanie poprawnej metody i poprawny wynik. \n3 pkt – obliczenie ilorazu ciągu oraz zapisanie równania  𝑎1⋅𝑞\n1−𝑞2 = 6. \n2 pkt – zapisanie dwóch równań z niewiadomymi  𝑞  i  𝑎1, które pozwalają na obliczenie \nilorazu ciągu oraz pierwszego wyrazu ciągu \nALBO \n– obliczenie ilorazu ciągu. \n1 pkt – zapisanie równania  𝑞2 + 1 = 29\n25  albo  𝑎1⋅𝑞\n1−𝑞2 = 6. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n \nPrzykładowe pełne rozwiązanie \nZ warunku \n \n𝑎5 + 𝑎3\n𝑎3\n= 29\n25  \n \noraz z informacji o monotoniczności ciągu otrzymamy iloraz  𝑞  ciągu  (𝑎𝑛): \n \n𝑎3 ⋅𝑞2 + 𝑎3\n𝑎3\n= 29\n25 \n \n𝑞2 + 1 = 29\n25 \n \n𝑞= 2\n5   lub  𝑞= −2\n5 \n \nCiąg jest malejący, więc  𝑞= 2\n5 . \nPonieważ dla  𝑞= 2\n5  ciąg ten jest zbieżny, więc sumę \n \n𝑎2 + 𝑎4 + 𝑎6 + … = 6 \n \nmożemy zapisać następująco: \n𝑎1 ⋅𝑞\n1 −𝑞2 = 6 \ni otrzymujemy\n\nPrzykładowe zadania z rozwiązaniami \n45 \n𝑎1 ⋅2\n5\n1 −(2\n5)\n2 = 6 \n\n𝑎1 = 63\n5  \n\nWzór ogólny ciągu ma postać:  𝑎𝑛= 63\n5 ⋅(2\n5)\n𝑛−1\n.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\na1, q = symbols('a1 q', positive=True)\n# S = a1*(1-q³)/(1-q) = pewna wartość\n# a1*q² = pewna wartość\n# Rozwiąż układ dwóch równań",
       "tips": "",
       "metadata": {
         "task_number": 13,
@@ -372,7 +372,7 @@
       "category": "funkcje",
       "title": "Informator 2024 - Zadanie 14 (3 pkt)",
       "content": "Zadanie 14. (0–3)  \nFunkcja  𝑓  jest określona wzorem  𝑓(𝑥) = 𝑥6 −2𝑥4 −𝑥3 + 1  dla każdego  𝑥∈ℝ. \n\nWykaż, że liczba  𝟓  należy do zbioru wartości tej funkcji. \n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n1. \nPrzeprowadzanie rozumowań, także kilkuetapowych, podawanie argumentów \nuzasadniających poprawność rozumowania, odróżnianie dowodu od przykładu.\n\nWymaganie szczegółowe \nXIII. Optymalizacja i rachunek różniczkowy. Zdający: \n2R) stosuje własność Darboux do uzasadniania istnienia miejsca zerowego funkcji.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x'); f = x**6-2*x**4-x**3+1; # wykaż f(x)≥0: analiza minimum lub rozkład na kwadraty",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: funkcje",
       "metadata": {
         "task_number": 14,
@@ -400,7 +400,7 @@
       "category": "trygonometria",
       "title": "Informator 2024 - Zadanie 15 (3 pkt)",
       "content": "Zadanie 15. (0–3)  \nRozwiąż równanie \n(𝟑−𝟐𝐜𝐨𝐬𝒙)𝟐= 𝟖𝐬𝐢𝐧𝟐(𝒙\n𝟐) −𝟖𝐜𝐨𝐬𝟐(𝒙\n𝟐) + 𝟏𝟐 \nw zbiorze  (𝟎, 𝝅). Zapisz obliczenia.\n\nWymagania ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n1. \nStosowanie obiektów matematycznych i operowanie nimi, interpretowanie pojęć \nmatematycznych. \nIV. Rozumowanie i argumentacja. \n2. \nDostrzeganie regularności, podobieństw oraz analogii, formułowanie wniosków na \nich podstawie i uzasadnianie ich poprawności. \n\nWymaganie szczegółowe \nVII. Trygonometria. Zdający: \n6R) rozwiązuje równania trygonometryczne.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nx = symbols('x', real=True)\n# 4cos²(x) - 4cos(x) - 3 = 0\n# Podstawienie t = cos(x): 4t² - 4t - 3 = 0\nt = symbols('t')\nroots = solve(4*t**2 - 4*t - 3, t)\nprint('cos(x) =', roots)\n# Sprawdź: cos(x) ∈ [-1, 1]\nfor r in roots:\n    if -1 <= r <= 1:\n        sols = solve(cos(x) - r, x)\n        print(f'cos(x)={r} → x={sols}')",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: trygonometria",
       "metadata": {
         "task_number": 15,
@@ -414,7 +414,7 @@
       "category": "trygonometria",
       "title": "Informator 2024 - Kryteria oceniania zadania 15",
       "content": "Zasady oceniania \n3 pkt – zastosowanie poprawnej metody i poprawny wynik. \n2 pkt – rozwiązanie równania  4 cos2 𝑥−4 cos 𝑥−3 = 0. \n1 pkt – zastosowanie wzoru na cosinus podwojonego kąta. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania.\n\nPrzykładowe pełne rozwiązanie \nKorzystamy ze wzoru na cosinus podwojonego kąta i przekształcamy równoważnie równanie \ndo prostszej postaci: \n \n(3 −2 cos 𝑥)2 = 8 sin2 (𝑥\n2) −8 cos2 (𝑥\n2) + 12 \n \n9 −12 cos 𝑥+ 4 cos2 𝑥= −8 (cos2 𝑥\n2 −sin2 𝑥\n2) + 12 \n \n4 cos2 𝑥−12 cos 𝑥+ 9 = −8 cos (2 ⋅𝑥\n2) + 12  \n \n4 cos2 𝑥−4 cos 𝑥−3 = 0 \n \ncos 𝑥= −1\n2   ∨   cos 𝑥= 3\n2 \n \nPonieważ  3\n2 ∉[−1, 1], więc  cos 𝑥= −1\n2 . \n \nKorzystamy z wykresu funkcji cosinus i zapisujemy rozwiązanie równania  cos 𝑥= −1\n2  \nw przedziale  (0, 𝜋): \n𝑥= 2\n3 𝜋",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nx = symbols('x', real=True)\n# cos(2x) = 2cos²(x) - 1\n# 4cos²(x) = 2(1 + cos(2x)) = 2 + 2cos(2x)\n# Równanie: 2cos(2x) - 4cos(x) - 1 = 0\n# Podstaw t=cos(x), rozwiąż",
       "tips": "",
       "metadata": {
         "task_number": 15,
@@ -428,7 +428,7 @@
       "category": "funkcje",
       "title": "Informator 2024 - Zadanie 16 (3 pkt)",
       "content": "Zadanie 16. (0–3)  \nWykaż, że równanie  𝒙𝟒−𝟕𝒙𝟑+ 𝟗𝒙𝟐+ 𝟖𝒙−𝟐= 𝟎  ma w przedziale  (−𝟐, 𝟐)  co \nnajmniej dwa różne rozwiązania.\n\nWymagania ogólne  \nIV. Rozumowanie i argumentacja. \n1. \nPrzeprowadzanie rozumowań […]; \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymaganie szczegółowe \nXIII. Optymalizacja i rachunek różniczkowy. Zdający: \n2R) stosuje własność Darboux do uzasadniania istnienia miejsca zerowego funkcji.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x'); f = x**4-7*x**3+9*x**2+8*x-2; # tw. Darboux: znajdź a,b∈(-2,2) gdzie f(a)<0 i f(b)>0; f(-1), f(0), f(1) itp.",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: funkcje",
       "metadata": {
         "task_number": 16,
@@ -456,7 +456,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 17 (3 pkt)",
       "content": "Zadanie 17. (0–3)  \nCiąg  (𝑎𝑛)  jest określony wzorem \n\n𝑎𝑛= (𝑛+ 5)2 ⋅(\n𝑝+ 1\n(𝑛+ 1)(𝑛+ 2) +\n2𝑝+ 2\n(𝑛+ 2)(𝑛+ 3)) \n\ndla każdej liczby naturalnej  𝑛≥1. \n\nWyznacz wszystkie wartości parametru  𝒑, dla których granica ciągu  (𝒂𝒏)  jest \nrówna  𝟏𝟐. Zapisz obliczenia.  \n\nWymaganie ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n1. \nStosowanie obiektów matematycznych i operowanie nimi, interpretowanie pojęć \nmatematycznych. \n\nWymaganie szczegółowe \nVI. Ciągi. Zdający:  \n1R) oblicza granice ciągów, korzystając z […] twierdzeń o granicach sumy, różnicy, \niloczynu i ilorazu ciągów zbieżnych […].",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; n, p = symbols('n p'); a_n = (n+5)**2 * ((p+1)/((n+1)*(n+2)) + (2*p+2)/((n+2)*(n+3))); # uprość + limit(a_n, n, oo)",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 17,
@@ -484,7 +484,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 19 (4 pkt)",
       "content": "Zadanie 19. (0–4)  \nNa rysunku obok przedstawiono położenie miejscowości  \n𝐴, 𝐵  i  𝐶  oraz zaznaczono odległości między nimi. \nO godzinie 9:00 z miejscowości  𝐴  do  𝐶  wyruszył zastęp \nharcerzy „Tropiciele” i przemieszczał się \nz prędkością  4  km/h. O tej samej godzinie \nz miejscowości  𝐵  do  𝐴  wyruszył zastęp harcerzy \n„Korsarze” i przemieszczał się z prędkością  2  km/h.  \n\nWyznacz godzinę, o której odległość między tymi zastępami harcerzy będzie \nnajmniejsza. Zapisz obliczenia. \n\n𝐴 \n𝐵 \n𝐶 \n15 km \n20 km\n\nWymagania ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n2. \nDobieranie i tworzenie modeli matematycznych przy rozwiązywaniu problemów \npraktycznych i teoretycznych. \nIV. Rozumowanie i argumentacja. \n4) \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań […]. \n\nWymagania szczegółowe \nXIII. Optymalizacja i rachunek różniczkowy. Zdający:  \n4R) oblicza pochodną funkcji potęgowej o wykładniku rzeczywistym oraz oblicza \npochodną, korzystając z twierdzeń o pochodnej sumy, różnicy, iloczynu, ilorazu \ni funkcji złożonej; \n6R) rozwiązuje zadania optymalizacyjne z zastosowaniem pochodnej.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; t = symbols('t', positive=True); # kinematyka: odległość = sqrt((x_A+v_A*t-x_C)^2+(y_A-y_C)^2); diff → minimum",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 19,
@@ -512,7 +512,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 20 (4 pkt)",
       "content": "Zadanie 20. (0–4) \nFirma  X  wytwarza pewien produkt  D. Badania \nrynku pokazały, że związek między ilością  𝑄  \nproduktu  D, jaką firma jest w stanie zbyć na \nrynku, a ceną  𝑃  produktu jest następujący: \n \n \n𝑃(𝑄) = 90 −0,1𝑄 dla  𝑄∈[0, 900] \n \ngdzie  𝑃  jest ceną za jednostkę produktu \nw złotych, a  𝑄 – ilością produktu w tys. sztuk. \n \nKoszty  𝐾  wytworzenia produktu  D  zależą od ilości  𝑄  wytwarzanego produktu \nnastępująco: \n \n𝐾(𝑄) = 0,002𝑄3 + 𝑄2 + 29,9985𝑄+ 50 \n \ngdzie  𝐾  jest kosztem produkcji w tys. zł. \n \nOblicz, przy jakiej wielkości produkcji firma  X  osiąga największy dochód. Wynik \npodaj zaokrąglony z dokładnością do 100 sztuk. Zapisz obliczenia.\n\nWymagania ogólne  \nII. Wykorzystanie i tworzenie informacji. \n1. \nInterpretowanie i operowanie informacjami przedstawionymi w tekście […]. \nIII. Wykorzystanie i interpretowanie reprezentacji. \n2. \nDobieranie i tworzenie modeli matematycznych przy rozwiązywaniu problemów \npraktycznych i teoretycznych. \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymagania szczegółowe \nXIII. Optymalizacja i rachunek różniczkowy. Zdający: \n4R) oblicza pochodną funkcji potęgowej o wykładniku rzeczywistym oraz oblicza \npochodną, korzystając z twierdzeń o pochodnej sumy, różnicy, iloczynu, ilorazu \ni funkcji złożonej; \n5R) stosuje pochodną do badania monotoniczności funkcji; \n6R) rozwiązuje zadania optymalizacyjne z zastosowaniem pochodnej.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x', positive=True); # zysk = przychód - koszt; Z(x) = p(x)*x - K(x); diff(Z,x)=0; max zysku",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 20,
@@ -540,7 +540,7 @@
       "category": "stereometria",
       "title": "Informator 2024 - Zadanie 21 (5 pkt)",
       "content": "Zadanie 21. (0–5)  \nW ostrosłupie prawidłowym czworokątnym  𝐴𝐵𝐶𝐷𝐸  punkt  𝑂  jest środkiem symetrii \npodstawy ostrosłupa. Stosunek obwodu podstawy  𝐴𝐵𝐶𝐷  do sumy długości wszystkich \nkrawędzi ostrosłupa jest równy  1: 5. Przez przekątną  𝐴𝐶  podstawy i środek  𝑆  krawędzi \nbocznej  𝐵𝐸  poprowadzono płaszczyznę. \n \nOblicz stosunek pola otrzymanego przekroju do pola podstawy ostrosłupa oraz miarę \nkąta  𝑩𝑺𝑶  (w zaokrągleniu do  𝟏°). Zapisz obliczenia. \n \nWskazówka. \nSkorzystaj z tablicy wartości funkcji trygonometrycznych (Wybrane wzory matematyczne, \nstrona 34).\n\nWymagania ogólne  \nII. Wykorzystanie i tworzenie informacji. \n1. \nInterpretowanie i operowanie informacjami przedstawionymi w tekście, zarówno \nmatematycznym, jak i popularnonaukowym, a także w formie wykresów, \ndiagramów, tabel. \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymaganie szczegółowe \nX. Stereometria. Zdający:  \n2R) wyznacza przekroje sześcianu i ostrosłupów prawidłowych oraz oblicza ich pola, \ntakże z wykorzystanie trygonometrii.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\na = symbols('a', positive=True)\n# Ostrosłup prawidłowy czworokątny ABCDS\n# S = wierzchołek, O = środek podstawy\n# |SO| = a, kąt BSO, pole przekroju\nh = a  # wysokość = a (z warunków)\n# Przekątna podstawy = a*sqrt(2)\n# Połowa przekątnej = a*sqrt(2)/2\n# tg(BSO) = (a*sqrt(2)/2) / a\nangle = atan(sqrt(2)/2)\nprint('Kąt BSO:', deg(angle))",
       "tips": "Matura rozszerzona, 5 pkt, kategoria: stereometria",
       "metadata": {
         "task_number": 21,
@@ -554,7 +554,7 @@
       "category": "stereometria",
       "title": "Informator 2024 - Kryteria oceniania zadania 21",
       "content": "Zasady oceniania \ndla rozwiązań sposobami 1. oraz 2. \n5 pkt – obliczenie miary kąta  𝐵𝑆𝑂  (w zaokrągleniu do  1°) oraz obliczenie stosunku pola \nprzekroju do pola podstawy ostrosłupa. \n4 pkt – obliczenie wartości cosinusa kąta  𝐵𝑆𝑂  oraz stosunku pola przekroju do pola \npodstawy ostrosłupa \nALBO \n– wyznaczenie miary kąta  𝐵𝑆𝑂. \n3 pkt – obliczenie stosunku pola przekroju do pola podstawy ostrosłupa \nALBO \n– obliczenie wartości cosinusa kąta  𝐵𝑆𝑂. \n2 pkt – wyznaczenie długości odcinka  𝑂𝑆  w zależności od długości krawędzi podstawy. \n1 pkt – wyznaczenie długości krawędzi bocznej w zależności od długości krawędzi podstawy. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania.\n\ndla rozwiązania sposobem 3. \n5 pkt – obliczenie miary kąta  𝐵𝑆𝑂  (w zaokrągleniu do  1°) oraz obliczenie stosunku pola \nprzekroju do pola podstawy ostrosłupa. \n4 pkt – obliczenie cosinusa kąta  𝑂𝐸𝐵  lub  𝐹𝐵𝑆. \n3 pkt – obliczenie stosunku pola przekroju do pola podstawy ostrosłupa. \n2 ",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\na = symbols('a', positive=True)\n# Kąt BSO: tg = OB/SO = (a√2/2)/a = √2/2\n# Kąt = arctan(√2/2) ≈ 35.26°\n# Pole przekroju: trójkąt BDS\n# BD = a√2, SD = sqrt(SO² + OD²) = sqrt(a² + a²/2)",
       "tips": "",
       "metadata": {
         "task_number": 21,
@@ -568,7 +568,7 @@
       "category": "geometria analityczna",
       "title": "Informator 2024 - Zadanie 22 (5 pkt)",
       "content": "Zadanie 22. (0–5)  \nW kartezjańskim układzie współrzędnych  (𝑥, 𝑦)  proste o równaniach   \n2𝑥+ 𝑦−4𝑚−4 = 0  oraz  𝑥−3𝑦+ 5𝑚+ 5 = 0  przecinają się w punkcie  𝑃  \no współrzędnych  (𝑥𝑃, 𝑦𝑃). \n \nWyznacz wszystkie wartości parametru  𝒎, dla których współrzędne punktu  𝑷  \nspełniają warunki: \n \n𝒙𝑷> 𝟎,  𝒚𝑷> 𝟎,  𝒚𝑷≥𝒙𝑷\n𝟐    oraz    𝟐< −\n𝟖\n(𝒚𝑷)𝟐+ 𝟖\n𝒙𝑷\n . \n \nZapisz obliczenia.\n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymaganie szczegółowe \nIV. Układy równań. Zdający:  \n1) \nrozwiązuje układy równań liniowych z dwiema niewiadomymi, podaje interpretację \ngeometryczną układów oznaczonych, nieoznaczonych i sprzecznych.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nm = symbols('m', real=True)\nx, y = symbols('x y', real=True)\n# Prosta y = mx + n, okrąg x² + y² = r²\n# Punkt P spełnia warunki\n# Współrzędne P wyrażone przez m\n# Warunek na P",
       "tips": "Matura rozszerzona, 5 pkt, kategoria: geometria analityczna",
       "metadata": {
         "task_number": 22,
@@ -582,7 +582,7 @@
       "category": "geometria analityczna",
       "title": "Informator 2024 - Kryteria oceniania zadania 22",
       "content": "Zasady oceniania \n5 pkt – poprawne wyznaczenie wszystkich wartości parametru  𝑚, dla których współrzędne \npunktu  𝑃  spełniają podane warunki. \n4 pkt – wyznaczenie wartości  𝑚, dla których obie współrzędne punktu  𝑃  są dodatnie \ni rozwiązanie nierówności  2(𝑚+ 1) ≥(𝑚+ 1)2  oraz  2 < −\n8\n[2(𝑚 + 1)]2 +\n8\n𝑚 + 1 . \n3 pkt – wyznaczenie wartości  𝑚, dla których obie współrzędne punktu  𝑃  są dodatnie oraz \nrozwiązanie jednej z nierówności: \n2(𝑚+ 1) ≥(𝑚+ 1)2  lub  2 < −\n8\n[2(𝑚 + 1)]2 +\n8\n𝑚 + 1 . \n2 pkt – wyznaczenie wartości  𝑚, dla których obie współrzędne punktu  𝑃  są dodatnie \nALBO \n– rozwiązanie jednej z nierówności: \n2(𝑚+ 1) ≥(𝑚+ 1)2  lub  2 < −\n8\n[2(𝑚 + 1)]2 +\n8\n𝑚 + 1 . \n1 pkt – wyznaczenie współrzędnych punktu  𝑃  w zależności od  𝑚. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n\nPrzykładowe pełne rozwiązanie \nPunkt  𝑃  leży na obu prostych, więc \n\n{2𝑥𝑃+ 𝑦𝑃−4𝑚−4 = 0\n𝑥𝑃−3𝑦𝑃+ 5𝑚+ 5 = 0 \n\nZ powyższego układu równań wyznaczamy współrzędne punktu  ",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nm = symbols('m', real=True)\n# Wyznacz współrzędne P(m)\n# Warunek: x_P > 0 AND y_P > 0\n# solve() dla nierówności",
       "tips": "",
       "metadata": {
         "task_number": 22,
@@ -596,7 +596,7 @@
       "category": "trygonometria",
       "title": "Informator 2024 - Zadanie 23 (3 pkt)",
       "content": "Zadanie 23. (0–3)  \nW kartezjańskim układzie współrzędnych  (𝑥, 𝑦)  trapez  𝐴𝐵𝐶𝐷  jest wpisany w okrąg \no środku w punkcie  𝑆= (19, −11)  i promieniu  17√2. Wierzchołek  𝐴  trapezu ma obie \nwspółrzędne ujemne, a odcinek  𝐴𝐵  jest dłuższą z podstaw tego trapezu. Przekątna  𝐴𝐶  \ntrapezu  𝐴𝐵𝐶𝐷  jest zawarta w prostej o równaniu  𝑦= 𝑥. \n \nOblicz sinus kąta  𝑨𝑩𝑪. Zapisz obliczenia.\n\nWymaganie ogólne \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymagania szczegółowe \nIX. Geometria analityczna na płaszczyźnie kartezjańskiej. Zdający: \n1R) znajduje punkty wspólne prostej i okręgu. \nVII. Trygonometria. Zdający: \n7R) stosuje twierdzenie sinusów.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; # trapez wpisany w okrąg: tw. Ptolemeusza lub współrzędne; kąt wpisany = 1/2 kąta środkowego",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: trygonometria",
       "metadata": {
         "task_number": 23,
@@ -624,7 +624,7 @@
       "category": "trygonometria",
       "title": "Informator 2024 - Zadanie 24 (4 pkt)",
       "content": "Zadanie 24. (0–4)  \nW kartezjańskim układzie współrzędnych  (𝑥, 𝑦)  czworokąt  𝐴𝐵𝐶𝐷  jest równoległobokiem \ntakim, że   𝐵𝐷\n⃗⃗⃗⃗⃗⃗ = [−21, −7]  i  𝐷𝐶\n⃗⃗⃗⃗⃗ = [15, 8]. \n\nOblicz pole tego równoległoboku. Zapisz obliczenia. \n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych.\n\nWymagania szczegółowe \nVII. Trygonometria. Zdający: \n2) \nkorzysta z wzorów  sin2 𝛼+ cos2 𝛼= 1  […]. \nVIII. Planimetria. Zdający: \n2) \n[…] stosuje twierdzenie odwrotne do twierdzenia Pitagorasa i twierdzenie \ncosinusów […]. \nIX. Geometria analityczna na płaszczyźnie kartezjańskiej. Zdający: \n3R) zna pojęcie wektora i oblicza jego współrzędne oraz długość, dodaje wektory […].",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nalpha = symbols('alpha', positive=True)\n# Równoległobok, przekątne, kąt\n# Pole = d1 * d2 * sin(kąt) / 2\n# tw. cosinusów dla przekątnych",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: trygonometria",
       "metadata": {
         "task_number": 24,
@@ -638,7 +638,7 @@
       "category": "trygonometria",
       "title": "Informator 2024 - Kryteria oceniania zadania 24",
       "content": "Zasady oceniania \ndla rozwiązania sposobem 1. \n4 pkt – poprawna metoda obliczenia pola równoległoboku i poprawny wynik. \n3 pkt – obliczenie sinusa kąta  𝐵𝐷𝐶. \n2 pkt – zastosowanie twierdzenia cosinusów do obliczenia cosinusa kąta  𝐵𝐷𝐶. \n1 pkt – obliczenie długości boków trójkąta  𝐵𝐶𝐷. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania.\n\ndla rozwiązań sposobami 2. oraz 3. \n4 pkt – poprawna metoda obliczenia pola równoległoboku i poprawny wynik. \n3 pkt – obliczenie pola trójkąta  𝐵𝐶𝐷. \n2 pkt – zastosowanie wzoru do obliczenia pola trójkąta  𝐵𝐶𝐷. \n1 pkt – wyrażenie współrzędnych punktów  𝐵  i  𝐶  za pomocą współrzędnych punktu  𝐷 \nALBO \n– obliczenie długości boków trójkąta  𝐵𝐶𝐷. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n\nPrzykładowe pełne rozwiązania \nSposób 1. \nObliczamy długości boków trójkąta  𝐵𝐶𝐷: \n\nBC\n⃗⃗⃗⃗⃗ = BD\n⃗⃗⃗⃗⃗ + DC\n⃗⃗⃗⃗⃗ = [−21, −7] + [15, 8] = [−6, 1] \n\n|𝐵𝐶| = √(−6)2 + 12 = √37 \n\n|𝐶𝐷| = √152 + 82 ",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# Tw. cosinusów: BD² = AB² + AD² - 2*AB*AD*cos(BAD)\n# sin(BDC) z tw. sinusów\n# Pole = AB * BC * sin(ABC)",
       "tips": "",
       "metadata": {
         "task_number": 24,
@@ -652,7 +652,7 @@
       "category": "algebra",
       "title": "Informator 2024 - Zadanie 25 (3 pkt)",
       "content": "Zadanie 25. (0–3)  \nDany jest sześcian  𝐴𝐵𝐶𝐷𝐸𝐹𝐺𝐻  o krawędzi długości  𝑎. Punkt  𝑃  jest środkiem \nkrawędzi  𝐶𝐺  tego sześcianu (zobacz rysunek poniżej). \n\nOblicz odległość wierzchołka  𝑪  od płaszczyzny zawierającej punkty  𝑩, 𝑫  oraz  𝑷. \nZapisz obliczenia. \n\n𝐴 \n𝐵 \n𝐶 \n𝐷 \n𝐸 \n𝐹 \n𝐺 \n𝐻 \n𝑃 \n|𝑃𝐺|= ȁ𝑃𝐶ȁ \n𝑎\n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań […]. \n\nWymaganie szczegółowe \nX. Stereometria. Zdający: \n2R) wyznacza przekroje sześcianu […].",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; a = symbols('a', positive=True); # sześcian: współrzędne wierzchołków, środek krawędzi; odległość punkt-płaszczyzna lub punkt-prosta",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: algebra",
       "metadata": {
         "task_number": 25,
@@ -680,7 +680,7 @@
       "category": "geometria analityczna",
       "title": "Informator 2024 - Zadanie 26 (5 pkt)",
       "content": "Zadanie 26. (0–5)  \nDany jest trapez prostokątny  𝐴𝐵𝐶𝐷  o kątach prostych przy wierzchołkach  𝐴  i  𝐷. \nRamię  𝐵𝐶  trapezu ma długość  5. W ten trapez wpisano okrąg o środku w punkcie  𝑆  \ni promieniu  2. Punkt  𝑃  jest punktem styczności tego okręgu i dłuższej podstawy  𝐴𝐵  tego \ntrapezu (zobacz rysunek). \n\nWykaż, że trójkąty  𝑩𝑷𝑺  i  𝑩𝑺𝑪  są trójkątami podobnymi, oraz oblicz skalę tego \npodobieństwa. Zapisz obliczenia. \n\n𝐴 \n𝐶 \n𝐷 \n𝑆 \n𝐵 \n𝑃 \n2 \n5\n\nWymaganie ogólne  \nIV. Rozumowanie i argumentacja. \n1) \nPrzeprowadzanie rozumowań, także kilkuetapowych, podawanie argumentów \nuzasadniających poprawność rozumowania […]. \n\nWymagania szczegółowe \nVIII. Planimetria. Zdający: \n11) \nprzeprowadza dowody geometryczne. \n1R) stosuje własności czworokątów […] opisanych na okręgu.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; # trapez prostokątny: współrzędne → podobieństwo trójkątów → skala → obliczenia",
       "tips": "Matura rozszerzona, 5 pkt, kategoria: geometria analityczna",
       "metadata": {
         "task_number": 26,
@@ -708,7 +708,7 @@
       "category": "trygonometria",
       "title": "Informator 2024 - Zadanie 27 (4 pkt)",
       "content": "Zadanie 27. (0–4)  \nTomek i Marek chcą wejść docelowo na szczyt  𝑆  \npewnej góry. W chwili początkowej znajdują się \nw punkcie  𝑃  położonym na stoku góry dokładnie \nna północ od szczytu na wysokości 𝐻0 metrów \nn.p.m. Tomek i Marek chcą dotrzeć do bazy 𝐵 \nznajdującej się dokładnie na południe od szczytu na \nprzeciwległym południowym stoku góry na \nwysokości  𝐻1  metrów n.p.m., a następnie z bazy \nwejść na szczyt leżący na wysokości  𝐻2  metrów \nn.p.m. (zobacz rysunek 1.). \n\nOblicz długość najkrótszej drogi, jaką muszą \npokonać, aby dotrzeć do bazy. Zapisz \nobliczenia. \n\nPrzyjmij, że góra jest stożkiem o kącie rozwarcia  𝛼. \n\nWskazówka: Powierzchnia boczna stożka po rozcięciu \nwzdłuż tworzącej i rozłożeniu jest wycinkiem koła. \nNajkrótsza droga do bazy odpowiada najkrótszej drodze \nz punktu  𝑃  do  𝐵  na wycinku koła. \n\n𝑆 \n𝛼 \n𝐵 \n𝑃 \nRys. 1.\n\nWymagania ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n2. \nDobieranie i tworzenie modeli matematycznych przy rozwiązywaniu problemów \npraktycznych i teoretycznych. \n3. \nTworzenie pomocniczych obiektów matematycznych na podstawie istniejących, \nw celu przeprowadzenia argumentacji lub rozwiązania problemu. \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymagania szczegółowe \nVII. Trygonometria. Zdający: \n1R) stosuje miarę łukową […]. \nVIII. Planimetria. Zdający: \n2) \n[…] stosuje twierdzenie odwrotne do twierdzenia Pitagorasa i twierdzenie \ncosinusów […]; \n6) \nstosuje wzory na pole wycinka koła i długość łuku okręgu.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; # trygonometria w geometrii: tw. sinusów, tw. cosinusów; kąty elewacji/depresji; tan(alpha)=h/d",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: trygonometria",
       "metadata": {
         "task_number": 27,
@@ -736,7 +736,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Zadanie 28 (4 pkt)",
       "content": "Zadanie 28. (0–4)  \nNiech  𝑛  będzie ustaloną liczbą naturalną dodatnią. Ze zbioru  𝕄= {1; 2; 3; … ; 3𝑛+ 1} \nlosujemy jednocześnie trzy liczby. Zdarzenie  𝐴  odpowiada jednoczesnemu wylosowaniu \nze zbioru  𝕄  trzech liczb, których suma przy dzieleniu przez  3  daje resztę  1. \n\nOblicz prawdopodobieństwo zdarzenia  𝑨. Zapisz obliczenia. \n\nWymaganie ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n2. \nDobieranie i tworzenie modeli matematycznych przy rozwiązywaniu problemów \npraktycznych i teoretycznych.\n\nWymagania szczegółowe \nXI. Kombinatoryka. Zdający: \n1R) oblicza liczbę możliwych sytuacji, spełniających określone kryteria, \nz wykorzystaniem reguły mnożenia i dodawania (także łącznie) oraz wzorów na \nliczbę: permutacji, kombinacji i wariacji; \n2R) stosuje współczynnik dwumianowy (symbol Newtona) i jego własności przy \nrozwiązywaniu problemów kombinatorycznych. \nXII. Rachunek prawdopodobieństwa i statystyka. Zdający: \n1) \noblicza prawdopodobieństwo w modelu klasycznym.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# 3 liczby ze zbioru {1,...,9}, suma podzielna przez 3\n# Reszty mod 3: {0}: {3,6,9}, {1}: {1,4,7}, {2}: {2,5,8}\n# Przypadki: (0,0,0), (1,1,1), (2,2,2), (0,1,2)\nfrom sympy import binomial, Rational\nn_total = binomial(9, 3)\nn_000 = binomial(3, 3)\nn_111 = binomial(3, 3)\nn_222 = binomial(3, 3)\nn_012 = 3 * 3 * 3  # po jednym z każdej grupy\nP = Rational(n_000 + n_111 + n_222 + n_012, n_total)\nprint('P =', P)",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: prawdopodobieństwo",
       "metadata": {
         "task_number": 28,
@@ -750,7 +750,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Kryteria oceniania zadania 28",
       "content": "Zasady oceniania \n4 pkt – zastosowanie poprawnej metody i poprawny wynik. \n3 pkt – rozpatrzenie wszystkich możliwych przypadków, kiedy suma trzech liczb naturalnych \ndaje przy dzieleniu przez  3  resztę  1, tj. zapisanie, że moc zbioru  𝐴  wynosi \n\n(𝑛\n2) ⋅(𝑛+ 1\n1\n) + (𝑛+ 1\n2\n) ⋅(𝑛\n1) + (𝑛\n2) ⋅(𝑛\n1) \n\n2 pkt – rozpatrzenie tylko dwóch z wszystkich możliwych przypadków, kiedy suma trzech \nliczb naturalnych daje przy dzieleniu przez  3  resztę  1  – tj. zapisanie, że moc zbioru  \n𝐴  wynosi \n\n(𝑛\n2) ⋅(𝑛+ 1\n1\n) + (𝑛+ 1\n2\n) ⋅(𝑛\n1) \n\nLUB \n(𝑛\n2) ⋅(𝑛+ 1\n1\n) + (𝑛\n2) ⋅(𝑛\n1) \n\nLUB \n(𝑛+ 1\n2\n) ⋅(𝑛\n1) + (𝑛\n2) ⋅(𝑛\n1)\n\n1 pkt – wyznaczenie liczby wszystkich trójelementowych podzbiorów zbioru  𝕄.  \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n\nPrzykładowe pełne rozwiązanie \nWyznaczamy liczbę wszystkich trójelementowych podzbiorów zbioru  𝕄: \n\n(3𝑛+ 1\n3\n) = (3𝑛+ 1) ⋅3𝑛⋅(3𝑛−1)\n6\n= (3𝑛+ 1)𝑛(3𝑛−1)\n2\n\nWyznaczamy moc zbioru  𝐴. \nZauważmy, że suma trzech liczb naturalnych d",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# Wszystkie kombinacje: C(9,3) = 84\n# Sprzyjające: C(3,3)*3 + 3*3*3 = 3 + 27 = 30\n# P = 30/84 = 5/14",
       "tips": "",
       "metadata": {
         "task_number": 28,
@@ -764,7 +764,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Zadanie 29 (4 pkt)",
       "content": "Zadanie 29. (0–4)  \nPan Nowak często gra z synem w szachy. Obliczył, \nże  40%  rozegranych z synem partii wygrywa. \n \n \n \n \n \n \n \n \n \nOblicz, ile partii szachów musi rozegrać z synem pan Nowak, aby prawdopodobieństwo \nwygrania przez ojca przynajmniej jednej partii w całej rozgrywce było większe od  𝟎, 𝟗𝟓. \nZapisz obliczenia.\n\nWymaganie ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n2. \nDobieranie i tworzenie modeli matematycznych przy rozwiązywaniu problemów \npraktycznych i teoretycznych. \n\nWymaganie szczegółowe \nXII. Rachunek prawdopodobieństwa i statystyka. Zdający: \n2R) stosuje schemat Bernoullego.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nn = symbols('n', integer=True, positive=True)\n# P(co najmniej 1 sukces w n próbach) > 0.99\n# 1 - (1-p)^n > 0.99 → (1-p)^n < 0.01\np = Rational(6, 10)  # p = 0.6\n# (0.4)^n < 0.01\n# n > log(0.01)/log(0.4)\nimport math\nn_min = math.ceil(math.log(0.01)/math.log(0.4))\nprint('Minimalne n:', n_min)",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: prawdopodobieństwo",
       "metadata": {
         "task_number": 29,
@@ -778,7 +778,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Kryteria oceniania zadania 29",
       "content": "Zasady oceniania \n4 pkt – zastosowanie poprawnej metody i poprawny wynik. \n3 pkt – zastosowanie wzoru na prawdopodobieństwo uzyskania  𝑘  sukcesów w  𝑛  próbach \ni zapisanie nierówności  1 −(0,6)𝑛> 0,95. \n2 pkt – zapisanie nierówności  1 −𝑃(𝑆𝑛\n0) > 0,95. \n1 pkt – zapisanie prawdopodobieństwa sukcesu i porażki.  \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n\nPrzykładowe pełne rozwiązanie \nPróbą Bernoullego jest rozegranie pojedynczej partii szachów z synem. Sukcesem w tej \npróbie jest wygrana pana Nowaka z synem w pojedynczej partii. \nPrawdopodobieństwo sukcesu jest równe  𝑝= 0,4, natomiast prawdopodobieństwo porażki \njest równe  𝑞= 0,6. \nNiech  𝑛  oznacza szukaną liczbę partii oraz niech \n𝑆𝑛\n0  – oznacza niewygranie przez ojca żadnej partii szachów,\n\n𝑆𝑛\n1  – oznacza wygranie przez ojca jednej partii szachów, \n𝑆𝑛\n2  – oznacza wygranie przez ojca dwóch partii szachów, \n⋮ \n \n𝑆𝑛\n𝑛  – oznacza wygranie przez ojca  𝑛  partii szachów. \n \nKorzystamy ze s",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# 1-(0.6)^n > 0.99 → (0.6)^n < 0.01\n# n*log(0.6) < log(0.01)\n# n > log(0.01)/log(0.6) ≈ 9.02\n# Odpowiedź: n = 10",
       "tips": "",
       "metadata": {
         "task_number": 29,
@@ -792,7 +792,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Zadanie 30 (3 pkt)",
       "content": "Zadanie 30. (0–3)  \nPewna choroba dotyka  0,2%  całej populacji i w początkowym stadium nie daje widocznych \nobjawów chorobowych. W ramach profilaktyki stosuje się pewien test przesiewowy, który \ndaje wynik pozytywny lub negatywny. Prawdopodobieństwo tego, że test wykonany na \nosobie chorej da wynik pozytywny (oznaczający chorobę), jest równe  0,99. Ponadto \nwiadomo, że prawdopodobieństwo tego, że test wykonany na osobie zdrowej da wynik \nnegatywny, jest równe  0,98. \nPan  X  poddał się testowi, który dał wynik pozytywny. Pozytywny wynik oznacza podejrzenie \nchoroby. \n \nOblicz prawdopodobieństwo tego, że pan  X  jest rzeczywiście chory. Wynik zapisz \nw postaci ułamka dziesiętnego w zaokrągleniu do części setnych. Zapisz obliczenia.\n\nWymaganie ogólne  \nIII. Wykorzystanie i interpretowanie reprezentacji. \n1. \nStosowanie obiektów matematycznych i operowanie nimi […]. \n\nWymaganie szczegółowe \nXII. Rachunek prawdopodobieństwa i statystyka. Zdający: \n1R) […] stosuje wzór Bayesa […].",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# Tw. Bayesa: P(C|+) = P(+|C)*P(C) / P(+)\n# P(+) = P(+|C)*P(C) + P(+|Z)*P(Z)\nPC = Rational(1, 1000)  # choroby\nPZ = 1 - PC\nP_pos_C = Rational(99, 100)  # czułość\nP_pos_Z = Rational(2, 100)   # fałszywie dodatni\nP_pos = P_pos_C * PC + P_pos_Z * PZ\nP_C_pos = P_pos_C * PC / P_pos\nprint('P(C|+) =', P_C_pos)",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: prawdopodobieństwo",
       "metadata": {
         "task_number": 30,
@@ -806,7 +806,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Kryteria oceniania zadania 30",
       "content": "Zasady oceniania \n3 pkt – zastosowanie poprawnej metody i poprawny wynik. \n2 pkt – zastosowanie wzoru Bayesa. \n1 pkt – obliczenie prawdopodobieństw warunkowych  𝑃(−|𝐶)  oraz  𝑃(+|𝑍). \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n\nPrzykładowe pełne rozwiązanie \nPrzyjmijmy następujące oznaczenia: \n„+” – zdarzenie polegające na tym, że wylosowana osoba z populacji poddana testowi \notrzyma wynik pozytywny, \n„–” – zdarzenie polegające na tym, że wylosowana osoba z populacji poddana testowi \notrzyma wynik negatywny, \n𝑍 – zdarzenie polegające na tym, że wylosowana osoba z populacji jest zdrowa, \n𝐶 – zdarzenie polegające na tym, że wylosowana osoba z populacji jest chora. \n\nNależy obliczyć  𝑃(𝐶|+). \nZgodnie z warunkami zadania: \n\n𝑃(𝐶) = 0,002, \nwięc \n\n𝑃(𝑍) = 0,998 \n\n𝑃(+|𝐶) = 0,99, \nwięc \n\n𝑃(−|𝐶) = 0,01 \n\n𝑃(−|𝑍) = 0,98, \nwięc \n\n𝑃(+|𝑍) = 0,02.\n\nStosujemy twierdzenie Bayesa i obliczamy szukane prawdopodobieństwo: \n \n𝑃(𝐶|+) = 𝑃(+|𝐶) ⋅\n𝑃(𝐶)\n𝑃(+|𝑍) ⋅𝑃(𝑍) + 𝑃(",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# P(+|C)=0.99, P(-|C)=0.01, P(+|Z)=0.02, P(-|Z)=0.98\n# P(C)=0.001, P(Z)=0.999\n# P(C|+) = 0.99*0.001 / (0.99*0.001 + 0.02*0.999)",
       "tips": "",
       "metadata": {
         "task_number": 30,
@@ -820,7 +820,7 @@
       "category": "kombinatoryka",
       "title": "Informator 2024 - Zadanie 31 (4 pkt)",
       "content": "Zadanie 31. (0–4)  \nW pewnym mieście jest prostopadły układ ulic, \na ruch na każdej z nich jest dwukierunkowy. \nW centrum miasta znajduje się park, gdzie \nobowiązuje całkowity zakaz ruchu pojazdów. \nSchemat ulic w tym mieście wraz \nz położeniem parku przedstawiono poniżej na \nrysunku. Tomek znajduje się w punkcie  𝐴  \nmiasta i chce dojechać samochodem \nnajkrótszą drogą do punktu  𝐵.  \n \n \nOblicz, ile jest najkrótszych dróg z  𝑨  do  𝑩. Zapisz obliczenia. \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n𝐴 \n𝐵 \nstarówka\n\nWymagania ogólne  \nII. Wykorzystanie i tworzenie informacji. \n2. \n[…] operowanie informacjami przedstawionymi w tekście […] w formie wykresów, \ndiagramów […].   \nIII. Wykorzystanie i interpretowanie reprezentacji. \n2. \nDobieranie i tworzenie modeli matematycznych przy rozwiązywaniu problemów \npraktycznych i teoretycznych. \nIV. Rozumowanie i argumentacja. \n4. \nStosowanie i tworzenie strategii przy rozwiązywaniu zadań, również w sytuacjach \nnietypowych. \n\nWymagania szczegółowe \nXI. Kombinatoryka. Zdający: \n1R) oblicza liczbę możliwych sytuacji, spełniających określone kryteria, \nz wykorzystaniem reguły mnożenia i dodawania (także łącznie) oraz wzorów na \nliczbę: permutacji, kombinacji i wariacji;\n\n2R) stosuje współczynnik dwumianowy (symbol Newtona) i jego własności przy \nrozwiązywaniu problemów kombinatorycznych.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; # kombinatoryka na siatce: ścieżki = C(m+n, m); z ograniczeniami: odejmij złe ścieżki",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: kombinatoryka",
       "metadata": {
         "task_number": 31,
@@ -848,7 +848,7 @@
       "category": "funkcje",
       "title": "Informator 2024 - Zadanie 6 (4 pkt)",
       "content": "Zadanie 6. (0–4)  \nFunkcja kwadratowa  𝑓  jest określona wzorem  𝑓(𝑥) = 𝑝𝑥2 + (𝑝−1)𝑥+ 1 −2𝑝  dla \nkażdego  𝑥∈ℝ. \n\nWyznacz wszystkie wartości parametru  𝒑, dla których funkcja  𝒇  ma dokładnie dwa \nmiejsca zerowe  𝒙𝟏  i  𝒙𝟐 , których różnica jest równa  𝟏. Zapisz obliczenia.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\np = symbols('p', real=True)\nx = symbols('x', real=True)\n# f(x) = x² + px + p, x1 i x2 to pierwiastki\n# |x1 - x2| = 1 → (x1-x2)² = 1 → delta = 1\n# delta = p² - 4p = 1\nresult = solve(p**2 - 4*p - 1, p)\nprint('p =', result)",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: funkcje",
       "metadata": {
         "task_number": 6,
@@ -862,7 +862,7 @@
       "category": "funkcje",
       "title": "Informator 2024 - Kryteria oceniania zadania 6",
       "content": "Zasady oceniania \n4 pkt – zastosowanie poprawnej metody i poprawny wynik. \n3 pkt – rozwiązanie równania  |1 −1−2𝑝\n𝑝\n| = 1.\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n109 \n \n2 pkt – zapisanie równania  |𝑥1 −𝑥2| = 1  w postaci równania z jedną niewiadomą  𝑝, np.   \n|1 −1−2𝑝\n𝑝\n| = 1. \n1 pkt – zapisanie i sprawdzenie rachunkiem, że liczba  𝑥1 = 1  jest miejscem zerowym \nfunkcji  𝑓  oraz wyznaczenie miejsca zerowego  𝑥2  funkcji  𝑓:  𝑥2 = 1−2𝑝\n𝑝\n . \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n \nPrzykładowe pełne rozwiązanie \nPonieważ  𝑓  jest funkcją kwadratową, więc  𝑝≠0. \nZauważamy, że liczba  𝑥1 = 1  jest miejscem zerowym funkcji  𝑓: \n \n𝑓(1) = 𝑝⋅12 + (𝑝−1) ⋅1 + 1 −2𝑝= 0 \n \nKorzystamy ze wzorów Viète’a i wyznaczamy miejsce zerowe  𝑥2  funkcji  𝑓: \n \n𝑥1 ⋅𝑥2 = 1 −2𝑝\n𝑝\n \n \n𝑥2 = 1 −2𝑝\n𝑝\n \n \nMiejsca zerowe  𝑥1 , 𝑥2  funkcji  𝑓  różnią się o  1, gdy  |𝑥1 −𝑥2| = 1. \nRozwiązujemy równanie  |𝑥1 −𝑥2| = 1: \n|𝑥1 −𝑥2| = 1 \n ",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\np = symbols('p', real=True)\n# |x1-x2|² = (x1+x2)² - 4*x1*x2 = p²-4p\n# Równanie: |1 - (1-2p)/p| = 1\n# Uprość i rozwiąż",
       "tips": "",
       "metadata": {
         "task_number": 6,
@@ -876,7 +876,7 @@
       "category": "równania i nierówności",
       "title": "Informator 2024 - Zadanie 9 (4 pkt)",
       "content": "Zadanie 9. (0–4)  \nSyzyf codziennie próbuje wtoczyć ciężką \nkamienną kulę na szczyt pewnej góry. Niestety, \nnie udaje mu się osiągnąć celu. \nPróbę zaczyna w chwili  𝑡= 0  od punktu  𝒪  \noddalonego od szczytu o  4  km. Położenie  𝑠  \nSyzyfa wtaczającego kulę jest opisane równaniem \n \n𝑠(𝑡) = −𝑡3 + 16,5𝑡2 + 180𝑡  dla  𝑡∈[0, 24] \n \n \ngdzie  𝑠  jest wyrażone w metrach, a czas  𝑡 – w godzinach. \nOś  𝒪𝑠  jest skierowana do wierzchołka góry i jest styczna w każdym punkcie do zbocza \ngóry. \n \nOblicz najmniejszą odległość, na jaką Syzyf zbliży się do wierzchołka góry, oraz \nnajwiększą prędkość, z jaką wtacza kamień pod górę. Zapisz obliczenia.\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n111",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x', positive=True); # ciąg geometryczny: a_n = a_1*q^(n-1); suma = a_1*(1-q^n)/(1-q); min odległość",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: równania i nierówności",
       "metadata": {
         "task_number": 9,
@@ -904,7 +904,7 @@
       "category": "algebra",
       "title": "Informator 2024 - Zadanie 10 (6 pkt)",
       "content": "Zadanie 10. (0–6)  \nNa rysunku poniżej przedstawiono położenie czterech miast  𝐴, 𝐵, 𝐶  i  𝐷  oraz przykładową \nsieć dróg między nimi. Sieć trzeba zaprojektować tak, aby łączyła każde dwa z tych miast, \nmiała dwa węzły, a łączna długość jej dróg była możliwie najmniejsza. Punkty  𝐴, 𝐵, 𝐶  i  𝐷  \nto wierzchołki kwadratu o boku  300  km. \n\nOblicz, jaka musi być długość najkrótszej takiej sieci dróg i gdzie muszą być \nzlokalizowane węzły tej sieci. Zapisz obliczenia. \n\n𝐴 \n𝐶 \n𝐷 \n𝐵 \nwęzły \n300 km \n300 km\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n113",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; x = symbols('x', positive=True); # Sieć drogowa: punkty Steinera; kąty 120°; optymalizacja z pochodną",
       "tips": "Matura rozszerzona, 6 pkt, kategoria: algebra",
       "metadata": {
         "task_number": 10,
@@ -932,7 +932,7 @@
       "category": "algebra",
       "title": "Informator 2024 - Zadanie 19 (4 pkt)",
       "content": "Zadanie 19. (0–4)  \nNa rysunku obok przedstawiono położenie miejscowości  \n𝐴, 𝐵  i  𝐶  oraz zaznaczono odległości między nimi. \nO godzinie 9:00 z miejscowości  𝐴  do  𝐶  wyruszyli \nharcerze z zastępu „Tropiciele” i maszerowali \nz prędkością  4  km/h. O tej samej godzinie \nz miejscowości  𝐵  do  𝐴  wyruszyli harcerze z zastępu \n„Korsarze” i maszerowali z prędkością  2  km/h.\n\nWyznacz godzinę, o której odległość między tymi zastępami harcerzy będzie \nnajmniejsza. Zapisz obliczenia. \n\n𝐴 \n𝐵 \n𝐶 \n15 km \n20 km\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n117",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; t = symbols('t', positive=True); # kinematyka: odległość = sqrt((x_A+v_A*t-x_C)^2+(y_A-y_C)^2); diff → minimum",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: algebra",
       "metadata": {
         "task_number": 19,
@@ -960,7 +960,7 @@
       "category": "stereometria",
       "title": "Informator 2024 - Zadanie 21 (5 pkt)",
       "content": "Zadanie 21. (0–5)  \nW ostrosłupie prawidłowym czworokątnym  𝐴𝐵𝐶𝐷𝐸  punkt  𝑂  jest środkiem symetrii \npodstawy ostrosłupa. Stosunek obwodu podstawy  𝐴𝐵𝐶𝐷  do sumy długości wszystkich \nkrawędzi ostrosłupa jest równy  1: 5. Przez przekątną  𝐴𝐶  podstawy i środek  𝑆  krawędzi \nbocznej  𝐵𝐸  poprowadzono płaszczyznę (zobacz rysunek). \n\nOblicz stosunek pola otrzymanego przekroju do pola podstawy ostrosłupa oraz miarę \nkąta  𝑩𝑺𝑶  (w zaokrągleniu do  𝟏°). Zapisz obliczenia. \n\nWskazówka. \nSkorzystaj z tablicy wartości funkcji trygonometrycznych (Wybrane wzory matematyczne, \nstrona 34). \n\n𝐴 \n𝐵 \n𝐶 \n𝐷 \n𝐸 \n𝑆 \n𝑂 \n𝛼\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n123",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\na = symbols('a', positive=True)\n# Ostrosłup prawidłowy czworokątny ABCDS\n# S = wierzchołek, O = środek podstawy\n# |SO| = a, kąt BSO, pole przekroju\nh = a  # wysokość = a (z warunków)\n# Przekątna podstawy = a*sqrt(2)\n# Połowa przekątnej = a*sqrt(2)/2\n# tg(BSO) = (a*sqrt(2)/2) / a\nangle = atan(sqrt(2)/2)\nprint('Kąt BSO:', deg(angle))",
       "tips": "Matura rozszerzona, 5 pkt, kategoria: stereometria",
       "metadata": {
         "task_number": 21,
@@ -974,7 +974,7 @@
       "category": "stereometria",
       "title": "Informator 2024 - Kryteria oceniania zadania 21",
       "content": "Zasady oceniania \ndla rozwiązań sposobami 1. oraz 2. \n5 pkt – obliczenie miary kąta  𝐵𝑆𝑂  (w zaokrągleniu do  1°) oraz obliczenie stosunku pola \nprzekroju do pola podstawy ostrosłupa. \n4 pkt – obliczenie wartości cosinusa kąta  𝐵𝑆𝑂  oraz stosunku pola przekroju do pola \npodstawy ostrosłupa \nALBO \n– wyznaczenie miary kąta  𝐵𝑆𝑂. \n3 pkt – obliczenie stosunku pola przekroju do pola podstawy ostrosłupa \nALBO \n– obliczenie wartości cosinusa kąta  𝐵𝑆𝑂. \n2 pkt – wyznaczenie długości odcinka  𝑂𝑆  w zależności od długości krawędzi podstawy. \n1 pkt – wyznaczenie długości krawędzi bocznej w zależności od długości krawędzi podstawy. \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania.\n\ndla rozwiązania sposobem 3. \n5 pkt – obliczenie miary kąta  𝐵𝑆𝑂  (w zaokrągleniu do  1°) oraz obliczenie stosunku pola \nprzekroju do pola podstawy ostrosłupa. \n4 pkt – obliczenie cosinusa kąta  𝑂𝐸𝐵  lub  𝐹𝐵𝑆. \n3 pkt – obliczenie stosunku pola przekroju do pola podstawy ostrosłupa. \n2 ",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\na = symbols('a', positive=True)\n# Kąt BSO: tg = OB/SO = (a√2/2)/a = √2/2\n# Kąt = arctan(√2/2) ≈ 35.26°\n# Pole przekroju: trójkąt BDS\n# BD = a√2, SD = sqrt(SO² + OD²) = sqrt(a² + a²/2)",
       "tips": "",
       "metadata": {
         "task_number": 21,
@@ -988,7 +988,7 @@
       "category": "trygonometria",
       "title": "Informator 2024 - Zadanie 23 (3 pkt)",
       "content": "Zadanie 23. (0–3)  \nW kartezjańskim układzie współrzędnych  (𝑥, 𝑦)  trapez  𝐴𝐵𝐶𝐷  jest wpisany w okrąg \no środku w punkcie  𝑆= (19, −11)  i promieniu  17√2. Odcinek  𝐴𝐵  jest dłuższą podstawą \ntego trapezu. Jego przekątna  𝐴𝐶  jest zawarta w prostej o równaniu  𝑦= 𝑥. Wierzchołek  𝐴  \ntrapezu ma obie współrzędne ujemne. \n\nOblicz sinus kąta  𝑨𝑩𝑪. Zapisz obliczenia.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; # trapez wpisany w okrąg: tw. Ptolemeusza lub współrzędne; kąt wpisany = 1/2 kąta środkowego",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: trygonometria",
       "metadata": {
         "task_number": 23,
@@ -1016,7 +1016,7 @@
       "category": "algebra",
       "title": "Informator 2024 - Zadanie 27 (4 pkt)",
       "content": "Zadanie 27. (0–4)  \nCelem wyprawy Tomka i Marka jest zdobycie \nszczytu  𝑆  pewnej góry. Wyprawę panowie \nrozpoczynają w punkcie  𝑃  położonym na \npółnocnym stoku góry, dokładnie na północ od \nszczytu, na wysokości 𝐻0 metrów n.p.m. Tomek i \nMarek chcą najpierw dojść do bazy 𝐵, znajdującej \nsię dokładnie na południe od szczytu, na \nprzeciwległym południowym stoku góry na \nwysokości  𝐻1  metrów n.p.m. Następnie z bazy \nchcą wejść na szczyt leżący na wysokości  𝐻2  \nmetrów n.p.m. (zobacz rysunek 1.). \n\nOblicz długość najkrótszej drogi, jaką muszą \npokonać, aby dojść do bazy. Zapisz obliczenia. \n\nPrzyjmij, że góra jest stożkiem o kącie rozwarcia  𝛼. \n\nWskazówka: Powierzchnia boczna stożka po rozcięciu \nwzdłuż tworzącej i rozłożeniu jest wycinkiem koła. \nNajkrótsza droga do bazy jest równa najkrótszej drodze \nz punktu  𝑃  do  𝐵  na wycinku koła. \n\n𝑆 \n𝛼 \n𝐵 \n𝑃 \nRys. 1.\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n131",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; # trygonometria w geometrii: tw. sinusów, tw. cosinusów; kąty elewacji/depresji; tan(alpha)=h/d",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: algebra",
       "metadata": {
         "task_number": 27,
@@ -1044,7 +1044,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Zadanie 29 (4 pkt)",
       "content": "Zadanie 29. (0–4)  \nPan Nowak często gra z synem w szachy. Syn \nczęściej wygrywa niż ojciec. Pan Nowak obliczył, że \nwygrywa  40%  rozegranych z synem partii. \n \n \n \n \n \n \n \n \n \nOblicz, ile partii szachów z synem musi rozegrać pan Nowak, aby prawdopodobieństwo \nwygrania przez ojca przynajmniej jednej partii w całej rozgrywce było większe od  𝟎, 𝟗𝟓. \nZapisz obliczenia.\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n135",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\nn = symbols('n', integer=True, positive=True)\n# P(co najmniej 1 sukces w n próbach) > 0.99\n# 1 - (1-p)^n > 0.99 → (1-p)^n < 0.01\np = Rational(6, 10)  # p = 0.6\n# (0.4)^n < 0.01\n# n > log(0.01)/log(0.4)\nimport math\nn_min = math.ceil(math.log(0.01)/math.log(0.4))\nprint('Minimalne n:', n_min)",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: prawdopodobieństwo",
       "metadata": {
         "task_number": 29,
@@ -1058,7 +1058,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Kryteria oceniania zadania 29",
       "content": "Zasady oceniania \n4 pkt – zastosowanie poprawnej metody i poprawny wynik. \n3 pkt – zastosowanie wzoru na prawdopodobieństwo uzyskania  𝑘  sukcesów w  𝑛  próbach \ni zapisanie nierówności  1 −(0,6)𝑛> 0,95. \n2 pkt – zapisanie nierówności  1 −𝑃(𝑆𝑛\n0) > 0,95. \n1 pkt – zapisanie prawdopodobieństwa sukcesu i porażki.  \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania. \n \nPrzykładowe pełne rozwiązanie \nPróbą Bernoullego jest rozegranie jednej partii szachów ojca z synem. Sukcesem w tej \npróbie jest wygrana ojca. \nZ treści zadania wynika, że ojciec wygrywa  40%  rozegranych partii. W związku z tym \nprawdopodobieństwo sukcesu ojca w tej próbie jest równe  𝑝= 0,4, natomiast \nprawdopodobieństwo porażki jest równe  𝑞= 0,6. \nNiech  𝑛  oznacza szukaną liczbę partii oraz niech \n𝑆𝑛\n0  – oznacza niewygranie przez ojca żadnej partii szachów, \n𝑆𝑛\n1  – oznacza wygranie przez ojca jednej partii szachów, \n𝑆𝑛\n2  – oznacza wygranie przez ojca dwóch partii szachów, \n⋮ \n \n𝑆𝑛\n𝑛 ",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# 1-(0.6)^n > 0.99 → (0.6)^n < 0.01\n# n*log(0.6) < log(0.01)\n# n > log(0.01)/log(0.6) ≈ 9.02\n# Odpowiedź: n = 10",
       "tips": "",
       "metadata": {
         "task_number": 29,
@@ -1072,7 +1072,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Zadanie 30 (3 pkt)",
       "content": "Zadanie 30. (0–3)  \nPewna choroba atakuje  0,2%  całej populacji. W początkowym stadium nie daje widocznych \nobjawów chorobowych. W ramach profilaktyki, aby wcześniej wykryć chorobę, stosuje się \npewien test przesiewowy. Test ten może dać wynik pozytywny, oznaczający podejrzenie \nchoroby, lub negatywny, gdy brak podejrzenia choroby.  \nTest ten daje czasami fałszywy wynik. Prawdopodobieństwo tego, że test wykonany na \nosobie chorej da wynik pozytywny, jest równe  0,99. Prawdopodobieństwo tego, że test \nwykonany na osobie zdrowej da wynik negatywny, jest równe  0,98. \nPan  X  poddał się testowi, który dał wynik pozytywny. \n\nOblicz prawdopodobieństwo tego, że pan  X  jest naprawdę chory. Wynik zapisz \nw postaci ułamka dziesiętnego w zaokrągleniu do części setnych. Zapisz obliczenia.",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# Tw. Bayesa: P(C|+) = P(+|C)*P(C) / P(+)\n# P(+) = P(+|C)*P(C) + P(+|Z)*P(Z)\nPC = Rational(1, 1000)  # choroby\nPZ = 1 - PC\nP_pos_C = Rational(99, 100)  # czułość\nP_pos_Z = Rational(2, 100)   # fałszywie dodatni\nP_pos = P_pos_C * PC + P_pos_Z * PZ\nP_C_pos = P_pos_C * PC / P_pos\nprint('P(C|+) =', P_C_pos)",
       "tips": "Matura rozszerzona, 3 pkt, kategoria: prawdopodobieństwo",
       "metadata": {
         "task_number": 30,
@@ -1086,7 +1086,7 @@
       "category": "prawdopodobieństwo",
       "title": "Informator 2024 - Kryteria oceniania zadania 30",
       "content": "Zasady oceniania \n3 pkt – zastosowanie poprawnej metody i poprawny wynik. \n2 pkt – zastosowanie wzoru Bayesa. \n1 pkt – obliczenie prawdopodobieństw warunkowych  𝑃(−|𝐶)  oraz  𝑃(+|𝑍). \n0 pkt – rozwiązanie, w którym zastosowano niepoprawną metodę, albo brak rozwiązania.\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n137 \n \nPrzykładowe pełne rozwiązanie \nPrzyjmijmy następujące oznaczenia: \n„+” – zdarzenie polegające na tym, że wylosowana osoba z populacji poddana testowi \notrzyma wynik pozytywny, \n„–” – zdarzenie polegające na tym, że wylosowana osoba z populacji poddana testowi \notrzyma wynik negatywny, \n𝑍 – zdarzenie polegające na tym, że wylosowana osoba z populacji jest zdrowa, \n𝐶 – zdarzenie polegające na tym, że wylosowana osoba z populacji jest chora. \n \nNależy obliczyć  𝑃(𝐶|+), czyli prawdopodobieństwo zdarzenia polegającego na tym, że \npan  X  jest chory pod warunkiem otrzymania pozytywnego wyniku testu. \nPonieważ  0,2%  populacji choruje na tę cho",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *\n# P(+|C)=0.99, P(-|C)=0.01, P(+|Z)=0.02, P(-|Z)=0.98\n# P(C)=0.001, P(Z)=0.999\n# P(C|+) = 0.99*0.001 / (0.99*0.001 + 0.02*0.999)",
       "tips": "",
       "metadata": {
         "task_number": 30,
@@ -1100,7 +1100,7 @@
       "category": "rachunek różniczkowy",
       "title": "Informator 2024 - Zadanie 31 (4 pkt)",
       "content": "Zadanie 31. (0–4)  \nW pewnym mieście jest prostopadły układ \nulic, to znaczy, że ulice przecinają się pod \nkątem prostym. Ruch na każdej z nich jest \ndwukierunkowy. W centrum miasta znajduje \nsię park, gdzie obowiązuje całkowity zakaz \nruchu pojazdów. Schemat ulic w tym mieście \nwraz z położeniem parku przedstawiono na \nrysunku poniżej. Tomek samochodem chce \ndojechać najkrótszą drogą z punktu  𝐴  miasta \ndo punktu  𝐵.  \n \n \nOblicz, ile jest możliwości wyboru najkrótszej drogi z  𝑨  do  𝑩. Zapisz obliczenia. \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n \n𝐴 \n𝐵 \nstarówka\n\nInformacja o egzaminie maturalnym z matematyki dla absolwentów niesłyszących \n139",
-      "sympy_hint": "",
+      "sympy_hint": "from sympy import *; # kombinatoryka na siatce: ścieżki = C(m+n, m); z ograniczeniami: odejmij złe ścieżki",
       "tips": "Matura rozszerzona, 4 pkt, kategoria: rachunek różniczkowy",
       "metadata": {
         "task_number": 31,
@@ -1353,6 +1353,348 @@
       "tips": "Wzory dostępne na egzaminie maturalnym z matematyki rozszerzonej",
       "metadata": {
         "type": "formula_sheet"
+      }
+    },
+    {
+      "id": "matura2024_task10_scoring",
+      "source": "informator_pdf",
+      "category": "trygonometria",
+      "title": "Matura 2024 PR - Zadanie 10 (0-5) - Równanie trygonometryczne",
+      "content": "Zadanie 10 (0-5): Rozwiąż równanie sin(4x) - sin(2x) = 4cos²x - 3 w zbiorze [0, 2π].\n\nSposób I (przez cosinus podwójnego kąta):\nsin(4x) - sin(2x) = 4cos²x - 3\nsin(2·2x) - sin(2x) = 2·(2cos²x - 1) - 1\n2·sin(2x)·cos(2x) - sin(2x) = 2cos(2x) - 1\nsin(2x)·[2cos(2x) - 1] = 2cos(2x) - 1\n[sin(2x) - 1]·[2cos(2x) - 1] = 0\nsin(2x) = 1 lub cos(2x) = 1/2\n\nsin(2x) = 1: 2x = π/2 + 2kπ → x = π/4 + kπ → w [0,2π]: π/4, 5π/4\ncos(2x) = 1/2: 2x = ±π/3 + 2kπ → x = π/6 + kπ lub x = -π/6 + kπ\n→ w [0,2π]: π/6, 5π/6, 7π/6, 11π/6\n\nRozwiązania: π/6, π/4, 5π/6, 7π/6, 5π/4, 11π/6\n\nSposób II (przez sinus):\nZamiana 4cos²x - 3 = 1 - 4sin²x\n[sin(2x) - 1]·(1 - 4sin²x) = 0\nsin(2x) = 1 lub sin(x) = ±1/2\n\nKluczowe: Faktoryzacja równania trygonometrycznego do iloczynu.\n5 pkt: poprawna metoda + wynik. 2 pkt: przekształcenie do iloczynu. 1 pkt: użycie wzorów podwójnego kąta.",
+      "sympy_hint": "from sympy import *\nx = symbols('x')\n# Równanie: sin(4x) - sin(2x) = 4*cos(x)**2 - 3\neq = sin(4*x) - sin(2*x) - 4*cos(x)**2 + 3\n# Rozwiąż w [0, 2π]\nsolutions = solveset(eq, x, Interval(0, 2*pi))\nprint('Rozwiązania:', solutions)\n# Alternatywnie: faktoryzacja\n# sin(2x)*(2*cos(2x)-1) = 2*cos(2x) - 1\n# (sin(2x)-1)*(2*cos(2x)-1) = 0\neq1 = sin(2*x) - 1\neq2 = 2*cos(2*x) - 1\nsol1 = solveset(eq1, x, Interval(0, 2*pi))\nsol2 = solveset(eq2, x, Interval(0, 2*pi))\nprint('sin(2x)=1:', sol1)\nprint('cos(2x)=1/2:', sol2)",
+      "tips": "Kluczowa technika: przekształć do postaci iloczynowej. Użyj wzorów: sin(2·2x)=2sin(2x)cos(2x), 4cos²x-3=2(2cos²x-1)-1=2cos(2x)-1. Po faktoryzacji rozwiąż każdy czynnik osobno.",
+      "metadata": {
+        "task_number": 10,
+        "max_points": 5,
+        "type": "scoring_criteria",
+        "exam_year": 2024,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2024_task11_scoring",
+      "source": "informator_pdf",
+      "category": "geometria_analityczna",
+      "title": "Matura 2024 PR - Zadanie 11 (0-5) - Okrąg styczny do prostych",
+      "content": "Zadanie 11 (0-5): Okrąg o środku S na prostej y=x+1, styczny do dwóch prostych AB i AC przechodzących przez punkt A=(1,2), pole ABSC = 15. Wyznacz S.\n\nSposób I:\nBS i CS prostopadłe do stycznych → trójkąty ABS i ACS prostokątne.\nAB = AC (styczne z punktu), trójkąty przystające.\nP_ABSC = 2·(1/2)·m·√5 = 15 → m = 3√5 (m = |AB| = |AC|)\n|AS|² = |AB|² + |BS|² = (3√5)² + (√5)² = 50\nS = (x_S, x_S + 1) na prostej y=x+1\n(x_S - 1)² + (x_S + 1 - 2)² = 50\n(x_S - 1)² = 25 → x_S = 6 lub x_S = -4\nS = (6, 7) lub S = (-4, -3)\n\nSposób II (przez tangensowe kąty):\ntg α = √5/m = √5/(3√5) = 1/3\nZ wzoru na tangens kąta między prostymi: |a-1|/|a+1| = 1/3\na = 2 lub a = 1/2\nStyczne: y = 2(x-1)+2 oraz y = (1/2)(x-1)+2\nOdległość S od każdej stycznej = √5\n|2x_S - (x_S+1)|/√5 = √5 → |x_S - 1| = 5\n\n5 pkt: poprawna metoda + wynik S=(6,7) i S=(-4,-3). 4 pkt: oba x_S. 3 pkt: równanie z jedną niewiadomą.",
+      "sympy_hint": "from sympy import *\nx_S = symbols('x_S')\n# S na prostej y=x+1, więc S=(x_S, x_S+1)\n# A=(1,2), |AS|²=50\neq = (x_S - 1)**2 + (x_S + 1 - 2)**2 - 50\nprint('Równanie:', eq)\nprint('x_S =', solve(eq, x_S))\n# Wynik: x_S = 6 → S=(6,7), x_S = -4 → S=(-4,-3)",
+      "tips": "Styczne z punktu do okręgu: BS⊥AB, CS⊥AC. Promień = odległość S od stycznej. Pole deltoidu = 2·pole trójkąta.",
+      "metadata": {
+        "task_number": 11,
+        "max_points": 5,
+        "type": "scoring_criteria",
+        "exam_year": 2024,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2024_task12_scoring",
+      "source": "informator_pdf",
+      "category": "parametric",
+      "title": "Matura 2024 PR - Zadanie 12 (0-6) - Równanie z parametrem, wzory Viète'a",
+      "content": "Zadanie 12 (0-6): Trójmian x² - (3m+1)x + 2m²+m+1. Dwa różne pierwiastki x₁, x₂ spełniające x₁³+x₂³+3x₁x₂(x₁+x₂-3) ≤ 3m-7. Wyznacz m.\n\n3 etapy rozwiązania:\n\nEtap I (1 pkt): Δ > 0\n[-(3m+1)]² - 4·1·(2m²+m+1) > 0\nm² + 2m - 3 > 0 → (m-1)(m+3) > 0\nm ∈ (-∞, -3) ∪ (1, +∞)\n\nEtap II (4 pkt): Viète + nierówność\nZ Viète'a: x₁+x₂ = 3m+1, x₁x₂ = 2m²+m+1\nx₁³+x₂³ = (x₁+x₂)³ - 3x₁x₂(x₁+x₂)\nNierówność: (x₁+x₂)³ - 3x₁x₂(x₁+x₂) + 3x₁x₂(x₁+x₂-3) ≤ 3m-7\n(3m+1)³ - 9x₁x₂ ≤ 3m-7\n(3m+1)³ - 9(2m²+m+1) ≤ 3m-7\n27m³ + 9m² - 3m - 1 ≤ 0\n(3m-1)(3m+1)² ≤ 0\nm ∈ (-∞, 1/3]\n\nEtap III (1 pkt): Część wspólna\nm ∈ (-∞, -3) ∪ (1,+∞) ORAZ m ∈ (-∞, 1/3]\nOdpowiedź: m ∈ (-∞, -3)\n\n6 pkt: pełne rozwiązanie. KLUCZOWE: użycie wzorów Viète'a do eliminacji x₁, x₂.",
+      "sympy_hint": "from sympy import *\nm = symbols('m', real=True)\n# Etap I: Δ > 0\ndelta = (3*m+1)**2 - 4*(2*m**2+m+1)\nprint('Δ =', expand(delta))  # m²+2m-3\nprint('Δ>0:', solve(delta > 0, m))\n\n# Etap II: Po Viète i uproszczeniu\n# (3m+1)³ - 9(2m²+m+1) ≤ 3m-7\nexpr = expand((3*m+1)**3 - 9*(2*m**2+m+1) - 3*m + 7)\nprint('Nierówność:', expr, '≤ 0')\nprint('Faktoryzacja:', factor(expr))  # (3m-1)(3m+1)²\nprint('Rozwiązanie:', solve(expr <= 0, m))\n\n# Etap III: Część wspólna\nprint('m ∈ (-∞, -3)')",
+      "tips": "KRYTYCZNE: x₁³+x₂³ = (x₁+x₂)³ - 3x₁x₂(x₁+x₂). Wzory Viète'a: x₁+x₂=-b/a, x₁x₂=c/a. Faktoryzacja 27m³+9m²-3m-1 = (3m-1)(3m+1)². Pamiętaj o 3 etapach: Δ>0, nierówność, część wspólna.",
+      "metadata": {
+        "task_number": 12,
+        "max_points": 6,
+        "type": "scoring_criteria",
+        "exam_year": 2024,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2024_task13_1_scoring",
+      "source": "informator_pdf",
+      "category": "stereometria",
+      "title": "Matura 2024 PR - Zadanie 13.1 (0-2) - Graniastosłup prawidłowy trójkątny",
+      "content": "Zadanie 13.1 (0-2): Graniastosłup prawidłowy trójkątny o krawędzi podstawy a i objętości 3456. Wyznacz H (wysokość) w zależności od a.\n\nRozwiązanie:\nV = (a²√3/4)·H = 3456\nH = 3456·4/(a²√3) = 13824/(a²√3) = 13824√3/a² · (1/3) = 4608√3/a²\n\nPole powierzchni całkowitej:\nP = 2·(a²√3/4) + 3aH = a²√3/2 + 3a·4608√3/a² = a²√3/2 + 13824√3/a\n\n2 pkt: pełne rozumowanie. 1 pkt: wyznaczenie H.\nUWAGA: Jeśli rozważa inną bryłę niż graniastosłup prawidłowy trójkątny → 0 pkt.",
+      "sympy_hint": "from sympy import *\na, H = symbols('a H', positive=True)\n# Pole podstawy trójkąta równobocznego\nS_base = a**2 * sqrt(3) / 4\n# Objętość\nV = S_base * H\nH_expr = solve(V - 3456, H)[0]\nprint('H =', H_expr)\n# Pole powierzchni całkowitej\nP = 2*S_base + 3*a*H_expr\nP_simplified = simplify(P)\nprint('P(a) =', P_simplified)",
+      "tips": "V = S_podstawy · H. Pole trójkąta równobocznego: a²√3/4. Pole powierzchni całkowitej: 2·S_podstawy + obwód·H.",
+      "metadata": {
+        "task_number": 13.1,
+        "max_points": 2,
+        "type": "scoring_criteria",
+        "exam_year": 2024,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2024_task13_2_scoring",
+      "source": "informator_pdf",
+      "category": "optymalizacja",
+      "title": "Matura 2024 PR - Zadanie 13.2 (0-4) - Optymalizacja pola powierzchni",
+      "content": "Zadanie 13.2 (0-4): Spośród wszystkich graniastosłupów prawidłowych trójkątnych o V=3456 wyznacz ten o najmniejszym polu powierzchni. Oblicz Pmin.\n\nP(a) = a²√3/2 + 13824√3/a, dla a ∈ (0, 8√3]\n\nPochodna: P'(a) = a√3 - 13824√3/a²\nP'(a) = 0: a³√3 = 13824√3 → a³ = 13824 = 24³ → a = 24\nSprawdzenie: a=24 ∉ (0, 8√3] bo 8√3 ≈ 13.86 < 24\n\nP'(a) < 0 dla a < 24, więc P malejąca na (0, 8√3].\nMinimum: P(8√3) = (8√3)²√3/2 + 13824√3/(8√3) = 96√3 + 1728\n\nOdpowiedź: Pmin = 96√3 + 1728 dla a = 8√3.\n\n4 pkt: uzasadnienie min + obliczenie P. 2 pkt: P'(a)=0 → a=24. 1 pkt: wyznaczenie P'(a).",
+      "sympy_hint": "from sympy import *\na = symbols('a', positive=True)\n# P(a) = a²√3/2 + 13824√3/a\nP = a**2*sqrt(3)/2 + 13824*sqrt(3)/a\n# Pochodna\nPprime = diff(P, a)\nprint('P\\'(a) =', Pprime)\n# Miejsce zerowe pochodnej\ncrit = solve(Pprime, a)\nprint('Punkty krytyczne:', crit)  # a=24\n# Ale dziedzina a ∈ (0, 8√3], a 24 > 8√3\n# P malejąca → min na krańcu a = 8√3\nP_min = P.subs(a, 8*sqrt(3))\nprint('P_min =', simplify(P_min))  # 96√3 + 1728",
+      "tips": "UWAGA: Punkt krytyczny a=24 wypada POZA dziedzinę (0, 8√3]. Trzeba zbadać znak pochodnej na dziedzinie → P malejąca → min na prawym końcu. Częsty błąd: przyjęcie a=24 jako minimum.",
+      "metadata": {
+        "task_number": 13.2,
+        "max_points": 4,
+        "type": "scoring_criteria",
+        "exam_year": 2024,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2023_task6_scoring",
+      "source": "informator_pdf",
+      "category": "trygonometria",
+      "title": "Matura 2023 PR - Zadanie 6 (0-3) - Równanie trygonometryczne",
+      "content": "Zadanie 6 (0-3): Rozwiąż 4sin(4x)cos(6x) = 2sin(10x) + 1.\n\nSposób I (suma/różnica sinusów):\n4sin(4x)cos(6x) = 2(sin(10x) + sin(-2x)) = 2sin(10x) - 2sin(2x)\nRównanie: 2sin(10x) - 2sin(2x) = 2sin(10x) + 1\n-2sin(2x) = 1 → sin(2x) = -1/2\nx = 7π/12 + kπ lub x = 11π/12 + kπ\n\nSposób II (α+β=10x, α-β=4x):\nα = 8x+β, (8x+β+β)/2 = 6x → β = 2x, α = 10x\n4sin(4x)cos(6x) = 2(sinα - sinβ) = 2(sin10x - sin2x)\nUpraszcza się do: -2sin(2x) = 1\n\nSposób III (sin i cos sumy/różnicy kątów):\n4sin(4x)cos(6x) = 4sin(5x-x)cos(5x+x)\n= 4[sin5x·cosx - cos5x·sinx][cos5x·cosx - sin5x·sinx]\n= 4sin5x·cos5x - 4sinx·cosx = 2sin(10x) - 2sin(2x)",
+      "sympy_hint": "from sympy import *\nx = symbols('x')\n# 4*sin(4*x)*cos(6*x) = 2*sin(10*x) + 1\n# Upraszczamy: 4sin(4x)cos(6x) = 2(sin(10x) - sin(2x))\n# 2sin(10x) - 2sin(2x) = 2sin(10x) + 1\n# -2sin(2x) = 1 → sin(2x) = -1/2\nsol = solveset(sin(2*x) + Rational(1,2), x, S.Reals)\nprint('Rozwiązania:', sol)\n# x = 7π/12 + kπ lub x = 11π/12 + kπ",
+      "tips": "Kluczowy wzór: 2sinA·cosB = sin(A+B) + sin(A-B). Więc 4sin(4x)cos(6x) = 2[sin(10x)+sin(-2x)] = 2sin(10x) - 2sin(2x).",
+      "metadata": {
+        "task_number": 6,
+        "max_points": 3,
+        "type": "scoring_criteria",
+        "exam_year": 2023,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2023_task7_scoring",
+      "source": "informator_pdf",
+      "category": "stereometria",
+      "title": "Matura 2023 PR - Zadanie 7 (0-4) - Sześcian, odległość punktu od przekątnej",
+      "content": "Zadanie 7 (0-4): Sześcian ABCDEFGH o krawędzi 6. S-środek AD, R-środek BH, P-spodek wysokości z S na BH. Oblicz |SP|.\nOdpowiedź: |SP| = √6\n\nSposób I (podobieństwo trójkątów):\n|AH| = 6√2, |BH| = 6√3\nTrójkąty AHB i PHS są podobne (cecha kkk).\n|SP|/6 = 3√2/(6√3) → |SP| = √6\n\nSposób II (pola trójkątów):\n|HS| = 3√2, P_HSB = (1/2)|HS|·|AB| = (1/2)·3√2·6 = 9√2\nP_HSB = (1/2)|HB|·|SP| = (1/2)·6√3·|SP|\n3√3·|SP| = 9√2 → |SP| = 9√2/(3√3) = 3√2/√3 = √6\n\nSposób III (cosinus kąta):\ncos∠SHP = |AH|/|BH| = 6√2/(6√3) = √6/3\n|HP| = |HS|·cos∠SHP = 3√2·√6/3 = √12 = 2√3\n|SP|² = |HS|² - |HP|² = 18 - 12 = 6 → |SP| = √6\n\nSposób IV (pole HAB + rzut):\nP_HAB = 6√2·6/2 = 18√2\n|AK| = 36√2/|HB| = 36√2/(6√3) = 2√6\n|HS|/|SP| = |HA|/|AK| → |SP| = 3√2·2√6/(6√2) = √6\n\n4 pkt: wynik √6. 2 pkt: obliczenie długości BH, SR, HS.",
+      "sympy_hint": "from sympy import *\n# Sześcian o krawędzi a=6\na = 6\n# |AH| = a√2, |BH| = a√3 (przekątna ściany i bryły)\nAH = a*sqrt(2)\nBH = a*sqrt(3)\nHS = Rational(a,2)*sqrt(2)  # S=środek AD, |AS|=3, |HS|=√(3²+3²)=3√2\n# Podobieństwo: |SP|/a = |SH|/|BH|\nSP = a * HS / BH\nprint('|SP| =', simplify(SP))  # √6",
+      "tips": "W sześcianie: przekątna ściany = a√2, przekątna bryły = a√3. Użyj podobieństwa trójkątów lub dwóch wyrażeń na pole tego samego trójkąta.",
+      "metadata": {
+        "task_number": 7,
+        "max_points": 4,
+        "type": "scoring_criteria",
+        "exam_year": 2023,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2023_task8_scoring",
+      "source": "informator_pdf",
+      "category": "geometria_planimetryczna",
+      "title": "Matura 2023 PR - Zadanie 8 (0-4) - Czworokąt wpisany w okrąg",
+      "content": "Zadanie 8 (0-4): Czworokąt ABCD wpisany w okrąg, BC=4, CD=5, ∠BCD=60°, sin∠BAC=1/4. Oblicz obwód ABCD.\nOdpowiedź: Ob = 16√3 + 10\n\nSposób I (tw. sinusów):\n|AB|/sin60° = |BC|/sinα → |AB|/(√3/2) = 4/(1/4) → |AB| = 8√3\nCzworokąt opisany na okręgu: |AB|+|CD| = |BC|+|AD|\nOb = 2(|AB|+|CD|) = 2(8√3+5) = 16√3+10\n\nSposób II (pole trójkąta):\nP = (1/2)|BC||AC|sin60° = (1/2)|AC||AB|·(1/4)\n→ |AB| = 8√3\n\nSposób III (wysokość BE trójkąta ABC):\n∠BCE=60° → trójkąt BCE ma kąty 30°,60°,90°\n|BE| = 4√3/2 = 2√3\nsin α = |BE|/|AB| = 2√3/|AB| = 1/4 → |AB| = 8√3",
+      "sympy_hint": "from sympy import *\n# |AB|/sin60 = |BC|/sin(angle_BAC)\n# sin(angle_BAC) = 1/4\nAB = 4 * sin(pi/3) / Rational(1,4)\nprint('|AB| =', simplify(AB))  # 8√3\n# Czworokąt wpisany: |AB|+|CD|=|BC|+|AD|\nOb = 2*(AB + 5)\nprint('Obwód =', simplify(Ob))  # 16√3 + 10",
+      "tips": "Czworokąt wpisany w okrąg: suma przeciwległych boków jest równa. Tw. sinusów w trójkącie wpisanym.",
+      "metadata": {
+        "task_number": 8,
+        "max_points": 4,
+        "type": "scoring_criteria",
+        "exam_year": 2023,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2023_task9_scoring",
+      "source": "informator_pdf",
+      "category": "wartosc_bezwzgledna",
+      "title": "Matura 2023 PR - Zadanie 9 (0-4) - Nierówność z wartością bezwzględną",
+      "content": "Zadanie 9 (0-4): Rozwiąż √(x²+4x+4) < 25/3 - √(x²-6x+9).\nOdpowiedź: x ∈ (-11/3, 14/3)\n\nKluczowe uproszczenie:\n√(x²+4x+4) = √((x+2)²) = |x+2|\n√(x²-6x+9) = √((x-3)²) = |x-3|\nNierówność: |x+2| < 25/3 - |x-3|\n\nSposób I (3 przypadki):\nPrzypadek 1: x ∈ (-∞,-2): -x-2 < 25/3+x-3 → x > -11/3 → x ∈ (-11/3,-2)\nPrzypadek 2: x ∈ [-2,3): x+2 < 25/3+x-3 → 5 < 25/3 ✓ → x ∈ [-2,3)\nPrzypadek 3: x ∈ [3,+∞): x+2 < 25/3-x+3 → x < 14/3 → x ∈ [3,14/3)\nSuma: x ∈ (-11/3, 14/3)\n\nSposób II (koniunkcja nierówności):\n|x+2| < 25/3 - |x-3| ↔ |x-3| < 19/3-x i |x-3| < x+31/3\nRozwiązanie systematyczne dwóch nierówności.",
+      "sympy_hint": "from sympy import *\nx = symbols('x', real=True)\n# √(x²+4x+4) = |x+2|, √(x²-6x+9) = |x-3|\n# |x+2| < 25/3 - |x-3|\n# Rozwiąż w przypadkach lub numerycznie\nineq = Abs(x+2) + Abs(x-3) - Rational(25,3)\nsol = solveset(ineq < 0, x, S.Reals)\nprint('Rozwiązanie:', sol)  # (-11/3, 14/3)",
+      "tips": "ZAWSZE sprawdź czy wyrażenie pod √ jest kwadratem zupełnym: √(x²+4x+4)=|x+2|. Rozważ 3 przypadki wyznaczone przez punkty krytyczne wartości bezwzgl.",
+      "metadata": {
+        "task_number": 9,
+        "max_points": 4,
+        "type": "scoring_criteria",
+        "exam_year": 2023,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2023_task10_scoring",
+      "source": "informator_pdf",
+      "category": "ciagi",
+      "title": "Matura 2023 PR - Zadanie 10 (0-4) - Suma obwodów kwadratów (szereg geometryczny)",
+      "content": "Zadanie 10 (0-4): Kwadraty K₁, K₂, K₃... wpisane w siebie (wierzchołki dzielą boki w stosunku 1:3). Suma obwodów L.\nOdpowiedź: L = 4a/(1-√10/4) = 8(4+√10)a/3\n\nDługości boków: a₁ = a, a₂ = √((a/4)²+(3a/4)²) = (√10/4)a\na₃ = (√10/4)a₂ = (5/8)a\nIloraz ciągu: q = √10/4 (bo |q| < 1, ciąg zbieżny)\n\nL = L₁+L₂+... = 4a + 4·(√10/4)a + 4·(5/8)a + ...\n= 4a(1 + √10/4 + 5/8 + ...)\n= 4a · 1/(1-√10/4) = 4a/(1-√10/4) = 8(4+√10)a/3\n\n4 pkt: poprawny wynik. 3 pkt: zapisanie sumy szeregu. 2 pkt: obliczenie q=√10/4. 1 pkt: obliczenie a₂.",
+      "sympy_hint": "from sympy import *\na = symbols('a', positive=True)\n# Boki kwadratów\na1 = a\na2 = sqrt((a/4)**2 + (3*a/4)**2)\nprint('a2 =', simplify(a2))  # √10/4 · a\nq = simplify(a2/a1)\nprint('q =', q)  # √10/4\n# Suma szeregu geometrycznego obwodów\nL = 4*a * 1/(1 - q)\nprint('L =', simplify(L))",
+      "tips": "Kwadraty wpisane: oblicz bok następnego z tw. Pitagorasa. Iloraz ciągu q=√10/4. Suma nieskończonego szeregu: S = a₁/(1-q) gdy |q|<1.",
+      "metadata": {
+        "task_number": 10,
+        "max_points": 4,
+        "type": "scoring_criteria",
+        "exam_year": 2023,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2023_task11_scoring",
+      "source": "informator_pdf",
+      "category": "parametric",
+      "title": "Matura 2023 PR - Zadanie 11 (0-5) - Parametryczne równanie kwadratowe, wzory Viète'a",
+      "content": "Zadanie 11 (0-5): Trójmian x²+4x-(m-3)/(m-2), m≠2. Dwa różne pierwiastki x₁, x₂ spełniające x₁³+x₂³ > -28. Wyznacz m.\nOdpowiedź: m ∈ (11/5, 9/4)\n\nEtap I (1 pkt): Δ > 0\n16 + 4(m-3)/(m-2) > 0 → (20m-44)/(m-2) > 0\nm ∈ (-∞, 2) ∪ (11/5, +∞)\n\nEtap II - Sposób I (3 pkt): Viète'a\nx₁+x₂ = -4, x₁x₂ = -(m-3)/(m-2)\nx₁³+x₂³ = (x₁+x₂)³ - 3x₁x₂(x₁+x₂)\n= -64 - 3·(-(m-3)/(m-2))·(-4) = -64 - 12(m-3)/(m-2)\nNierówność: -64 - 12(m-3)/(m-2) > -28\n(m-3)/(m-2) < -3 → (4m-9)(m-2) < 0\nm ∈ (2, 9/4)\n\nEtap II - Sposób II (przez p):\nOznaczmy p = √((5m-11)/(m-2)). Wtedy x₁=-2-p, x₂=-2+p\n(-2-p)³ + (-2+p)³ > -28\nRozwinięcie: -12p² - 16 > -28 → p² < 1 → (5m-11)/(m-2) < 1\n(4m-9)/(m-2) < 0 → m ∈ (2, 9/4)\n\nEtap III (1 pkt): Część wspólna\n[(-∞,2)∪(11/5,+∞)] ∩ (2,9/4) = (11/5, 9/4)",
+      "sympy_hint": "from sympy import *\nm = symbols('m', real=True)\n# Etap I: Δ > 0\ndelta = 16 + 4*(m-3)/(m-2)\nprint('Δ>0:', solve(delta > 0, m))\n\n# Etap II: x₁³+x₂³ > -28\n# x₁+x₂ = -4, x₁x₂ = -(m-3)/(m-2)\nsum_cubes = (-4)**3 - 3*(-(m-3)/(m-2))*(-4)  # = -64 - 12(m-3)/(m-2)\nineq = simplify(sum_cubes + 28)  # > 0\nprint('Nierówność:', ineq, '> 0')\nprint('Rozwiązanie:', solve(ineq > 0, m))\n\n# Odpowiedź: m ∈ (11/5, 9/4)",
+      "tips": "WZÓR KLUCZOWY: x₁³+x₂³ = (x₁+x₂)³ - 3x₁x₂(x₁+x₂). 3 etapy: (1) Δ>0, (2) nierówność z Viète'a, (3) część wspólna. NIE zapomnij o warunku m≠2.",
+      "metadata": {
+        "task_number": 11,
+        "max_points": 5,
+        "type": "scoring_criteria",
+        "exam_year": 2023,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "matura2023_task12_1_scoring",
+      "source": "informator_pdf",
+      "category": "logarytmy",
+      "title": "Matura 2023 PR - Zadanie 12.1 (0-2) - Uproszczenie wyrażenia logarytmicznego",
+      "content": "Zadanie 12.1 (0-2): Uprość wyrażenie 81^(log₃x) + (2·log₂√27·log₃2)/3 · x² - 6x.\nOdpowiedź: x⁴ + x² - 6x\n\nRozwiązanie:\n81^(log₃x) = (3⁴)^(log₃x) = 3^(4·log₃x) = (3^(log₃x))⁴ = x⁴\n(2·log₂√27·log₃2)/3 = (2·(3/2)·log₂3·log₃2)/3 = (2·(3/2)·1)/3 = 1\n(bo log₂3·log₃2 = 1 ze wzoru na zmianę podstawy)\nWynik: x⁴ + 1·x² - 6x = x⁴ + x² - 6x\n\n2 pkt: pełne uproszczenie. 1 pkt: a^(log_a(b))=b lub zmiana podstawy.",
+      "sympy_hint": "from sympy import *\nx = symbols('x', positive=True)\n# 81^(log_3(x)) = (3^4)^(log_3(x)) = x^4\nterm1 = 81**(log(x, 3))\nprint('81^(log₃x) =', simplify(term1))  # x⁴\n# log₂(√27)·log₃(2) = log₂(3^(3/2))·log₃(2) = (3/2)·log₂(3)·log₃(2) = 3/2\nterm2_coeff = 2*Rational(3,2)/3  # = 1\nprint('Współczynnik:', term2_coeff)\nresult = x**4 + x**2 - 6*x\nprint('Wynik:', result)",
+      "tips": "Kluczowe wzory: a^(log_a(b))=b, log_a(b)·log_b(a)=1, log_a(b^n)=n·log_a(b).",
+      "metadata": {
+        "task_number": 12.1,
+        "max_points": 2,
+        "type": "scoring_criteria",
+        "exam_year": 2023,
+        "exam_level": "rozszerzony"
+      }
+    },
+    {
+      "id": "zbior_pr_task3",
+      "source": "informator_pdf",
+      "category": "dowody",
+      "title": "Zbiór zadań PR - Zadanie 3 - Dowód nierówności (x³-y³)/(x³+y³) > 1/3",
+      "content": "Dowód: (x³-y³)/(x³+y³) > 1/3 dla x ≠ y, x,y ∈ ℝ (x,y tego samego znaku).\n\nRozwiązanie (wzory skróconego mnożenia):\n(x-y)(x+y)(x²-xy+y²) / [(x+y)(x-y)(x²+xy+y²)] > 1/3\n(x²-xy+y²)/(x²+xy+y²) > 1/3\n\nPonieważ x²+xy+y² > 0 (bo = (1/2)(x+y)²+(1/2)x²+(1/2)y² > 0 dla x≠-y):\n3(x²-xy+y²) > x²+xy+y²\n2x²-4xy+2y² > 0\n(x-y)² > 0 ✓ (bo x≠y)",
+      "sympy_hint": "from sympy import *\nx, y = symbols('x y', real=True)\n# Uprość (x²-xy+y²)/(x²+xy+y²) > 1/3\n# ↔ 3(x²-xy+y²) > x²+xy+y² → 2x²-4xy+2y² > 0 → (x-y)² > 0\nexpr = 3*(x**2-x*y+y**2) - (x**2+x*y+y**2)\nprint('Różnica:', expand(expr))  # 2x²-4xy+2y²\nprint('Faktoryzacja:', factor(expr))  # 2(x-y)²",
+      "tips": "Dowody nierówności: sprowadź do postaci (coś)² ≥ 0. Użyj wzorów skróconego mnożenia: x³±y³=(x±y)(x²∓xy+y²).",
+      "metadata": {
+        "task_number": 3,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task4",
+      "source": "informator_pdf",
+      "category": "parametric",
+      "title": "Zbiór zadań PR - Zadanie 4 - Ciąg arytmetyczny z parametrem",
+      "content": "Równanie x²+bx+c=0 ma pierwiastki -1, 1 i liczbę -m, m (m≠0). Pierwiastki tworzą ciąg arytmetyczny. Wyznacz m.\n\nRozwiązanie:\nPierwiastki: -m, -1, 1, m (zakładamy -m < -1 < 1 < m)\nCiąg arytmetyczny → różnica stała:\n-1-(-m) = m-1, 1-(-1) = 2\nPrzypadek 1: m-1 = 1-(-1) = 2 → m = 3\nPrzypadek 2: -1-(-m) = 1-(-1) → m-1 = 2 → m = 3\nAle też: -m < -1 < 1 → m > 1\nLub: -1 < -m < m < 1 → 0 < m < 1\nDla -m < -1 < 1 < m: m-1 = 2 → m = 3\nDla -1 < -m: 1-m = m-(-1) → m = 1/3\n\nOdpowiedź: m = ±1/3, ±3",
+      "sympy_hint": "from sympy import *\nm = symbols('m', positive=True, nonzero=True)\n# Ciąg arytmetyczny: d stała\n# Przypadek 1: -m, -1, 1, m → d = (-1+m) = (1+1) → m-1=2 → m=3\n# Przypadek 2: -1, -m, m, 1 → d = -m+1 = m+m = 2m → 1-m=2m-(-m)...\nprint('m = 3 lub m = 1/3')",
+      "tips": "Ciąg arytmetyczny: różnica d=const. Sprawdź WSZYSTKIE uporządkowania pierwiastków!",
+      "metadata": {
+        "task_number": 4,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task9",
+      "source": "informator_pdf",
+      "category": "wielomiany",
+      "title": "Zbiór zadań PR - Zadanie 9 - Wielomian x³-2x+1, Viète",
+      "content": "x³-2x+1 = (x-a)(x-b)(x-c). Oblicz a²+b²+c².\n\nZ Viète'a: a+b+c=0, ab+bc+ca=-2, abc=-1\n(a+b+c)² = a²+b²+c² + 2(ab+bc+ca)\n0 = a²+b²+c² + 2(-2)\na²+b²+c² = 4",
+      "sympy_hint": "from sympy import *\na, b, c = symbols('a b c')\n# Z Viète'a: a+b+c=0, ab+bc+ca=-2\nsum_squares = (a+b+c)**2 - 2*(a*b+b*c+c*a)\n# = 0 - 2*(-2) = 4\nprint('a²+b²+c² =', sum_squares.subs([(a+b+c, 0), (a*b+b*c+c*a, -2)]))",
+      "tips": "Wzory Viète'a dla x³+px²+qx+r: x₁+x₂+x₃=-p, x₁x₂+x₂x₃+x₁x₃=q, x₁x₂x₃=-r. Tożsamość: Σx²=(Σx)²-2Σxy.",
+      "metadata": {
+        "task_number": 9,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task18",
+      "source": "informator_pdf",
+      "category": "parametric",
+      "title": "Zbiór zadań PR - Zadanie 18 - Równanie z parametrem mx²+mx-2m=1",
+      "content": "mx²+mx-2m=1, x ∈ (-2,2). Ile rozwiązań?\n\nDla m=0: -1=0 brak rozwiązań.\nDla m≠0: x²+x-2 = 1/m → f(x) = x²+x-2 = 1/m\nf(x) = (x+1/2)²-9/4, f(-2)=f(2)=4, f(-1/2)=-9/4\nProsta y=1/m ma: 0 punktów gdy -4/9<m<1/4\n                  1 punkt gdy m≥1/4 lub m=-4/9\n                  2 punkty gdy m<-4/9",
+      "sympy_hint": "from sympy import *\nm, x = symbols('m x', real=True)\n# f(x) = x²+x-2 na (-2,2)\nf = x**2 + x - 2\n# Minimum: f'(x)=0 → x=-1/2 → f(-1/2)=-9/4\nprint('Min f:', f.subs(x, Rational(-1,2)))  # -9/4\nprint('f(2):', f.subs(x, 2))  # 4\n# y=1/m: 0 pkt gdy -9/4 < 1/m < min na krańcu\n# Rozwiąż 1/m = -9/4 → m = -4/9\n# Rozwiąż 1/m = f(2) → m = 1/4",
+      "tips": "Równanie z parametrem: zamień na f(x)=g(m). Zbadaj wykres f na przedziale. Policz punkty przecięcia z y=g(m).",
+      "metadata": {
+        "task_number": 18,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task21",
+      "source": "informator_pdf",
+      "category": "dowody",
+      "title": "Zbiór zadań PR - Zadanie 21 - Dowód nierówności 8x²-4mx+2m²≥12x+6m-18",
+      "content": "Dowód: 8x²-4mx+2m²≥12x+6m-18 dla wszystkich x,m∈ℝ.\n\nSposób I (grupowanie):\n8x²-4mx+2m²-12x-6m+18≥0\n(4x²-12x+9) + (4x²-4mx+m²) + (m²-6m+9) ≥ 0\n(2x-3)² + (2x-m)² + (m-3)² ≥ 0 ✓\n\nSposób II (wyróżnik):\nTraktuj jako trójmian kwadratowy zmiennej x z parametrem m:\n8x² - (4m+12)x + 2m²-6m+18 ≥ 0\nΔ = (4m+12)² - 32(2m²-6m+18) = -48(m-3)² ≤ 0\nWspółczynnik przy x² > 0 i Δ ≤ 0 → trójmian ≥ 0 zawsze.",
+      "sympy_hint": "from sympy import *\nx, m = symbols('x m', real=True)\n# Sposób I: grupowanie\nexpr = 8*x**2-4*m*x+2*m**2-12*x-6*m+18\n# Sprawdź rozkład na kwadraty\nprint('(2x-3)²+(2x-m)²+(m-3)² =', expand((2*x-3)**2+(2*x-m)**2+(m-3)**2))\n\n# Sposób II: wyróżnik\na_coeff = 8\nb_coeff = -(4*m+12)\nc_coeff = 2*m**2-6*m+18\ndelta = b_coeff**2-4*a_coeff*c_coeff\nprint('Δ =', factor(delta))  # -48(m-3)²",
+      "tips": "Dowody nierówności: (1) grupowanie do sumy kwadratów, (2) traktuj jako trójmian kwadratowy i pokaż Δ≤0.",
+      "metadata": {
+        "task_number": 21,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task24",
+      "source": "informator_pdf",
+      "category": "wielomiany",
+      "title": "Zbiór zadań PR - Zadanie 24 - Wielomian W(x)=4x⁵+ax³+bx²+1",
+      "content": "W podzielny przez 2x+1. Reszta z dzielenia W przez x-2 = 105. Wyznacz a,b, rozłóż W na czynniki.\n\nW(-1/2)=0: 4(-1/32)+a(-1/8)+b(1/4)+1=0 → a-2b=7... (*)\nW(2)=105: 128+8a+4b+1=105 → 4a+2b=-12... (**)\nZ (*)+(**): a-2b+8a+4b=7-24 → ... → a=-1, b=-4\nW(x) = 4x⁵-x³-4x²+1\nW(x) = x³(4x²-1)-(4x²-1) = (4x²-1)(x³-1) = (2x-1)(2x+1)(x-1)(x²+x+1)\nPierwiastki: -1/2, 1/2, 1.",
+      "sympy_hint": "from sympy import *\nx, a, b = symbols('x a b')\nW = 4*x**5 + a*x**3 + b*x**2 + 1\n# W(-1/2) = 0, W(2) = 105\neq1 = W.subs(x, Rational(-1,2))\neq2 = W.subs(x, 2) - 105\nsol = solve([eq1, eq2], [a, b])\nprint('a, b =', sol)\nW_final = W.subs(sol)\nprint('W(x) =', factor(W_final))",
+      "tips": "W podzielny przez (ax+b) ↔ W(-b/a)=0. Reszta z dzielenia przez (x-c) = W(c). Faktoryzacja: szukaj wspólnych czynników.",
+      "metadata": {
+        "task_number": 24,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task26",
+      "source": "informator_pdf",
+      "category": "wielomiany",
+      "title": "Zbiór zadań PR - Zadanie 26 - Równanie (x²-3x)(x²-3x+2)+1=0",
+      "content": "Rozwiąż (x²-3x)(x²-3x+2)+1=0.\n\nPodstawienie t=x²-3x:\nt(t+2)+1=0 → t²+2t+1=0 → (t+1)²=0 → t=-1\nx²-3x=-1 → x²-3x+1=0\nΔ=9-4=5\nx = (3±√5)/2\n\nAlternatywnie bez podstawienia:\n(x²-3x)² + 2(x²-3x) + 1 = 0\n(x²-3x+1)² = 0",
+      "sympy_hint": "from sympy import *\nx = symbols('x')\n# Podstawienie t = x²-3x\nt = symbols('t')\neq_t = t*(t+2) + 1  # t²+2t+1 = (t+1)²\nprint('t =', solve(eq_t, t))  # t = -1\n# x²-3x+1 = 0\nprint('x =', solve(x**2-3*x+1, x))  # (3±√5)/2",
+      "tips": "Podstawienie t = x²-3x gdy powtarza się wyrażenie. Szukaj kwadratów zupełnych.",
+      "metadata": {
+        "task_number": 26,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task30",
+      "source": "informator_pdf",
+      "category": "rachunek_rozniczkowy",
+      "title": "Zbiór zadań PR - Zadanie 30 - Funkcja kwadratowa + równanie sześcienne",
+      "content": "f kwadratowa, f min dla x=4, f(4)=-22. Równanie x³+x²-8x-6=0.\n\nEtap I: -b/(2a)=4, f(4)=-22 → b=-8a, 16a+4b-6=-22\n→ a=1, b=-8. Równanie: x³+x²-8x-6=0.\n\nEtap II: Sprawdź x=-3: (-3)³+(-3)²-8(-3)-6=-27+9+24-6=0 ✓\nDzielenie: (x³+x²-8x-6):(x+3) = x²-2x-2\nΔ=4+8=12 → x = 1±√3",
+      "sympy_hint": "from sympy import *\nx, a, b = symbols('x a b')\n# f(x) = ax²+bx+c, min w x=4, f(4)=-22\n# -b/(2a) = 4, f(4) = 16a+4b+c = -22\n# Znamy c (z kontekstu zadania: c=-6)\neqs = [b + 8*a, 16*a + 4*b - 6 + 22]\nsol = solve(eqs, [a, b])\nprint('a,b =', sol)  # a=1, b=-8\n# Równanie: x³+x²-8x-6=0\nroots = solve(x**3+x**2-8*x-6, x)\nprint('Pierwiastki:', roots)",
+      "tips": "Minimum f kwadratowej w x₀=-b/(2a). Równanie sześcienne: znajdź 1 pierwiastek (np. całkowity z tw. o pierwiastkach), podziel wielomian.",
+      "metadata": {
+        "task_number": 30,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task40",
+      "source": "informator_pdf",
+      "category": "trygonometria",
+      "title": "Zbiór zadań PR - Zadanie 40 - Równanie trygonometryczne sin2x+2sinx+cosx+1=0",
+      "content": "Rozwiąż sin2x + 2sinx + cosx + 1 = 0.\n\nsin2x = 2sinx·cosx\ncos x(2sinx+1) + 2sinx + 1 = 0\n(2sinx+1)(cosx+1) = 0\n\nsinx = -1/2 → x = -π/6 + 2kπ lub x = 7π/6 + 2kπ (= π+π/6)\nW przedziale (-π, π): x = -π/6, -5π/6\n\ncosx = -1 → x = π + 2kπ\nW przedziale (-π, π): x = -π, π",
+      "sympy_hint": "from sympy import *\nx = symbols('x')\n# sin(2x) + 2sin(x) + cos(x) + 1 = 0\n# = 2sin(x)cos(x) + 2sin(x) + cos(x) + 1\n# = (2sin(x)+1)(cos(x)+1) = 0\neq1 = sin(x) + Rational(1,2)  # sin(x) = -1/2\neq2 = cos(x) + 1  # cos(x) = -1\nprint('sin(x)=-1/2:', solveset(eq1, x, S.Reals))\nprint('cos(x)=-1:', solveset(eq2, x, S.Reals))",
+      "tips": "Kluczowa faktoryzacja: grupuj wyrazy z sin2x=2sinx·cosx. Wyciągnij wspólny czynnik (2sinx+1).",
+      "metadata": {
+        "task_number": 40,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
+      }
+    },
+    {
+      "id": "zbior_pr_task19",
+      "source": "informator_pdf",
+      "category": "parametric",
+      "title": "Zbiór zadań PR - Zadanie 19 - Parabola z parametrem, Viète, znaki pierwiastków",
+      "content": "f(x) = (m-1)x² - 2x - m + 1. Prosta y=-x+1 przecina wykres f w dwóch punktach o przeciwnych znakach x. Wyznacz m.\nOdpowiedź: m ∈ (-∞, 0) ∪ (1, +∞)\n\nSposób I: (m-1)x²-2x-m+1 = -x+1\n(m-1)x²-x-m = 0\nDla m=1: -x-1=0, x=-1 (jeden punkt, nie dwa)\nDla m≠1: Δ = 1+4m(m-1) = (2m-1)² > 0 (ok gdy m≠1/2)\nx₁·x₂ = -m/(m-1) < 0 (przeciwne znaki)\nm/(m-1) > 0 → m ∈ (-∞,0) ∪ (1,+∞)\n\nSposób II: Faktoryzacja\n(m-1)x²-x-m = m(x-1)(x+1)-x(... ) → (x+1)(mx-m-x) = 0...",
+      "sympy_hint": "from sympy import *\nm, x = symbols('m x', real=True)\n# (m-1)x²-x-m = 0, x₁·x₂ < 0\n# x₁x₂ = -m/(m-1)\nproduct = -m/(m-1)\nprint('x₁x₂ =', product)\nprint('x₁x₂ > 0:', solve(product > 0, m))  # m∈(0,1)\nprint('x₁x₂ < 0: m∈(-∞,0)∪(1,+∞)')",
+      "tips": "Przeciwne znaki pierwiastków ↔ x₁·x₂ < 0 (z Viète'a: c/a < 0). Pamiętaj o sprawdzeniu m≠1 (równanie nie jest kwadratowe).",
+      "metadata": {
+        "task_number": 19,
+        "max_points": 0,
+        "type": "solution",
+        "source_book": "Zbiór zadań PR"
       }
     }
   ]

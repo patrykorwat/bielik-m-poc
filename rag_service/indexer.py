@@ -88,8 +88,8 @@ class TFIDFIndex:
 
     # Source boost factors — metody i informator PDF są cenniejsze niż surowe datasety
     SOURCE_BOOST = {
-        "methods": 1.35,        # metody z SymPy hints — najcenniejsze dla agenta
-        "informator_pdf": 1.20, # zadania z informatora rozszerzonego
+        "methods": 1.75,        # metody z SymPy hints — najcenniejsze dla agenta (was 1.35)
+        "informator_pdf": 1.35, # zadania z informatora rozszerzonego (was 1.20)
         "informator": 1.10,     # analiza informatora
         "dataset": 1.00,        # historyczne zadania — bazowy score
     }
@@ -115,7 +115,7 @@ class TFIDFIndex:
         # Zapewnij różnorodność źródeł: max 60% z jednego source
         results = []
         source_counts: dict = {}
-        max_per_source = max(2, int(top_k * 0.6))
+        max_per_source = max(3, int(top_k * 0.7))
 
         for idx in top_indices:
             if len(results) >= top_k:

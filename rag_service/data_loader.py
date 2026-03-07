@@ -93,6 +93,11 @@ POLISH_SYNONYMS = {
     "proof_techniques": "dowód wykaż udowodnij sprzeczność nie wprost",
     # Percentages
     "percentage_calculations": "procent podwyżka obniżka rabat oprocentowanie cena stanowi",
+    # New methods
+    "mc_answer_matching": "zadanie zamknięte wielokrotnego wyboru opcje A B C D porównaj odpowiedź MC test",
+    "applied_equations": "temperatura chłodzenie wzrost wykładniczy spadek proces fizyczny ruch model",
+    "sympy_common_errors": "błąd error TypeError Symbol not callable Relational unsupported operand",
+    "limits": "granica lim dąży do zbieżność rozbieżność nieskończoność lewostronna prawostronna",
 }
 
 
@@ -123,6 +128,20 @@ def load_methods_chunks() -> List[Chunk]:
             if synonyms:
                 content_parts.append(f"Słowa kluczowe: {synonyms}")
 
+            # Dodaj worked example code do treści (lepszy matching z pytaniami)
+            worked_example = method.get("worked_example", {})
+            if worked_example:
+                if worked_example.get("problem"):
+                    content_parts.append(f"Przykład: {worked_example['problem']}")
+                if worked_example.get("sympy_code"):
+                    content_parts.append(f"Kod: {worked_example['sympy_code'][:300]}")
+
+            # Dodaj common_pitfalls do tips
+            tips_text = method.get("tips_for_11b", "")
+            if worked_example.get("common_pitfalls"):
+                pitfalls = "; ".join(worked_example["common_pitfalls"][:3])
+                tips_text += f" UWAGA: {pitfalls}"
+
             chunk = Chunk(
                 id=f"method_{cat_id}_{method_id}",
                 source="methods",
@@ -130,12 +149,13 @@ def load_methods_chunks() -> List[Chunk]:
                 title=f"{method.get('name', method_id)} ({method.get('name_en', '')})",
                 content=" ".join(content_parts),
                 sympy_hint=method.get("sympy_approach", ""),
-                tips=method.get("tips_for_11b", ""),
+                tips=tips_text,
                 exam_problems=method.get("exam_problems", []),
                 metadata={
                     "sympy_functions": method.get("sympy_functions", []),
                     "category_id": cat_id,
                     "method_id": method_id,
+                    "worked_example": worked_example if worked_example else None,
                 }
             )
             chunks.append(chunk)
