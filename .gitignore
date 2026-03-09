@@ -49,3 +49,7 @@ coverage/
 __pycache__
 
 benchmark*
+
+dist2
+
+vite.config.ts.*

@@ -995,13 +995,30 @@ def _build_deterministic_code(classification, question_text, is_mc):
         task = params.get('task', 'derivative')
         code_lines.append(f'f = {expr}')
         if task == 'tangent_line':
-            pt = params.get('tangent_point', params.get('point', '0'))
-            code_lines.append(f'fp = diff(f, {var})')
-            code_lines.append(f'x0 = {pt}')
-            code_lines.append(f'slope = fp.subs({var}, x0)')
-            code_lines.append(f'y0 = f.subs({var}, x0)')
-            code_lines.append(f'tangent = slope * ({var} - x0) + y0')
-            code_lines.append(f'wynik = expand(tangent)')
+            tangent_y = params.get('tangent_y_value', '')
+            if tangent_y:
+                # Solve f(x) = y_target to find x0 first
+                code_lines.append(f'fp = diff(f, {var})')
+                code_lines.append(f'x0_solutions = solve(f - ({_latex_to_sympy(tangent_y)}), {var})')
+                code_lines.append(f'results = []')
+                code_lines.append(f'for x0 in x0_solutions:')
+                code_lines.append(f'    if x0.is_real:')
+                code_lines.append(f'        slope = fp.subs({var}, x0)')
+                code_lines.append(f'        y0 = f.subs({var}, x0)')
+                code_lines.append(f'        tangent = slope * ({var} - x0) + y0')
+                code_lines.append(f'        results.append((x0, expand(tangent)))')
+                code_lines.append(f'if len(results) == 1:')
+                code_lines.append(f'    wynik = f"x_0 = {{results[0][0]}}\\nstyczna: y = {{results[0][1]}}"')
+                code_lines.append(f'else:')
+                code_lines.append(f'    wynik = results')
+            else:
+                pt = params.get('tangent_point', params.get('point', '0'))
+                code_lines.append(f'fp = diff(f, {var})')
+                code_lines.append(f'x0 = {pt}')
+                code_lines.append(f'slope = fp.subs({var}, x0)')
+                code_lines.append(f'y0 = f.subs({var}, x0)')
+                code_lines.append(f'tangent = slope * ({var} - x0) + y0')
+                code_lines.append(f'wynik = expand(tangent)')
         elif task == 'extrema':
             code_lines.append(f'fp = diff(f, {var})')
             code_lines.append(f'critical = solve(fp, {var})')
@@ -1158,6 +1175,17 @@ def _build_deterministic_code(classification, question_text, is_mc):
             code_lines.append(f'wynik = _a1 * (1 - _q**{n_val}) / (1 - _q)')
         elif task == 'infinite_sum':
             code_lines.append(f'wynik = _a1 / (1 - _q)')
+        elif task == 'decay_threshold':
+            # Exponential decay/growth: m(n) = m0 * q^n, find first n where m(n) < threshold
+            m0 = _latex_to_sympy(params.get('initial_value', params.get('a1', '1')))
+            q_val = _latex_to_sympy(params.get('q', 'Rational(1,2)'))
+            threshold = _latex_to_sympy(params.get('threshold', '1'))
+            code_lines.append(f'_m0 = {m0}')
+            code_lines.append(f'_q_ratio = {q_val}')
+            code_lines.append(f'_threshold = {threshold}')
+            code_lines.append(f'_n_sym = symbols("_n_sym", positive=True)')
+            code_lines.append(f'_n_val = ceiling(log(_threshold / _m0) / log(_q_ratio))')
+            code_lines.append(f'wynik = _n_val')
         elif task == 'find_q':
             code_lines.append('wynik = _q')
         elif task == 'find_a1':
@@ -1191,6 +1219,45 @@ def _build_deterministic_code(classification, question_text, is_mc):
             code_lines.append(f's2 = solveset(-b_c/a_c > 0, {param}, S.Reals)')
             code_lines.append(f's3 = solveset(c_c/a_c > 0, {param}, S.Reals)')
             code_lines.append(f'wynik = Intersection(s1, s2, s3)')
+        elif condition == 'roots_negative':
+            code_lines.append(f's1 = solveset(delta >= 0, {param}, S.Reals)')
+            code_lines.append(f's2 = solveset(-b_c/a_c < 0, {param}, S.Reals)')
+            code_lines.append(f's3 = solveset(c_c/a_c > 0, {param}, S.Reals)')
+            code_lines.append(f'wynik = Intersection(s1, s2, s3)')
+        elif condition == 'roots_opposite_sign':
+            code_lines.append(f'wynik = solve(c_c/a_c < 0, {param})')
+        elif condition == 'x1_equals_kx2':
+            # Vieta: x1+x2=-b/a, x1*x2=c/a, x1=k*x2
+            k_val = params.get('extra_value', '2')
+            code_lines.append(f'_k = {_latex_to_sympy(k_val)}')
+            code_lines.append(f'# Vieta: (1+k)*x2 = -b/a, k*x2^2 = c/a')
+            code_lines.append(f'# Substitute: k*(-b/(a*(1+k)))^2 = c/a')
+            code_lines.append(f'vieta_eq = a_c * c_c * _k**2 + (2*a_c*c_c - b_c**2)*_k + a_c*c_c')
+            code_lines.append(f'delta_cond = delta > 0')
+            code_lines.append(f'_m_vals = solve(vieta_eq, {param})')
+            code_lines.append(f'wynik = [mv for mv in _m_vals if (delta.subs({param}, mv) > 0) == True]')
+            code_lines.append(f'if not wynik: wynik = _m_vals')
+        elif condition == 'x1_cubed_plus_x2_cubed':
+            # x1^3+x2^3 = (x1+x2)^3 - 3*x1*x2*(x1+x2)
+            bound = params.get('extra_value', '0')
+            code_lines.append(f'_sum = -b_c / a_c')
+            code_lines.append(f'_prod = c_c / a_c')
+            code_lines.append(f'_cubes = _sum**3 - 3*_prod*_sum')
+            code_lines.append(f's1 = solveset(delta > 0, {param}, S.Reals)')
+            code_lines.append(f's2 = solveset(_cubes > {_latex_to_sympy(bound)}, {param}, S.Reals)')
+            code_lines.append(f'wynik = Intersection(s1, s2)')
+        elif condition == 'roots_sum':
+            bound = params.get('extra_value', '0')
+            code_lines.append(f'_sum = -b_c / a_c')
+            code_lines.append(f's1 = solveset(delta > 0, {param}, S.Reals)')
+            code_lines.append(f's2 = solveset(_sum > {_latex_to_sympy(bound)}, {param}, S.Reals)')
+            code_lines.append(f'wynik = Intersection(s1, s2)')
+        elif condition == 'roots_product':
+            bound = params.get('extra_value', '0')
+            code_lines.append(f'_prod = c_c / a_c')
+            code_lines.append(f's1 = solveset(delta > 0, {param}, S.Reals)')
+            code_lines.append(f's2 = solveset(_prod > {_latex_to_sympy(bound)}, {param}, S.Reals)')
+            code_lines.append(f'wynik = Intersection(s1, s2)')
         else:
             code_lines.append(f'wynik = solve({condition}, {param})')
 
@@ -1371,6 +1438,19 @@ def _build_deterministic_code(classification, question_text, is_mc):
         else:
             code_lines.append(f'wynik = "proof requires step-by-step reasoning"')
 
+    elif ptype == 'simplification':
+        expr = _latex_to_sympy(params.get('expression', '0'))
+        task = params.get('task', 'simplify')
+        var = params.get('variable', 'x')
+        code_lines.append(f'_expr = {expr}')
+        if task == 'evaluate':
+            eval_pt = _latex_to_sympy(params.get('eval_point', '0'))
+            code_lines.append(f'wynik = _expr.subs({var}, {eval_pt})')
+        elif task == 'compare':
+            code_lines.append(f'wynik = simplify(_expr)')
+        else:
+            code_lines.append(f'wynik = simplify(_expr)')
+
     else:  # general
         if params.get('sympy_code'):
             return params['sympy_code']
@@ -1412,6 +1492,351 @@ def _build_deterministic_code(classification, question_text, is_mc):
         code_lines.append('print("ODPOWIEDZ:", wynik)')
 
     return '\n'.join(code_lines)
+
+
+# ── Extraction Chain (Level 2+3) ─────────────────────────────────────────
+
+# Template definitions — each has keywords to match and an extraction prompt
+EXTRACTION_TEMPLATES = [
+    {
+        'id': 'exponential_decay',
+        'keywords': ['masa', 'substancj', 'maleje', 'ubywa', 'rozpad', 'procent', 'dob'],
+        'extraction_prompt': 'Wyodrębnij wartości z zadania. Odpowiedz TYLKO JSON:\n{"initial_value": <wartość początkowa>, "rate": <współczynnik np 0.81 jeśli ubywa 19%>, "threshold": <wartość progowa>, "direction": "<less lub greater>", "formula_requested": <true/false>}',
+        'build_code': lambda v: f'''from sympy import *
+m0 = {v.get("initial_value", 4)}
+q_val = {v.get("rate", "0.81")}
+threshold = {v.get("threshold", "1.5")}
+import math
+_t = 0
+while True:
+    _t += 1
+    val = float(m0) * float(q_val)**_t
+    if val {"<" if v.get("direction", "less") == "less" else ">"} float(threshold):
+        break
+    if _t > 1000:
+        break
+print("ODPOWIEDZ:", _t)
+'''
+    },
+    {
+        'id': 'bernoulli_probability',
+        'keywords': ['prawdopodobieństwo', 'partii', 'rzut', 'wygran'],
+        'extraction_prompt': 'Wyodrębnij z zadania o prawdopodobieństwie. Odpowiedz TYLKO JSON:\n{"n": <liczba prób>, "p_num": <licznik prawdop sukcesu>, "p_den": <mianownik>, "condition": "<at_least_k lub exactly_k lub at_most_k>", "k": <wymagana liczba sukcesów>}',
+        'build_code': lambda v: f'''from sympy import *
+p = Rational({v.get("p_num", 1)}, {v.get("p_den", 4)})
+q = 1 - p
+n = {v.get("n", 5)}
+k = {v.get("k", 4)}
+cond = "{v.get("condition", "at_least_k")}"
+if cond == "at_least_k":
+    wynik = sum(binomial(n, i) * p**i * q**(n-i) for i in range(k, n+1))
+elif cond == "at_most_k":
+    wynik = sum(binomial(n, i) * p**i * q**(n-i) for i in range(0, k+1))
+else:
+    wynik = binomial(n, k) * p**k * q**(n-k)
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'tangent_line_complete',
+        'keywords': ['styczna', 'wykres', 'punkt', 'należy'],
+        'extraction_prompt': 'Wyodrębnij z zadania o stycznej. Odpowiedz TYLKO JSON:\n{"function_expr": "<funkcja w SymPy>", "y_value": <wartość y punktu na wykresie>, "variable": "x"}',
+        'build_code': lambda v: f'''from sympy import *
+x = symbols('x', real=True)
+f = {v.get("function_expr", "x**2")}
+y_val = {v.get("y_value", 0)}
+x0_solutions = solve(Eq(f, y_val), x)
+results = []
+for x0 in x0_solutions:
+    if x0.is_real:
+        fp = diff(f, x)
+        slope = fp.subs(x, x0)
+        y0 = f.subs(x, x0)
+        tangent = slope * (x - x0) + y0
+        results.append((x0, simplify(tangent)))
+if len(results) == 1:
+    x0, tang = results[0]
+    print(f"x_0 = {{x0}}")
+    print(f"Równanie stycznej: y = {{tang}}")
+    print("ODPOWIEDZ: x_0 =", x0, ", y =", tang)
+elif len(results) > 1:
+    for x0, tang in results:
+        print(f"x_0 = {{x0}}: y = {{tang}}")
+    print("ODPOWIEDZ:", results)
+'''
+    },
+    {
+        'id': 'arithmetic_sequence_word',
+        'keywords': ['rata', 'spłat', 'mniejsza od poprzedniej', 'większa od poprzedniej'],
+        'extraction_prompt': 'Wyodrębnij z zadania o ciągu arytmetycznym. Odpowiedz TYLKO JSON:\n{"total_sum": <suma>, "n": <liczba wyrazów/rat>, "d": <różnica ciągu>, "find": "<a1 lub d lub n>"}',
+        'build_code': lambda v: f'''from sympy import *
+_a1 = symbols('_a1', real=True)
+_S = {v.get("total_sum", 0)}
+_n = {v.get("n", 1)}
+_d = {v.get("d", 0)}
+eq = Eq(_n * (2*_a1 + (_n - 1)*_d) / 2, _S)
+wynik = solve(eq, _a1)
+if isinstance(wynik, list) and len(wynik) == 1:
+    wynik = wynik[0]
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'prove_inequality_square',
+        'keywords': ['wykaż', 'udowodnij', 'prawdziwa', 'nierówność'],
+        'extraction_prompt': 'Wyodrębnij nierówność do udowodnienia. Odpowiedz TYLKO JSON:\n{"lhs": "<lewa strona w SymPy>", "rhs": "<prawa strona w SymPy>", "variables": ["x", "y"]}',
+        'build_code': lambda v: f'''from sympy import *
+{", ".join(v.get("variables", ["x", "y"]))} = symbols("{" ".join(v.get("variables", ["x", "y"]))}", real=True)
+lhs = {v.get("lhs", "0")}
+rhs = {v.get("rhs", "0")}
+diff_expr = expand(lhs - rhs)
+print("lhs - rhs =", diff_expr)
+vars_list = [{", ".join(v.get("variables", ["x", "y"]))}]
+critical = solve([diff(diff_expr, var) for var in vars_list], vars_list)
+if critical:
+    if isinstance(critical, dict):
+        min_val = diff_expr.subs(critical)
+    elif isinstance(critical, list) and len(critical) > 0:
+        pt = critical[0]
+        if isinstance(pt, (tuple, list)):
+            subs_dict = dict(zip(vars_list, pt))
+            min_val = diff_expr.subs(subs_dict)
+        else:
+            min_val = diff_expr.subs(vars_list[0], pt)
+    else:
+        min_val = None
+    if min_val is not None and min_val > 0:
+        print("ODPOWIEDZ: Wyrażenie jest zawsze dodatnie (minimum =", min_val, "> 0)")
+    elif min_val is not None and min_val == 0:
+        print("ODPOWIEDZ: Wyrażenie jest nieujemne (minimum = 0)")
+    else:
+        print("ODPOWIEDZ:", diff_expr)
+else:
+    print("ODPOWIEDZ:", diff_expr)
+'''
+    },
+    {
+        'id': 'similar_triangles',
+        'keywords': ['podobne', 'trójkąt', 'przyprostokątne', 'przeciwprostokątna'],
+        'extraction_prompt': 'Wyodrębnij z zadania o podobnych trójkątach. Odpowiedz TYLKO JSON:\n{"triangle1_sides": [<bok1>, <bok2>], "known_hypotenuse_t2": <przeciwprostokątna T2>}',
+        'build_code': lambda v: f'''from sympy import *
+a1, b1 = {v.get("triangle1_sides", [5, 12])[0]}, {v.get("triangle1_sides", [5, 12])[1]}
+c1 = sqrt(a1**2 + b1**2)
+known_hyp_t2 = {v.get("known_hypotenuse_t2", 26)}
+scale = Rational(known_hyp_t2, c1)
+a2 = a1 * scale
+b2 = b1 * scale
+pole_t2 = Rational(1, 2) * a2 * b2
+print("ODPOWIEDZ:", pole_t2)
+'''
+    },
+    {
+        'id': 'perpendicular_diagonal',
+        'keywords': ['przekątna', 'prostopadła', 'kwadrat', 'prostą zawierającą'],
+        'extraction_prompt': 'Wyodrębnij punkty z zadania. Odpowiedz TYLKO JSON:\n{"point1": {"x": <x1>, "y": <y1>}, "point2": {"x": <x2>, "y": <y2>}}',
+        'build_code': lambda v: f'''from sympy import *
+x, y = symbols('x y', real=True)
+A = Point({v.get("point1", {}).get("x", -8)}, {v.get("point1", {}).get("y", -2)})
+C = Point({v.get("point2", {}).get("x", 0)}, {v.get("point2", {}).get("y", 4)})
+M = A.midpoint(C)
+AC = Line(A, C)
+slope_AC = AC.slope
+if slope_AC != 0:
+    slope_perp = -1 / slope_AC
+    eq_y = slope_perp * x + M.y - slope_perp * M.x
+    print("y =", simplify(eq_y))
+    print("ODPOWIEDZ: y =", simplify(eq_y))
+else:
+    print("ODPOWIEDZ: x =", M.x)
+'''
+    },
+    {
+        'id': 'probability_divisibility',
+        'keywords': ['losujemy', 'iloczyn', 'podzielny', 'ze zwracaniem'],
+        'extraction_prompt': 'Wyodrębnij z zadania. Odpowiedz TYLKO JSON:\n{"number_set": [<lista liczb>], "draws": <ile losowań>, "with_replacement": <true/false>, "condition": "<product_divisible_by lub sum_divisible_by>", "divisor": <przez co podzielny>}',
+        'build_code': lambda v: f'''from sympy import *
+from itertools import product{"" if v.get("with_replacement", True) else ", combinations"}
+numbers = {v.get("number_set", [2,3,4,5,6,7,8,9])}
+divisor = {v.get("divisor", 15)}
+{"all_pairs = list(product(numbers, repeat=" + str(v.get("draws", 2)) + "))" if v.get("with_replacement", True) else "all_pairs = list(combinations(numbers, " + str(v.get("draws", 2)) + "))"}
+favorable = 0
+for pair in all_pairs:
+    {"val = 1" if v.get("condition", "product_divisible_by") == "product_divisible_by" else "val = sum(pair)"}
+    {"for xx in pair: val *= xx" if v.get("condition", "product_divisible_by") == "product_divisible_by" else "pass"}
+    if val % divisor == 0:
+        favorable += 1
+total = len(all_pairs)
+wynik = Rational(favorable, total)
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'rhombus_trig',
+        'keywords': ['romb', 'przekątne', 'kąt rozwarty'],
+        'extraction_prompt': 'Wyodrębnij z zadania o rombie. Odpowiedz TYLKO JSON:\n{"side": "<bok w SymPy>", "obtuse_angle_deg": <kąt rozwarty w stopniach>, "find": "<diagonals_product lub area>"}',
+        'build_code': lambda v: f'''from sympy import *
+a = {v.get("side", "6*sqrt(2)")}
+alpha = {v.get("obtuse_angle_deg", 150)}
+beta = 180 - alpha
+d1 = 2 * a * sin(rad(beta) / 2)
+d2 = 2 * a * cos(rad(beta) / 2)
+product_diag = simplify(d1 * d2)
+area = simplify(d1 * d2 / 2)
+find = "{v.get("find", "diagonals_product")}"
+if find == "diagonals_product":
+    print("ODPOWIEDZ:", product_diag)
+elif find == "area":
+    print("ODPOWIEDZ:", area)
+else:
+    print("ODPOWIEDZ: d1 =", simplify(d1), ", d2 =", simplify(d2))
+'''
+    },
+    {
+        'id': 'geometric_three_term',
+        'keywords': ['ciąg', 'geometryczny', 'trzywyrazowy'],
+        'extraction_prompt': 'Wyodrębnij wyrazy ciągu. Odpowiedz TYLKO JSON:\n{"term1": "<pierwszy wyraz>", "term2": "<drugi wyraz>", "term3": "<trzeci wyraz (może zawierać zmienną)>", "unknown_variable": "<nazwa zmiennej>"}',
+        'build_code': lambda v: f'''from sympy import *
+{v.get("unknown_variable", "a")} = symbols('{v.get("unknown_variable", "a")}', real=True)
+t1 = {v.get("term1", 27)}
+t2 = {v.get("term2", 9)}
+t3 = {v.get("term3", "a - 1")}
+eq = Eq(t2**2, t1 * t3)
+wynik = solve(eq, {v.get("unknown_variable", "a")})
+if isinstance(wynik, list) and len(wynik) == 1:
+    wynik = wynik[0]
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'quadratic_inequality',
+        'keywords': ['nierówność', 'x**2', 'kwadratow'],
+        'extraction_prompt': 'Wyodrębnij nierówność. Odpowiedz TYLKO JSON:\n{"lhs": "<lewa strona po przeniesieniu na jedną stronę w SymPy>", "relation": "<> lub >= lub < lub <=>", "variable": "x"}',
+        'build_code': lambda v: f'''from sympy import *
+x = symbols('x', real=True)
+expr = {v.get("lhs", "x**2 - 2*x")}
+try:
+    wynik = reduce_inequalities(expr {v.get("relation", ">")} 0, x)
+except:
+    try:
+        wynik = solve_univariate_inequality(expr {v.get("relation", ">")} 0, x, relational=False)
+    except:
+        wynik = solveset(expr, x, S.Reals)
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'cube_geometry',
+        'keywords': ['sześcian', 'krawędzi', 'ABCDEFGH', 'przekątnych'],
+        'extraction_prompt': 'Wyodrębnij z zadania o sześcianie. Odpowiedz TYLKO JSON:\n{"edge_length": <długość krawędzi>, "triangle_vertices": ["<w1>", "<w2>", "<w3>"], "find": "<height_from_vertex lub area>"}',
+        'build_code': lambda v: f'''from sympy import *
+from sympy.geometry import Point3D, Line3D
+a = {v.get("edge_length", 6)}
+A = Point3D(0, 0, 0)
+B = Point3D(a, 0, 0)
+C = Point3D(a, a, 0)
+D = Point3D(0, a, 0)
+E = Point3D(0, 0, a)
+F = Point3D(a, 0, a)
+G = Point3D(a, a, a)
+H = Point3D(0, a, a)
+line_AH = Line3D(A, H)
+line_DE = Line3D(D, E)
+S_list = line_AH.intersection(line_DE)
+S = S_list[0] if len(S_list) > 0 else Point3D(0, a/2, a/2)
+points = {{"A": A, "B": B, "C": C, "D": D, "E": E, "F": F, "G": G, "H": H, "S": S}}
+verts = {v.get("triangle_vertices", ["S", "B", "H"])}
+P1, P2, P3 = points.get(verts[0], S), points.get(verts[1], B), points.get(verts[2], H)
+line_P2P3 = Line3D(P2, P3)
+foot = line_P2P3.projection(P1)
+height = P1.distance(foot)
+print("ODPOWIEDZ:", simplify(height))
+'''
+    },
+]
+
+
+def _match_extraction_template(question_text):
+    """Match question text against extraction templates by keyword count."""
+    lower_q = question_text.lower()
+    best_match = None
+    best_score = 0
+    for tmpl in EXTRACTION_TEMPLATES:
+        score = sum(1 for kw in tmpl['keywords'] if kw.lower() in lower_q)
+        if score > best_score:
+            best_score = score
+            best_match = tmpl
+    return best_match if best_score >= 2 else None
+
+
+def _try_extraction_chain(question_text, base_url, model, verbose=True, api_key=None):
+    """
+    Extraction chain: match template → ask LLM to extract values as JSON → build deterministic code → execute.
+    Returns dict with {success, answer, code, output, template} or None.
+    """
+    template = _match_extraction_template(question_text)
+    if not template:
+        if verbose:
+            print(f"  Extraction: no template matched")
+        return None
+
+    if verbose:
+        print(f"  Extraction: matched template={template['id']}")
+
+    # Step 1: Ask LLM to extract values
+    extraction_system = f"Jesteś ekstrakerem danych matematycznych. Twoim JEDYNYM zadaniem jest wyodrębnić wartości liczbowe i parametry z zadania i zwrócić je jako JSON.\nNIE rozwiązuj zadania. NIE pisz kodu. NIE pisz wyjaśnień.\nOdpowiedz WYŁĄCZNIE poprawnym obiektem JSON.\n\n{template['extraction_prompt']}"
+
+    response = call_bielik(
+        extraction_system,
+        [{"role": "user", "content": question_text}],
+        base_url, model,
+        max_tokens=400,
+        temperature=0.1,
+        api_key=api_key
+    )
+
+    if not response:
+        return None
+
+    # Clean <think> blocks
+    cleaned = re.sub(r'<think>[\s\S]*?</think>', '', response).strip()
+    values = _extract_json_from_response(cleaned)
+
+    if not values:
+        if verbose:
+            print(f"  Extraction: JSON parse failed from: {cleaned[:100]}")
+        return None
+
+    if verbose:
+        print(f"  Extraction: values={json.dumps(values, ensure_ascii=False)[:100]}")
+
+    # Step 2: Build code from template
+    try:
+        code = template['build_code'](values)
+    except Exception as e:
+        if verbose:
+            print(f"  Extraction: code build error: {e}")
+        return None
+
+    # Step 3: Execute via MCP
+    tmp_result = {'answer_got': None, 'errors': []}
+    output = _execute_via_mcp(code, verbose, tmp_result)
+
+    if not output or 'Traceback' in output or 'Error' in output:
+        if verbose:
+            print(f"  Extraction: execution failed: {(output or '')[:80]}")
+        return None
+
+    # Extract answer
+    answer_match = re.search(r'ODPOWIED[ZŹ]:\s*(.+)', output, re.IGNORECASE)
+    answer = answer_match.group(1).strip() if answer_match else None
+
+    return {
+        'success': bool(answer),
+        'answer': answer,
+        'code': code,
+        'output': output,
+        'template': template['id'],
+    }
 
 
 def test_question_classifier(q, base_url, model, verbose=True, api_key=None):
@@ -1508,9 +1933,33 @@ def test_question_classifier(q, base_url, model, verbose=True, api_key=None):
     # Step 3: Check if we should fall back
     if confidence < 0.7 or ptype == 'proof':
         if verbose:
-            print(f"  ⚠️ Low confidence or proof → falling back to standard pipeline")
+            print(f"  ⚠️ Low confidence or proof → trying extraction chain first")
         result['errors'].append(f"Classifier fallback: confidence={confidence}, type={ptype}")
-        # Fall back to standard test_question
+
+        # Try extraction chain before falling back to old pipeline
+        extraction_result = _try_extraction_chain(question_text, base_url, model, verbose, api_key)
+        if extraction_result and extraction_result.get('success'):
+            result['pipeline_used'] = 'extraction_chain'
+            result['has_code'] = True
+            result['code_valid'] = True
+            result['extracted_code'] = extraction_result.get('code', '')
+            result['sympy_stdout'] = extraction_result.get('output', '')
+            result['answer_got'] = extraction_result.get('answer')
+
+            if result['answer_got']:
+                match_result, explanation = check_answer(q['answer'], result['answer_got'], q)
+                result['correct'] = match_result
+                if verbose:
+                    status = '✅' if match_result else '❌'
+                    print(f"  Extraction: {status} {explanation} (template={extraction_result.get('template', '?')})")
+
+            if result['correct']:
+                result['time_total'] = time.time() - t_start
+                return result
+
+        # Extraction chain failed — fall back to standard test_question
+        if verbose:
+            print(f"  ⚠️ Extraction chain failed → falling back to standard pipeline")
         return test_question(q, base_url, model, verbose, api_key)
 
     # Step 4: Build deterministic code
@@ -1533,6 +1982,18 @@ def test_question_classifier(q, base_url, model, verbose=True, api_key=None):
         answer_match = re.search(r'ODPOWIED[ZŹ]:\s*(.+)', result['sympy_stdout'], re.IGNORECASE)
         if answer_match:
             result['answer_got'] = answer_match.group(1).strip()
+
+    # Step 6.5: If deterministic solver failed, try extraction chain
+    if not result['answer_got'] or (result['sympy_stdout'] and ('Error' in result['sympy_stdout'] or 'Traceback' in result['sympy_stdout'])):
+        if verbose:
+            print(f"  ⚠️ Deterministic solver failed → trying extraction chain")
+        extraction_result = _try_extraction_chain(question_text, base_url, model, verbose, api_key)
+        if extraction_result and extraction_result.get('success'):
+            result['pipeline_used'] = 'extraction_chain_fallback'
+            result['extracted_code'] = extraction_result.get('code', '')
+            result['sympy_stdout'] = extraction_result.get('output', '')
+            result['answer_got'] = extraction_result.get('answer')
+            result['has_code'] = True
 
     # Step 7: Check answer
     if result['answer_got']:

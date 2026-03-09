@@ -5,6 +5,8 @@ import { RAGService } from './ragService';
 import { classifyProblem, shouldUseFallback } from './classifierService';
 import { routeAndSolveWithRetry } from './solverRouter';
 import { ClassificationResult, SolverResult } from './classifierTypes';
+import { runExtractionChain, runMultiStepChain, ChainResult } from './multiStepChain';
+import { matchTemplate } from './extractionTemplates';
 import prompts from '../../prompts.json';
 
 export type LLMProvider = LLMProviderType;
@@ -1811,7 +1813,7 @@ ${result.error || ''}`;
           newMessages.push(solverMsg);
           if (onMessageCallback) onMessageCallback(solverMsg);
 
-          // Step 4: Summary agent (same as old pipeline)
+          // Step 4: Summary agent (same as old pipeline) — only if solver succeeded
           if (solverResult.success) {
             console.log('\n=== AGENT 3: Summary (classifier mode) ===');
             const summaryContext = this.getAgentContext();
@@ -1832,16 +1834,201 @@ ${result.error || ''}`;
             this.conversationHistory.push(summaryMsg);
             newMessages.push(summaryMsg);
             if (onMessageCallback) onMessageCallback(summaryMsg);
+
+            // Done — skip old pipeline
+            return newMessages;
           }
 
-          // Done — skip old pipeline
-          return newMessages;
+          // Deterministic solver FAILED — try extraction chain before old pipeline
+          console.log('⚠️ Deterministic solver failed, trying extraction chain...');
+          if (this.mcpClient) {
+            try {
+              const chainResult: ChainResult = await runExtractionChain(
+                userMessage,
+                this.llmAgent,
+                this.mcpClient,
+                (code: string) => this.sanitizeCode(code),
+                {
+                  classifiedType: classification.type,
+                  mcOptions: (classification.mcOptions as Record<string, string>) || undefined,
+                  maxTokens: 400,
+                }
+              );
+
+              if (chainResult.success && chainResult.answer) {
+                const chainContent = `**Metoda:** ${chainResult.templateUsed || 'extraction'}\n\n\`\`\`python\n${chainResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${chainResult.output}`;
+                const chainMsg: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: chainContent,
+                  agentName: 'Agent Ekstrakcyjny (fallback)',
+                  timestamp: new Date(),
+                };
+                this.conversationHistory.push(chainMsg);
+                newMessages.push(chainMsg);
+                if (onMessageCallback) onMessageCallback(chainMsg);
+
+                return newMessages;
+              }
+            } catch { /* fall through */ }
+          }
+
+          // Both failed — fall through to old pipeline
+          console.log('⚠️ Both classifier solver and extraction chain failed, using old pipeline');
         } else {
-          console.log(`⚠️ Classifier confidence too low (${classification.confidence}) or proof type — falling back to old pipeline`);
+          console.log(`⚠️ Classifier confidence too low (${classification.confidence}) or proof type — falling back to extraction chain`);
+
+          // ═══════════════════════════════════════════════════════════════
+          // LEVEL 2+3: EXTRACTION CHAIN — try before old pipeline
+          // Bielik extracts values, templates compute deterministically
+          // ═══════════════════════════════════════════════════════════════
+          if (this.mcpClient) {
+            try {
+              console.log('\n=== EXTRACTION CHAIN (Level 2+3) ===');
+              const hasTemplate = matchTemplate(userMessage, classification.type);
+
+              if (hasTemplate) {
+                console.log(`📋 Template matched: ${hasTemplate.id}`);
+              }
+
+              const chainResult: ChainResult = hasTemplate
+                ? await runExtractionChain(
+                    userMessage,
+                    this.llmAgent,
+                    this.mcpClient,
+                    (code: string) => this.sanitizeCode(code),
+                    {
+                      classifiedType: classification.type,
+                      mcOptions: (classification.mcOptions as Record<string, string>) || undefined,
+                      maxTokens: 400,
+                    }
+                  )
+                : await runMultiStepChain(
+                    userMessage,
+                    this.llmAgent,
+                    this.mcpClient,
+                    (code: string) => this.sanitizeCode(code),
+                    {
+                      mcOptions: (classification.mcOptions as Record<string, string>) || undefined,
+                      maxTokens: 500,
+                    }
+                  );
+
+              console.log(`📊 Extraction chain: success=${chainResult.success}, template=${chainResult.templateUsed || 'multi-step'}, answer=${chainResult.answer}`);
+
+              if (chainResult.success && chainResult.answer) {
+                // Show extraction chain result
+                const chainContent = `**Metoda:** ${chainResult.templateUsed || 'multi-step extraction'}\n\n\`\`\`python\n${chainResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${chainResult.output}`;
+
+                const chainMsg: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: chainContent,
+                  agentName: 'Agent Ekstrakcyjny',
+                  timestamp: new Date(),
+                  toolCalls: [{
+                    id: 'extraction-exec-1',
+                    name: 'sympy_calculate',
+                    arguments: { expression: chainResult.code || '' }
+                  }],
+                  toolResults: [{
+                    toolCallId: 'extraction-exec-1',
+                    toolName: 'sympy_calculate',
+                    result: chainResult.output || '',
+                    isError: false,
+                  }],
+                };
+                this.conversationHistory.push(chainMsg);
+                newMessages.push(chainMsg);
+                if (onMessageCallback) onMessageCallback(chainMsg);
+
+                // Summary agent
+                console.log('\n=== AGENT 3: Summary (extraction chain) ===');
+                const summaryContext = this.getAgentContext();
+                const summaryResponse = await this.executeAgentTurn(
+                  'Agent Podsumowujący',
+                  prompts.summary,
+                  summaryContext,
+                  { maxTokens: prompts.agents.summary.max_tokens, temperature: prompts.agents.summary.temperature }
+                );
+
+                const summaryMsg: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: this.cleanMalformedLatex(summaryResponse),
+                  agentName: 'Agent Podsumowujący',
+                  timestamp: new Date(),
+                };
+                this.conversationHistory.push(summaryMsg);
+                newMessages.push(summaryMsg);
+                if (onMessageCallback) onMessageCallback(summaryMsg);
+
+                return newMessages;
+              } else {
+                console.log('⚠️ Extraction chain failed, falling back to old pipeline');
+              }
+            } catch (chainError) {
+              console.warn('⚠️ Extraction chain error, falling back to old pipeline:', chainError);
+            }
+          }
         }
       } catch (classifierError) {
         console.warn('⚠️ Classifier failed, falling back to old pipeline:', classifierError);
       }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // ALSO TRY EXTRACTION CHAIN even when classifier mode is off
+    // (for non-classifier deployments)
+    // ═══════════════════════════════════════════════════════════════════
+    if (this.mcpClient && matchTemplate(userMessage)) {
+      try {
+        console.log('\n=== EXTRACTION CHAIN (no classifier) ===');
+        const chainResult: ChainResult = await runExtractionChain(
+          userMessage,
+          this.llmAgent,
+          this.mcpClient,
+          (code: string) => this.sanitizeCode(code),
+          { maxTokens: 400 }
+        );
+
+        if (chainResult.success && chainResult.answer) {
+          const chainContent = `**Metoda:** ${chainResult.templateUsed || 'extraction'}\n\n\`\`\`python\n${chainResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${chainResult.output}`;
+
+          const chainMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: chainContent,
+            agentName: 'Agent Ekstrakcyjny',
+            timestamp: new Date(),
+          };
+          this.conversationHistory.push(chainMsg);
+          newMessages.push(chainMsg);
+          if (onMessageCallback) onMessageCallback(chainMsg);
+
+          // Summary
+          const summaryContext = this.getAgentContext();
+          const summaryResponse = await this.executeAgentTurn(
+            'Agent Podsumowujący',
+            prompts.summary,
+            summaryContext,
+            { maxTokens: prompts.agents.summary.max_tokens, temperature: prompts.agents.summary.temperature }
+          );
+
+          const summaryMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: this.cleanMalformedLatex(summaryResponse),
+            agentName: 'Agent Podsumowujący',
+            timestamp: new Date(),
+          };
+          this.conversationHistory.push(summaryMsg);
+          newMessages.push(summaryMsg);
+          if (onMessageCallback) onMessageCallback(summaryMsg);
+
+          return newMessages;
+        }
+      } catch { /* fall through to old pipeline */ }
     }
 
     // ═══════════════════════════════════════════════════════════════════

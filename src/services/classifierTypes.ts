@@ -23,6 +23,7 @@ export enum ProblemType {
   INEQUALITY = 'inequality',
   PROOF = 'proof',
   FUNCTION_PROPERTIES = 'function_properties',
+  SIMPLIFICATION = 'simplification',
   GENERAL = 'general',
 }
 
@@ -41,6 +42,7 @@ export interface DerivativeParams {
   point?: string;          // evaluate at specific point
   task: 'derivative' | 'tangent_line' | 'extrema' | 'monotonicity';
   tangent_point?: string;  // x-value for tangent line
+  tangent_y_value?: string;  // y-value to solve for when finding tangent point
 }
 
 export interface TrigEquationParams {
@@ -93,13 +95,15 @@ export interface SequenceArithmeticParams {
 }
 
 export interface SequenceGeometricParams {
-  task: 'nth_term' | 'sum' | 'find_q' | 'find_a1' | 'find_n' | 'infinite_sum';
+  task: 'nth_term' | 'sum' | 'find_q' | 'find_a1' | 'find_n' | 'infinite_sum' | 'decay_threshold';
   a1?: string;
   q?: string;              // common ratio
   n?: string;
   an?: string;
   sum?: string;
   conditions?: string[];
+  initial_value?: string;  // for decay_threshold: starting value m₀
+  threshold?: string;      // for decay_threshold: threshold value
 }
 
 export interface ParametricEquationParams {
@@ -107,6 +111,7 @@ export interface ParametricEquationParams {
   variable: string;        // main variable (usually "x")
   parameter: string;       // parameter name (usually "m")
   condition: string;       // e.g. "two_real_roots", "sum_of_roots > 0", "roots_positive"
+  extra_value?: string;    // for x1_equals_kx2: k value; for roots_sum/roots_product: the bound
   // Known conditions:
   // "two_real_roots" → delta > 0
   // "one_real_root" → delta = 0
@@ -114,6 +119,10 @@ export interface ParametricEquationParams {
   // "roots_positive" → delta >= 0, sum > 0, product > 0
   // "roots_negative" → delta >= 0, sum < 0, product > 0
   // "roots_opposite_sign" → product < 0
+  // "x1_equals_kx2" → x1 = k*x2 (use Vieta's formulas)
+  // "x1_cubed_plus_x2_cubed" → condition on x1³+x2³
+  // "roots_sum" → condition on sum of roots
+  // "roots_product" → condition on product of roots
   // custom condition as string → direct solve
 }
 
@@ -173,6 +182,13 @@ export interface FunctionPropertiesParams {
   composition_with?: string;  // for composition task
 }
 
+export interface SimplificationParams {
+  expression: string;
+  variable?: string;
+  task: 'simplify' | 'evaluate' | 'compare';
+  eval_point?: string;
+}
+
 export interface GeneralParams {
   expression?: string;
   description: string;     // natural language fallback description
@@ -199,6 +215,7 @@ export type ProblemParams =
   | InequalityParams
   | ProofParams
   | FunctionPropertiesParams
+  | SimplificationParams
   | GeneralParams;
 
 // --- Classification result ---

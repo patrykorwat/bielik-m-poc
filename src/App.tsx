@@ -8,6 +8,42 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './App.css';
 
+// Icon component - uses inline SVG for cross-browser compatibility (no emoji dependency)
+const Icon = ({ type, label }: { type: string; label?: string }) => {
+  const icons: Record<string, { svg: string; color: string }> = {
+    graduation: { svg: '<path d="M12 3L1 9l4 2.18v4L12 19l7-3.82v-4l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>', color: '#6b46c1' },
+    books: { svg: '<path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/>', color: '#2563eb' },
+    camera: { svg: '<circle cx="12" cy="12" r="3.2"/><path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/>', color: '#059669' },
+    plug: { svg: '<path d="M16 9V4.5C16 3.12 17.12 2 18.5 2S21 3.12 21 4.5V9h-5zm-8 0V4.5C8 3.12 6.88 2 5.5 2S3 3.12 3 4.5V9h5zm11.5 2h-15C3.67 11 3 11.67 3 12.5V13c0 3.47 2.61 6.34 6 6.92V22h6v-2.08c3.39-.58 6-3.45 6-6.92v-.5c0-.83-.67-1.5-1.5-1.5z"/>', color: '#10b981' },
+    target: { svg: '<path d="M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3-8c0 1.66-1.34 3-3 3s-3-1.34-3-3 1.34-3 3-3 3 1.34 3 3z"/>', color: '#dc2626' },
+    wave: { svg: '<path d="M7 11.5c0-.83.67-1.5 1.5-1.5S10 10.67 10 11.5V12h4v-.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5V15c0 2.21-1.79 4-4 4h-2c-2.21 0-4-1.79-4-4v-3.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>', color: '#f59e0b' },
+    brain: { svg: '<path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>', color: '#8b5cf6' },
+    bolt: { svg: '<path d="M7 2v11h3v9l7-12h-4l4-8z"/>', color: '#f59e0b' },
+    microscope: { svg: '<path d="M13 11.33L18 18H6l5-6.67V6.83c-.85-.3-1.53-1-1.83-1.83h3.66c-.3.83-.98 1.53-1.83 1.83v4.5zM15.32 3a2.98 2.98 0 01-1.56 2.2 2.98 2.98 0 01-3.52 0A2.98 2.98 0 018.68 3H6v2h1.09A5 5 0 007 7.17V11l-4 5.33V20h18v-3.67L17 11V7.17A5 5 0 0016.91 5H18V3h-2.68z"/>', color: '#6366f1' },
+    bulb: { svg: '<path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/>', color: '#eab308' },
+    user: { svg: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>', color: '#6b7280' },
+    robot: { svg: '<path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 011 1v3a1 1 0 01-1 1h-1v1a2 2 0 01-2 2H5a2 2 0 01-2-2v-1H2a1 1 0 01-1-1v-3a1 1 0 011-1h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2zM7.5 13A1.5 1.5 0 006 14.5 1.5 1.5 0 007.5 16 1.5 1.5 0 009 14.5 1.5 1.5 0 007.5 13zm9 0a1.5 1.5 0 00-1.5 1.5 1.5 1.5 0 001.5 1.5 1.5 1.5 0 001.5-1.5 1.5 1.5 0 00-1.5-1.5z"/>', color: '#6366f1' },
+    wrench: { svg: '<path d="M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z"/>', color: '#3b82f6' },
+    error: { svg: '<path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/>', color: '#dc2626' },
+    success: { svg: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>', color: '#16a34a' },
+    trash: { svg: '<path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>', color: '#ef4444' },
+  };
+  const icon = icons[type] || { svg: '<circle cx="12" cy="12" r="4"/>', color: '#666' };
+  return (
+    <svg
+      className="icon-svg"
+      viewBox="0 0 24 24"
+      fill={icon.color}
+      width="1em"
+      height="1em"
+      role="img"
+      aria-label={label || type}
+      style={{ verticalAlign: 'middle', display: 'inline-block', flexShrink: 0 }}
+      dangerouslySetInnerHTML={{ __html: icon.svg }}
+    />
+  );
+};
+
 const MCP_PROXY_URL = import.meta.env.VITE_MCP_PROXY_URL || 'http://localhost:3001';
 const LEAN_PROXY_URL = import.meta.env.VITE_LEAN_PROXY_URL || 'http://localhost:3002';
 const DEFAULT_REMOTE_MODEL = import.meta.env.VITE_REMOTE_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
@@ -371,7 +407,7 @@ function App() {
     return (
       <div className="config-container">
         <div className="config-card">
-          <h1>🤖 System Matematyczny z SymPy i Lean Prover</h1>
+          <h1><Icon type="robot" /> System Matematyczny z SymPy i Lean Prover</h1>
           <p className="subtitle">
             SymPy dla obliczeń + Lean Prover dla formalnych dowodów = Kompletne rozwiązania matematyczne
           </p>
@@ -485,7 +521,7 @@ function App() {
               <li>Precyzyjne obliczenia + formalna weryfikacja dowodów w jednym systemie</li>
             </ul>
 
-            <h3>🎯 Lean Prover:</h3>
+            <h3><Icon type="target" /> Lean Prover:</h3>
             <ul style={{ fontSize: '0.9em', lineHeight: '1.4' }}>
               <li>Profesjonalny system dowodzenia twierdzeń matematycznych</li>
               <li>Weryfikuje poprawność dowodów formalnych</li>
@@ -605,22 +641,22 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1>🎓 Bielik Matura - Asystent Matematyczny</h1>
+        <h1><Icon type="graduation" /> Bielik Matura - Asystent Matematyczny</h1>
         <div className="header-controls">
           <button onClick={() => setShowHistory(true)} className="history-button">
-            📚 Historia
+            <Icon type="books" /> Historia
           </button>
           <button onClick={handleExportToPNG} className="export-button" disabled={messages.length === 0}>
-            📸 Eksport PNG
+            <Icon type="camera" /> Eksport PNG
           </button>
           {mcpConnected && (
             <span className="mcp-status">
-              🔌 SymPy
+              <Icon type="plug" /> SymPy
             </span>
           )}
           {leanConnected && (
             <span className="mcp-status" style={{ marginLeft: '8px' }}>
-              🎯 Lean
+              <Icon type="target" /> Lean
             </span>
           )}
           <button onClick={handleClearHistory} className="clear-button">
@@ -633,15 +669,15 @@ function App() {
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="empty-state">
-              <p>👋 Witaj! Zadaj pytanie matematyczne - system agentów będzie współpracować nad rozwiązaniem.</p>
+              <p><Icon type="wave" /> Witaj! Zadaj pytanie matematyczne - system agentów będzie współpracować nad rozwiązaniem.</p>
               <p style={{ marginTop: '10px', fontSize: '0.95em', color: '#666' }}>
-                🧠 <strong>Agent Analityczny</strong> rozbije problem na kroki<br/>
-                ⚡ <strong>Agent Wykonawczy</strong> wykona obliczenia lub przygotuje dowód<br/>
-                🎯 <strong>Agent Weryfikujący</strong> sprawdzi poprawność dowodu (Lean Prover)<br/>
-                🔬 <strong>Agent Formalizujący</strong> (opcjonalny) - pełna formalna weryfikacja z Mathlib
+                <Icon type="brain" /> <strong>Agent Analityczny</strong> rozbije problem na kroki<br/>
+                <Icon type="bolt" /> <strong>Agent Wykonawczy</strong> wykona obliczenia lub przygotuje dowód<br/>
+                <Icon type="target" /> <strong>Agent Weryfikujący</strong> sprawdzi poprawność dowodu (Lean Prover)<br/>
+                <Icon type="microscope" /> <strong>Agent Formalizujący</strong> (opcjonalny) - pełna formalna weryfikacja z Mathlib
               </p>
               <p style={{ marginTop: '8px', fontSize: '0.85em', color: '#888', fontStyle: 'italic' }}>
-                💡 Dla zadań z dowodami, Agent Formalizujący automatycznie przetłumaczy dowód na pełny formalny kod Lean 4 z biblioteką Mathlib, gotowy do kompilacji i weryfikacji.
+                <Icon type="bulb" /> Dla zadań z dowodami, Agent Formalizujący automatycznie przetłumaczy dowód na pełny formalny kod Lean 4 z biblioteką Mathlib, gotowy do kompilacji i weryfikacji.
               </p>
               <div className="examples">
                 <p><strong>Przykłady obliczeń (SymPy):</strong></p>
@@ -677,14 +713,16 @@ function App() {
                   className={`message ${msg.role}`}
                 >
                   {msg.role === 'user' && (
-                    <div className="message-badge">👤 Ty</div>
+                    <div className="message-badge"><Icon type="user" /> Ty</div>
                   )}
                   {msg.role === 'assistant' && (
                     <div className="agent-badge">
-                      {msg.agentName === 'Agent Analityczny' ? '🧠' :
-                       msg.agentName === 'Agent Wykonawczy' ? '⚡' :
-                       msg.agentName === 'Agent Weryfikujący' ? '🎯' :
-                       msg.agentName === 'Agent Formalizujący' ? '🔬' : '🤖'} {msg.agentName || 'Agent'}
+                      <Icon type={
+                        msg.agentName === 'Agent Analityczny' ? 'brain' :
+                        msg.agentName === 'Agent Wykonawczy' ? 'bolt' :
+                        msg.agentName === 'Agent Weryfikujący' ? 'target' :
+                        msg.agentName === 'Agent Formalizujący' ? 'microscope' : 'robot'
+                      } /> {msg.agentName || 'Agent'}
                     </div>
                   )}
                   <div className="message-content">
@@ -693,7 +731,7 @@ function App() {
                     <div className="tool-calls">
                       {msg.toolCalls.map(tc => (
                         <div key={tc.id} className="tool-call">
-                          🔧 Używam narzędzia: <code>{tc.name}</code>
+                          <Icon type="wrench" /> Używam narzędzia: <code>{tc.name}</code>
                           <details style={{ marginTop: '0.5em', fontSize: '0.85em' }} open>
                             <summary>
                               {tc.name === 'sympy_calculate' ? 'Kod Python' :
@@ -709,7 +747,7 @@ function App() {
                                 fontSize: '0.9em',
                                 borderLeft: '3px solid #2196f3'
                               }}>
-                                💡 <strong>Chcesz nauczyć się Pythona?</strong> Zobacz darmowy {' '}
+                                <Icon type="bulb" /> <strong>Chcesz nauczyć się Pythona?</strong> Zobacz darmowy {' '}
                                 <a
                                   href="https://discovery.navoica.pl/course-v1:Uniwersytet_Gdanski+UG_2_Py_1+2024_01/about"
                                   target="_blank"
@@ -774,7 +812,7 @@ function App() {
                     <div className="tool-results">
                       {msg.toolResults.map((tr, idx) => (
                         <div key={idx} className={`tool-result ${tr.isError ? 'error' : ''}`}>
-                          {tr.isError ? '❌' : '✅'} {tr.isError ? 'Błąd' : 'Wynik'} <code>{tr.toolName}</code>:{' '}
+                          <Icon type={tr.isError ? 'error' : 'success'} /> {tr.isError ? 'Błąd' : 'Wynik'} <code>{tr.toolName}</code>:{' '}
                           {tr.isError && (tr.result.includes('Traceback') || tr.result.includes('Error:')) ? (
                             <pre style={{
                               backgroundColor: '#fff3cd',

@@ -26,6 +26,7 @@ import {
   InequalityParams,
   ProofParams,
   FunctionPropertiesParams,
+  SimplificationParams,
   GeneralParams,
 } from './classifierTypes.js';
 
@@ -99,7 +100,17 @@ function solveDerivative(p: DerivativeParams): string {
       break;
     case 'tangent_line':
       lines.push(`fp = diff(f, ${p.variable})`);
-      lines.push(`x0 = ${p.tangent_point || p.point || '0'}`);
+      // If tangent_y_value is provided, solve f(x) = y_value first to find x0
+      if (p.tangent_y_value) {
+        lines.push(`y_target = ${p.tangent_y_value}`);
+        lines.push(`x0_solutions = solve(Eq(f, y_target), ${p.variable})`);
+        lines.push(`if isinstance(x0_solutions, list) and len(x0_solutions) > 0:`);
+        lines.push(`    x0 = x0_solutions[0]`);
+        lines.push(`else:`);
+        lines.push(`    x0 = x0_solutions`);
+      } else {
+        lines.push(`x0 = ${p.tangent_point || p.point || '0'}`);
+      }
       lines.push(`slope = fp.subs(${p.variable}, x0)`);
       lines.push(`y0 = f.subs(${p.variable}, x0)`);
       lines.push(`tangent = slope * (${p.variable} - x0) + y0`);
@@ -393,6 +404,23 @@ function solveSequenceGeometric(p: SequenceGeometricParams): string {
     case 'find_n':
       lines.push(`wynik = _n`);
       break;
+    case 'decay_threshold':
+      // Find first n where m(n) < threshold
+      // m(n) = m0 * q^n
+      // m0 * q^n < threshold → q^n < threshold/m0 → n > log(threshold/m0)/log(q)
+      if (p.initial_value && p.threshold && p.q) {
+        lines.push(`m0 = ${p.initial_value}`);
+        lines.push(`_threshold = ${p.threshold}`);
+        lines.push(`# m(n) = m0 * q^n`);
+        lines.push(`# Solve m0 * q^n < threshold`);
+        lines.push(`# q^n < threshold/m0 → n > log(threshold/m0)/log(q)`);
+        lines.push(`_n_val = ceiling(log(_threshold / m0) / log(_q))`);
+        lines.push(`wynik = _n_val`);
+      } else {
+        lines.push(`# decay_threshold requires initial_value, threshold, and q`);
+        lines.push(`wynik = 0`);
+      }
+      break;
   }
 
   lines.push(`print("ODPOWIEDZ:", wynik)`);
@@ -462,10 +490,81 @@ function solveParametricEquation(p: ParametricEquationParams): string {
       lines.push(`prod_roots = c_coeff / a_coeff`);
       lines.push(`wynik = solve(prod_roots < 0, ${m})`);
       break;
+    case 'x1_equals_kx2':
+      // x1 = k*x2, use Vieta's formulas
+      // x1 + x2 = -b/a, x1*x2 = c/a
+      // Substitute x1 = k*x2: k*x2 + x2 = -b/a → (k+1)*x2 = -b/a
+      // k*x2*x2 = c/a → k*x2² = c/a
+      // From these: x2² = c/(a*k), and (k+1)*sqrt(c/(a*k)) = -b/a
+      // Or: k*x2² = c/a and (k+1)*x2 = -b/a
+      // From second: x2 = -b/(a(k+1))
+      // Substitute into first: k*(-b/(a(k+1)))² = c/a → k*b²/(a²(k+1)²) = c/a
+      // k*b² = a*c*(k+1)² → k*b² = a*c*(k² + 2k + 1) → k*b² = a*c*k² + 2*a*c*k + a*c
+      // a*c*k² + (2*a*c - b²)*k + a*c = 0
+      const k = p.extra_value || '1';
+      lines.push(`k_val = ${k}`);
+      lines.push(`# x1 = k*x2, use Vieta's formulas`);
+      lines.push(`# x1 + x2 = -b/a, x1*x2 = c/a`);
+      lines.push(`# (k+1)*x2 = -b/a and k*x2² = c/a`);
+      lines.push(`# From second: x2² = c/(a*k), substitute into first (indirectly)`);
+      lines.push(`# Solve: a*c*k² + (2*a*c - b²)*k + a*c = 0`);
+      lines.push(`vieta_eq = a_coeff*c_coeff*k_val**2 + (2*a_coeff*c_coeff - b_coeff**2)*k_val + a_coeff*c_coeff`);
+      lines.push(`wynik = solve(vieta_eq, ${m})`);
+      break;
+    case 'x1_cubed_plus_x2_cubed':
+      // x1³ + x2³ = (x1 + x2)³ - 3*x1*x2*(x1 + x2)
+      // Use Vieta's formulas: x1+x2 = -b/a, x1*x2 = c/a
+      lines.push(`sum_roots = -b_coeff / a_coeff`);
+      lines.push(`prod_roots = c_coeff / a_coeff`);
+      lines.push(`# x1³ + x2³ = (x1+x2)³ - 3*x1*x2*(x1+x2)`);
+      lines.push(`x1_cubed_plus_x2_cubed = sum_roots**3 - 3*prod_roots*sum_roots`);
+      lines.push(`# Extract condition from problem (this needs additional constraint)`);
+      lines.push(`# For now, solve delta > 0 for real roots`);
+      lines.push(`s1 = solveset(delta > 0, ${m}, S.Reals)`);
+      lines.push(`wynik = s1`);
+      break;
+    case 'roots_sum':
+      // Condition on sum of roots: x1 + x2 = -b/a
+      lines.push(`sum_roots = -b_coeff / a_coeff`);
+      lines.push(`# Default: sum > 0`);
+      lines.push(`wynik = solve(sum_roots > 0, ${m})`);
+      break;
+    case 'roots_product':
+      // Condition on product of roots: x1*x2 = c/a
+      lines.push(`prod_roots = c_coeff / a_coeff`);
+      lines.push(`# Default: product > 0`);
+      lines.push(`wynik = solve(prod_roots > 0, ${m})`);
+      break;
     default:
       // Custom condition — try to solve directly
       lines.push(`# Custom condition: ${p.condition}`);
       lines.push(`wynik = solve(${p.condition}, ${m})`);
+      break;
+  }
+
+  lines.push(`print("ODPOWIEDZ:", wynik)`);
+  return lines.join('\n');
+}
+
+function solveSimplification(p: SimplificationParams): string {
+  const variable = p.variable || 'x';
+  const lines = [`from sympy import *`];
+  lines.push(`${variable} = symbols('${variable}', real=True)`);
+  lines.push(`expr = ${p.expression}`);
+
+  switch (p.task) {
+    case 'simplify':
+      lines.push(`wynik = simplify(expr)`);
+      break;
+    case 'evaluate':
+      if (p.eval_point) {
+        lines.push(`wynik = expr.subs(${variable}, ${p.eval_point})`);
+      } else {
+        lines.push(`wynik = simplify(expr)`);
+      }
+      break;
+    case 'compare':
+      lines.push(`wynik = expr`);
       break;
   }
 
@@ -927,6 +1026,9 @@ export function buildSolverCode(classification: ClassificationResult): string {
     case ProblemType.FUNCTION_PROPERTIES:
       coreCode = solveFunctionProperties(params as FunctionPropertiesParams);
       break;
+    case ProblemType.SIMPLIFICATION:
+      coreCode = solveSimplification(params as SimplificationParams);
+      break;
     case ProblemType.GENERAL:
     default:
       coreCode = solveGeneral(params as GeneralParams);
@@ -961,6 +1063,7 @@ export {
   solveSequenceArithmetic,
   solveSequenceGeometric,
   solveParametricEquation,
+  solveSimplification,
   solveGeometryAnalytic,
   solveGeometrySolid,
   solveGeometryArea,
