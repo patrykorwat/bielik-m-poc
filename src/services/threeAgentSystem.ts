@@ -489,6 +489,16 @@ ${result.error || ''}`;
       return line;
     });
 
+    // 7a0. Fix C(n, k) → binomial(n, k) to avoid SymPy Symbol conflict
+    // Model writes C(n, k) thinking it's combinatorial, but SymPy C() is reserved
+    lines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
+      // Replace C(expr, expr) → binomial(expr, expr) — only when C is standalone (not part of word)
+      line = line.replace(/\bC\(([^,]+),\s*([^)]+)\)/g, 'binomial($1, $2)');
+      return line;
+    });
+
     // 7a. Fix .simplify() method → simplify() function call
     // Handles: expr.simplify(), (complex_expr).simplify(), wynik.simplify()
     lines = lines.map(line => {
