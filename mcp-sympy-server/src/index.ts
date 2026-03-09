@@ -8,6 +8,7 @@ import {
   Tool,
 } from "@modelcontextprotocol/sdk/types.js";
 import { spawn } from "child_process";
+import { existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
@@ -15,7 +16,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Path to venv Python (if exists) or fallback to system python3
-const VENV_PYTHON = join(__dirname, "..", "venv", "bin", "python3");
+const VENV_PYTHON_PATH = join(__dirname, "..", "venv", "bin", "python3");
+const VENV_PYTHON = existsSync(VENV_PYTHON_PATH) ? VENV_PYTHON_PATH : "python3";
 
 /**
  * MCP Server for SymPy mathematical computations
