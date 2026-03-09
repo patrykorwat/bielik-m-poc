@@ -3,7 +3,7 @@
  * aby wyszukać relevantne metody matematyczne dla zadania
  */
 
-const RAG_URL = 'http://localhost:3003';
+const RAG_URL = import.meta.env.VITE_RAG_URL || 'http://localhost:3003';
 
 export interface RAGResult {
   id: string;
