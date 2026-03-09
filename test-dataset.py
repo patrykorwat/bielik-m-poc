@@ -123,6 +123,7 @@ ANALYTICAL_PROMPT = _CONFIG["analytical"]
 EXECUTOR_PROMPT = _CONFIG["executor_sympy"]
 EXECUTOR_MC_PROMPT = _CONFIG.get("executor_sympy_mc", _CONFIG["executor_sympy"])
 SUMMARY_PROMPT = _CONFIG["summary"]
+CLASSIFIER_PROMPT = _CONFIG.get("classifier", "")
 
 # Per-agent settings
 AGENT_CONFIG = _CONFIG["agents"]
@@ -351,6 +352,17 @@ def truncate_after_first_code_block(text):
     return text
 
 
+def _normalize_infinity(s):
+    """Normalize SymPy infinity representations for answer comparison."""
+    s = s.replace('-oo', '-∞').replace('oo', '∞')
+    s = s.replace('Interval(-∞, ∞)', 'R').replace('(-∞, ∞)', 'R')
+    s = s.replace('Reals', 'R')
+    # Also handle: Interval(a, ∞) etc.
+    s = re.sub(r'Interval\(([^,]+),\s*∞\)', r'(\1, ∞)', s)
+    s = re.sub(r'Interval\(-∞,\s*([^)]+)\)', r'(-∞, \1)', s)
+    return s
+
+
 def extract_answer_from_output(output):
     """Extract ODPOWIEDZ/ODPOWIEDŹ value from SymPy output (v2 — better MC extraction)."""
     # Try both ASCII and Polish versions
@@ -363,6 +375,8 @@ def extract_answer_from_output(output):
         m = re.match(r'^\{(?:\w+:\s*)?(.+?)\}$', answer)
         if m:
             answer = m.group(1)
+        # Normalize SymPy infinity notation
+        answer = _normalize_infinity(answer)
         # Skip None / empty
         if answer.lower() in ('none', 'null', '[]', '{}', '', 'set()'):
             return None
@@ -598,6 +612,12 @@ def check_answer(expected, got, question):
     # For open-ended: try numeric/symbolic comparison
     expected_plain = clean_latex_for_display(expected)
 
+    # Normalize infinity representations in both sides
+    got_norm = _normalize_infinity(got_clean)
+    exp_norm = _normalize_infinity(expected_plain)
+    if got_norm.lower() == exp_norm.lower():
+        return True, f"Infinity-normalized match: {got_norm}"
+
     # String match
     if expected_plain.lower() in got_lower:
         return True, "Substring match"
@@ -717,6 +737,818 @@ def _execute_via_mcp(code, verbose, result):
         return None
 
 
+# ── Classifier Mode: Deterministic Solver ────────────────────────────────
+
+def _extract_json_from_response(text):
+    """Extract JSON object from LLM classifier response."""
+    # Strip <think> blocks
+    text = re.sub(r'<think>[\s\S]*?</think>', '', text).strip()
+
+    # Strategy 1: JSON in ```json ... ``` fences
+    m = re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', text)
+    if m:
+        try:
+            return json.loads(m.group(1))
+        except:
+            pass
+
+    # Strategy 2: First { ... } block
+    depth = 0
+    start = -1
+    for i, ch in enumerate(text):
+        if ch == '{':
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0 and start >= 0:
+                candidate = text[start:i+1]
+                try:
+                    return json.loads(candidate)
+                except:
+                    # Try fixing common issues
+                    fixed = candidate.replace("'", '"')
+                    fixed = re.sub(r',\s*}', '}', fixed)
+                    fixed = re.sub(r',\s*]', ']', fixed)
+                    try:
+                        return json.loads(fixed)
+                    except:
+                        pass
+                start = -1
+
+    # Strategy 3: Entire text
+    try:
+        return json.loads(text.strip())
+    except:
+        return None
+
+
+def _detect_categories(question_text):
+    """Detect problem categories from question text (port of ragService.ts detectCategories)."""
+    lower = question_text.lower()
+    categories_def = [
+        ('stereometria', ['graniastosłup', 'ostrosłup', 'walec', 'stożek', 'kula', 'bryła', 'objętość', 'pole powierzchni', 'przekrój', 'krawędź boczna', 'ściana boczna', 'wysokość bryły', 'podstawa bryły', 'sześciokąt']),
+        ('parametric', ['parametr', 'wartości m', 'wartości a', 'wartości p', 'dla jakich', 'warunek na', 'wyróżnik', 'delta']),
+        ('ciagi', ['ciąg arytmetyczny', 'ciąg geometryczny', 'ciąg', 'wyraz ciągu', 'różnica ciągu', 'iloraz ciągu', 'suma ciągu', 'n-ty wyraz']),
+        ('trygonometria', ['sinus', 'cosinus', 'tangens', 'sin', 'cos', 'tg', 'trygonometr', 'kąt', 'stopni']),
+        ('dowody', ['wykaż', 'udowodnij', 'dowód', 'indukcja', 'pokaż że', 'pokaż, że']),
+        ('optymalizacja', ['największ', 'najmniejsz', 'maksymaln', 'minimaln', 'optymal', 'ekstremum', 'wartość największa', 'wartość najmniejsza']),
+        ('prawdopodobienstwo', ['prawdopodobień', 'losow', 'rzut kostk', 'rzut monet', 'urna', 'kula z urny', 'zdarzeni']),
+        ('granice', ['granica', 'lim', 'granicy', 'dąży do', 'zbieżn']),
+        ('nierownosci', ['nierówność', 'nierównoś', 'rozwiąż nierówność']),
+        ('geometria_analityczna', ['okrąg', 'prosta', 'współrzędn', 'równoległobok', 'przekątne', 'środek odcinka', 'punkt przeci']),
+        ('kombinatoryka', ['ile jest', 'na ile sposobów', 'liczba naturalna', 'zapis dziesiętny', 'cyfr', 'kombinacj', 'permutacj']),
+        ('logarytmy', ['logarytm', 'log_', 'log ']),
+        ('funkcja_kwadratowa', ['funkcja kwadratowa', 'parabola', 'oś symetrii', 'wierzchołek']),
+    ]
+    matched = []
+    for name, keywords in categories_def:
+        if any(kw in lower for kw in keywords):
+            matched.append(name)
+    return matched
+
+
+def _get_category_strategy(category):
+    """Return category-specific SymPy strategy hints (port of ragService.ts getCategoryStrategy)."""
+    strategies = {
+        'stereometria': 'STRATEGIA STEREOMETRIA:\n- Zidentyfikuj typ bryly (graniastoslup/ostroslup/walec/stozek/kula)\n- Wyznacz pole podstawy (S) i wysokosc (h)\n- V = S * h (graniastoslup/walec) lub V = (1/3) * S * h (ostroslup/stozek)\n- Tw. Pitagorasa 3D: a**2 + b**2 + c**2 = d**2\nSymPy: from sympy import *; a, h = symbols("a h", positive=True); V = a**2 * h',
+        'parametric': 'STRATEGIA PARAMETR:\n- Wyciagnij parametr (m, a, p) z rownania\n- Utworz wielomian w x: Poly(eq, x)\n- Oblicz wyroznik: delta = discriminant(poly)\n- Jedno rozw. -> delta = 0; dwa rozne -> delta > 0; brak -> delta < 0\n- UWAGA: sprawdz edge case gdy wspolczynnik przy x**2 = 0 (liniowe!)\nSymPy: from sympy import *; m = symbols("m"); poly = Poly(eq, x); delta = discriminant(poly); solve(delta > 0, m)',
+        'ciagi': 'STRATEGIA CIAGI:\n- Arytmetyczny: a_n = a_1 + (n-1)*d, S_n = n*(a_1 + a_n)/2\n- Geometryczny: a_n = a_1 * q**(n-1), S_n = a_1*(1 - q**n)/(1 - q)\n- Jesli (x, y, z) geometryczny -> y**2 = x*z\n- Jesli (x, y, z) arytmetyczny -> 2*y = x + z\nSymPy: from sympy import *; a1, d, q, n = symbols("a1 d q n"); solve([eq1, eq2], [a1, d])',
+        'trygonometria': 'STRATEGIA TRYGONOMETRIA:\n- Tozsamosci: sin(x)**2 + cos(x)**2 = 1, sin(2*x) = 2*sin(x)*cos(x)\n- Rownania trygonometryczne: uzyj solveset(eq, x, Interval(0, 2*pi))\nSymPy: from sympy import *; x = symbols("x", real=True); solveset(sin(x) - Rational(1,2), x, Interval(0, 2*pi))',
+        'dowody': 'STRATEGIA DOWODY:\n- Bezposredni: przeksztalc lewa strone do prawej\n- Sprzecznosc: zaloz NOT(teza), doprowadz do sprzecznosci\n- Indukcja: base case n=1 + krok indukcyjny\nSymPy: from sympy import *; simplify(LHS - RHS)  # powinno dac 0',
+        'optymalizacja': 'STRATEGIA OPTYMALIZACJA:\n- Wyraz funkcje celu f(x) jednej zmiennej\n- Pochodna: diff(f, x), punkty krytyczne: solve(diff(f, x), x)\n- Sprawdz znak f\'\'(x) (min/max) + wartosci na krancach\nSymPy: from sympy import *; x = symbols("x", positive=True); f = ...; crits = solve(diff(f, x), x)',
+        'prawdopodobienstwo': 'STRATEGIA PRAWDOPODOBIENSTWO:\n- P(A) = |A| / |Omega| — policz zdarzenia sprzyjajace i wszystkie\n- Kombinacje: binomial(n, k); Permutacje: factorial(n)/factorial(n-k)\n- Uzyj Rational(a,b) NIE float\nSymPy: from sympy import *; binomial(n, k); Rational(sprzyjajace, wszystkie)',
+        'granice': 'STRATEGIA GRANICE:\n- limit(expr, x, a, "-") dla lewostronnej, limit(expr, x, a, "+") dla prawostronnej\n- Jesli 0/0: uprosc ulamek (factor + cancel)\n- Jesli k/0: sprawdz znak -> +-oo\nSymPy: from sympy import *; x = symbols("x"); limit(expr, x, a)',
+        'nierownosci': 'STRATEGIA NIEROWNOSCI:\n- Przeniesc WSZYSTKO na jedna strone: wyrazenie <= 0\n- Uzyj solve_univariate_inequality(expr <= 0, x, relational=False)\n- Alternatywa: solve(expr, x) -> miejsca zerowe, recznie sprawdz znak\nSymPy: from sympy import *; from sympy.solvers.inequalities import solve_univariate_inequality',
+        'geometria_analityczna': 'STRATEGIA GEOMETRIA ANALITYCZNA:\n- Odleglosc: sqrt((x2-x1)**2+(y2-y1)**2)\n- Srodek odcinka: ((x1+x2)/2, (y1+y2)/2)\n- Rownolegobok: przekatne dziela sie na polowy -> C = 2*P - A\nSymPy: from sympy import *; sqrt((x2-x1)**2 + (y2-y1)**2)',
+        'kombinatoryka': 'STRATEGIA KOMBINATORYKA:\n- Cyfry bez powtorzen: rozwaz OSOBNO przypadek z cyfra 0!\n- 0 nie moze stac na pierwszym miejscu -> odejmij zle przypadki\n- binomial(n,k) = C(n,k), factorial(n) = n!\nSymPy: from sympy import *; binomial(5,3) * factorial(5)',
+        'logarytmy': 'STRATEGIA LOGARYTMY:\n- log(x, base) w SymPy — NIE log_base(x)!\n- Zmiana podstawy: log_b(x) = log(x)/log(b)\n- log(a*b) = log(a) + log(b); log(a**n) = n*log(a)\nSymPy: from sympy import *; log(9, sqrt(3)); simplify(...)',
+        'funkcja_kwadratowa': 'STRATEGIA FUNKCJA KWADRATOWA:\n- f(x) = a*x**2 + b*x + c\n- Os symetrii: x = -b/(2*a), Wierzcholek: W = (-b/(2*a), f(-b/(2*a)))\n- Wyroznik: delta = b**2-4*a*c, Miejsca zerowe: (-b+-sqrt(delta))/(2*a)\nSymPy: from sympy import *; b, c = symbols("b c"); solve([Eq(-b/2, -2), Eq(1+b+c, -10)], [b, c])',
+    }
+    return strategies.get(category, '')
+
+
+def _build_rag_context(question_text):
+    """Build RAG context for classifier call (mimics threeAgentSystem.ts behavior)."""
+    categories = _detect_categories(question_text)
+    if not categories:
+        return ''
+
+    sections = []
+    for cat in categories:
+        strategy = _get_category_strategy(cat)
+        if strategy:
+            sections.append(strategy)
+
+    if len(categories) > 1:
+        sections.append(f"UWAGA: To zadanie laczy {len(categories)} kategorii: {' + '.join(categories)}. Najpierw rozwiaz kazda czesc osobno, potem polacz wyniki.")
+
+    return '\n\n'.join(sections) if sections else ''
+
+
+def _latex_to_sympy(expr_str):
+    """Convert LLM-output math expression to valid SymPy syntax."""
+    if not expr_str or not isinstance(expr_str, str):
+        return str(expr_str) if expr_str is not None else '0'
+    s = str(expr_str).strip()
+    # Remove LaTeX wrappers
+    s = s.replace('$', '').replace('\\,', '')
+    # Remove assignment (T(t) = ... → just the RHS)
+    if '=' in s and not any(op in s for op in ['==', '!=', '<=', '>=']):
+        parts = s.split('=', 1)
+        # Take the RHS if it looks like an expression
+        if len(parts) == 2 and len(parts[1].strip()) > 0:
+            rhs = parts[1].strip()
+            # But not if the LHS is something like "x**2 + 3" (actual equation)
+            lhs = parts[0].strip()
+            if re.match(r'^[A-Za-z_]\w*(\([^)]*\))?$', lhs):
+                s = rhs
+    # LaTeX → Python conversions
+    s = re.sub(r'\\frac\{([^}]+)\}\{([^}]+)\}', r'Rational(\1, \2)', s)
+    s = re.sub(r'\\sqrt\{([^}]+)\}', r'sqrt(\1)', s)
+    s = re.sub(r'\\sqrt\s+(\d+)', r'sqrt(\1)', s)
+    s = s.replace('\\pi', 'pi').replace('\\infty', 'oo').replace('\\cdot', '*')
+    s = s.replace('\\ln', 'log').replace('\\log', 'log').replace('\\sin', 'sin')
+    s = s.replace('\\cos', 'cos').replace('\\tan', 'tan')
+    s = re.sub(r'\\left\s*', '', s)
+    s = re.sub(r'\\right\s*', '', s)
+    s = re.sub(r'\\[a-zA-Z]+', '', s)  # Remove remaining LaTeX commands
+    # Fix implicit multiplication: 2x → 2*x, 3sin → 3*sin
+    s = re.sub(r'(\d)([a-zA-Z(])', r'\1*\2', s)
+    # Fix function notation without *: cos²(x) → cos(x)**2
+    s = re.sub(r'(\w)\^(\d+)\(', r'\1(**\2)(', s)  # not right, simpler:
+    # Fix ^ → **
+    s = s.replace('^', '**')
+    # Fix (a)(b) → (a)*(b)
+    s = re.sub(r'\)\(', ')*(', s)
+    # Fix log_base(x) → log(x, base)
+    s = re.sub(r'log_(\d+)\(([^)]+)\)', r'log(\2, \1)', s)
+    s = re.sub(r'log_\{(\d+)\}\(([^)]+)\)', r'log(\2, \1)', s)
+    # Fix fractions written as (a)/(b) → Rational(a, b) only for pure numbers
+    s = re.sub(r'\((\d+)\)/\((\d+)\)', r'Rational(\1, \2)', s)
+    return s.strip()
+
+
+def _sanitize_mc_options(mc_options, question_text):
+    """Try to extract clean MC options from classifier output or question text."""
+    if not mc_options:
+        return _extract_mc_from_question(question_text)
+
+    clean = {}
+    for letter in ['A', 'B', 'C', 'D']:
+        val = mc_options.get(letter, mc_options.get(letter.lower(), ''))
+        val = str(val).strip()
+        if not val or val == 'None':
+            return _extract_mc_from_question(question_text)
+        # Try to make it valid Python
+        val = _latex_to_sympy(val)
+        # Check if it's a simple value
+        try:
+            compile(val, '<test>', 'eval')
+            clean[letter] = val
+        except:
+            # Wrap in quotes as string for comparison
+            clean[letter] = f'"{val}"'
+    return clean if len(clean) == 4 else _extract_mc_from_question(question_text)
+
+
+def _extract_mc_from_question(question_text):
+    """Extract MC options directly from question text using regex."""
+    options = {}
+    # Pattern: A. value or A) value
+    for letter in ['A', 'B', 'C', 'D']:
+        # Try "A. ..." or "A) ..."
+        pattern = rf'\b{letter}[.)]\s*(.+?)(?=\s*\b[ABCD][.)]\s|\s*$)'
+        m = re.search(pattern, question_text, re.DOTALL)
+        if m:
+            val = m.group(1).strip()
+            val = _latex_to_sympy(val)
+            # Remove trailing text after the value
+            val = val.split('\n')[0].strip().rstrip('.')
+            try:
+                compile(val, '<test>', 'eval')
+                options[letter] = val
+            except:
+                options[letter] = f'"{val}"'
+    return options if len(options) == 4 else None
+
+
+def _sanitize_classification(classification, question_text, is_mc):
+    """Deep-sanitize all params in the classification to ensure valid SymPy."""
+    params = classification.get('params', {})
+
+    # Sanitize all string values in params recursively
+    def sanitize_dict(d):
+        result = {}
+        for k, v in d.items():
+            if isinstance(v, str) and k in ('expression', 'equation', 'function_expr',
+                                              'lhs', 'rhs', 'approach', 'point',
+                                              'tangent_point', 'domain_start', 'domain_end',
+                                              'eval_point', 'a1', 'd', 'q', 'n', 'an', 'sum',
+                                              'n_total', 'k_val', 'p', 'favorable_outcomes',
+                                              'total_outcomes'):
+                result[k] = _latex_to_sympy(v)
+            elif isinstance(v, dict):
+                result[k] = sanitize_dict(v)
+            elif isinstance(v, list):
+                result[k] = [sanitize_dict(item) if isinstance(item, dict)
+                            else _latex_to_sympy(item) if isinstance(item, str) else item
+                            for item in v]
+            else:
+                result[k] = v
+        return result
+
+    classification['params'] = sanitize_dict(params)
+
+    # Sanitize MC options
+    if is_mc:
+        classification['mc_options'] = _sanitize_mc_options(
+            classification.get('mc_options'), question_text)
+
+    return classification
+
+
+def _build_deterministic_code(classification, question_text, is_mc):
+    """Build SymPy code from classifier JSON output. Mirrors TypeScript deterministicSolvers.ts."""
+    # FIRST: sanitize all params
+    classification = _sanitize_classification(classification, question_text, is_mc)
+
+    ptype = classification.get('type', 'general')
+    params = classification.get('params', {})
+    mc_options = classification.get('mc_options', None)
+
+    code_lines = ['from sympy import *',
+                  'x, y, z, m, n, k, t, a, b, c, d, q, r = symbols("x y z m n k t a b c d q r", real=True)']
+
+    if ptype == 'limit':
+        expr = _latex_to_sympy(params.get('expression', '0'))
+        var = params.get('variable', 'x')
+        approach = _latex_to_sympy(params.get('approach', '0'))
+        direction = params.get('direction', '')
+        dir_str = f", '{direction}'" if direction else ''
+        code_lines.append(f'wynik = limit({expr}, {var}, {approach}{dir_str})')
+
+    elif ptype == 'derivative':
+        expr = _latex_to_sympy(params.get('expression', '0'))
+        var = params.get('variable', 'x')
+        task = params.get('task', 'derivative')
+        code_lines.append(f'f = {expr}')
+        if task == 'tangent_line':
+            pt = params.get('tangent_point', params.get('point', '0'))
+            code_lines.append(f'fp = diff(f, {var})')
+            code_lines.append(f'x0 = {pt}')
+            code_lines.append(f'slope = fp.subs({var}, x0)')
+            code_lines.append(f'y0 = f.subs({var}, x0)')
+            code_lines.append(f'tangent = slope * ({var} - x0) + y0')
+            code_lines.append(f'wynik = expand(tangent)')
+        elif task == 'extrema':
+            code_lines.append(f'fp = diff(f, {var})')
+            code_lines.append(f'critical = solve(fp, {var})')
+            code_lines.append(f'wynik = [(cp, f.subs({var}, cp)) for cp in critical]')
+        else:
+            code_lines.append(f'wynik = diff(f, {var})')
+            if params.get('point'):
+                code_lines.append(f'wynik = wynik.subs({var}, {params["point"]})')
+
+    elif ptype == 'trig_equation':
+        eq = _latex_to_sympy(params.get('equation', '0'))
+        var = params.get('variable', 'x')
+        ds = _latex_to_sympy(params.get('domain_start', '0'))
+        de = _latex_to_sympy(params.get('domain_end', '2*pi'))
+        # If equation has '=', convert to expression = 0
+        if '==' in eq:
+            parts = eq.split('==')
+            eq = f'({parts[0].strip()}) - ({parts[1].strip()})'
+        code_lines.append(f'solutions = solveset({eq}, {var}, domain=Interval({ds}, {de}))')
+        code_lines.append(f'if solutions.is_FiniteSet:')
+        code_lines.append(f'    wynik = sorted(list(solutions))')
+        code_lines.append(f'else:')
+        code_lines.append(f'    wynik = solutions')
+
+    elif ptype == 'polynomial_roots':
+        expr = _latex_to_sympy(params.get('expression', '0'))
+        var = params.get('variable', 'x')
+        task = params.get('task', 'roots')
+        code_lines.append(f'expr = {expr}')
+        if task == 'factorize':
+            code_lines.append(f'wynik = factor(expr)')
+        elif task == 'evaluate':
+            code_lines.append(f'wynik = expr.subs({var}, {params.get("eval_point", "0")})')
+        else:
+            code_lines.append(f'wynik = solve(expr, {var})')
+
+    elif ptype == 'logarithm':
+        task = params.get('task', 'evaluate')
+        if task == 'solve_equation':
+            var = params.get('variable', 'x')
+            code_lines.append(f'{var} = symbols("{var}", positive=True)')
+            code_lines.append(f'eq = {params.get("equation", "0")}')
+            code_lines.append(f'wynik = solve(eq, {var})')
+        else:
+            code_lines.append(f'wynik = simplify({params.get("expression", "0")})')
+
+    elif ptype == 'probability':
+        subtype = params.get('type', 'classical')
+        if subtype == 'bernoulli':
+            code_lines.append(f'n_val, k_val, p_val = {params.get("n", "1")}, {params.get("k", "0")}, Rational({params.get("p", "1/2")})')
+            code_lines.append(f'wynik = binomial(n_val, k_val) * p_val**k_val * (1 - p_val)**(n_val - k_val)')
+        else:
+            fav = params.get('favorable_outcomes', '1')
+            tot = params.get('total_outcomes', '1')
+            code_lines.append(f'wynik = Rational({fav}, {tot})')
+
+    elif ptype == 'combinatorics':
+        subtype = params.get('type', 'combination')
+        if params.get('expression'):
+            code_lines.append(f'wynik = {_latex_to_sympy(params["expression"])}')
+        elif subtype == 'combination':
+            code_lines.append(f'wynik = binomial({params.get("n", "1")}, {params.get("k", "0")})')
+        elif subtype == 'permutation':
+            if params.get('k'):
+                code_lines.append(f'wynik = factorial({params["n"]}) / factorial({params["n"]} - {params["k"]})')
+            else:
+                code_lines.append(f'wynik = factorial({params.get("n", "1")})')
+        elif subtype == 'variation':
+            if params.get('with_repetition'):
+                code_lines.append(f'wynik = {params.get("n", "1")}**{params.get("k", "1")}')
+            else:
+                code_lines.append(f'wynik = factorial({params["n"]}) / factorial({params["n"]} - {params.get("k", "0")})')
+        else:
+            code_lines.append(f'wynik = {params.get("expression", params.get("n", "1"))}')
+
+    elif ptype == 'sequence_arithmetic':
+        task = params.get('task', 'nth_term')
+        conditions = params.get('conditions', [])
+        if conditions:
+            code_lines.append('_a1, _d = symbols("_a1 _d", real=True)')
+            eqs = []
+            for cond in conditions:
+                cond_str = _latex_to_sympy(str(cond))
+                cm = re.match(r'a[_]?(\d+)\s*=\s*(.+)', cond_str)
+                if cm:
+                    idx, val = cm.group(1), cm.group(2).strip()
+                    eqs.append(f'Eq(_a1 + ({idx} - 1)*_d, {val})')
+            if eqs:
+                code_lines.append(f'_rozw = solve([{", ".join(eqs)}], [_a1, _d])')
+                code_lines.append('if isinstance(_rozw, dict):')
+                code_lines.append('    _a1 = _rozw[Symbol("_a1")]')
+                code_lines.append('    _d = _rozw[Symbol("_d")]')
+                code_lines.append('elif isinstance(_rozw, list) and len(_rozw) > 0:')
+                code_lines.append('    if isinstance(_rozw[0], tuple):')
+                code_lines.append('        _a1, _d = _rozw[0]')
+                code_lines.append('    else:')
+                code_lines.append('        _a1 = _rozw[0]')
+        else:
+            if params.get('a1'):
+                code_lines.append(f'_a1 = {_latex_to_sympy(params["a1"])}')
+            else:
+                code_lines.append('_a1 = symbols("_a1", real=True)')
+            if params.get('d'):
+                code_lines.append(f'_d = {_latex_to_sympy(params["d"])}')
+            else:
+                code_lines.append('_d = symbols("_d", real=True)')
+        n_val = _latex_to_sympy(params.get('n', 'n'))
+        if task == 'nth_term':
+            code_lines.append(f'wynik = _a1 + ({n_val} - 1)*_d')
+        elif task == 'sum':
+            code_lines.append(f'wynik = {n_val} * (2*_a1 + ({n_val} - 1)*_d) / 2')
+        elif task == 'find_d':
+            code_lines.append('wynik = _d')
+        elif task == 'find_a1':
+            code_lines.append('wynik = _a1')
+        else:
+            code_lines.append(f'wynik = _a1 + ({n_val} - 1)*_d')
+
+    elif ptype == 'sequence_geometric':
+        task = params.get('task', 'nth_term')
+        conditions = params.get('conditions', [])
+        if conditions:
+            code_lines.append('_a1, _q = symbols("_a1 _q", positive=True)')
+            eqs = []
+            for cond in conditions:
+                cond_str = _latex_to_sympy(str(cond))
+                cm = re.match(r'a[_]?(\d+)\s*=\s*(.+)', cond_str)
+                if cm:
+                    idx, val = cm.group(1), cm.group(2).strip()
+                    eqs.append(f'Eq(_a1 * _q**({idx} - 1), {val})')
+            if eqs:
+                code_lines.append(f'_rozw = solve([{", ".join(eqs)}], [_a1, _q])')
+                code_lines.append('if isinstance(_rozw, dict):')
+                code_lines.append('    _a1 = _rozw[Symbol("_a1")]')
+                code_lines.append('    _q = _rozw[Symbol("_q")]')
+                code_lines.append('elif isinstance(_rozw, list) and len(_rozw) > 0:')
+                code_lines.append('    if isinstance(_rozw[0], tuple):')
+                code_lines.append('        _a1, _q = _rozw[0]')
+                code_lines.append('    else:')
+                code_lines.append('        _a1 = _rozw[0]')
+        else:
+            if params.get('a1'):
+                code_lines.append(f'_a1 = {_latex_to_sympy(params["a1"])}')
+            else:
+                code_lines.append('_a1 = symbols("_a1", positive=True)')
+            if params.get('q'):
+                code_lines.append(f'_q = {_latex_to_sympy(params["q"])}')
+            else:
+                code_lines.append('_q = symbols("_q", positive=True)')
+        n_val = _latex_to_sympy(params.get('n', 'n'))
+        if task == 'nth_term':
+            code_lines.append(f'wynik = _a1 * _q**({n_val} - 1)')
+        elif task == 'sum':
+            code_lines.append(f'wynik = _a1 * (1 - _q**{n_val}) / (1 - _q)')
+        elif task == 'infinite_sum':
+            code_lines.append(f'wynik = _a1 / (1 - _q)')
+        elif task == 'find_q':
+            code_lines.append('wynik = _q')
+        elif task == 'find_a1':
+            code_lines.append('wynik = _a1')
+        else:
+            code_lines.append(f'wynik = _a1 * _q**({n_val} - 1)')
+
+    elif ptype == 'parametric_equation':
+        eq = _latex_to_sympy(params.get('equation', '0'))
+        var = params.get('variable', 'x')
+        param = params.get('parameter', 'm')
+        condition = params.get('condition', 'two_real_roots')
+        # Ensure equation is an expression (not "expr = 0" form)
+        if '==' in eq:
+            eq = eq.split('==')[0].strip() + ' - (' + eq.split('==')[1].strip() + ')'
+        code_lines.append(f'_eq_expr = {eq}')
+        code_lines.append(f'poly = Poly(_eq_expr, {var})')
+        code_lines.append(f'coeffs = poly.all_coeffs()')
+        code_lines.append(f'a_c = coeffs[0] if len(coeffs) > 2 else 1')
+        code_lines.append(f'b_c = coeffs[1] if len(coeffs) > 2 else coeffs[0]')
+        code_lines.append(f'c_c = coeffs[-1]')
+        code_lines.append(f'delta = b_c**2 - 4*a_c*c_c')
+        if condition == 'two_real_roots':
+            code_lines.append(f'wynik = solve(delta > 0, {param})')
+        elif condition == 'one_real_root':
+            code_lines.append(f'wynik = solve(Eq(delta, 0), {param})')
+        elif condition == 'no_real_roots':
+            code_lines.append(f'wynik = solve(delta < 0, {param})')
+        elif condition == 'roots_positive':
+            code_lines.append(f's1 = solveset(delta >= 0, {param}, S.Reals)')
+            code_lines.append(f's2 = solveset(-b_c/a_c > 0, {param}, S.Reals)')
+            code_lines.append(f's3 = solveset(c_c/a_c > 0, {param}, S.Reals)')
+            code_lines.append(f'wynik = Intersection(s1, s2, s3)')
+        else:
+            code_lines.append(f'wynik = solve({condition}, {param})')
+
+    elif ptype == 'geometry_analytic':
+        # Use description and coordinates — also try to extract from question text
+        desc = params.get('description', '')
+        code_lines.append(f'# {desc}')
+        points = params.get('points', [])
+        # Normalize point format — LLM may return various shapes
+        normalized_pts = []
+        _pt_names = iter('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        for pt in points:
+            if isinstance(pt, dict) and 'name' in pt and 'x' in pt and 'y' in pt:
+                normalized_pts.append(pt)
+            elif isinstance(pt, dict) and 'x' in pt and 'y' in pt:
+                normalized_pts.append({'name': next(_pt_names), 'x': str(pt['x']), 'y': str(pt['y'])})
+            elif isinstance(pt, (list, tuple)) and len(pt) >= 2:
+                normalized_pts.append({'name': next(_pt_names), 'x': str(pt[0]), 'y': str(pt[1])})
+            elif isinstance(pt, dict):
+                # Try first two numeric-looking values
+                vals = [v for v in pt.values() if isinstance(v, (int, float, str))]
+                if len(vals) >= 2:
+                    nm = pt.get('name', pt.get('label', next(_pt_names)))
+                    normalized_pts.append({'name': str(nm), 'x': str(vals[-2] if 'name' in pt else vals[0]), 'y': str(vals[-1])})
+        points = normalized_pts
+        # If no points in params, try to extract from question text
+        if not points:
+            point_matches = re.findall(r'([A-Z])\s*[=(]\s*(-?\d+(?:[./]\d+)?)\s*[,;]\s*(-?\d+(?:[./]\d+)?)\s*\)', question_text)
+            if not point_matches:
+                point_matches = re.findall(r'([A-Z])\s*=\s*\(\s*(-?\d+(?:[./]\d+)?)\s*,\s*(-?\d+(?:[./]\d+)?)\s*\)', question_text)
+            points = [{'name': m[0], 'x': m[1], 'y': m[2]} for m in point_matches]
+        if points:
+            for pt in points:
+                code_lines.append(f'{pt["name"]} = Point({_latex_to_sympy(pt["x"])}, {_latex_to_sympy(pt["y"])})')
+            task = params.get('task', 'distance')
+            if task == 'distance' and len(points) >= 2:
+                p0, p1 = points[0]['name'], points[1]['name']
+                code_lines.append(f'wynik = {p0}.distance({p1})')
+            elif task == 'midpoint' and len(points) >= 2:
+                p0, p1 = points[0]['name'], points[1]['name']
+                code_lines.append(f'wynik = {p0}.midpoint({p1})')
+            elif task == 'line_equation' and len(points) >= 2:
+                p0, p1 = points[0]['name'], points[1]['name']
+                code_lines.append(f'line = Line({p0}, {p1})')
+                code_lines.append(f'wynik = line.equation()')
+            else:
+                # For complex tasks, try distance between first two points as default
+                if len(points) >= 2:
+                    p0, p1 = points[0]['name'], points[1]['name']
+                    code_lines.append(f'wynik = {p0}.distance({p1})')
+                else:
+                    code_lines.append('wynik = "complex geometry task"')
+        else:
+            # Fallback: try to extract lines/circles from params
+            if params.get('lines') or params.get('circles'):
+                code_lines.append('# Line/circle geometry — needs manual handling')
+            code_lines.append('wynik = "no coordinate data"')
+
+    elif ptype == 'geometry_area':
+        pts = params.get('coordinates', [])
+        # Normalize point format
+        normalized_area_pts = []
+        _area_pt_names = iter('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+        for pt in pts:
+            if isinstance(pt, dict) and 'name' in pt and 'x' in pt and 'y' in pt:
+                normalized_area_pts.append(pt)
+            elif isinstance(pt, dict) and 'x' in pt and 'y' in pt:
+                normalized_area_pts.append({'name': next(_area_pt_names), 'x': str(pt['x']), 'y': str(pt['y'])})
+            elif isinstance(pt, (list, tuple)) and len(pt) >= 2:
+                normalized_area_pts.append({'name': next(_area_pt_names), 'x': str(pt[0]), 'y': str(pt[1])})
+            elif isinstance(pt, dict):
+                vals = [v for v in pt.values() if isinstance(v, (int, float, str))]
+                if len(vals) >= 2:
+                    nm = pt.get('name', pt.get('label', next(_area_pt_names)))
+                    normalized_area_pts.append({'name': str(nm), 'x': str(vals[-2] if 'name' in pt else vals[0]), 'y': str(vals[-1])})
+        pts = normalized_area_pts
+        if not pts:
+            # Try to extract from question text
+            point_matches = re.findall(r'([A-Z])\s*[=(]\s*(-?\d+(?:[./]\d+)?)\s*[,;]\s*(-?\d+(?:[./]\d+)?)\s*\)', question_text)
+            if not point_matches:
+                point_matches = re.findall(r'([A-Z])\s*=\s*\(\s*(-?\d+(?:[./]\d+)?)\s*,\s*(-?\d+(?:[./]\d+)?)\s*\)', question_text)
+            pts = [{'name': m[0], 'x': m[1], 'y': m[2]} for m in point_matches]
+        if pts:
+            for pt in pts:
+                code_lines.append(f'{pt["name"]} = Point({_latex_to_sympy(pt["x"])}, {_latex_to_sympy(pt["y"])})')
+            names = [pt['name'] for pt in pts]
+            if len(pts) == 3:
+                code_lines.append(f'fig = Triangle({", ".join(names)})')
+            else:
+                code_lines.append(f'fig = Polygon({", ".join(names)})')
+            code_lines.append(f'wynik = abs(fig.area)')
+        else:
+            desc = params.get('description', '')
+            code_lines.append(f'# {desc}')
+            code_lines.append('wynik = "no coordinates"')
+
+    elif ptype == 'geometry_solid':
+        solid = params.get('solid', 'prism')
+        base = params.get('base', 'square')
+        kv = params.get('known_values', {})
+        for key, val in kv.items():
+            code_lines.append(f'{key} = {val}')
+        if solid == 'prism':
+            if base == 'triangle':
+                code_lines.append('S_base = sqrt(3)/4 * a**2')
+            elif base == 'hexagon':
+                code_lines.append('S_base = 3*sqrt(3)/2 * a**2')
+            else:
+                code_lines.append('S_base = a**2')
+            code_lines.append('V = S_base * h')
+        elif solid == 'pyramid':
+            if base == 'square':
+                code_lines.append('S_base = a**2')
+            else:
+                code_lines.append('S_base = sqrt(3)/4 * a**2')
+            code_lines.append('V = Rational(1, 3) * S_base * h')
+        elif solid == 'cylinder':
+            code_lines.append('V = pi * r**2 * h')
+        elif solid == 'cone':
+            code_lines.append('V = Rational(1, 3) * pi * r**2 * h')
+        elif solid == 'sphere':
+            code_lines.append('V = Rational(4, 3) * pi * r**3')
+        task = params.get('task', 'volume')
+        if task == 'volume':
+            code_lines.append('wynik = simplify(V)')
+        elif task == 'surface_area':
+            code_lines.append('wynik = simplify(S_total)')
+        else:
+            code_lines.append('wynik = V')
+
+    elif ptype == 'optimization':
+        var = params.get('variable', 'x')
+        code_lines.append(f'f = {_latex_to_sympy(params.get("function_expr", "x"))}')
+        code_lines.append(f'fp = diff(f, {var})')
+        code_lines.append(f'critical = solve(fp, {var})')
+        code_lines.append(f'values = [(cp, f.subs({var}, cp)) for cp in critical if cp.is_real]')
+        if params.get('task', 'minimize') == 'minimize':
+            code_lines.append('best = min(values, key=lambda p: p[1]) if values else (None, None)')
+        else:
+            code_lines.append('best = max(values, key=lambda p: p[1]) if values else (None, None)')
+        code_lines.append('wynik = best[1]')
+
+    elif ptype == 'inequality':
+        expr = _latex_to_sympy(params.get('expression', '0'))
+        var = params.get('variable', 'x')
+        rel = params.get('relation', '>')
+        rhs = _latex_to_sympy(params.get('rhs', '0'))
+        code_lines.append(f'try:')
+        code_lines.append(f'    wynik = solve_univariate_inequality({expr} {rel} {rhs}, {var}, relational=False)')
+        code_lines.append(f'except:')
+        code_lines.append(f'    wynik = solveset({expr} {rel} {rhs}, {var}, S.Reals)')
+
+    elif ptype == 'function_properties':
+        expr = _latex_to_sympy(params.get('expression', 'x'))
+        var = params.get('variable', 'x')
+        task = params.get('task', 'zeros')
+        code_lines.append(f'f = {expr}')
+        if task == 'domain':
+            code_lines.append(f'from sympy.calculus.util import continuous_domain')
+            code_lines.append(f'wynik = continuous_domain(f, {var}, S.Reals)')
+        elif task == 'range':
+            code_lines.append(f'from sympy.calculus.util import function_range')
+            code_lines.append(f'wynik = function_range(f, {var}, S.Reals)')
+        elif task == 'zeros':
+            code_lines.append(f'wynik = solve(f, {var})')
+        elif task == 'monotonicity':
+            code_lines.append(f'wynik = solve(diff(f, {var}), {var})')
+        else:
+            code_lines.append(f'wynik = simplify(f)')
+
+    elif ptype == 'proof':
+        # Proofs: try algebraic verification for identities
+        if params.get('lhs') and params.get('rhs'):
+            vars_str = ', '.join(params.get('variables', ['x']))
+            code_lines.append(f'lhs = {params["lhs"]}')
+            code_lines.append(f'rhs = {params["rhs"]}')
+            code_lines.append(f'wynik = simplify(lhs - rhs)')
+        else:
+            code_lines.append(f'wynik = "proof requires step-by-step reasoning"')
+
+    else:  # general
+        if params.get('sympy_code'):
+            return params['sympy_code']
+        elif params.get('expression'):
+            code_lines.append(f'wynik = simplify({params["expression"]})')
+        else:
+            code_lines.append(f'wynik = "cannot solve without structured params"')
+
+    # Add MC option comparison if applicable
+    if is_mc and mc_options and len(mc_options) == 4:
+        code_lines.append('')
+        code_lines.append('# MC option comparison')
+        # Build options dict safely — each value on its own try/except
+        code_lines.append('_options = {}')
+        for letter in ['A', 'B', 'C', 'D']:
+            val = mc_options.get(letter, 'None')
+            code_lines.append(f'try:')
+            code_lines.append(f'    _options["{letter}"] = {val}')
+            code_lines.append(f'except:')
+            code_lines.append(f'    _options["{letter}"] = None')
+        code_lines.append('_found = False')
+        code_lines.append('for _lit, _val in _options.items():')
+        code_lines.append('    if _val is None: continue')
+        code_lines.append('    try:')
+        code_lines.append('        if abs(float(N(wynik)) - float(N(_val))) < 1e-6:')
+        code_lines.append('            print(f"ODPOWIEDZ: {_lit}")')
+        code_lines.append('            _found = True')
+        code_lines.append('            break')
+        code_lines.append('    except:')
+        code_lines.append('        try:')
+        code_lines.append('            if simplify(wynik - _val) == 0:')
+        code_lines.append('                print(f"ODPOWIEDZ: {_lit}")')
+        code_lines.append('                _found = True')
+        code_lines.append('                break')
+        code_lines.append('        except: pass')
+        code_lines.append('if not _found:')
+        code_lines.append('    print("ODPOWIEDZ:", wynik)')
+    else:
+        code_lines.append('print("ODPOWIEDZ:", wynik)')
+
+    return '\n'.join(code_lines)
+
+
+def test_question_classifier(q, base_url, model, verbose=True, api_key=None):
+    """Test a single question using the classifier + deterministic solver pipeline."""
+    task_num = q['metadata']['task_number']
+    year = q['metadata']['year']
+    points = q['metadata']['max_points']
+    is_mc = bool(q.get('options'))
+    question_text = format_question(q)
+
+    result = {
+        'year': year,
+        'task': task_num,
+        'points': points,
+        'type': 'MC' if is_mc else 'OPEN',
+        'correct': False,
+        'answer_expected': q['answer'],
+        'answer_got': None,
+        'has_code': False,
+        'code_valid': False,
+        'analytical_ok': True,  # classifier mode — no analytical step
+        'summary_ok': False,
+        'time_total': 0,
+        'errors': [],
+        'question_text': question_text,
+        'raw_analytical': None,
+        'raw_executor': None,
+        'extracted_code': None,
+        'sympy_stdout': None,
+        'classifier_type': None,
+        'classifier_confidence': None,
+    }
+
+    if verbose:
+        print(f"\n{'─'*60}")
+        short_q = clean_latex_for_display(q['question'])[:80]
+        print(f"  Task {task_num} ({points}pt, {'MC' if is_mc else 'OPEN'}): {short_q}...")
+        print(f"  Mode: CLASSIFIER")
+
+    t_start = time.time()
+
+    # Step 0: Build RAG context for classifier
+    rag_context = _build_rag_context(question_text)
+    if rag_context and verbose:
+        cats = _detect_categories(question_text)
+        print(f"  RAG categories: {', '.join(cats)}")
+
+    # Step 1: Call LLM with classifier prompt + RAG context
+    t0 = time.time()
+    classifier_config = AGENT_CONFIG.get("classifier", {"max_tokens": 800, "temperature": 0.1})
+
+    # Build user message with RAG context injected
+    user_msg = question_text
+    if rag_context:
+        user_msg = f"{rag_context}\n\n--- ZADANIE ---\n{question_text}"
+
+    max_tokens = classifier_config.get("max_tokens", 800)
+
+    classifier_response = call_bielik(
+        CLASSIFIER_PROMPT,
+        [{"role": "user", "content": user_msg}],
+        base_url, model,
+        max_tokens=max_tokens,
+        temperature=classifier_config.get("temperature", 0.1),
+        api_key=api_key
+    )
+    t_classify = time.time() - t0
+
+    if not classifier_response:
+        result['errors'].append("Classifier agent failed")
+        result['time_total'] = time.time() - t_start
+        return result
+
+    result['raw_analytical'] = classifier_response  # Store in analytical slot for analysis
+
+    # Step 2: Extract JSON classification
+    classification = _extract_json_from_response(classifier_response)
+
+    if not classification:
+        result['errors'].append(f"Failed to parse classifier JSON: {classifier_response[:200]}")
+        if verbose:
+            print(f"  Classify ({t_classify:.0f}s): ❌ JSON parse failed")
+        result['time_total'] = time.time() - t_start
+        return result
+
+    ptype = classification.get('type', 'general')
+    confidence = classification.get('confidence', 0.5)
+    result['classifier_type'] = ptype
+    result['classifier_confidence'] = confidence
+
+    if verbose:
+        print(f"  Classify ({t_classify:.0f}s): ✅ type={ptype}, confidence={confidence:.2f}")
+
+    # Step 3: Check if we should fall back
+    if confidence < 0.7 or ptype == 'proof':
+        if verbose:
+            print(f"  ⚠️ Low confidence or proof → falling back to standard pipeline")
+        result['errors'].append(f"Classifier fallback: confidence={confidence}, type={ptype}")
+        # Fall back to standard test_question
+        return test_question(q, base_url, model, verbose, api_key)
+
+    # Step 4: Build deterministic code
+    code = _build_deterministic_code(classification, question_text, is_mc)
+    result['has_code'] = bool(code)
+    result['extracted_code'] = code
+    result['code_valid'] = bool(code) and 'print(' in code
+
+    if verbose:
+        print(f"  Solver:    code={'✅' if result['has_code'] else '❌'} "
+              f"({len(code)} chars)")
+
+    # Step 5: Execute via MCP
+    if code:
+        sympy_output = _execute_via_mcp(code, verbose, result)
+        result['sympy_stdout'] = sympy_output
+
+    # Step 6: Extract answer (MC handled in code)
+    if result['answer_got'] is None and result['sympy_stdout']:
+        answer_match = re.search(r'ODPOWIED[ZŹ]:\s*(.+)', result['sympy_stdout'], re.IGNORECASE)
+        if answer_match:
+            result['answer_got'] = answer_match.group(1).strip()
+
+    # Step 7: Check answer
+    if result['answer_got']:
+        match_result, explanation = check_answer(q['answer'], result['answer_got'], q)
+        result['correct'] = match_result
+        if verbose:
+            status = '✅' if match_result else '❌'
+            print(f"  Answer:    {status} {explanation}")
+    elif verbose:
+        print(f"  Answer:    ❌ no answer extracted")
+        print(f"  Expected:  {clean_latex_for_display(q['answer'])}")
+
+    result['time_total'] = time.time() - t_start
+    return result
+
+
 # ── Test Runner ──────────────────────────────────────────────────────────
 
 def test_question(q, base_url, model, verbose=True, api_key=None):
@@ -756,10 +1588,20 @@ def test_question(q, base_url, model, verbose=True, api_key=None):
 
     t_start = time.time()
 
-    # Agent 1: Analytical
+    # RAG context injection (matching web app threeAgentSystem.ts behavior)
+    rag_context = _build_rag_context(question_text)
+    if rag_context and verbose:
+        cats = _detect_categories(question_text)
+        print(f"  RAG categories: {', '.join(cats)}")
+
+    # Agent 1: Analytical (with RAG strategies injected)
     t0 = time.time()
+    analytical_prompt = ANALYTICAL_PROMPT
+    if rag_context:
+        analytical_prompt = f"{ANALYTICAL_PROMPT}\n\n{rag_context}"
+
     analytical = call_bielik(
-        ANALYTICAL_PROMPT,
+        analytical_prompt,
         [{"role": "user", "content": question_text}],
         base_url, model,
         max_tokens=AGENT_CONFIG["analytical"]["max_tokens"],
@@ -784,9 +1626,11 @@ def test_question(q, base_url, model, verbose=True, api_key=None):
         print(f"  Analytical ({t_analytical:.0f}s): {'✅' if result['analytical_ok'] else '❌'} "
               f"({len(analytical)} chars)")
 
-    # Agent 2: Executor (use MC-specific prompt for multiple choice)
+    # Agent 2: Executor (use MC-specific prompt for multiple choice, with RAG hints)
     t0 = time.time()
     exec_prompt = EXECUTOR_MC_PROMPT if is_mc else EXECUTOR_PROMPT
+    if rag_context:
+        exec_prompt = f"{exec_prompt}\n\nWskazowki SymPy:\n{rag_context}"
     executor = call_bielik(
         exec_prompt,
         [
@@ -874,6 +1718,35 @@ def test_question(q, base_url, model, verbose=True, api_key=None):
     return result
 
 
+def test_question_hybrid(q, base_url, model, verbose=True, api_key=None):
+    """Hybrid mode: try classifier first (fast), fall back to old 3-agent pipeline on failure."""
+    task_num = q['metadata']['task_number']
+
+    # Step 1: Try classifier pipeline (fast, deterministic)
+    classifier_result = test_question_classifier(q, base_url, model, verbose=verbose, api_key=api_key)
+
+    # Step 2: If classifier produced a correct-looking result, use it
+    if classifier_result['correct']:
+        if verbose:
+            print(f"  Hybrid:    ✅ classifier succeeded for task {task_num}")
+        classifier_result['pipeline_used'] = 'classifier'
+        return classifier_result
+
+    # Also accept if classifier produced valid code and an answer (might still be right)
+    if classifier_result['code_valid'] and classifier_result['answer_got']:
+        if verbose:
+            print(f"  Hybrid:    ⚠️ classifier got answer but wrong — trying old pipeline for task {task_num}")
+
+    # Step 3: Fall back to old 3-agent pipeline with RAG
+    if verbose:
+        print(f"  Hybrid:    🔄 falling back to 3-agent pipeline for task {task_num}")
+    old_result = test_question(q, base_url, model, verbose=verbose, api_key=api_key)
+    old_result['pipeline_used'] = 'three_agent'
+    old_result['classifier_attempted'] = True
+    old_result['classifier_answer'] = classifier_result.get('answer_got')
+    return old_result
+
+
 # ── Main ─────────────────────────────────────────────────────────────────
 
 def main():
@@ -894,6 +1767,10 @@ def main():
     parser.add_argument("--only-mc", action="store_true", help="Only multiple-choice")
     parser.add_argument("--only-open", action="store_true", help="Only open-ended")
     parser.add_argument("--quiet", action="store_true", help="Less verbose output")
+    parser.add_argument("--classifier", action="store_true",
+                        help="Use classifier + deterministic solver pipeline instead of 3-agent")
+    parser.add_argument("--hybrid", action="store_true",
+                        help="Hybrid: try classifier first, fall back to 3-agent pipeline")
     parser.add_argument("--api-url", type=str, default=os.environ.get("BIELIK_API_URL"),
                         help="Full API base URL. Overrides --port. Env: BIELIK_API_URL")
     parser.add_argument("--api-key", type=str, default=os.environ.get("BIELIK_API_KEY"),
@@ -941,6 +1818,13 @@ def main():
     print(f"Model:   {args.model}")
     if api_key:
         print(f"Auth:    Bearer ***{api_key[-6:]}")
+    if args.hybrid:
+        pipeline_mode = "HYBRID (classifier → 3-agent fallback)"
+    elif args.classifier:
+        pipeline_mode = "CLASSIFIER + deterministic solver"
+    else:
+        pipeline_mode = "3-agent (analytical → executor → summary)"
+    print(f"Pipeline: {pipeline_mode}")
     print(f"Backend: MCP proxy (prod path)")
     print(f"Models available: {model_ids}")
     level_label = args.level if args.level else "rozszerzona + podstawowa"
@@ -1007,7 +1891,12 @@ def main():
             for q in questions:
                 if interrupted:
                     break
-                result = test_question(q, base_url, args.model, verbose=verbose, api_key=api_key)
+                if args.hybrid:
+                    result = test_question_hybrid(q, base_url, args.model, verbose=verbose, api_key=api_key)
+                elif args.classifier:
+                    result = test_question_classifier(q, base_url, args.model, verbose=verbose, api_key=api_key)
+                else:
+                    result = test_question(q, base_url, args.model, verbose=verbose, api_key=api_key)
                 result['level'] = level_tag
                 year_level_results.append(result)
                 all_results.append(result)

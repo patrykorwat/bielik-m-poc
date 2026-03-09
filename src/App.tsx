@@ -15,6 +15,7 @@ const DEFAULT_REMOTE_MODEL = import.meta.env.VITE_REMOTE_MODEL || 'speakleash/Bi
 
 function App() {
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
+  const [classifierMode, setClassifierMode] = useState(false);
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('ollama');
   const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:11434');
   const [mlxModel, setMlxModel] = useState('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
@@ -123,7 +124,8 @@ function App() {
 
       orchestratorRef.current = new ThreeAgentOrchestrator(
         proverBackend,
-        mlxConfig
+        mlxConfig,
+        classifierMode
       );
 
       // Connect to MCP server (SymPy)
@@ -377,6 +379,22 @@ function App() {
               <option value="sympy">Tylko SymPy (obliczenia numeryczne/symboliczne)</option>
               <option value="lean">Tylko Lean Prover (formalne dowody)</option>
             </select>
+
+            <div style={{ marginTop: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={classifierMode}
+                  onChange={(e) => setClassifierMode(e.target.checked)}
+                />
+                <span>🔍 Tryb Klasyfikatora (deterministyczny solver)</span>
+              </label>
+              {classifierMode && (
+                <div className="info-box" style={{ marginTop: '5px', padding: '8px', backgroundColor: '#d4edda', border: '1px solid #28a745', borderRadius: '4px', fontSize: '0.85em' }}>
+                  Model klasyfikuje typ zadania → deterministyczny kod SymPy → MCP. Mniej tokenów, stabilniejsze wyniki.
+                </div>
+              )}
+            </div>
 
             {proverBackend === 'lean' && (
               <div className="info-box" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '4px' }}>

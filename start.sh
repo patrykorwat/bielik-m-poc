@@ -300,7 +300,7 @@ fi
 print_info "Starting Lean Proxy on port 3002..."
 npm run lean-proxy > logs/lean-proxy.log 2>&1 &
 LEAN_PID=$!
-sleep 3
+sleep 8
 
 if kill -0 $LEAN_PID 2>/dev/null && port_in_use 3002; then
     print_success "Lean Proxy started (PID: $LEAN_PID)"
