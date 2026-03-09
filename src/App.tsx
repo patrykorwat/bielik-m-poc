@@ -10,8 +10,9 @@ import './App.css';
 
 const MCP_PROXY_URL = import.meta.env.VITE_MCP_PROXY_URL || 'http://localhost:3001';
 const LEAN_PROXY_URL = import.meta.env.VITE_LEAN_PROXY_URL || 'http://localhost:3002';
-const DEFAULT_REMOTE_API_URL = import.meta.env.VITE_REMOTE_API_URL ;
 const DEFAULT_REMOTE_MODEL = import.meta.env.VITE_REMOTE_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
+// Remote API URL is never exposed to client — all LLM calls route through MCP proxy /llm-proxy
+const DEFAULT_REMOTE_API_URL = MCP_PROXY_URL;
 
 function App() {
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
@@ -70,15 +71,35 @@ function App() {
   }, [inputMessage]);
 
   // Check if proxy has API key configured (key stays server-side)
+  // If yes, auto-configure as remote and skip config screen → go straight to chat
   useEffect(() => {
     fetch(`${MCP_PROXY_URL}/llm-proxy/config`)
       .then(res => res.json())
-      .then(data => {
+      .then(async (data) => {
         if (data.hasApiKey) {
           setProxyHasApiKey(true);
           setLlmProvider('remote');
           setMlxBaseUrl(DEFAULT_REMOTE_API_URL);
           setMlxModel(DEFAULT_REMOTE_MODEL);
+
+          // Auto-start: skip config screen, connect MCP, go to chat
+          try {
+            const mlxConfig: MLXConfig = {
+              provider: 'remote',
+              baseUrl: DEFAULT_REMOTE_API_URL,
+              model: DEFAULT_REMOTE_MODEL,
+              temperature: 0.7,
+              maxTokens: 4096,
+            };
+            orchestratorRef.current = new ThreeAgentOrchestrator('sympy', mlxConfig, false);
+            await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
+            setMcpConnected(true);
+            const newChatId = ChatHistoryService.generateChatId();
+            setCurrentChatId(newChatId);
+            setIsConfigured(true);
+          } catch (err) {
+            console.warn('Auto-configure failed, showing config screen:', err);
+          }
         }
       })
       .catch(() => { /* proxy not ready yet, ignore */ });

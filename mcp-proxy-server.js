@@ -15,8 +15,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.MCP_PORT || 3001;
 const DEFAULT_API_KEY = process.env.LLM_API_KEY || '';
+const DEFAULT_LLM_URL = process.env.LLM_API_URL || '';  // Server-side remote LLM URL (never sent to client)
 
 // Enable CORS for browser access
 app.use(cors());
@@ -213,11 +214,16 @@ app.post('/tools/call', async (req, res) => {
  */
 app.post('/llm-proxy', async (req, res) => {
   try {
-    const { targetUrl, apiKey: reqApiKey, payload } = req.body;
+    const { targetUrl: clientUrl, apiKey: reqApiKey, payload } = req.body;
     const apiKey = reqApiKey || DEFAULT_API_KEY;
 
+    // Use server-side URL if configured, otherwise fall back to client-provided URL
+    const targetUrl = DEFAULT_LLM_URL
+      ? `${DEFAULT_LLM_URL}/v1/chat/completions`
+      : clientUrl;
+
     if (!targetUrl) {
-      return res.status(400).json({ error: 'targetUrl is required' });
+      return res.status(400).json({ error: 'targetUrl is required (or set LLM_API_URL env var)' });
     }
 
     const headers = { 'Content-Type': 'application/json' };
@@ -252,11 +258,15 @@ app.post('/llm-proxy', async (req, res) => {
  */
 app.get('/llm-proxy/models', async (req, res) => {
   try {
-    const { targetUrl, apiKey: reqApiKey } = req.query;
+    const { targetUrl: clientUrl, apiKey: reqApiKey } = req.query;
     const apiKey = reqApiKey || DEFAULT_API_KEY;
 
+    const targetUrl = DEFAULT_LLM_URL
+      ? `${DEFAULT_LLM_URL}/v1/models`
+      : clientUrl;
+
     if (!targetUrl) {
-      return res.status(400).json({ error: 'targetUrl query param is required' });
+      return res.status(400).json({ error: 'targetUrl query param is required (or set LLM_API_URL env var)' });
     }
 
     const headers = {};
@@ -286,6 +296,7 @@ app.get('/llm-proxy/models', async (req, res) => {
 app.get('/llm-proxy/config', (_req, res) => {
   res.json({
     hasApiKey: !!DEFAULT_API_KEY,
+    hasLlmUrl: !!DEFAULT_LLM_URL,
   });
 });
 
