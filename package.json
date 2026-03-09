@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Asystent matematyczny dla maturzystów - rozwiązywanie zadań maturalnych krok po kroku z użyciem AI",
   "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -12,7 +15,8 @@
     "lean-proxy": "node lean-proxy-server.js",
     "rag-service": "cd rag_service && source venv/bin/activate && python main.py",
     "start:proxies": "concurrently \"npm run mcp-proxy\" \"npm run lean-proxy\"",
-    "start:all": "concurrently \"npm run dev\" \"npm run mcp-proxy\" \"npm run lean-proxy\" \"npm run rag-service\""
+    "start:all": "concurrently \"npm run dev\" \"npm run mcp-proxy\" \"npm run lean-proxy\" \"npm run rag-service\"",
+    "heroku-postbuild": "npm run build && cd mcp-sympy-server && npm install && npm run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
@@ -20,7 +24,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "html2canvas": "^1.4.1",
-    "katex": "^0.16.28",
+"katex": "^0.16.28",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-katex": "^3.1.0",

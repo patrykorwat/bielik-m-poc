@@ -8,14 +8,16 @@
  * 2. Reverse-proxies /api/mcp/* → MCP proxy (localhost:MCP_PORT)
  * 3. Reverse-proxies /api/rag/*  → RAG service (localhost:RAG_PORT)
  * 4. Spawns MCP proxy + RAG service as child processes
+ *
+ * Uses only built-in Node modules + express (already a dependency).
  */
 
 import express from 'express';
-import { spawn } from 'child_process';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { existsSync } from 'fs';
+import http from 'node:http';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { existsSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,7 +54,7 @@ function spawnChild(label, command, args, env = {}) {
 
 // Start MCP proxy
 console.log(`Starting MCP proxy on localhost:${MCP_PORT}...`);
-spawnChild('mcp-proxy', 'node', ['mcp-proxy-server.js'], { MCP_PORT });
+spawnChild('mcp-proxy', 'node', ['mcp-proxy-server.js'], { MCP_PORT: String(MCP_PORT) });
 
 // Start RAG service
 console.log(`Starting RAG service on localhost:${RAG_PORT}...`);
@@ -60,48 +62,51 @@ const pythonCmd = existsSync(join(__dirname, 'rag_service', 'venv', 'bin', 'pyth
   ? join(__dirname, 'rag_service', 'venv', 'bin', 'python3')
   : 'python3';
 spawnChild('rag', pythonCmd, [join(__dirname, 'rag_service', 'main.py')], {
-  RAG_PORT,
+  RAG_PORT: String(RAG_PORT),
   RAG_HOST: '127.0.0.1',
 });
 
 // Give child processes a moment to start
 await new Promise((resolve) => setTimeout(resolve, 3000));
 
-// ── Reverse proxies ─────────────────────────────────────────────────────
+// ── Reverse proxy helper (pure Node http) ───────────────────────────────
 
-app.use(
-  '/api/mcp',
-  createProxyMiddleware({
-    target: `http://127.0.0.1:${MCP_PORT}`,
-    changeOrigin: true,
-    pathRewrite: { '^/api/mcp': '' },
-    ws: true,
-    onError: (err, req, res) => {
-      console.error('[proxy:mcp] error:', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'MCP proxy unavailable' });
-      }
-    },
-  })
-);
+function proxyRequest(prefix, targetPort, req, res) {
+  const targetPath = req.originalUrl.replace(prefix, '') || '/';
+  const options = {
+    hostname: '127.0.0.1',
+    port: targetPort,
+    path: targetPath,
+    method: req.method,
+    headers: { ...req.headers, host: `127.0.0.1:${targetPort}` },
+  };
 
-app.use(
-  '/api/rag',
-  createProxyMiddleware({
-    target: `http://127.0.0.1:${RAG_PORT}`,
-    changeOrigin: true,
-    pathRewrite: { '^/api/rag': '' },
-    onError: (err, req, res) => {
-      console.error('[proxy:rag] error:', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({ error: 'RAG service unavailable' });
-      }
-    },
-  })
-);
+  const proxyReq = http.request(options, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode, proxyRes.headers);
+    proxyRes.pipe(res, { end: true });
+  });
 
-// ── Health endpoint ─────────────────────────────────────────────────────
+  proxyReq.on('error', (err) => {
+    console.error(`[proxy] ${prefix} error:`, err.message);
+    if (!res.headersSent) {
+      res.status(502).json({ error: `Service unavailable: ${err.message}` });
+    }
+  });
 
+  req.pipe(proxyReq, { end: true });
+}
+
+// ── Routes ──────────────────────────────────────────────────────────────
+
+// Proxy /api/mcp/* → localhost:MCP_PORT/*
+app.all('/api/mcp/*', (req, res) => proxyRequest('/api/mcp', MCP_PORT, req, res));
+app.all('/api/mcp', (req, res) => proxyRequest('/api/mcp', MCP_PORT, req, res));
+
+// Proxy /api/rag/* → localhost:RAG_PORT/*
+app.all('/api/rag/*', (req, res) => proxyRequest('/api/rag', RAG_PORT, req, res));
+app.all('/api/rag', (req, res) => proxyRequest('/api/rag', RAG_PORT, req, res));
+
+// Health endpoint
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -144,11 +149,7 @@ app.listen(PORT, () => {
 function shutdown(signal) {
   console.log(`\n${signal} received — shutting down child processes...`);
   for (const child of children) {
-    try {
-      child.kill('SIGTERM');
-    } catch (e) {
-      // ignore
-    }
+    try { child.kill('SIGTERM'); } catch (e) { /* ignore */ }
   }
   setTimeout(() => process.exit(0), 2000);
 }
