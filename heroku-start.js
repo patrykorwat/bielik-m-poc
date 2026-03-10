@@ -67,14 +67,23 @@ spawnChild('rag', pythonCmd, [join(__dirname, 'rag_service', 'main.py')], {
 });
 
 let bot_active = false;
+let bot_status = 'not_started';
+let bot_pid = null;
 
 // Start Discord bot (optional — only if DISCORD_TOKEN is set)
 if (process.env.DISCORD_TOKEN) {
   console.log('Starting Discord bot...');
-  spawnChild('discord-bot', 'node', ['discord-bot.js']);
+  const botChild = spawnChild('discord-bot', 'node', ['discord-bot.js']);
   bot_active = true;
+  bot_status = 'spawned';
+  bot_pid = botChild.pid;
+  botChild.on('exit', (code) => {
+    bot_status = `exited(${code})`;
+    bot_active = false;
+  });
 } else {
   console.log('DISCORD_TOKEN not set — skipping Discord bot');
+  bot_status = 'no_token';
 }
 
 // Give child processes a moment to start
@@ -124,6 +133,11 @@ app.get('/health', (req, res) => {
     services: {
       mcp: `http://127.0.0.1:${MCP_PORT}`,
       rag: `http://127.0.0.1:${RAG_PORT}`,
+    },
+    bot: {
+      active: bot_active,
+      status: bot_status,
+      pid: bot_pid,
     },
   });
 });

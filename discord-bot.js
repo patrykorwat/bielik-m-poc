@@ -388,6 +388,11 @@ client.on('messageCreate', async (message) => {
   }
 });
 
+console.log('[discord-bot] Attempting login...');
+console.log(`[discord-bot] DISCORD_CHANNEL_ID: ${DISCORD_CHANNEL_ID}`);
+console.log(`[discord-bot] LLM_API_URL: ${LLM_API_URL || 'MISSING'}`);
+console.log(`[discord-bot] LLM_API_KEY: ${LLM_API_KEY ? 'set' : 'MISSING'}`);
+
 client.login(DISCORD_TOKEN).catch((err) => {
   console.error('[discord-bot] Login failed:', err.message);
   process.exit(1);
