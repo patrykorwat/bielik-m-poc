@@ -688,45 +688,109 @@ def _build_digit_counting_solver_code(n_odd, n_even, no_repeats):
     return '\n'.join(lines)
 
 
-def _detect_inscribed_triangle_params(problem_text):
-    """Detect 'triangle inscribed in circle, perimeter constraint, side ratio, optimize area' pattern.
-    Returns dict with params or None."""
-    text = problem_text.lower()
+def _detect_triangle_optimization_params(problem_text):
+    """Detect triangle optimization/computation problems using Heron's formula.
 
-    # Must mention triangle + circle + inscribed
-    has_triangle = bool(re.search(r'trójk[aą]t|trojk[aą]t', text))
-    has_circle = bool(re.search(r'okr[ęeą]g|okręg', text))
-    has_inscribed = bool(re.search(r'wpisan|wpisane|wpisany', text))
-    has_area = bool(re.search(r'pole|area', text))
-    has_maximize = bool(re.search(r'największ|maksymal|najwększ|możliwie największ', text))
+    Handles multiple sub-patterns:
+      A) Triangle inscribed in circle + perimeter + side ratio → max area
+      B) Isosceles triangle + perimeter → max area / area as function of side
+      C) Triangle with given numeric sides → compute area (direct Heron)
+      D) Triangle + perimeter + side ratio (no circle) → max area
 
-    if not (has_triangle and has_circle and has_inscribed and has_area):
+    Returns dict with 'subtype' and parameters, or None."""
+    # Normalize Unicode math symbols (𝑅→R, 𝑎→a, etc.) to ASCII for regex matching
+    import unicodedata
+    normalized = problem_text
+    # Replace Mathematical Italic/Bold letters with ASCII equivalents
+    def _normalize_math_char(ch):
+        cp = ord(ch)
+        if 0x1D400 <= cp <= 0x1D419: return chr(65 + cp - 0x1D400)  # Bold A-Z
+        if 0x1D41A <= cp <= 0x1D433: return chr(97 + cp - 0x1D41A)  # Bold a-z
+        if 0x1D434 <= cp <= 0x1D44D: return chr(65 + cp - 0x1D434)  # Italic A-Z
+        if 0x1D44E <= cp <= 0x1D467: return chr(97 + cp - 0x1D44E)  # Italic a-z
+        if 0x1D468 <= cp <= 0x1D481: return chr(65 + cp - 0x1D468)  # Bold Italic A-Z
+        if 0x1D482 <= cp <= 0x1D49B: return chr(97 + cp - 0x1D482)  # Bold Italic a-z
+        if 0x1D7CE <= cp <= 0x1D7D7: return chr(48 + cp - 0x1D7CE)  # Bold digits
+        return ch
+    normalized = ''.join(_normalize_math_char(ch) for ch in normalized)
+    text = normalized.lower()
+
+    has_triangle = bool(re.search(r'tr[oó]jk[aą]t', text))
+    if not has_triangle:
         return None
 
-    # Extract radius reference (usually R or a number)
-    radius_match = re.search(r'promieni[ue]?\s+(?:równ\w+\s+)?(\w+|\d+)', text)
+    has_area = bool(re.search(r'pol[eua]|area', text))
+    has_maximize = bool(re.search(r'największ|maksymal|najwększ|możliwie największ|najmniejsz', text))
+    has_circle = bool(re.search(r'okr[ęeą]g', text))
+    has_inscribed = bool(re.search(r'wpisan', text))
+    has_isosceles = bool(re.search(r'równoramienn', text))
+    has_perimeter = bool(re.search(r'obw[oó]d', text))
+
+    # ─── Sub-pattern C: Direct Heron (given 3 numeric side lengths) ───
+    if has_area and not has_maximize:
+        # "trójkąt o bokach 3, 4, 5" or "boki trójkąta mają długości a=3, b=5, c=7"
+        sides_m = re.search(
+            r'bok(?:ach|i|ów)?\s+(?:o\s+długości(?:ach)?\s+)?'
+            r'(?:\$?(\d+(?:[.,]\d+)?)\$?\s*[,;]\s*\$?(\d+(?:[.,]\d+)?)\$?\s*(?:[,;i]\s*(?:i\s+)?)\$?(\d+(?:[.,]\d+)?)\$?)',
+            text
+        )
+        if not sides_m:
+            # Try: "długości boków ... wynoszą 3, 5, 7"
+            sides_m = re.search(
+                r'długoś\w+\s+bok\w*.*?(\d+(?:[.,]\d+)?)\s*[,;]\s*(\d+(?:[.,]\d+)?)\s*(?:[,;i]\s*(?:i\s+)?)?(\d+(?:[.,]\d+)?)',
+                text
+            )
+        if sides_m:
+            try:
+                a = float(sides_m.group(1).replace(',', '.'))
+                b = float(sides_m.group(2).replace(',', '.'))
+                c = float(sides_m.group(3).replace(',', '.'))
+                if a + b > c and b + c > a and a + c > b:
+                    return {
+                        'subtype': 'direct_heron',
+                        'sides': (a, b, c),
+                    }
+            except:
+                pass
+
+    if not has_area:
+        return None
+
+    # ─── Extract perimeter (numeric or symbolic) ───
+    perimeter_value = None    # numeric perimeter (e.g. 18)
+    perimeter_mult = None     # symbolic: perimeter = k*R
     radius_symbol = 'R'
-    if radius_match:
-        radius_symbol = radius_match.group(1).upper()
-        if radius_symbol in ('RÓWN', 'RÓWNY', 'RÓWNYM'):
-            # Try to grab the next word
-            m2 = re.search(r'promieni\w*\s+równ\w+\s+(\w+)', text)
-            if m2:
-                radius_symbol = m2.group(1).upper()
 
-    # Extract perimeter constraint: "obwód/obwody równe kR" or "obwód = kR"
-    perimeter_mult = None
-    # Pattern: "obwod/obwody/obwodzie (równe/równy/równym/=) <number>R" or "<number>*R"
-    perim_m = re.search(r'obw[oó]d\w*\s+(?:równ\w+\s+|=\s*)?(\d+)\s*[·\*]?\s*' + radius_symbol.lower(), text)
-    if not perim_m:
-        perim_m = re.search(r'obw[oó]d\w*\s+(?:równ\w+\s+|=\s*)?(\d+)\s*r\b', text)
-    if perim_m:
-        perimeter_mult = int(perim_m.group(1))
+    # Numeric perimeter: "obwód równy 18" or "obwodzie równym 18" or "obwody równe 3R"
+    perim_num_m = re.search(r'obw[oó]d\w*\s+(?:równ\w*\s+|=\s*)?(\d+)', text)
+    if perim_num_m:
+        val_str = perim_num_m.group(1)
+        # Check if followed by R (symbolic) or just a number
+        after = text[perim_num_m.end():]
+        if re.match(r'\s*[·*]?\s*r\b', after) or re.match(r'[·*]?\s*r\b', after):
+            perimeter_mult = int(val_str)
+        elif re.match(r'\s', after) or after == '' or re.match(r'[.,;]', after):
+            perimeter_value = int(val_str)
+        else:
+            # "3r" without space — still symbolic
+            if re.match(r'r\b', after):
+                perimeter_mult = int(val_str)
+            else:
+                perimeter_value = int(val_str)
 
-    if perimeter_mult is None:
-        return None
+    # If we have a circle, extract radius symbol
+    if has_circle:
+        radius_match = re.search(r'promieni[ue]?\s+(?:równ\w+\s+)?(\w+|\d+)', text)
+        if radius_match:
+            rs = radius_match.group(1).upper()
+            if rs not in ('RÓWN', 'RÓWNY', 'RÓWNYM'):
+                radius_symbol = rs
+            else:
+                m2 = re.search(r'promieni\w*\s+równ\w+\s+(\w+)', text)
+                if m2:
+                    radius_symbol = m2.group(1).upper()
 
-    # Extract side ratio: "jeden bok dwukrotnie dłuższy", "bok jest dwa razy dłuższy", etc.
+    # ─── Extract side ratio ───
     side_ratio = None
     polish_multipliers = {
         'dwukrotnie': 2, 'dwa razy': 2, 'dwukrotn': 2,
@@ -737,32 +801,97 @@ def _detect_inscribed_triangle_params(problem_text):
         if keyword in text:
             side_ratio = mult
             break
-
     if side_ratio is None:
-        # Try pattern: "<number> razy dłuższy"
         ratio_m = re.search(r'(\d+)\s+raz[ey]\s+dłuż', text)
         if ratio_m:
             side_ratio = int(ratio_m.group(1))
 
-    if side_ratio is None:
+    # ─── Sub-pattern A: Inscribed in circle + perimeter + side ratio ───
+    if has_circle and has_inscribed and perimeter_mult and side_ratio:
+        return {
+            'subtype': 'inscribed_circle',
+            'perimeter_mult': perimeter_mult,
+            'side_ratio': side_ratio,
+            'radius_symbol': radius_symbol,
+            'maximize': has_maximize,
+        }
+
+    # ─── Sub-pattern B: Isosceles + perimeter → max area ───
+    if has_isosceles and has_perimeter and (perimeter_value is not None) and has_maximize:
+        return {
+            'subtype': 'isosceles_perimeter',
+            'perimeter': perimeter_value,
+            'maximize': True,
+        }
+
+    # ─── Sub-pattern D: Perimeter + side ratio (no circle) → optimize area ───
+    if has_perimeter and side_ratio and (perimeter_value is not None) and has_maximize:
+        return {
+            'subtype': 'perimeter_ratio',
+            'perimeter': perimeter_value,
+            'side_ratio': side_ratio,
+            'maximize': True,
+        }
+
+    return None
+
+
+def _build_triangle_optimization_code(params):
+    """Generate SymPy code for triangle optimization/computation problems.
+    Dispatches to the appropriate sub-solver based on subtype."""
+    subtype = params['subtype']
+
+    if subtype == 'direct_heron':
+        return _build_direct_heron_code(params['sides'])
+    elif subtype == 'inscribed_circle':
+        return _build_inscribed_circle_code(params)
+    elif subtype == 'isosceles_perimeter':
+        return _build_isosceles_perimeter_code(params)
+    elif subtype == 'perimeter_ratio':
+        return _build_perimeter_ratio_code(params)
+    else:
         return None
 
-    return {
-        'perimeter_mult': perimeter_mult,  # e.g. 3 for perimeter = 3R
-        'side_ratio': side_ratio,           # e.g. 2 for "one side twice another"
-        'radius_symbol': radius_symbol,
-        'maximize': has_maximize,
-    }
+
+def _build_direct_heron_code(sides):
+    """Sub-pattern C: Given 3 numeric sides, compute area via Heron's formula."""
+    a, b, c = sides
+    return f"""from sympy import *
+
+# Obliczanie pola trójkąta o bokach {a}, {b}, {c} wzorem Herona
+
+a, b, c = Rational('{a}'), Rational('{b}'), Rational('{c}')
+print(f"Boki trójkąta: a = {{a}}, b = {{b}}, c = {{c}}")
+
+# Krok 1: Sprawdzenie nierówności trójkąta
+assert a + b > c and b + c > a and a + c > b, "Nierówność trójkąta nie jest spełniona!"
+print("Nierówność trójkąta: spełniona ✓")
+
+# Krok 2: Półobwód
+s = (a + b + c) / 2
+print(f"Półobwód: s = ({{a}} + {{b}} + {{c}}) / 2 = {{s}}")
+
+# Krok 3: Wzór Herona: P = √(s(s-a)(s-b)(s-c))
+pole_sq = s * (s - a) * (s - b) * (s - c)
+print(f"s(s-a)(s-b)(s-c) = {{s}}·{{s-a}}·{{s-b}}·{{s-c}} = {{pole_sq}}")
+
+pole = sqrt(pole_sq)
+pole_simplified = simplify(pole)
+print(f"Pole = √{{pole_sq}} = {{pole_simplified}}")
+
+# Wynik
+print(f"ODPOWIEDZ: {{pole_simplified}}")
+"""
 
 
-def _build_inscribed_triangle_solver_code(params):
-    """Generate SymPy code that solves the inscribed triangle optimization problem.
-    Produces proper mathematical steps suitable for a matura student."""
-    k = params['perimeter_mult']      # perimeter = k*R
-    n = params['side_ratio']           # one side = n * another
-    R_sym = params['radius_symbol']    # typically 'R'
+def _build_inscribed_circle_code(params):
+    """Sub-pattern A: Triangle inscribed in circle + perimeter + side ratio → max area."""
+    k = params['perimeter_mult']
+    n = params['side_ratio']
+    R_sym = params['radius_symbol']
+    n1 = n + 1
 
-    code = f"""from sympy import *
+    return f"""from sympy import *
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -773,116 +902,216 @@ warnings.filterwarnings('ignore')
 # ══════════════════════════════════════════════════════════════════
 
 {R_sym} = symbols('{R_sym}', positive=True)
-t = symbols('t', positive=True)  # parametr: krótszy bok = t * {R_sym}
+t = symbols('t', positive=True)
 
-# Krok 1: Wyznaczenie boków trójkąta
-# Niech krótszy bok = t·{R_sym}, dłuższy bok = {n}·t·{R_sym}
-# Z warunku obwodu: krótszy + dłuższy + trzeci = {k}·{R_sym}
-# t·{R_sym} + {n}·t·{R_sym} + c = {k}·{R_sym}
-# c = {R_sym}·({k} - {n+1}·t)
+# Krok 1: Boki trójkąta (krótszy = t·{R_sym}, dłuższy = {n}t·{R_sym}, trzeci z obwodu)
+a_expr = {n} * t * {R_sym}
+b_expr = t * {R_sym}
+c_expr = ({k} - {n1}*t) * {R_sym}
+print(f"Boki: a={n}t·{R_sym}, b=t·{R_sym}, c=({k}-{n1}t)·{R_sym}")
 
-a_expr = {n} * t * {R_sym}       # bok dłuższy = {n}t·{R_sym}
-b_expr = t * {R_sym}              # bok krótszy = t·{R_sym}
-c_expr = ({k} - {n + 1}*t) * {R_sym}  # trzeci bok
-
-print(f"Boki trójkąta: a = {n}t·{R_sym}, b = t·{R_sym}, c = ({k}-{n+1}t)·{R_sym}")
-
-# Krok 2: Warunki trójkąta (nierówność trójkąta)
-# a + b > c:  {n}t + t > {k} - {n+1}t  =>  {2*(n+1)}t > {k}  =>  t > {k}/{2*(n+1)}
-# b + c > a:  t + {k} - {n+1}t > {n}t  =>  {k} - {2*n}t > 0  =>  t < {k}/{2*n}
-# a + c > b:  {n}t + {k} - {n+1}t > t  =>  {k} > 2t  =>  t < {k}/2
-# Więc: {k}/{2*(n+1)} < t < {k}/{2*n}
-
-t_min = Rational({k}, {2*(n+1)})
+# Krok 2: Nierówność trójkąta → t ∈ ({k}/{2*n1}, {k}/{2*n})
+t_min = Rational({k}, {2*n1})
 t_max = Rational({k}, {2*n})
-print(f"Nierówność trójkąta: t ∈ ({{t_min}}, {{t_max}})")
+print(f"Zakres t: ({{t_min}}, {{t_max}})")
 
-# Krok 3: Pole trójkąta ze wzoru Herona
-s = Rational({k}, 2) * {R_sym}  # półobwód = {k}{R_sym}/2
-print(f"Półobwód: s = {k}/2 · {R_sym}")
+# Krok 3: Pole ze wzoru Herona
+s = Rational({k}, 2) * {R_sym}
+Area_sq = expand(s * (s - a_expr) * (s - b_expr) * (s - c_expr))
+print(f"Pole² (Heron): {{factor(Area_sq)}}")
 
-Area_sq = s * (s - a_expr) * (s - b_expr) * (s - c_expr)
-Area_sq_simplified = expand(Area_sq)
-print(f"Pole² (Heron): {{factor(Area_sq_simplified)}}")
-
-# Krok 4: Warunek wpisania w okrąg o promieniu {R_sym}
-# Promień okręgu opisanego: R_opis = a·b·c / (4·Pole)
-# Musi zachodzić: R_opis = {R_sym}
-# Więc: a·b·c = 4·{R_sym}·Pole
-# Podnosząc do kwadratu: (a·b·c)² = 16·{R_sym}²·Pole²
-
+# Krok 4: Warunek okręgu opisanego: R_opis = abc/(4·Pole) = {R_sym}
+# → (abc)² = 16·{R_sym}²·Pole²
 abc = a_expr * b_expr * c_expr
-print(f"a·b·c = {{factor(expand(abc))}}")
+equation = expand(abc**2 - 16 * {R_sym}**2 * Area_sq)
+eq_t = simplify(equation / {R_sym}**6)
+print(f"Równanie: {{Poly(eq_t, t).as_expr()}} = 0")
 
-# Równanie: (abc)² = 16·{R_sym}²·Pole²(Heron)
-equation = expand(abc**2 - 16 * {R_sym}**2 * Area_sq_simplified)
-
-# Upraszczamy dzieląc przez {R_sym}^6 (wszystko jest proporcjonalne do {R_sym}^6)
-equation_in_t = simplify(equation / {R_sym}**6)
-print(f"Równanie w t (po podzieleniu przez {R_sym}⁶):")
-equation_poly = Poly(equation_in_t, t)
-print(f"  {{equation_poly.as_expr()}} = 0")
-
-# Krok 5: Rozwiązanie równania
-solutions = solve(equation_in_t, t)
-print(f"Rozwiązania: {{len(solutions)}} (łącznie z zespolonymi)")
-
-# Filtrujemy rozwiązania z poprawnego zakresu
-valid_solutions = []
+# Krok 5: Rozwiązanie
+solutions = solve(eq_t, t)
+valid = []
 for sol in solutions:
     try:
-        val = complex(sol)
-        if abs(val.imag) < 1e-8:
-            t_val = float(val.real)
-            if float(t_min) < t_val < float(t_max):
-                valid_solutions.append((t_val, sol))
-                print(f"  t = {{float(sol):.6f}} ✓ (w zakresie)")
-            else:
-                print(f"  t = {{float(val.real):.6f}} ✗ (poza zakresem)")
+        # Use evalf() which works with CRootOf objects (degree-6 polynomials)
+        val = sol.evalf()
+        if hasattr(val, 'is_real') and val.is_real:
+            tv = float(val)
         else:
-            pass  # zespolone, pomijamy
+            cv = complex(val)
+            if abs(cv.imag) < 1e-8:
+                tv = cv.real
+            else:
+                continue
+        if float(t_min) < tv < float(t_max):
+            valid.append((tv, sol))
+            print(f"  t = {{tv:.6f}} ✓")
     except:
         pass
 
-# Krok 6: Obliczenie pola dla każdego poprawnego t
-print()
-print("Krok 6: Porównanie pól")
-best_area = None
-best_t = None
-best_sides = None
-
-for t_val, t_sym in valid_solutions:
-    a_val = {n} * t_val
-    b_val = t_val
-    c_val = {k} - {n+1} * t_val
-    s_val = {k} / 2
-    area_sq_val = s_val * (s_val - a_val) * (s_val - b_val) * (s_val - c_val)
-    if area_sq_val > 0:
-        area_val = area_sq_val ** 0.5
-        print(f"  t ≈ {{t_val:.6f}}: boki ({{a_val:.4f}}{R_sym}, {{b_val:.4f}}{R_sym}, {{c_val:.4f}}{R_sym}), Pole ≈ {{area_val:.6f}}{R_sym}²")
-        if best_area is None or area_val > best_area:
-            best_area = area_val
-            best_t = t_val
-            best_sides = (a_val, b_val, c_val)
+# Krok 6: Porównanie pól
+best_area, best_sides = None, None
+for tv, ts in valid:
+    av, bv, cv = {n}*tv, tv, {k}-{n1}*tv
+    sv = {k}/2
+    asq = sv*(sv-av)*(sv-bv)*(sv-cv)
+    if asq > 0:
+        area = asq**0.5
+        print(f"  t≈{{tv:.6f}}: boki ({{av:.4f}}{R_sym}, {{bv:.4f}}{R_sym}, {{cv:.4f}}{R_sym}), Pole≈{{area:.6f}}{R_sym}²")
+        if best_area is None or area > best_area:
+            best_area, best_sides = area, (av, bv, cv)
 
 if best_area is not None:
-    a_f, b_f, c_f = best_sides
-    print()
-    print(f"Trójkąt o największym polu:")
-    print(f"  boki: a ≈ {{a_f:.6f}}·{R_sym}, b ≈ {{b_f:.6f}}·{R_sym}, c ≈ {{c_f:.6f}}·{R_sym}")
+    af, bf, cf = best_sides
+    print(f"\\nTrójkąt o największym polu:")
+    print(f"  boki: a≈{{af:.6f}}·{R_sym}, b≈{{bf:.6f}}·{R_sym}, c≈{{cf:.6f}}·{R_sym}")
     print(f"  Pole ≈ {{best_area:.6f}}·{R_sym}²")
-
-    # Spróbuj uprościć pole symbolicznie
-    t_exact = valid_solutions[([a for a,_ in valid_solutions].index(best_t))][1]
-    area_sym = sqrt(Area_sq_simplified.subs(t, t_exact))
-    area_simplified = nsimplify(best_area, rational=False)
-    print(f"  Pole (uproszczone) ≈ {{area_simplified}}·{R_sym}²")
     print(f"ODPOWIEDZ: {{best_area:.6f}}*{R_sym}^2")
 else:
-    print("Brak poprawnych rozwiązań — trójkąt o podanych warunkach nie istnieje.")
     print("ODPOWIEDZ: brak rozwiazania")
 """
-    return code
+
+
+def _build_isosceles_perimeter_code(params):
+    """Sub-pattern B: Isosceles triangle + given perimeter → maximize area.
+    E.g. 'trójkąty równoramienne o obwodzie 18, największe pole'."""
+    P = params['perimeter']
+
+    return f"""from sympy import *
+
+# ══════════════════════════════════════════════════════════════════
+# Trójkąt równoramienny o obwodzie {P}, szukamy największego pola.
+# ══════════════════════════════════════════════════════════════════
+
+b = symbols('b', positive=True)  # ramię
+
+# Krok 1: Podstawa trójkąta
+# Obwód: 2b + a = {P} → a = {P} - 2b
+a_expr = {P} - 2*b
+print(f"Ramię: b, podstawa: a = {P} - 2b")
+
+# Krok 2: Warunki
+# a > 0 → b < {P}/2 = {P//2 if P%2==0 else f'{P}/2'}
+# Nierówność trójkąta: 2b > a → 2b > {P} - 2b → b > {P}/4 = {P/4}
+# Dziedzina: b ∈ ({P}/4, {P}/2), czyli b > {P/4} i b < {P/2}
+print(f"Dziedzina: b ∈ ({P}/4, {P}/2)")
+
+# Krok 3: Wysokość na podstawę
+# h = √(b² - (a/2)²) = √(b² - ({P}/2 - b)²) = √({P}b - {P**2}/4)
+# bo b² - ({P}/2 - b)² = b² - {P**2}/4 + {P}b - b² = {P}b - {P**2}/4
+h_sq = {P}*b - Rational({P**2}, 4)
+print(f"Wysokość²: h² = {P}b - {P**2}/4")
+
+# Krok 4: Pole
+# P(b) = (1/2) · a · h = (1/2)({P} - 2b) · √({P}b - {P**2}/4)
+P_area = Rational(1, 2) * ({P} - 2*b) * sqrt(h_sq)
+print(f"Pole P(b) = (1/2)·({P}-2b)·√({P}b - {P**2}/4)")
+
+# Krok 5: Maksymalizacja — liczymy pochodną P²(b) (łatwiej bez pierwiastka)
+P_sq = Rational(1, 4) * ({P} - 2*b)**2 * h_sq
+P_sq_expanded = expand(P_sq)
+print(f"P²(b) = {{P_sq_expanded}}")
+
+# Pochodna P² po b
+dP_sq = diff(P_sq_expanded, b)
+dP_sq_factored = factor(dP_sq)
+print(f"d(P²)/db = {{dP_sq_factored}}")
+
+# Punkty krytyczne
+critical = solve(dP_sq, b)
+print(f"Punkty krytyczne: b = {{critical}}")
+
+# Krok 6: Wybór maximum z dziedziny
+best_area = None
+best_b = None
+for bc in critical:
+    bv = float(bc)
+    if {P}/4 < bv < {P}/2:
+        area_val = float(P_area.subs(b, bc))
+        if area_val > 0 and (best_area is None or area_val > best_area):
+            best_area = area_val
+            best_b = bc
+
+if best_b is not None:
+    a_val = {P} - 2*best_b
+    area_exact = simplify(P_area.subs(b, best_b))
+    print(f"\\nMaksimum dla b = {{best_b}}")
+    print(f"  Boki: ramię b = {{best_b}}, podstawa a = {{a_val}}")
+    print(f"  Pole = {{area_exact}}")
+    print(f"ODPOWIEDZ: {{area_exact}}")
+else:
+    print("ODPOWIEDZ: brak rozwiazania")
+"""
+
+
+def _build_perimeter_ratio_code(params):
+    """Sub-pattern D: Triangle with given perimeter + side ratio → optimize area.
+    E.g. 'trójkąt o obwodzie 24, jeden bok dwukrotnie dłuższy, największe pole'."""
+    P = params['perimeter']
+    n = params['side_ratio']
+    n1 = n + 1
+
+    return f"""from sympy import *
+
+# ══════════════════════════════════════════════════════════════════
+# Trójkąt o obwodzie {P}, jeden bok {n}× dłuższy od drugiego.
+# Szukamy trójkąta o największym polu.
+# ══════════════════════════════════════════════════════════════════
+
+t = symbols('t', positive=True)  # krótszy bok
+
+# Krok 1: Boki trójkąta
+# krótszy = t, dłuższy = {n}t, trzeci = {P} - {n1}t
+a = {n} * t
+b = t
+c = {P} - {n1} * t
+print(f"Boki: {n}t, t, {P}-{n1}t")
+
+# Krok 2: Nierówność trójkąta → t ∈ ({P}/{2*n1}, {P}/{2*n})
+t_min = Rational({P}, {2*n1})
+t_max = Rational({P}, {2*n})
+print(f"Zakres: t ∈ ({{t_min}}, {{t_max}})")
+
+# Krok 3: Pole ze wzoru Herona
+s = Rational({P}, 2)
+Area_sq = expand(s * (s - a) * (s - b) * (s - c))
+print(f"Pole²(t) = {{factor(Area_sq)}}")
+
+# Krok 4: Maksymalizacja P² — pochodna
+dA_sq = diff(Area_sq, t)
+print(f"d(Pole²)/dt = {{factor(dA_sq)}}")
+
+critical = solve(dA_sq, t)
+print(f"Punkty krytyczne: {{critical}}")
+
+# Krok 5: Wybór maximum
+best_area = None
+best_t_val = None
+for tc in critical:
+    try:
+        tv = float(tc)
+        if float(t_min) < tv < float(t_max):
+            asq = float(Area_sq.subs(t, tc))
+            if asq > 0:
+                area = asq**0.5
+                sides = ({n}*tv, tv, {P}-{n1}*tv)
+                print(f"  t={{tv:.4f}}: boki ({{sides[0]:.4f}}, {{sides[1]:.4f}}, {{sides[2]:.4f}}), Pole={{area:.6f}}")
+                if best_area is None or area > best_area:
+                    best_area = area
+                    best_t_val = tc
+    except:
+        pass
+
+if best_t_val is not None:
+    area_exact = sqrt(Area_sq.subs(t, best_t_val))
+    area_simplified = simplify(area_exact)
+    sides_exact = ({n}*best_t_val, best_t_val, {P}-{n1}*best_t_val)
+    print(f"\\nMaksymalne pole:")
+    print(f"  boki: ({{sides_exact[0]}}, {{sides_exact[1]}}, {{sides_exact[2]}})")
+    print(f"  Pole = {{area_simplified}}")
+    print(f"ODPOWIEDZ: {{area_simplified}}")
+else:
+    print("ODPOWIEDZ: brak rozwiazania")
+"""
 
 
 def _try_template_solver(question_text):
@@ -916,30 +1145,30 @@ def _try_template_solver(question_text):
             print(f"  ⚠️ Template solver error: {e}")
             return None
 
-    # Pattern 2: Triangle inscribed in circle, perimeter constraint, side ratio, optimize area
-    tri_params = _detect_inscribed_triangle_params(question_text)
+    # Pattern 2: Triangle optimization/computation (Heron-based)
+    tri_params = _detect_triangle_optimization_params(question_text)
     if tri_params:
-        code = _build_inscribed_triangle_solver_code(tri_params)
-
-        local_ns = {}
-        import io, contextlib
-        output_buf = io.StringIO()
-        try:
-            with contextlib.redirect_stdout(output_buf):
-                exec(code, {'__builtins__': __builtins__}, local_ns)
-            output = output_buf.getvalue()
-            answer_m = re.search(r'ODPOWIEDZ:\s*(.+)', output)
-            if answer_m:
-                return {
-                    'success': True,
-                    'code': code,
-                    'output': output,
-                    'answer': answer_m.group(1).strip(),
-                    'template': 'inscribed_triangle',
-                }
-        except Exception as e:
-            print(f"  ⚠️ Template solver error (inscribed_triangle): {e}")
-            return None
+        code = _build_triangle_optimization_code(tri_params)
+        if code:
+            local_ns = {}
+            import io, contextlib
+            output_buf = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(output_buf):
+                    exec(code, {'__builtins__': __builtins__}, local_ns)
+                output = output_buf.getvalue()
+                answer_m = re.search(r'ODPOWIEDZ:\s*(.+)', output)
+                if answer_m:
+                    return {
+                        'success': True,
+                        'code': code,
+                        'output': output,
+                        'answer': answer_m.group(1).strip(),
+                        'template': f'triangle_{tri_params["subtype"]}',
+                    }
+            except Exception as e:
+                print(f"  ⚠️ Template solver error (triangle_{tri_params['subtype']}): {e}")
+                return None
 
     # Future patterns can be added here
     return None

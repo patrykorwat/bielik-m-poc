@@ -217,6 +217,390 @@ export class ThreeAgentOrchestrator {
     }
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // TEMPLATE SOLVER: Deterministic solvers for known problem patterns
+  // ═══════════════════════════════════════════════════════════════════
+
+  /**
+   * Try to solve the problem using a deterministic template (no LLM needed).
+   * Returns { success, code, output, answer, template } or null if no template matches.
+   */
+  private async tryTemplateSolver(problemText: string): Promise<{
+    success: boolean;
+    code: string;
+    output: string;
+    answer: string;
+    template: string;
+  } | null> {
+    // Pattern 1: Digit counting with odd/even constraints
+    const digitParams = this.detectDigitCountingParams(problemText);
+    if (digitParams) {
+      const code = this.buildDigitCountingSolverCode(digitParams.nOdd, digitParams.nEven);
+      return this.executeTemplateSolverCode(code, 'digit_counting');
+    }
+
+    // Pattern 2: Triangle optimization/computation (Heron-based, multiple sub-patterns)
+    const triParams = this.detectTriangleOptimizationParams(problemText);
+    if (triParams) {
+      const code = this.buildTriangleOptimizationCode(triParams);
+      if (code) {
+        return this.executeTemplateSolverCode(code, `triangle_${triParams.subtype}`);
+      }
+    }
+
+    return null;
+  }
+
+  private async executeTemplateSolverCode(code: string, template: string): Promise<{
+    success: boolean;
+    code: string;
+    output: string;
+    answer: string;
+    template: string;
+  } | null> {
+    try {
+      const output = await this.executeSymPyCalculation(code);
+      const answerMatch = output.match(/ODPOWIEDZ:\s*(.+)/);
+      if (answerMatch) {
+        return {
+          success: true,
+          code,
+          output,
+          answer: answerMatch[1].trim(),
+          template,
+        };
+      }
+    } catch (e) {
+      console.warn(`⚠️ Template solver (${template}) execution error:`, e);
+    }
+    return null;
+  }
+
+  private detectDigitCountingParams(text: string): { nOdd: number; nEven: number } | null {
+    const lower = text.toLowerCase();
+    if (!/cyfr|zapisie dziesi[eę]tnym|liczb\w* naturaln/.test(lower)) return null;
+
+    const polishNumbers: Record<string, number> = {
+      'jedno': 1, 'jeden': 1, 'jedna': 1,
+      'dwie': 2, 'dwa': 2, 'dwóch': 2, 'dwu': 2,
+      'trzy': 3, 'trzech': 3,
+      'cztery': 4, 'czterech': 4,
+      'pięć': 5, 'pięciu': 5,
+    };
+    const numPat = '(\\d+|jedno|jeden|jedna|dwie|dwa|dwóch|dwu|trzy|trzech|cztery|czterech|pięć|pięciu)';
+
+    const oddM = lower.match(new RegExp(`(?:dokładnie\\s+)?${numPat}\\s+(?:cyfr\\w*)\\s+(?:s[aą]\\s+)?nieparzyst`));
+    const evenM = lower.match(new RegExp(`(?:dokładnie\\s+)?${numPat}\\s+(?:cyfr\\w*)\\s+(?:s[aą]\\s+)?parzyst`));
+    if (!oddM || !evenM) return null;
+
+    const nOdd = polishNumbers[oddM[1]] ?? parseInt(oddM[1]);
+    const nEven = polishNumbers[evenM[1]] ?? parseInt(evenM[1]);
+    if (isNaN(nOdd) || isNaN(nEven)) return null;
+    if (nOdd < 1 || nOdd > 5 || nEven < 0 || nEven > 5) return null;
+
+    const total = nOdd + nEven;
+    if (total < 1 || total > 9) return null;
+    return { nOdd, nEven };
+  }
+
+  private buildDigitCountingSolverCode(nOdd: number, nEven: number): string {
+    const total = nOdd + nEven;
+    const hasZero = nEven > 0;
+    let lines = [
+      'from sympy import *', '',
+      `# Krok 1: Wybór ${nOdd} cyfr nieparzystych z 5 dostępnych (1,3,5,7,9)`,
+      `wybor_nieparzystych = binomial(5, ${nOdd})`,
+      `print("Wybór ${nOdd} nieparzystych z 5:", wybor_nieparzystych)`, '',
+      `# Krok 2: Wybór ${nEven} cyfr parzystych z 5 dostępnych (0,2,4,6,8)`,
+      `wybor_parzystych = binomial(5, ${nEven})`,
+      `print("Wybór ${nEven} parzystych z 5:", wybor_parzystych)`, '',
+      `# Krok 3: Permutacje ${total} wybranych cyfr`,
+      `permutacje = factorial(${total})`,
+      `print("Permutacje ${total} cyfr:", permutacje)`, '',
+      `# Krok 4: Wszystkie liczby bez ograniczeń`,
+      `wszystkie = wybor_nieparzystych * wybor_parzystych * permutacje`,
+      `print("Wszystkie kombinacje:", wszystkie)`,
+    ];
+    if (hasZero && total > 1) {
+      lines.push(
+        '', `# Krok 5: Odejmij przypadki gdy 0 jest na pierwszej pozycji`,
+        `# Jeśli 0 jest na początku: 0 jest JUŻ WYBRANE, zostaje binomial(4, ${nEven - 1}) parzystych`,
+        `przypadki_z_zerem = wybor_nieparzystych * binomial(4, ${nEven - 1}) * factorial(${total - 1})`,
+        `print("Przypadki z 0 na początku:", przypadki_z_zerem)`, '',
+        `# Krok 6: Wynik końcowy`,
+        `wynik = wszystkie - przypadki_z_zerem`,
+      );
+    } else {
+      lines.push('', `wynik = wszystkie`);
+    }
+    lines.push(`print("ODPOWIEDZ:", wynik)`);
+    return lines.join('\n');
+  }
+
+  /**
+   * Normalize Unicode math symbols (𝑅→R, 𝑎→a, etc.) to plain ASCII for regex matching.
+   */
+  private normalizeUnicodeMath(text: string): string {
+    // Replace Unicode Mathematical Italic/Bold/Script letters with ASCII
+    return text.replace(/[\u{1D400}-\u{1D7FF}]/gu, (ch) => {
+      const code = ch.codePointAt(0)!;
+      // Mathematical Bold A-Z: U+1D400–U+1D419
+      if (code >= 0x1D400 && code <= 0x1D419) return String.fromCharCode(65 + code - 0x1D400);
+      // Mathematical Bold a-z: U+1D41A–U+1D433
+      if (code >= 0x1D41A && code <= 0x1D433) return String.fromCharCode(97 + code - 0x1D41A);
+      // Mathematical Italic A-Z: U+1D434–U+1D44D
+      if (code >= 0x1D434 && code <= 0x1D44D) return String.fromCharCode(65 + code - 0x1D434);
+      // Mathematical Italic a-z: U+1D44E–U+1D467
+      if (code >= 0x1D44E && code <= 0x1D467) return String.fromCharCode(97 + code - 0x1D44E);
+      // Mathematical Bold Italic A-Z: U+1D468–U+1D481
+      if (code >= 0x1D468 && code <= 0x1D481) return String.fromCharCode(65 + code - 0x1D468);
+      // Mathematical Bold Italic a-z: U+1D482–U+1D49B
+      if (code >= 0x1D482 && code <= 0x1D49B) return String.fromCharCode(97 + code - 0x1D482);
+      // Mathematical digits 0-9 (Bold): U+1D7CE–U+1D7D7
+      if (code >= 0x1D7CE && code <= 0x1D7D7) return String.fromCharCode(48 + code - 0x1D7CE);
+      return ch;
+    });
+  }
+
+  private detectTriangleOptimizationParams(text: string): {
+    subtype: string;
+    [key: string]: any;
+  } | null {
+    const lower = this.normalizeUnicodeMath(text).toLowerCase();
+    const hasTriangle = /tr[oó]jk[aą]t/.test(lower);
+    if (!hasTriangle) return null;
+
+    const hasArea = /pol[eua]|area/.test(lower);
+    const hasMaximize = /największ|maksymal|najwększ|możliwie największ|najmniejsz/.test(lower);
+    const hasCircle = /okr[ęeą]g/.test(lower);
+    const hasInscribed = /wpisan/.test(lower);
+    const hasIsosceles = /równoramienn/.test(lower);
+    const hasPerimeter = /obw[oó]d/.test(lower);
+
+    // --- Sub-pattern C: Direct Heron (given 3 numeric sides) ---
+    if (hasArea && !hasMaximize) {
+      const sidesM = lower.match(
+        /bok(?:ach|i|ów)?\s+(?:o\s+długości(?:ach)?\s+)?(?:\$?(\d+(?:[.,]\d+)?)\$?\s*[,;]\s*\$?(\d+(?:[.,]\d+)?)\$?\s*(?:[,;i]\s*(?:i\s+)?)\$?(\d+(?:[.,]\d+)?)\$?)/
+      );
+      if (sidesM) {
+        const a = parseFloat(sidesM[1].replace(',', '.'));
+        const b = parseFloat(sidesM[2].replace(',', '.'));
+        const c = parseFloat(sidesM[3].replace(',', '.'));
+        if (!isNaN(a) && !isNaN(b) && !isNaN(c) && a + b > c && b + c > a && a + c > b) {
+          return { subtype: 'direct_heron', sides: [a, b, c] };
+        }
+      }
+    }
+
+    if (!hasArea) return null;
+
+    // --- Extract perimeter ---
+    let perimeterValue: number | null = null;
+    let perimeterMult: number | null = null;
+    const perimM = lower.match(/obw[oó]d\w*\s+(?:równ\w*\s+|=\s*)?(\d+)/);
+    if (perimM) {
+      const after = lower.substring(perimM.index! + perimM[0].length);
+      if (/^[·*]?\s*r\b|^r\b/.test(after)) {
+        perimeterMult = parseInt(perimM[1]);
+      } else {
+        perimeterValue = parseInt(perimM[1]);
+      }
+    }
+
+    // --- Extract side ratio ---
+    let sideRatio: number | null = null;
+    const polishMults: Record<string, number> = {
+      'dwukrotnie': 2, 'dwa razy': 2,
+      'trzykrotnie': 3, 'trzy razy': 3,
+      'czterokrotnie': 4, 'cztery razy': 4,
+    };
+    for (const [kw, mult] of Object.entries(polishMults)) {
+      if (lower.includes(kw)) { sideRatio = mult; break; }
+    }
+    if (sideRatio === null) {
+      const ratioM = lower.match(/(\d+)\s+raz[ey]\s+dłuż/);
+      if (ratioM) sideRatio = parseInt(ratioM[1]);
+    }
+
+    // --- Sub-pattern A: Inscribed circle ---
+    if (hasCircle && hasInscribed && perimeterMult && sideRatio) {
+      return { subtype: 'inscribed_circle', perimeterMult, sideRatio, radiusSymbol: 'R', maximize: hasMaximize };
+    }
+    // --- Sub-pattern B: Isosceles + perimeter ---
+    if (hasIsosceles && hasPerimeter && perimeterValue !== null && hasMaximize) {
+      return { subtype: 'isosceles_perimeter', perimeter: perimeterValue, maximize: true };
+    }
+    // --- Sub-pattern D: Perimeter + ratio (no circle) ---
+    if (hasPerimeter && sideRatio && perimeterValue !== null && hasMaximize) {
+      return { subtype: 'perimeter_ratio', perimeter: perimeterValue, sideRatio, maximize: true };
+    }
+
+    return null;
+  }
+
+  private buildTriangleOptimizationCode(params: { subtype: string; [key: string]: any }): string | null {
+    switch (params.subtype) {
+      case 'direct_heron': return this.buildDirectHeronCode(params.sides);
+      case 'inscribed_circle': return this.buildInscribedCircleCode(params);
+      case 'isosceles_perimeter': return this.buildIsoscelesPerimeterCode(params);
+      case 'perimeter_ratio': return this.buildPerimeterRatioCode(params);
+      default: return null;
+    }
+  }
+
+  private buildDirectHeronCode(sides: number[]): string {
+    const [a, b, c] = sides;
+    return `from sympy import *
+a, b, c = Rational('${a}'), Rational('${b}'), Rational('${c}')
+print(f"Boki: a={a}, b={b}, c={c}")
+assert a+b>c and b+c>a and a+c>b, "Nierówność trójkąta!"
+s = (a+b+c)/2
+print(f"Półobwód: s={s}")
+pole_sq = s*(s-a)*(s-b)*(s-c)
+print(f"s(s-a)(s-b)(s-c) = {pole_sq}")
+pole = simplify(sqrt(pole_sq))
+print(f"Pole = {pole}")
+print(f"ODPOWIEDZ: {pole}")
+`;
+  }
+
+  private buildInscribedCircleCode(params: any): string {
+    const k = params.perimeterMult;
+    const n = params.sideRatio;
+    const R = params.radiusSymbol;
+    const n1 = n + 1;
+    return `from sympy import *
+import warnings
+warnings.filterwarnings('ignore')
+${R} = symbols('${R}', positive=True)
+t = symbols('t', positive=True)
+a_expr = ${n}*t*${R}
+b_expr = t*${R}
+c_expr = (${k}-${n1}*t)*${R}
+print(f"Boki: ${n}t·${R}, t·${R}, (${k}-${n1}t)·${R}")
+t_min = Rational(${k}, ${2*n1})
+t_max = Rational(${k}, ${2*n})
+print(f"Zakres t: ({t_min}, {t_max})")
+s = Rational(${k},2)*${R}
+Area_sq = expand(s*(s-a_expr)*(s-b_expr)*(s-c_expr))
+print(f"Pole² (Heron): {factor(Area_sq)}")
+abc = a_expr*b_expr*c_expr
+eq = simplify(expand(abc**2-16*${R}**2*Area_sq)/${R}**6)
+print(f"Równanie: {Poly(eq,t).as_expr()} = 0")
+solutions = solve(eq, t)
+valid = []
+for sol in solutions:
+    try:
+        val = sol.evalf()
+        if hasattr(val, 'is_real') and val.is_real:
+            tv = float(val)
+        else:
+            cv = complex(val)
+            if abs(cv.imag)<1e-8:
+                tv = cv.real
+            else:
+                continue
+        if float(t_min)<tv<float(t_max):
+            valid.append((tv,sol))
+            print(f"  t={tv:.6f} ✓")
+    except: pass
+best_area,best_sides=None,None
+for tv,ts in valid:
+    av,bv,cv=${n}*tv,tv,${k}-${n1}*tv
+    sv=${k}/2
+    asq=sv*(sv-av)*(sv-bv)*(sv-cv)
+    if asq>0:
+        area=asq**0.5
+        print(f"  t≈{tv:.6f}: boki ({av:.4f}${R},{bv:.4f}${R},{cv:.4f}${R}), Pole≈{area:.6f}${R}²")
+        if best_area is None or area>best_area:
+            best_area,best_sides=area,(av,bv,cv)
+if best_area:
+    af,bf,cf=best_sides
+    print(f"\\nTrójkąt o największym polu: boki ≈({af:.4f},{bf:.4f},{cf:.4f})·${R}")
+    print(f"Pole ≈ {best_area:.6f}·${R}²")
+    print(f"ODPOWIEDZ: {best_area:.6f}*${R}^2")
+else:
+    print("ODPOWIEDZ: brak rozwiazania")
+`;
+  }
+
+  private buildIsoscelesPerimeterCode(params: any): string {
+    const P = params.perimeter;
+    return `from sympy import *
+b = symbols('b', positive=True)
+a_expr = ${P} - 2*b
+print(f"Ramię: b, podstawa: a = ${P} - 2b")
+print(f"Dziedzina: b ∈ (${P}/4, ${P}/2)")
+h_sq = ${P}*b - Rational(${P**2}, 4)
+P_area = Rational(1,2)*(${P}-2*b)*sqrt(h_sq)
+P_sq = expand(Rational(1,4)*(${P}-2*b)**2*h_sq)
+print(f"P²(b) = {P_sq}")
+dP_sq = diff(P_sq, b)
+print(f"d(P²)/db = {factor(dP_sq)}")
+critical = solve(dP_sq, b)
+print(f"Punkty krytyczne: b = {critical}")
+best_area,best_b=None,None
+for bc in critical:
+    bv = float(bc)
+    if ${P}/4 < bv < ${P}/2:
+        av = float(P_area.subs(b, bc))
+        if av > 0 and (best_area is None or av > best_area):
+            best_area,best_b = av,bc
+if best_b:
+    a_val = ${P}-2*best_b
+    area_exact = simplify(P_area.subs(b, best_b))
+    print(f"Maksimum: b={best_b}, a={a_val}")
+    print(f"Pole = {area_exact}")
+    print(f"ODPOWIEDZ: {area_exact}")
+else:
+    print("ODPOWIEDZ: brak rozwiazania")
+`;
+  }
+
+  private buildPerimeterRatioCode(params: any): string {
+    const P = params.perimeter;
+    const n = params.sideRatio;
+    const n1 = n + 1;
+    return `from sympy import *
+t = symbols('t', positive=True)
+a = ${n}*t
+b = t
+c = ${P}-${n1}*t
+print(f"Boki: ${n}t, t, ${P}-${n1}t")
+t_min = Rational(${P},${2*n1})
+t_max = Rational(${P},${2*n})
+print(f"Zakres: t ∈ ({t_min}, {t_max})")
+s = Rational(${P},2)
+Area_sq = expand(s*(s-a)*(s-b)*(s-c))
+print(f"Pole²(t) = {factor(Area_sq)}")
+dA_sq = diff(Area_sq, t)
+print(f"d(Pole²)/dt = {factor(dA_sq)}")
+critical = solve(dA_sq, t)
+print(f"Punkty krytyczne: {critical}")
+best_area,best_tc=None,None
+for tc in critical:
+    try:
+        tv = float(tc)
+        if float(t_min)<tv<float(t_max):
+            asq = float(Area_sq.subs(t, tc))
+            if asq>0:
+                area=asq**0.5
+                sides=(${n}*tv,tv,${P}-${n1}*tv)
+                print(f"  t={tv:.4f}: boki ({sides[0]:.4f},{sides[1]:.4f},{sides[2]:.4f}), Pole={area:.6f}")
+                if best_area is None or area>best_area:
+                    best_area,best_tc=area,tc
+    except: pass
+if best_tc:
+    area_exact = simplify(sqrt(Area_sq.subs(t, best_tc)))
+    sides=(${n}*best_tc, best_tc, ${P}-${n1}*best_tc)
+    print(f"\\nMaks pole: boki=({sides[0]},{sides[1]},{sides[2]})")
+    print(f"Pole = {area_exact}")
+    print(f"ODPOWIEDZ: {area_exact}")
+else:
+    print("ODPOWIEDZ: brak rozwiazania")
+`;
+  }
+
   /**
    * Verify a solution with Lean Prover (post-solve verification only)
    */
@@ -1829,6 +2213,66 @@ ${result.error || ''}`;
       ragContext = this.ragService.formatContextForAgent([], problemCategories);
       if (ragContext) {
         console.log(`📚 Injecting category strategies (no RAG results) for: ${problemCategories.join(' + ')}`);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // TEMPLATE SOLVER: Deterministic, no LLM needed (highest priority)
+    // ═══════════════════════════════════════════════════════════════════
+    if (this.mcpClient) {
+      console.log('🔍 Checking template solver...');
+      const templateResult = await this.tryTemplateSolver(userMessage);
+      if (templateResult && templateResult.success) {
+        console.log(`✅ Template solver matched: ${templateResult.template}, answer: ${templateResult.answer}`);
+
+        // Show template solver code & output
+        const templateMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `**Metoda:** Template solver (${templateResult.template})\n\n\`\`\`python\n${templateResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${templateResult.output}`,
+          agentName: '🎯 Template Solver',
+          timestamp: new Date(),
+          toolCalls: [{
+            id: 'template-exec-1',
+            name: 'sympy_calculate',
+            arguments: { expression: templateResult.code }
+          }],
+          toolResults: [{
+            toolCallId: 'template-exec-1',
+            toolName: 'sympy_calculate',
+            result: templateResult.output,
+            isError: false,
+          }],
+        };
+        this.conversationHistory.push(templateMsg);
+        newMessages.push(templateMsg);
+        if (onMessageCallback) onMessageCallback(templateMsg);
+
+        // Generate summary with Agent Podsumowujący
+        try {
+          const summaryContext = this.getAgentContext();
+          const summaryResponse = await this.executeAgentTurn(
+            'Agent Podsumowujący',
+            prompts.summary,
+            summaryContext,
+            { maxTokens: prompts.agents.summary.max_tokens, temperature: prompts.agents.summary.temperature }
+          );
+
+          const summaryMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: this.cleanMalformedLatex(summaryResponse),
+            agentName: 'Agent Podsumowujący',
+            timestamp: new Date(),
+          };
+          this.conversationHistory.push(summaryMsg);
+          newMessages.push(summaryMsg);
+          if (onMessageCallback) onMessageCallback(summaryMsg);
+        } catch (err) {
+          console.warn('⚠️ Summary generation failed:', err);
+        }
+
+        return newMessages;
       }
     }
 
