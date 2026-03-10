@@ -76,7 +76,7 @@
     },
     {
         "question": "Wyznacz wszystkie wartości parametru $a$, dla których równanie $|x^2 - 5| = (a - 1)x - 4$ ma dwa różne rozwiązania dodatnie.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "a \\in \\left(\\frac{5+4\\sqrt{5}}{5}, +\\infty\\right)",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -109,7 +109,7 @@
     },
     {
         "question": "Rozwiąż równanie $3\\cos 2x + 10\\cos^2 x = 24\\sin x - 3$ dla $x \\in \\langle 0, 2\\pi \\rangle$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "x = \\frac{\\pi}{6}, x = \\frac{5\\pi}{6}",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -120,7 +120,7 @@
     },
     {
         "question": "W trzywyrazowym ciągu geometrycznym $(a_1, a_2, a_3)$ spełniona jest równość $a_1 + a_2 + a_3 = \\frac{21}{4}$. Wyrazy $a_1$, $a_2$, $a_3$ są – odpowiednio – czwartym, drugim i pierwszym wyrazem rosnącego ciągu arytmetycznego. Oblicz $a_1$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "a_1 = 3",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -131,7 +131,7 @@
     },
     {
         "question": "Dane jest równanie kwadratowe $x^2 - (3m + 2)x + 2m^2 + 7m - 15 = 0$ z niewiadomą $x$. Wyznacz wszystkie wartości parametru $m$, dla których różne rozwiązania $x_1$ i $x_2$ tego równania istnieją i spełniają warunek $2x_1^2 + 5x_1 x_2 + 2x_2^2 = 2$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "m = -\\frac{9}{5}, m = \\frac{1}{4}",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -142,7 +142,7 @@
     },
     {
         "question": "Prosta o równaniu $x + y - 10 = 0$ przecina okrąg o równaniu $x^2 + y^2 - 8x - 6y + 8 = 0$ w punktach $K$ i $L$. Punkt $S$ jest środkiem cięciwy $KL$. Wyznacz równanie obrazu tego okręgu w jednokładności o środku $S$ i skali $k = -3$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "(x - 10)^2 + (y - 9)^2 = 153",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -153,7 +153,7 @@
     },
     {
         "question": "Oblicz, ile jest wszystkich siedmiocyfrowych liczb naturalnych, w których zapisie dziesiętnym występują dokładnie trzy cyfry $1$ i dokładnie dwie cyfry $2$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "12960",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -164,7 +164,7 @@
     },
     {
         "question": "Podstawą ostrosłupa czworokątnego $ABCDS$ jest trapez $ABCD$ ($AB \\parallel CD$). Ramiona tego trapezu mają długości $AD = 10$ i $BC = 16$, a miara kąta $ABC$ jest równa $30°$. Każda ściana boczna tego ostrosłupa tworzy z płaszczyzną podstawy kąt $\\alpha$, taki że $\\tg \\alpha = \\frac{9}{2}$. Oblicz objętość tego ostrosłupa.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "624",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -175,7 +175,7 @@
     },
     {
         "question": "Należy zaprojektować wymiary prostokątnego ekranu smartfona, tak aby odległości tego ekranu od krótszych brzegów smartfona były równe $0{,}5$ cm każda, a odległości tego ekranu od dłuższych brzegów smartfona były równe $0{,}3$ cm każda. Sam ekran ma mieć powierzchnię $60 \\text{ cm}^2$. Wyznacz takie wymiary ekranu smartfona, przy których powierzchnia ekranu wraz z obramowaniem jest najmniejsza.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "6 \\times 10",
         "options": null,
         "metadata": {
             "year": 2020,

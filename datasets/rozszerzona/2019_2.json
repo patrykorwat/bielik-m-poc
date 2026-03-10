@@ -76,7 +76,7 @@
     },
     {
         "question": "Rozważamy wszystkie liczby naturalne pięciocyfrowe zapisane przy użyciu cyfr $1, 3, 5, 7, 9$, bez powtarzania jakiejkolwiek cyfry. Oblicz sumę wszystkich takich liczb.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "6666600",
         "options": null,
         "metadata": {
             "year": 2019,
@@ -87,7 +87,7 @@
     },
     {
         "question": "Punkt $P = (10, 2429)$ leży na paraboli o równaniu $y = 2x^2 + x + 2219$. Prosta o równaniu kierunkowym $y = ax + b$ jest styczna do tej paraboli w punkcie $P$. Oblicz współczynnik $b$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "2019",
         "options": null,
         "metadata": {
             "year": 2019,
@@ -120,7 +120,7 @@
     },
     {
         "question": "Punkt $D$ leży na boku $AB$ trójkąta $ABC$ oraz $AC = 16$, $AD = 6$, $CD = 14$ i $BC = BD$. Oblicz obwód trójkąta $ABC$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "120",
         "options": null,
         "metadata": {
             "year": 2019,
@@ -131,7 +131,7 @@
     },
     {
         "question": "Dane są okręgi o równaniach $x^2 + y^2 - 12x - 8y + 43 = 0$ i $x^2 + y^2 - 2ax + 4y + a^2 - 77 = 0$. Wyznacz wszystkie wartości parametru $a$, dla których te okręgi mają dokładnie jeden punkt wspólny. Rozważ wszystkie przypadki.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "a = 6 - 6\\sqrt{3}, a = 6, a = 6 + 6\\sqrt{3}",
         "options": null,
         "metadata": {
             "year": 2019,
@@ -142,7 +142,7 @@
     },
     {
         "question": "Trzywyrazowy ciąg $(a, b, c)$ o wyrazach dodatnich jest arytmetyczny, natomiast ciąg $\\left( \\frac{1}{a},\\ \\frac{1}{3b},\\ \\frac{2}{a + 2b + c} \\right)$ jest geometryczny. Oblicz iloraz ciągu geometrycznego.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "\\frac{3}{2}",
         "options": null,
         "metadata": {
             "year": 2019,
@@ -153,7 +153,7 @@
     },
     {
         "question": "Wielomian określony wzorem $W(x) = 2x^3 + (m^3 + 2)x^2 - 11x - 2(2m + 1)$ jest podzielny przez dwumian $(x - 2)$ oraz przy dzieleniu przez dwumian $(x + 1)$ daje resztę $6$. Oblicz $m$ i dla wyznaczonej wartości $m$ rozwiąż nierówność $W(x) \\leq 0$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "m = 1, W(x) \\leq 0 \\Leftrightarrow x \\in (-\\infty, \\frac{-5 - \\sqrt{33}}{4}] \\cup [\\frac{-5 + \\sqrt{33}}{4}, 2]",
         "options": null,
         "metadata": {
             "year": 2019,
@@ -164,7 +164,7 @@
     },
     {
         "question": "Rozwiąż równanie $\\cos x \\cdot \\sin\\left(x - \\frac{\\pi}{3}\\right) + \\sin\\left(x + \\frac{\\pi}{3}\\right) = \\frac{1}{2} \\sin x$.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "x = 2k\\pi, x = \\frac{\\pi}{2} + k\\pi, x = \\frac{5\\pi}{3} + 2k\\pi",
         "options": null,
         "metadata": {
             "year": 2019,
@@ -175,7 +175,7 @@
     },
     {
         "question": "Rozważmy wszystkie graniastosłupy prawidłowe trójkątne o objętości $V = 2$. Wyznacz długości krawędzi tego z rozważanych graniastosłupów, którego pole powierzchni całkowitej jest najmniejsze. Oblicz to najmniejsze pole.",
-        "answer": "Zadanie otwarte – odpowiedź wymaga pełnego rozwiązania.",
+        "answer": "a = 2, h = \\frac{2\\sqrt{3}}{3}, S = 6\\sqrt{3}",
         "options": null,
         "metadata": {
             "year": 2019,

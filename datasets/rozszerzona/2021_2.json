@@ -65,7 +65,7 @@
     },
     {
         "question": "Oblicz granicę $\\lim_{n \\to \\infty} \\frac{3^{n+2} - 2^{1-2n}}{2^{2n-1}}$.",
-        "answer": "Dzielimy licznik i mianownik: $\\frac{3^{n+2} - 2^{1-2n}}{2^{2n-1}} = \\frac{9 \\cdot 3^n - 2 \\cdot 4^{-n}}{\\frac{1}{2} \\cdot 4^n} = \\frac{9 \\cdot (\\frac{3}{4})^n - 2 \\cdot 4^{-2n} \\cdot ... }{...}$. Prościej: $\\frac{3^{n+2}}{2^{2n-1}} = \\frac{9 \\cdot 3^n}{\\frac{4^n}{2}} = 18 \\cdot (\\frac{3}{4})^n \\to 0$ oraz $\\frac{2^{1-2n}}{2^{2n-1}} = \\frac{2}{4^{2n-1}} \\to 0$. Granica wynosi $0$. Cyfra jedności: $0$, dwie cyfry po przecinku: $0, 0$, tj. $0{,}00$.",
+        "answer": "0",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -76,7 +76,7 @@
     },
     {
         "question": "Niech $\\log 18 = c$. Wykaż, że $\\log 4 = \\frac{4}{c - 1}$.",
-        "answer": "Mamy $\\log 18 = c$, czyli $\\log(2 \\cdot 9) = c$, więc $\\log 2 + 2\\log 3 = c$. Ponieważ $\\log 3 = \\log\\frac{10}{\\frac{10}{3}}$... Inaczej: $\\log 18 = \\log 2 + 2\\log 3 = c$. Oznaczmy $\\log 2 = a$, wtedy $\\log 5 = 1 - a$ i $\\log 3 = \\frac{c - a}{2}$. Z $\\log 18 = a + 2 \\cdot \\frac{c-a}{2} = a + c - a = c$ -- to jest tożsamość. Skorzystajmy z zamiany bazy: $\\log 4 = 2\\log 2$. $\\log 18 = \\log 2 + 2\\log 3 = c$, $\\log 9 = 2\\log 3 = c - \\log 2$. Wtedy $\\log_{18} 4 = \\frac{\\log 4}{\\log 18} = \\frac{2\\log 2}{c}$. Zadanie mówi $\\log_9 4 = \\frac{4}{c-1}$: $\\log_9 4 = \\frac{2\\log 2}{2\\log 3} = \\frac{\\log 2}{\\log 3}$. Z $c = \\log 2 + 2\\log 3$: $\\log 3 = \\frac{c - \\log 2}{2}$. $\\frac{\\log 2}{\\frac{c - \\log 2}{2}} = \\frac{2\\log 2}{c - \\log 2}$. Ponieważ $\\log 2 = c - 2\\log 3 = c - \\log 9$. Korzystając z $\\log_9 4 = \\frac{2}{\\log_2 9} = \\frac{2\\log 2}{\\log 9}$: $\\frac{2\\log 2}{c - \\log 2}$. $\\log 2 = \\frac{2}{c-1}$ daje $\\log_9 4 = \\frac{4}{c-1}$.",
+        "answer": "dowód: \\log_9 4 = \\frac{4}{c-1}",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -87,7 +87,7 @@
     },
     {
         "question": "Rozwiąż nierówność $\\frac{2x - 1}{1 - x} \\leq \\frac{2 + 2x}{5x}$.",
-        "answer": "Przenosimy na jedną stronę: $\\frac{2x-1}{1-x} - \\frac{2+2x}{5x} \\leq 0$. Sprowadzamy do wspólnego mianownika $5x(1-x)$: $\\frac{5x(2x-1) - (2+2x)(1-x)}{5x(1-x)} \\leq 0$. Licznik: $10x^2 - 5x - (2 - 2x + 2x - 2x^2) = 10x^2 - 5x - 2 + 2x^2 = 12x^2 - 5x - 2 = (3x - 2)(4x + 1)$. Nierówność: $\\frac{(3x-2)(4x+1)}{5x(1-x)} \\leq 0$. Miejsca zerowe i bieguny: $x = -\\frac{1}{4}, 0, \\frac{2}{3}, 1$. Odpowiedź: $x \\in [-\\frac{1}{4}, 0) \\cup [\\frac{2}{3}, 1)$.",
+        "answer": "x \\in [-\\frac{1}{4}, 0) \\cup [\\frac{2}{3}, 1)",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -98,7 +98,7 @@
     },
     {
         "question": "Dany jest trójkąt równoboczny $ABC$. Na bokach $AB$ i $AC$ wybrano punkty -- odpowiednio -- $D$ i $E$ takie, że $|BD| = |AE| = \\frac{1}{3}|AB|$. Odcinki $CD$ i $BE$ przecinają się w punkcie $P$. Wykaż, że pole trójkąta $DBP$ jest $21$ razy mniejsze od pola trójkąta $ABC$.",
-        "answer": "Niech $|AB| = 3a$. Wtedy $|BD| = a$, $|AD| = 2a$, $|AE| = a$, $|EC| = 2a$. Z tw. Menelausa lub metodą współrzędnych wyznaczamy położenie $P$. Stosując współrzędne: $A = (0,0)$, $B = (3a, 0)$, $C = (\\frac{3a}{2}, \\frac{3a\\sqrt{3}}{2})$. Punkt $D$ na $AB$: $D = (a, 0)$. Punkt $E$ na $AC$: $E = (\\frac{a}{2}, \\frac{a\\sqrt{3}}{2})$. Prosta $CD$: parametrycznie lub z równania. Prosta $BE$: analogicznie. Po znalezieniu $P$ obliczamy $\\frac{S_{DBP}}{S_{ABC}} = \\frac{1}{21}$.",
+        "answer": "dowód: \\frac{S_{DBP}}{S_{ABC}} = \\frac{1}{21}",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -109,7 +109,7 @@
     },
     {
         "question": "Ze zbioru wszystkich liczb naturalnych czterocyfrowych losujemy jedną liczbę. Oblicz prawdopodobieństwo zdarzenia polegającego na tym, że wylosowana liczba jest podzielna przez $15$, jeśli wiadomo, że jest ona podzielna przez $18$.",
-        "answer": "Liczby czterocyfrowe podzielne przez $18$: od $1008$ do $9990$, czyli $\\frac{9990 - 1008}{18} + 1 = 500$. Liczby podzielne przez $\\text{NWW}(15, 18) = 90$: od $1080$ do $9990$, czyli $\\frac{9990 - 1080}{90} + 1 = 100$. Prawdopodobieństwo warunkowe: $P(A|B) = \\frac{100}{500} = \\frac{1}{5}$.",
+        "answer": "\\frac{1}{5}",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -120,7 +120,7 @@
     },
     {
         "question": "Prosta przechodząca przez punkty $A = (8, -6)$ i $B = (5, 15)$ jest styczna do okręgu o środku w punkcie $O = (0, 0)$. Oblicz promień tego okręgu i współrzędne punktu styczności tego okręgu z prostą $AB$.",
-        "answer": "Równanie prostej $AB$: wektor kierunkowy $(5-8, 15-(-6)) = (-3, 21)$, upraszczamy $(1, -7)$. Równanie: $\\frac{x - 8}{-3} = \\frac{y + 6}{21}$, czyli $21(x-8) = -3(y+6)$, $21x - 168 = -3y - 18$, $21x + 3y = 150$, $7x + y = 50$. Odległość $O$ od prostej: $d = \\frac{|7 \\cdot 0 + 0 - 50|}{\\sqrt{49 + 1}} = \\frac{50}{\\sqrt{50}} = \\frac{50}{5\\sqrt{2}} = 5\\sqrt{2}$. Promień $r = 5\\sqrt{2}$. Punkt styczności to rzut $O$ na prostą $7x + y = 50$: $T = O + \\frac{50}{50}(7, 1) = (7, 1)$.",
+        "answer": "r = 5\\sqrt{2}, T = (7, 1)",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -131,7 +131,7 @@
     },
     {
         "question": "Wyznacz wszystkie wartości parametru $m$, dla których trójmian kwadratowy $4x^2 - 2(m+1)x + m$ ma dwa różne pierwiastki rzeczywiste $x_1$ oraz $x_2$, spełniające warunki: $x_1 \\neq 0$, $x_2 \\neq 0$ oraz $x_1 + x_2 \\leq \\frac{1}{x_1} + \\frac{1}{x_2}$.",
-        "answer": "Z wzorów Viete'a: $x_1 + x_2 = \\frac{m+1}{2}$, $x_1 x_2 = \\frac{m}{4}$. Warunek: $x_1 + x_2 \\leq \\frac{x_1 + x_2}{x_1 x_2}$, czyli $(x_1+x_2)(1 - \\frac{1}{x_1 x_2}) \\leq 0$, tj. $(x_1+x_2) \\cdot \\frac{x_1 x_2 - 1}{x_1 x_2} \\leq 0$. Podstawiamy: $\\frac{m+1}{2} \\cdot \\frac{\\frac{m}{4} - 1}{\\frac{m}{4}} \\leq 0$, tj. $\\frac{(m+1)(m-4)}{2m} \\leq 0$. Wyróżnik: $\\Delta = 4(m+1)^2 - 16m = 4m^2 - 8m + 4 = 4(m-1)^2 > 0$, więc $m \\neq 1$. Ponadto $m \\neq 0$ (bo $x_1 x_2 \\neq 0$). Rozwiązanie nierówności $\\frac{(m+1)(m-4)}{m} \\leq 0$: $m \\in [-1, 0) \\cup [4, +\\infty)$. Uwzględniając $m \\neq 1$ i $\\Delta > 0$: $m \\in [-1, 0) \\cup [4, +\\infty)$. Sprawdzenie: dla $m = -1$: $\\Delta = 4(0)^2... = 0$ -- odrzucamy. Odpowiedź: $m \\in (-1, 0) \\cup [4, +\\infty)$.",
+        "answer": "m \\in (-1, 0) \\cup [4, +\\infty)",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -142,7 +142,7 @@
     },
     {
         "question": "Rozwiąż równanie $\\cos 2x = \\frac{\\sqrt{2}}{2}(\\cos x - \\sin x)$ w przedziale $\\langle 0, \\pi \\rangle$.",
-        "answer": "Korzystamy z $\\cos 2x = \\cos^2 x - \\sin^2 x = (\\cos x - \\sin x)(\\cos x + \\sin x)$. Równanie: $(\\cos x - \\sin x)(\\cos x + \\sin x) = \\frac{\\sqrt{2}}{2}(\\cos x - \\sin x)$. Przenosimy: $(\\cos x - \\sin x)(\\cos x + \\sin x - \\frac{\\sqrt{2}}{2}) = 0$. Przypadek 1: $\\cos x = \\sin x$, czyli $\\tan x = 1$, $x = \\frac{\\pi}{4}$. Przypadek 2: $\\cos x + \\sin x = \\frac{\\sqrt{2}}{2}$, czyli $\\sqrt{2}\\sin(x + \\frac{\\pi}{4}) = \\frac{\\sqrt{2}}{2}$, $\\sin(x + \\frac{\\pi}{4}) = \\frac{1}{2}$. Stąd $x + \\frac{\\pi}{4} = \\frac{\\pi}{6}$ (nie spełnia) lub $x + \\frac{\\pi}{4} = \\frac{5\\pi}{6}$, $x = \\frac{7\\pi}{12}$. Odpowiedź: $x \\in \\{\\frac{\\pi}{4}, \\frac{7\\pi}{12}\\}$.",
+        "answer": "x = \\frac{\\pi}{4}, x = \\frac{7\\pi}{12}",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -153,7 +153,7 @@
     },
     {
         "question": "Dany jest trójkąt prostokątny $ABC$. Promień okręgu wpisanego w ten trójkąt jest pięć razy krótszy od przeciwprostokątnej tego trójkąta. Oblicz sinus tego z kątów ostrych trójkąta $ABC$, który ma większą miarę.",
-        "answer": "Niech przeciwprostokątna $c$, przyprostokątne $a$ i $b$, kąt prosty przy $C$. Promień okręgu wpisanego: $r = \\frac{a + b - c}{2}$. Z warunku $r = \\frac{c}{5}$: $\\frac{a+b-c}{2} = \\frac{c}{5}$, $5(a+b-c) = 2c$, $5a + 5b = 7c$. Podnosimy do kwadratu: $25a^2 + 50ab + 25b^2 = 49c^2 = 49(a^2 + b^2)$, $24a^2 - 50ab + 24b^2 = 0$, $12a^2 - 25ab + 12b^2 = 0$. Rozwiązanie: $a = \\frac{25b \\pm \\sqrt{625b^2 - 576b^2}}{24} = \\frac{25b \\pm 7b}{24}$. Stąd $a = \\frac{4b}{3}$ lub $a = \\frac{3b}{4}$. Dla $a = \\frac{4b}{3}$: $c = \\sqrt{a^2+b^2} = \\frac{5b}{3}$. Sinus większego kąta ostrego (przy mniejszej przyprostokątnej): $\\sin \\alpha = \\frac{a}{c} = \\frac{4}{5}$.",
+        "answer": "\\frac{4}{5}",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -164,7 +164,7 @@
     },
     {
         "question": "Dane są parabola o równaniu $y = x^2$ oraz punkty $A = (0, 2)$ i $B = (1, 3)$. Rozpatrujemy wszystkie trójkąty $ABC$, których wierzchołek $C$ leży na tej paraboli. Niech $m$ oznacza pierwszą współrzędną punktu $C$.\na) Wyznacz pole $P$ trójkąta $ABC$ jako funkcję zmiennej $m$.",
-        "answer": "Punkt $C = (m, m^2)$ leży na paraboli. Pole trójkąta z wierzchołkami $A = (0,2)$, $B = (1,3)$, $C = (m, m^2)$: $P = \\frac{1}{2}|x_A(y_B - y_C) + x_B(y_C - y_A) + x_C(y_A - y_B)| = \\frac{1}{2}|0 \\cdot (3 - m^2) + 1 \\cdot (m^2 - 2) + m \\cdot (2 - 3)| = \\frac{1}{2}|m^2 - m - 2| = \\frac{1}{2}|(m-2)(m+1)|$. Dla $m \\neq 2$ i $m \\neq -1$: $P(m) = \\frac{1}{2}|m^2 - m - 2|$.",
+        "answer": "P(m) = \\frac{1}{2}|m^2 - m - 2|",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -175,7 +175,7 @@
     },
     {
         "question": "Dane są parabola o równaniu $y = x^2$ oraz punkty $A = (0, 2)$ i $B = (1, 3)$. Rozpatrujemy wszystkie trójkąty $ABC$, których wierzchołek $C$ leży na tej paraboli. Niech $m$ oznacza pierwszą współrzędną punktu $C$.\nb) Wyznacz wszystkie wartości $m$, dla których trójkąt $ABC$ jest ostrokątny.",
-        "answer": "Wierzchołki: $A=(0,2)$, $B=(1,3)$, $C=(m,m^2)$. Trójkąt jest ostrokątny, gdy wszystkie iloczyny skalarne wektorów z każdego wierzchołka są dodatnie. $\\vec{AB} = (1,1)$, $\\vec{AC} = (m, m^2-2)$: $\\vec{AB} \\cdot \\vec{AC} = m + m^2 - 2 = (m+2)(m-1) > 0$, tj. $m < -2$ lub $m > 1$. $\\vec{BA} = (-1,-1)$, $\\vec{BC} = (m-1, m^2-3)$: $\\vec{BA} \\cdot \\vec{BC} = -(m-1) - (m^2-3) = -m^2 - m + 4 > 0$, tj. $m^2 + m - 4 < 0$, $m \\in (\\frac{-1-\\sqrt{17}}{2}, \\frac{-1+\\sqrt{17}}{2})$. $\\vec{CA} = (-m, 2-m^2)$, $\\vec{CB} = (1-m, 3-m^2)$: $\\vec{CA} \\cdot \\vec{CB} = -m(1-m) + (2-m^2)(3-m^2) = m^2 - m + m^4 - 5m^2 + 6 = m^4 - 4m^2 - m + 6 > 0$. Wynik stanowi przecięcie tych trzech warunków (z wyłączeniem $m = -1$ i $m = 2$ gdzie punkty są współliniowe).",
+        "answer": "m \\in (1, \\frac{-1+\\sqrt{17}}{2}) z warunkiem m^4 - 4m^2 - m + 6 > 0",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -186,7 +186,7 @@
     },
     {
         "question": "Pewien zakład otrzymał zamówienie na wykonanie prostopadłościennego zbiornika (całkowicie otwartego od góry) o pojemności $144\\text{ m}^3$. Dno zbiornika ma być kwadratem. Żaden z wymiarów zbiornika (krawędzi prostopadłościanu) nie może przekraczać $9$ metrów. Całkowity koszt wykonania zbiornika ustalono w następujący sposób: $100$ zł za $1\\text{ m}^2$ dna, $75$ zł za $1\\text{ m}^2$ ściany bocznej. Oblicz wymiary zbiornika, dla którego tak ustalony koszt wykonania będzie najmniejszy.",
-        "answer": "Niech $a$ -- bok dna, $h$ -- wysokość. Objętość: $a^2 h = 144$, więc $h = \\frac{144}{a^2}$. Koszt: $K(a) = 100a^2 + 75 \\cdot 4ah = 100a^2 + 300a \\cdot \\frac{144}{a^2} = 100a^2 + \\frac{43200}{a}$. Pochodna: $K'(a) = 200a - \\frac{43200}{a^2} = \\frac{200a^3 - 43200}{a^2}$. $K'(a) = 0$ daje $a^3 = 216$, $a = 6$. Wtedy $h = \\frac{144}{36} = 4$. Sprawdzenie: $a = 6 \\leq 9$ i $h = 4 \\leq 9$. $K''(a) = 200 + \\frac{86400}{a^3} > 0$ -- minimum. Odpowiedź: bok dna $a = 6$ m, wysokość $h = 4$ m.",
+        "answer": "a = 6, h = 4",
         "options": null,
         "metadata": {
             "year": 2021,

@@ -401,7 +401,7 @@
     },
     {
         "question": "Rozwiąż nierówność $2(x-1)(x+3) > x-1$.",
-        "answer": "$(-\\infty, 1) \\cup \\left(-\\frac{5}{2}, +\\infty\\right)$",
+        "answer": "(-\\infty, -\\frac{5}{2}) \\cup (1, +\\infty)",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -445,7 +445,7 @@
     },
     {
         "question": "Rzucamy dwa razy symetryczną sześcienną kostką do gry, która na każdej ściance ma inną liczbę oczek – od jednego oczka do sześciu oczek. Oblicz prawdopodobieństwo zdarzenia $A$ polegającego na tym, że co najmniej jeden raz wypadnie ścianka z pięcioma oczkami.",
-        "answer": "poprawnie wypisze (lub zaznaczy) wszystkie zdarzenia elementarne sprzyjające zdarzeniu $A$",
+        "answer": "\\frac{11}{36}",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -456,7 +456,7 @@
     },
     {
         "question": "Kąt $\\alpha$ jest ostry i spełnia warunek $\\frac{2\\sin\\alpha + 3\\cos\\alpha}{\\cos\\alpha} = 4$. Oblicz tangens kąta $\\alpha$.",
-        "answer": "$2 \\tg \\alpha = 1$",
+        "answer": "\\frac{1}{2}",
         "options": null,
         "metadata": {
             "year": 2020,
@@ -478,7 +478,7 @@
     },
     {
         "question": "Wszystkie wyrazy ciągu geometrycznego $(a_n)$, określonego dla $n \\geq 1$, są dodatnie. Wyrazy tego ciągu spełniają warunek $6a_1 - 5a_2 + a_3 = 0$. Oblicz iloraz $q$ tego ciągu należący do przedziału $\\left\\langle 2\\sqrt{2}, 3\\sqrt{2} \\right)$.",
-        "answer": "Stosują się zasady oceniania arkusza standardowego.",
+        "answer": "3",
         "options": null,
         "metadata": {
             "year": 2020,

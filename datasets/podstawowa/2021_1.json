@@ -482,7 +482,7 @@
     },
     {
         "question": "Rozwiąż równanie:\n\n$$\\frac{3x + 2}{3x - 2} = 4 - x$$",
-        "answer": "poprawnie oblicza pierwiastki równania otrzymanego z przekształcenia $\\frac{3x+2}{3x-2} = 4-x$ do postaci kwadratowej",
+        "answer": "x = \\frac{5}{3}, x = 2",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -493,7 +493,7 @@
     },
     {
         "question": "Trójkąt równoboczny $ABC$ ma pole równe $9\\sqrt{3}$. Prosta równoległa do boku $BC$ przecina boki $AB$ i $AC$ – odpowiednio – w punktach $K$ i $L$. Trójkąty $ABC$ i $AKL$ są podobne, a stosunek długości boków tych trójkątów jest równy $\\frac{3}{2}$. Oblicz długość boku trójkąta $AKL$.",
-        "answer": "zastosuje poprawną metodę obliczenia długości boku trójkąta $ABC$ (stosuje wzór na pole trójkąta równobocznego) LUB zapisze, że $\\frac{P_{ABC}}{P_{AKL}} = \\left(\\frac{3}{2}\\right)^2$",
+        "answer": "4",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -504,7 +504,7 @@
     },
     {
         "question": "Gracz rzuca dwukrotnie symetryczną sześcienną kostką do gry i oblicza sumę liczb wyrzuconych oczek. Oblicz prawdopodobieństwo zdarzenia $A$ polegającego na tym, że suma liczb wyrzuconych oczek jest równa $4$ lub $5$, lub $6$.",
-        "answer": "poprawnie wypisze (lub zaznaczy) wszystkie zdarzenia elementarne sprzyjające zdarzeniu $A$, popełni błąd w ich zliczeniu i konsekwentnie zapisze wynik $\\frac{x}{36}$, gdzie $x$ jest liczbą zliczonych zdarzeń elementarnych sprzyjających zdarzeniu $A$",
+        "answer": "\\frac{1}{3}",
         "options": null,
         "metadata": {
             "year": 2021,
@@ -515,7 +515,7 @@
     },
     {
         "question": "Punkty $A = (-20, 12)$ i $B = (7, 3)$ są wierzchołkami trójkąta równoramiennego $ABC$, w którym $|AC| = |BC|$. Wierzchołek $C$ leży na osi $Oy$ układu współrzędnych. Oblicz współrzędne wierzchołka $C$ oraz obwód tego trójkąta.",
-        "answer": "zastosuje poprawną metodę wyznaczenia równania symetralnej odcinka $AB$ LUB stosuje poprawne metody wyznaczenia wielkości w punktach 1)-4) pierwszego punktora standardowych zasad oceniania za 1 pkt oraz zastosuje poprawną metodę obliczenia długości boku $AB$ trójkąta",
+        "answer": "C = (0, 27), obwód = 9\\sqrt{10} + 50",
         "options": null,
         "metadata": {
             "year": 2021,
