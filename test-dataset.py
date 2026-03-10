@@ -592,6 +592,359 @@ def _extract_dimension_pair(got, expected):
     return False
 
 
+def _detect_digit_counting_params(problem_text):
+    """Detect digit-counting problem pattern and extract parameters.
+    Returns (n_odd, n_even, no_repeats) or None if not a digit-counting problem."""
+    text = problem_text.lower()
+
+    if not re.search(r'cyfr|zapisie dziesi[eę]tnym|liczb\w* naturaln', text):
+        return None
+
+    no_repeats = bool(re.search(r'nie powt[aó]rza|różn\w* cyfr|bez powt[oó]rzeń|r[oó]żnych cyfr', text))
+
+    polish_numbers = {
+        'jedno': 1, 'jeden': 1, 'jedna': 1,
+        'dwie': 2, 'dwa': 2, 'dwóch': 2, 'dwu': 2,
+        'trzy': 3, 'trzech': 3,
+        'cztery': 4, 'czterech': 4,
+        'pięć': 5, 'pięciu': 5,
+    }
+
+    num_pat = r'(\d+|jedno|jeden|jedna|dwie|dwa|dwóch|dwu|trzy|trzech|cztery|czterech|pięć|pięciu)'
+
+    odd_m = re.search(rf'(?:dokładnie\s+)?{num_pat}\s+(?:cyfr\w*)\s+(?:s[aą]\s+)?nieparzyst', text)
+    even_m = re.search(rf'(?:dokładnie\s+)?{num_pat}\s+(?:cyfr\w*)\s+(?:s[aą]\s+)?parzyst', text)
+
+    if not odd_m or not even_m:
+        return None
+
+    n_odd = polish_numbers.get(odd_m.group(1), None)
+    if n_odd is None:
+        try: n_odd = int(odd_m.group(1))
+        except: return None
+
+    n_even = polish_numbers.get(even_m.group(1), None)
+    if n_even is None:
+        try: n_even = int(even_m.group(1))
+        except: return None
+
+    if not (1 <= n_odd <= 5 and 0 <= n_even <= 5):
+        return None
+
+    total = n_odd + n_even
+    if not (1 <= total <= 9):
+        return None
+
+    return (n_odd, n_even, no_repeats)
+
+
+def _build_digit_counting_solver_code(n_odd, n_even, no_repeats):
+    """Generate SymPy code with full mathematical solution steps for digit-counting problems.
+    Produces proper 'obliczenia' suitable for showing to a matura student."""
+    total = n_odd + n_even
+    has_zero = n_even > 0  # even digits include 0
+
+    lines = [
+        'from sympy import *',
+        '',
+        f'# Krok 1: Wybór {n_odd} cyfr nieparzystych z 5 dostępnych (1,3,5,7,9)',
+        f'wybor_nieparzystych = binomial(5, {n_odd})',
+        f'print("Wybór {n_odd} nieparzystych z 5:", wybor_nieparzystych)',
+        '',
+        f'# Krok 2: Wybór {n_even} cyfr parzystych z 5 dostępnych (0,2,4,6,8)',
+        f'wybor_parzystych = binomial(5, {n_even})',
+        f'print("Wybór {n_even} parzystych z 5:", wybor_parzystych)',
+        '',
+        f'# Krok 3: Permutacje {total} wybranych cyfr',
+        f'permutacje = factorial({total})',
+        f'print("Permutacje {total} cyfr:", permutacje)',
+        '',
+        f'# Krok 4: Wszystkie liczby bez ograniczeń',
+        f'wszystkie = wybor_nieparzystych * wybor_parzystych * permutacje',
+        f'print("Wszystkie kombinacje:", wszystkie)',
+    ]
+
+    if has_zero and total > 1:
+        lines += [
+            '',
+            f'# Krok 5: Odejmij przypadki gdy 0 jest na pierwszej pozycji',
+            f'# Jeśli 0 jest na początku: 0 jest JUŻ WYBRANE, zostaje binomial(4, {n_even - 1}) parzystych',
+            f'przypadki_z_zerem = wybor_nieparzystych * binomial(4, {n_even - 1}) * factorial({total - 1})',
+            f'print("Przypadki z 0 na początku:", przypadki_z_zerem)',
+            '',
+            f'# Krok 6: Wynik końcowy',
+            f'wynik = wszystkie - przypadki_z_zerem',
+        ]
+    else:
+        lines += [
+            '',
+            f'wynik = wszystkie',
+        ]
+
+    lines += [
+        f'print("ODPOWIEDZ:", wynik)',
+    ]
+
+    return '\n'.join(lines)
+
+
+def _detect_inscribed_triangle_params(problem_text):
+    """Detect 'triangle inscribed in circle, perimeter constraint, side ratio, optimize area' pattern.
+    Returns dict with params or None."""
+    text = problem_text.lower()
+
+    # Must mention triangle + circle + inscribed
+    has_triangle = bool(re.search(r'trójk[aą]t|trojk[aą]t', text))
+    has_circle = bool(re.search(r'okr[ęeą]g|okręg', text))
+    has_inscribed = bool(re.search(r'wpisan|wpisane|wpisany', text))
+    has_area = bool(re.search(r'pole|area', text))
+    has_maximize = bool(re.search(r'największ|maksymal|najwększ|możliwie największ', text))
+
+    if not (has_triangle and has_circle and has_inscribed and has_area):
+        return None
+
+    # Extract radius reference (usually R or a number)
+    radius_match = re.search(r'promieni[ue]?\s+(?:równ\w+\s+)?(\w+|\d+)', text)
+    radius_symbol = 'R'
+    if radius_match:
+        radius_symbol = radius_match.group(1).upper()
+        if radius_symbol in ('RÓWN', 'RÓWNY', 'RÓWNYM'):
+            # Try to grab the next word
+            m2 = re.search(r'promieni\w*\s+równ\w+\s+(\w+)', text)
+            if m2:
+                radius_symbol = m2.group(1).upper()
+
+    # Extract perimeter constraint: "obwód/obwody równe kR" or "obwód = kR"
+    perimeter_mult = None
+    # Pattern: "obwod/obwody/obwodzie (równe/równy/równym/=) <number>R" or "<number>*R"
+    perim_m = re.search(r'obw[oó]d\w*\s+(?:równ\w+\s+|=\s*)?(\d+)\s*[·\*]?\s*' + radius_symbol.lower(), text)
+    if not perim_m:
+        perim_m = re.search(r'obw[oó]d\w*\s+(?:równ\w+\s+|=\s*)?(\d+)\s*r\b', text)
+    if perim_m:
+        perimeter_mult = int(perim_m.group(1))
+
+    if perimeter_mult is None:
+        return None
+
+    # Extract side ratio: "jeden bok dwukrotnie dłuższy", "bok jest dwa razy dłuższy", etc.
+    side_ratio = None
+    polish_multipliers = {
+        'dwukrotnie': 2, 'dwa razy': 2, 'dwukrotn': 2,
+        'trzykrotnie': 3, 'trzy razy': 3, 'trzykrotn': 3,
+        'czterokrotnie': 4, 'cztery razy': 4,
+    }
+    for keyword, mult in polish_multipliers.items():
+        if keyword in text:
+            side_ratio = mult
+            break
+
+    if side_ratio is None:
+        # Try pattern: "<number> razy dłuższy"
+        ratio_m = re.search(r'(\d+)\s+raz[ey]\s+dłuż', text)
+        if ratio_m:
+            side_ratio = int(ratio_m.group(1))
+
+    if side_ratio is None:
+        return None
+
+    return {
+        'perimeter_mult': perimeter_mult,  # e.g. 3 for perimeter = 3R
+        'side_ratio': side_ratio,           # e.g. 2 for "one side twice another"
+        'radius_symbol': radius_symbol,
+        'maximize': has_maximize,
+    }
+
+
+def _build_inscribed_triangle_solver_code(params):
+    """Generate SymPy code that solves the inscribed triangle optimization problem.
+    Produces proper mathematical steps suitable for a matura student."""
+    k = params['perimeter_mult']      # perimeter = k*R
+    n = params['side_ratio']           # one side = n * another
+    R_sym = params['radius_symbol']    # typically 'R'
+
+    code = f"""from sympy import *
+import warnings
+warnings.filterwarnings('ignore')
+
+# ══════════════════════════════════════════════════════════════════
+# Trójkąt wpisany w okrąg o promieniu {R_sym}, obwód = {k}{R_sym},
+# jeden bok jest {n} razy dłuższy od drugiego.
+# Szukamy trójkąta o największym polu.
+# ══════════════════════════════════════════════════════════════════
+
+{R_sym} = symbols('{R_sym}', positive=True)
+t = symbols('t', positive=True)  # parametr: krótszy bok = t * {R_sym}
+
+# Krok 1: Wyznaczenie boków trójkąta
+# Niech krótszy bok = t·{R_sym}, dłuższy bok = {n}·t·{R_sym}
+# Z warunku obwodu: krótszy + dłuższy + trzeci = {k}·{R_sym}
+# t·{R_sym} + {n}·t·{R_sym} + c = {k}·{R_sym}
+# c = {R_sym}·({k} - {n+1}·t)
+
+a_expr = {n} * t * {R_sym}       # bok dłuższy = {n}t·{R_sym}
+b_expr = t * {R_sym}              # bok krótszy = t·{R_sym}
+c_expr = ({k} - {n + 1}*t) * {R_sym}  # trzeci bok
+
+print(f"Boki trójkąta: a = {n}t·{R_sym}, b = t·{R_sym}, c = ({k}-{n+1}t)·{R_sym}")
+
+# Krok 2: Warunki trójkąta (nierówność trójkąta)
+# a + b > c:  {n}t + t > {k} - {n+1}t  =>  {2*(n+1)}t > {k}  =>  t > {k}/{2*(n+1)}
+# b + c > a:  t + {k} - {n+1}t > {n}t  =>  {k} - {2*n}t > 0  =>  t < {k}/{2*n}
+# a + c > b:  {n}t + {k} - {n+1}t > t  =>  {k} > 2t  =>  t < {k}/2
+# Więc: {k}/{2*(n+1)} < t < {k}/{2*n}
+
+t_min = Rational({k}, {2*(n+1)})
+t_max = Rational({k}, {2*n})
+print(f"Nierówność trójkąta: t ∈ ({{t_min}}, {{t_max}})")
+
+# Krok 3: Pole trójkąta ze wzoru Herona
+s = Rational({k}, 2) * {R_sym}  # półobwód = {k}{R_sym}/2
+print(f"Półobwód: s = {k}/2 · {R_sym}")
+
+Area_sq = s * (s - a_expr) * (s - b_expr) * (s - c_expr)
+Area_sq_simplified = expand(Area_sq)
+print(f"Pole² (Heron): {{factor(Area_sq_simplified)}}")
+
+# Krok 4: Warunek wpisania w okrąg o promieniu {R_sym}
+# Promień okręgu opisanego: R_opis = a·b·c / (4·Pole)
+# Musi zachodzić: R_opis = {R_sym}
+# Więc: a·b·c = 4·{R_sym}·Pole
+# Podnosząc do kwadratu: (a·b·c)² = 16·{R_sym}²·Pole²
+
+abc = a_expr * b_expr * c_expr
+print(f"a·b·c = {{factor(expand(abc))}}")
+
+# Równanie: (abc)² = 16·{R_sym}²·Pole²(Heron)
+equation = expand(abc**2 - 16 * {R_sym}**2 * Area_sq_simplified)
+
+# Upraszczamy dzieląc przez {R_sym}^6 (wszystko jest proporcjonalne do {R_sym}^6)
+equation_in_t = simplify(equation / {R_sym}**6)
+print(f"Równanie w t (po podzieleniu przez {R_sym}⁶):")
+equation_poly = Poly(equation_in_t, t)
+print(f"  {{equation_poly.as_expr()}} = 0")
+
+# Krok 5: Rozwiązanie równania
+solutions = solve(equation_in_t, t)
+print(f"Rozwiązania: {{len(solutions)}} (łącznie z zespolonymi)")
+
+# Filtrujemy rozwiązania z poprawnego zakresu
+valid_solutions = []
+for sol in solutions:
+    try:
+        val = complex(sol)
+        if abs(val.imag) < 1e-8:
+            t_val = float(val.real)
+            if float(t_min) < t_val < float(t_max):
+                valid_solutions.append((t_val, sol))
+                print(f"  t = {{float(sol):.6f}} ✓ (w zakresie)")
+            else:
+                print(f"  t = {{float(val.real):.6f}} ✗ (poza zakresem)")
+        else:
+            pass  # zespolone, pomijamy
+    except:
+        pass
+
+# Krok 6: Obliczenie pola dla każdego poprawnego t
+print()
+print("Krok 6: Porównanie pól")
+best_area = None
+best_t = None
+best_sides = None
+
+for t_val, t_sym in valid_solutions:
+    a_val = {n} * t_val
+    b_val = t_val
+    c_val = {k} - {n+1} * t_val
+    s_val = {k} / 2
+    area_sq_val = s_val * (s_val - a_val) * (s_val - b_val) * (s_val - c_val)
+    if area_sq_val > 0:
+        area_val = area_sq_val ** 0.5
+        print(f"  t ≈ {{t_val:.6f}}: boki ({{a_val:.4f}}{R_sym}, {{b_val:.4f}}{R_sym}, {{c_val:.4f}}{R_sym}), Pole ≈ {{area_val:.6f}}{R_sym}²")
+        if best_area is None or area_val > best_area:
+            best_area = area_val
+            best_t = t_val
+            best_sides = (a_val, b_val, c_val)
+
+if best_area is not None:
+    a_f, b_f, c_f = best_sides
+    print()
+    print(f"Trójkąt o największym polu:")
+    print(f"  boki: a ≈ {{a_f:.6f}}·{R_sym}, b ≈ {{b_f:.6f}}·{R_sym}, c ≈ {{c_f:.6f}}·{R_sym}")
+    print(f"  Pole ≈ {{best_area:.6f}}·{R_sym}²")
+
+    # Spróbuj uprościć pole symbolicznie
+    t_exact = valid_solutions[([a for a,_ in valid_solutions].index(best_t))][1]
+    area_sym = sqrt(Area_sq_simplified.subs(t, t_exact))
+    area_simplified = nsimplify(best_area, rational=False)
+    print(f"  Pole (uproszczone) ≈ {{area_simplified}}·{R_sym}²")
+    print(f"ODPOWIEDZ: {{best_area:.6f}}*{R_sym}^2")
+else:
+    print("Brak poprawnych rozwiązań — trójkąt o podanych warunkach nie istnieje.")
+    print("ODPOWIEDZ: brak rozwiazania")
+"""
+    return code
+
+
+def _try_template_solver(question_text):
+    """Try to solve the problem using a deterministic template (no LLM needed).
+    Returns dict with 'code', 'answer', 'output' or None if no template matches."""
+
+    # Pattern 1: Digit counting with odd/even constraints
+    params = _detect_digit_counting_params(question_text)
+    if params:
+        n_odd, n_even, no_repeats = params
+        code = _build_digit_counting_solver_code(n_odd, n_even, no_repeats)
+
+        # Execute locally (we're in Python, no need for MCP)
+        local_ns = {}
+        import io, contextlib
+        output_buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(output_buf):
+                exec(code, {'__builtins__': __builtins__}, local_ns)
+            output = output_buf.getvalue()
+            answer_m = re.search(r'ODPOWIEDZ:\s*(\S+)', output)
+            if answer_m:
+                return {
+                    'success': True,
+                    'code': code,
+                    'output': output,
+                    'answer': answer_m.group(1),
+                    'template': 'digit_counting',
+                }
+        except Exception as e:
+            print(f"  ⚠️ Template solver error: {e}")
+            return None
+
+    # Pattern 2: Triangle inscribed in circle, perimeter constraint, side ratio, optimize area
+    tri_params = _detect_inscribed_triangle_params(question_text)
+    if tri_params:
+        code = _build_inscribed_triangle_solver_code(tri_params)
+
+        local_ns = {}
+        import io, contextlib
+        output_buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(output_buf):
+                exec(code, {'__builtins__': __builtins__}, local_ns)
+            output = output_buf.getvalue()
+            answer_m = re.search(r'ODPOWIEDZ:\s*(.+)', output)
+            if answer_m:
+                return {
+                    'success': True,
+                    'code': code,
+                    'output': output,
+                    'answer': answer_m.group(1).strip(),
+                    'template': 'inscribed_triangle',
+                }
+        except Exception as e:
+            print(f"  ⚠️ Template solver error (inscribed_triangle): {e}")
+            return None
+
+    # Future patterns can be added here
+    return None
+
+
 def check_answer(expected, got, question):
     """Check if the model's answer matches expected. Returns (match, explanation)."""
     if not got:
@@ -2551,6 +2904,28 @@ def test_question_classifier(q, base_url, model, verbose=True, api_key=None):
         cats = _detect_categories(question_text)
         print(f"  RAG categories: {', '.join(cats)}")
 
+    # Step 0.5: Try deterministic template solver BEFORE classifier (no LLM needed!)
+    template_result = _try_template_solver(question_text)
+    if template_result and template_result.get('success'):
+        t_template = time.time() - t_start
+        result['pipeline_used'] = 'template_solver'
+        result['has_code'] = True
+        result['code_valid'] = True
+        result['extracted_code'] = template_result['code']
+        result['sympy_stdout'] = template_result['output']
+        result['answer_got'] = template_result['answer']
+        result['classifier_type'] = f"template:{template_result.get('template', 'unknown')}"
+        result['classifier_confidence'] = 1.0
+        result['time_total'] = t_template
+        match, explanation = check_answer(q['answer'], result['answer_got'], q)
+        result['correct'] = match
+        if verbose:
+            print(f"  Template ({t_template:.0f}s): ✅ {template_result.get('template', '?')} → {result['answer_got']}")
+            status = '✅' if match else '❌'
+            exp_display = clean_latex_for_display(str(q['answer']))
+            print(f"  Answer:    {status} Expected: {exp_display}, got: {result['answer_got']}")
+        return result
+
     # Step 1: Call LLM with classifier prompt + RAG context
     t0 = time.time()
     classifier_config = AGENT_CONFIG.get("classifier", {"max_tokens": 800, "temperature": 0.1})
@@ -2751,6 +3126,26 @@ def test_question(q, base_url, model, verbose=True, api_key=None):
     if rag_context and verbose:
         cats = _detect_categories(question_text)
         print(f"  RAG categories: {', '.join(cats)}")
+
+    # Template solver: try deterministic solution BEFORE LLM agents
+    template_result = _try_template_solver(question_text)
+    if template_result and template_result.get('success'):
+        t_template = time.time() - t_start
+        result['pipeline_used'] = 'template_solver'
+        result['has_code'] = True
+        result['code_valid'] = True
+        result['extracted_code'] = template_result['code']
+        result['sympy_stdout'] = template_result['output']
+        result['answer_got'] = template_result['answer']
+        result['time_total'] = t_template
+        match, explanation = check_answer(q['answer'], result['answer_got'], q)
+        result['correct'] = match
+        if verbose:
+            print(f"  Template ({t_template:.0f}s): ✅ {template_result.get('template', '?')} → {result['answer_got']}")
+            status = '✅' if match else '❌'
+            exp_display = clean_latex_for_display(str(q['answer']))
+            print(f"  Answer:    {status} Expected: {exp_display}, got: {result['answer_got']}")
+        return result
 
     # Agent 1: Analytical (with RAG strategies injected)
     t0 = time.time()

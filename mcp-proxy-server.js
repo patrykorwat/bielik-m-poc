@@ -296,7 +296,7 @@ app.get('/llm-proxy/models', async (req, res) => {
 app.get('/llm-proxy/config', (_req, res) => {
   res.json({
     hasApiKey: !!DEFAULT_API_KEY,
-    hasLlmUrl: !!DEFAULT_LLM_URL,
+    llmUrl: DEFAULT_LLM_URL || undefined,
   });
 });
 

@@ -2,6 +2,7 @@ import { LLMAgent, LLMProviderType } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
 import { LeanProverServiceBrowser } from './leanProverService.browser';
 import { LeanProofSolver } from './leanProofSolver';
+import { ProblemDecomposer } from './problemDecomposer';
 import { RAGService } from './ragService';
 import { classifyProblem, shouldUseFallback } from './classifierService';
 import { routeAndSolveWithRetry } from './solverRouter';
@@ -1920,6 +1921,15 @@ ${result.error || ''}`;
 
           console.log(`📊 Solver result: success=${solverResult.success}, answer=${solverResult.answer}`);
 
+          // ═══ VERIFY numeric answer with deterministic brute-force ═══
+          if (solverResult.success && solverResult.answer) {
+            const verified = await this.verifyNumericAnswer(userMessage, solverResult.answer);
+            if (verified !== solverResult.answer) {
+              solverResult.answer = verified;
+              solverResult.output = (solverResult.output || '') + `\n\n🔍 Weryfikacja brute-force: ${verified}`;
+            }
+          }
+
           // Show solver code and result
           const solverContent = solverResult.success
             ? `\`\`\`python\n${solverResult.code}\n\`\`\`\n\n---\n**WYNIKI WYKONANIA:**\n${solverResult.output}`
@@ -2051,6 +2061,13 @@ ${result.error || ''}`;
               console.log(`📊 Extraction chain: success=${chainResult.success}, template=${chainResult.templateUsed || 'multi-step'}, answer=${chainResult.answer}`);
 
               if (chainResult.success && chainResult.answer) {
+                // ═══ VERIFY numeric answer ═══
+                const verifiedChain = await this.verifyNumericAnswer(userMessage, chainResult.answer);
+                if (verifiedChain !== chainResult.answer) {
+                  chainResult.answer = verifiedChain;
+                  chainResult.output = (chainResult.output || '') + `\n\n🔍 Weryfikacja brute-force: ${verifiedChain}`;
+                }
+
                 // Show extraction chain result
                 const chainContent = `**Metoda:** ${chainResult.templateUsed || 'multi-step extraction'}\n\n\`\`\`python\n${chainResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${chainResult.output}`;
 
@@ -2127,6 +2144,13 @@ ${result.error || ''}`;
         );
 
         if (chainResult.success && chainResult.answer) {
+          // ═══ VERIFY numeric answer ═══
+          const verifiedNC = await this.verifyNumericAnswer(userMessage, chainResult.answer);
+          if (verifiedNC !== chainResult.answer) {
+            chainResult.answer = verifiedNC;
+            chainResult.output = (chainResult.output || '') + `\n\n🔍 Weryfikacja brute-force: ${verifiedNC}`;
+          }
+
           const chainContent = `**Metoda:** ${chainResult.templateUsed || 'extraction'}\n\n\`\`\`python\n${chainResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${chainResult.output}`;
 
           const chainMsg: Message = {
@@ -2166,7 +2190,85 @@ ${result.error || ''}`;
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // AGENT 1: Analytical — plan the solution
+    // DECOMPOSITION: Divide & Conquer — break complex problem into solvable parts
+    // ═══════════════════════════════════════════════════════════════════
+    if (this.mcpClient) {
+      console.log('\n=== DIVIDE & CONQUER: Decomposing problem ===');
+
+      try {
+        const classifierPromptText = (prompts as any).classifier || '';
+        const decomposer = new ProblemDecomposer(
+          this.llmAgent,
+          this.mcpClient,
+          (code: string) => this.sanitizeCode(code),
+          classifierPromptText,
+        );
+
+        // Show decomposition start to user
+        const decompStartMsg: Message = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: '🔪 Rozbijam zadanie na prostsze pod-zadania...',
+          agentName: '🔪 Dekompozycja',
+          timestamp: new Date(),
+        };
+        this.conversationHistory.push(decompStartMsg);
+        newMessages.push(decompStartMsg);
+        if (onMessageCallback) onMessageCallback(decompStartMsg);
+
+        const decompResult = await decomposer.decompose(
+          userMessage,
+          ragContext || undefined,
+          (step, total, result) => {
+            // Callback for each solved sub-task
+            const stepStatus = result.success ? '✅' : '❌';
+            const stepMsg: Message = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: `${stepStatus} Krok ${step}/${total}: ${result.answer || result.error || 'brak wyniku'} [${result.pipeline || '?'}]`,
+              agentName: '🔪 Dekompozycja',
+              timestamp: new Date(),
+            };
+            this.conversationHistory.push(stepMsg);
+            newMessages.push(stepMsg);
+            if (onMessageCallback) onMessageCallback(stepMsg);
+          },
+        );
+
+        if (decompResult.success && decompResult.finalAnswer) {
+          console.log(`✅ Decomposition succeeded: ${decompResult.stepsCompleted}/${decompResult.totalSteps} steps, answer: ${decompResult.finalAnswer}`);
+
+          // Show final decomposition result
+          const stepsDetail = decompResult.subResults
+            .map((r, i) => {
+              const task = decompResult.subTasks[i];
+              const status = r.success ? '✅' : '❌';
+              return `${status} ${task?.description?.substring(0, 60) || `Krok ${r.subTaskId}`}: **${r.answer || r.error || '?'}**`;
+            })
+            .join('\n');
+
+          const decompResultMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `**Rozwiązanie metodą dekompozycji** (${decompResult.stepsCompleted}/${decompResult.totalSteps} kroków):\n\n${stepsDetail}\n\nODPOWIEDZ: ${decompResult.finalAnswer}`,
+            agentName: '📊 Wynik (Dekompozycja)',
+            timestamp: new Date(),
+          };
+          this.conversationHistory.push(decompResultMsg);
+          newMessages.push(decompResultMsg);
+          if (onMessageCallback) onMessageCallback(decompResultMsg);
+
+          return newMessages;
+        } else {
+          console.log(`⚠️ Decomposition failed (${decompResult.stepsCompleted}/${decompResult.totalSteps}), falling through to Agent pipeline...`);
+        }
+      } catch (decompError) {
+        console.warn('⚠️ Decomposition error, falling through to Agent pipeline:', decompError);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // AGENT 1: Analytical — plan the solution (legacy fallback)
     // ═══════════════════════════════════════════════════════════════════
     console.log('\n=== AGENT 1: Analytical ===');
 
@@ -2404,6 +2506,27 @@ ${result.error || ''}`;
     newMessages.push(executorMsg);
     if (onMessageCallback) onMessageCallback(executorMsg);
 
+    // ═══ VERIFY legacy pipeline answer with deterministic brute-force ═══
+    if (executionResults.length > 0 && !executionResults.some(r => r.includes('❌'))) {
+      const lastResult = executionResults[executionResults.length - 1];
+      const odpMatch = /ODPOWIED[ZŹ]:\s*(\S+)/i.exec(lastResult);
+      if (odpMatch) {
+        const legacyAnswer = odpMatch[1].trim();
+        const verifiedLegacy = await this.verifyNumericAnswer(userMessage, legacyAnswer);
+        if (verifiedLegacy !== legacyAnswer) {
+          // Replace answer in execution results and executor content
+          const correctionNote = `\n\n🔍 Weryfikacja brute-force: ${verifiedLegacy} (korekta z ${legacyAnswer})`;
+          executionResults.push(correctionNote);
+          finalExecutorContent += correctionNote;
+          // Also fix in conversation history so summary agent sees correct answer
+          const execMsg = this.conversationHistory[this.conversationHistory.length - 1];
+          if (execMsg && execMsg.agentName === 'Agent Wykonawczy') {
+            execMsg.content += correctionNote;
+          }
+        }
+      }
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // AGENT 3: Summary — explain the solution step by step
     // ═══════════════════════════════════════════════════════════════════
@@ -2510,6 +2633,104 @@ ${result.error || ''}`;
 
     console.log('✅ Processing complete');
     return newMessages;
+  }
+
+  // ═══ Deterministic Brute-Force Verification ══════════════════════════
+  // Verifies numeric answers for known problem patterns WITHOUT using LLM.
+  // Currently supports: digit-counting combinatorics problems.
+
+  private async verifyNumericAnswer(problem: string, answer: string): Promise<string> {
+    try {
+      // Only verify numeric answers
+      const num = parseFloat(answer);
+      if (isNaN(num) || num < 0 || num > 1_000_000) return answer;
+
+      const code = this.generateDigitCountingVerification(problem);
+      if (!code) return answer;
+
+      if (!this.mcpClient) return answer;
+
+      console.log(`🔍 Running deterministic verification for answer: ${answer}`);
+
+      const result = await this.mcpClient.callTool('sympy_calculate', {
+        expression: code,
+      });
+
+      const output = result.content
+        .filter((c: any) => c.type === 'text')
+        .map((c: any) => c.text)
+        .join('\n');
+
+      if (/Error:|Traceback|SyntaxError/i.test(output)) {
+        console.log(`  ⚠️ Verification code error: ${output.substring(0, 80)}`);
+        return answer;
+      }
+
+      const match = /WERYFIKACJA:\s*(\d+)/i.exec(output);
+      if (!match) return answer;
+
+      const verified = match[1];
+      if (verified !== answer) {
+        console.log(`🔍 Verification override: formula=${answer} → brute-force=${verified}`);
+        return verified;
+      }
+
+      console.log(`✅ Verification confirms: ${answer}`);
+      return answer;
+    } catch (error) {
+      console.log(`  ⚠️ Verification error: ${error}`);
+      return answer;
+    }
+  }
+
+  private generateDigitCountingVerification(problem: string): string | null {
+    const text = problem.toLowerCase();
+
+    // Must mention digits/numbers
+    if (!/cyfr|cyfrowe|cyfrowych|zapisie dziesi[eę]tnym|liczb\w* naturaln/.test(text)) return null;
+
+    const noRepeats = /nie powt[aó]rza|różn\w* cyfr|bez powt[oó]rzeń|r[oó]żnych cyfr/.test(text);
+
+    const polishNumbers: Record<string, number> = {
+      'jedno': 1, 'jeden': 1, 'jedna': 1,
+      'dwie': 2, 'dwa': 2, 'dwóch': 2, 'dwu': 2,
+      'trzy': 3, 'trzech': 3,
+      'cztery': 4, 'czterech': 4,
+      'pięć': 5, 'pięciu': 5,
+    };
+
+    const numPattern = '(\\d+|jedno|jeden|jedna|dwie|dwa|dwóch|dwu|trzy|trzech|cztery|czterech|pięć|pięciu)';
+
+    const oddMatch = text.match(
+      new RegExp(`(?:dokładnie\\s+)?${numPattern}\\s+(?:cyfr\\w*)\\s+(?:s[aą]\\s+)?nieparzyst`)
+    );
+    const evenMatch = text.match(
+      new RegExp(`(?:dokładnie\\s+)?${numPattern}\\s+(?:cyfr\\w*)\\s+(?:s[aą]\\s+)?parzyst`)
+    );
+
+    let nOdd: number | null = oddMatch ? (polishNumbers[oddMatch[1]] ?? parseInt(oddMatch[1])) : null;
+    let nEven: number | null = evenMatch ? (polishNumbers[evenMatch[1]] ?? parseInt(evenMatch[1])) : null;
+
+    if (nOdd === null || nEven === null) return null;
+    if (nOdd < 1 || nOdd > 5 || nEven < 0 || nEven > 5) return null;
+
+    const totalDigits = nOdd + nEven;
+    if (totalDigits < 1 || totalDigits > 9) return null;
+
+    console.log(`🎯 Detected digit-counting: ${totalDigits} digits, ${nOdd} odd, ${nEven} even, noRepeats=${noRepeats}`);
+
+    return `from itertools import permutations, combinations
+odd_digits = [1, 3, 5, 7, 9]
+even_digits = [0, 2, 4, 6, 8]
+count = 0
+for o in combinations(odd_digits, ${nOdd}):
+    for e in combinations(even_digits, ${nEven}):
+        digits = list(o) + list(e)
+        ${noRepeats ? '# no repeats guaranteed by combinations' : 'if len(set(digits)) < len(digits): continue'}
+        for p in permutations(digits):
+            if ${totalDigits > 1 ? 'p[0] != 0' : 'True'}:
+                count += 1
+print("WERYFIKACJA:", count)`;
   }
 
   /**

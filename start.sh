@@ -15,6 +15,7 @@ set -e  # Exit on error
 
 # Parse CLI arguments
 API_KEY=""
+API_URL=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         --api-key)
@@ -25,11 +26,20 @@ while [[ $# -gt 0 ]]; do
             API_KEY="${1#*=}"
             shift
             ;;
+        --api-url)
+            API_URL="$2"
+            shift 2
+            ;;
+        --api-url=*)
+            API_URL="${1#*=}"
+            shift
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  --api-key KEY   Set API key for remote LLM provider (e.g. Cyfronet LLM Lab)"
+            echo "  --api-key KEY   Set API key for remote LLM provider"
+            echo "  --api-url URL   Set remote LLM API base URL"
             echo "  -h, --help      Show this help"
             exit 0
             ;;
@@ -41,9 +51,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Also accept API_KEY from environment variable
+# Also accept from environment variables
 if [ -z "$API_KEY" ] && [ -n "$BIELIK_API_KEY" ]; then
     API_KEY="$BIELIK_API_KEY"
+fi
+if [ -z "$API_URL" ] && [ -n "$BIELIK_API_URL" ]; then
+    API_URL="$BIELIK_API_URL"
 fi
 
 echo "🎓 Starting Bielik Matura"
@@ -280,7 +293,7 @@ mkdir -p logs
 
 # Start MCP Proxy (SymPy) - MANDATORY
 print_info "Starting MCP Proxy (SymPy) on port 3001..."
-LLM_API_KEY="$API_KEY" npm run mcp-proxy > logs/mcp-proxy.log 2>&1 &
+LLM_API_KEY="$API_KEY" LLM_API_URL="$API_URL" npm run mcp-proxy > logs/mcp-proxy.log 2>&1 &
 MCP_PID=$!
 sleep 2
 
