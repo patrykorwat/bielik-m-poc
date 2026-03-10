@@ -240,9 +240,12 @@ export class ThreeAgentOrchestrator {
     }
 
     // Pattern 2: Triangle optimization/computation (Heron-based, multiple sub-patterns)
+    console.log('🔍 Template: checking triangle optimization...');
     const triParams = this.detectTriangleOptimizationParams(problemText);
+    console.log('🔍 Template: triParams =', triParams ? JSON.stringify(triParams) : 'null');
     if (triParams) {
       const code = this.buildTriangleOptimizationCode(triParams);
+      console.log('🔍 Template: code generated =', code ? `${code.length} chars` : 'null');
       if (code) {
         return this.executeTemplateSolverCode(code, `triangle_${triParams.subtype}`);
       }
@@ -271,8 +274,10 @@ export class ThreeAgentOrchestrator {
         };
       }
     } catch (e) {
-      console.warn(`⚠️ Template solver (${template}) execution error:`, e);
+      console.error(`❌ Template solver (${template}) execution error:`, e);
+      console.error(`❌ Error details:`, e instanceof Error ? e.message : String(e));
     }
+    console.log(`🔍 Template solver (${template}): returning null (no ODPOWIEDZ found or error)`);
     return null;
   }
 
@@ -2221,9 +2226,11 @@ ${result.error || ''}`;
     // ═══════════════════════════════════════════════════════════════════
     if (this.mcpClient) {
       console.log('🔍 Checking template solver...');
-      const templateResult = await this.tryTemplateSolver(userMessage);
-      if (templateResult && templateResult.success) {
-        console.log(`✅ Template solver matched: ${templateResult.template}, answer: ${templateResult.answer}`);
+      try {
+        const templateResult = await this.tryTemplateSolver(userMessage);
+        console.log('🔍 Template solver result:', templateResult ? `matched=${templateResult.template}, success=${templateResult.success}` : 'no match');
+        if (templateResult && templateResult.success) {
+          console.log(`✅ Template solver matched: ${templateResult.template}, answer: ${templateResult.answer}`);
 
         // Show template solver code & output
         const templateMsg: Message = {
@@ -2273,6 +2280,9 @@ ${result.error || ''}`;
         }
 
         return newMessages;
+      }
+      } catch (templateErr) {
+        console.error('❌ Template solver top-level error:', templateErr);
       }
     }
 
