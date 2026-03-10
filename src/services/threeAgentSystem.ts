@@ -482,16 +482,16 @@ t = symbols('t', positive=True)
 a_expr = ${n}*t*${R}
 b_expr = t*${R}
 c_expr = (${k}-${n1}*t)*${R}
-print(f"Boki: ${n}t·${R}, t·${R}, (${k}-${n1}t)·${R}")
+print("Boki: ${n}t*${R}, t*${R}, (${k}-${n1}t)*${R}")
 t_min = Rational(${k}, ${2*n1})
 t_max = Rational(${k}, ${2*n})
-print(f"Zakres t: ({t_min}, {t_max})")
+print("Zakres t: (" + str(t_min) + ", " + str(t_max) + ")")
 s = Rational(${k},2)*${R}
 Area_sq = expand(s*(s-a_expr)*(s-b_expr)*(s-c_expr))
-print(f"Pole² (Heron): {factor(Area_sq)}")
+print("Pole^2 (Heron): " + str(factor(Area_sq)))
 abc = a_expr*b_expr*c_expr
 eq = simplify(expand(abc**2-16*${R}**2*Area_sq)/${R}**6)
-print(f"Równanie: {Poly(eq,t).as_expr()} = 0")
+print("Rownanie: " + str(Poly(eq,t).as_expr()) + " = 0")
 solutions = solve(eq, t)
 valid = []
 for sol in solutions:
@@ -507,7 +507,7 @@ for sol in solutions:
                 continue
         if float(t_min)<tv<float(t_max):
             valid.append((tv,sol))
-            print(f"  t={tv:.6f} ✓")
+            print("  t=" + str(round(tv,6)) + " ok")
     except: pass
 best_area,best_sides=None,None
 for tv,ts in valid:
@@ -516,14 +516,15 @@ for tv,ts in valid:
     asq=sv*(sv-av)*(sv-bv)*(sv-cv)
     if asq>0:
         area=asq**0.5
-        print(f"  t≈{tv:.6f}: boki ({av:.4f}${R},{bv:.4f}${R},{cv:.4f}${R}), Pole≈{area:.6f}${R}²")
+        print("  t=" + str(round(tv,6)) + ": boki (" + str(round(av,4)) + "${R}," + str(round(bv,4)) + "${R}," + str(round(cv,4)) + "${R}), Pole=" + str(round(area,6)) + "${R}^2")
         if best_area is None or area>best_area:
             best_area,best_sides=area,(av,bv,cv)
 if best_area:
     af,bf,cf=best_sides
-    print(f"\\nTrójkąt o największym polu: boki ≈({af:.4f},{bf:.4f},{cf:.4f})·${R}")
-    print(f"Pole ≈ {best_area:.6f}·${R}²")
-    print(f"ODPOWIEDZ: {best_area:.6f}*${R}^2")
+    print("")
+    print("Trojkat o najwiekszym polu: boki =(" + str(round(af,4)) + "," + str(round(bf,4)) + "," + str(round(cf,4)) + ")*${R}")
+    print("Pole = " + str(round(best_area,6)) + "*${R}^2")
+    print("ODPOWIEDZ: " + str(round(best_area,6)) + "*${R}^2")
 else:
     print("ODPOWIEDZ: brak rozwiazania")
 `;
@@ -591,7 +592,7 @@ for tc in critical:
             if asq>0:
                 area=asq**0.5
                 sides=(${n}*tv,tv,${P}-${n1}*tv)
-                print(f"  t={tv:.4f}: boki ({sides[0]:.4f},{sides[1]:.4f},{sides[2]:.4f}), Pole={area:.6f}")
+                print("  t=" + str(round(tv,4)) + ": boki (" + str(round(sides[0],4)) + "," + str(round(sides[1],4)) + "," + str(round(sides[2],4)) + "), Pole=" + str(round(area,6)))
                 if best_area is None or area>best_area:
                     best_area,best_tc=area,tc
     except: pass
