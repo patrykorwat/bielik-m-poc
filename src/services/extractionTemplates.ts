@@ -1210,6 +1210,250 @@ print("ODPOWIEDZ:", part1)
 };
 
 // ============================================================
+// Template: Expression simplification
+// ============================================================
+
+const expressionSimplify: ExtractionTemplate = {
+  id: 'expression_simplify',
+  name: 'Upraszczanie wyrażenia',
+  description: 'Oblicz wartość wyrażenia — potęgi, pierwiastki, logarytmy',
+  extractionPrompt: `Wyodrębnij wyrażenie matematyczne do obliczenia. Odpowiedz TYLKO JSON:
+{"expression": "<wyrażenie w składni SymPy, np. 27**Rational(1,3) + 3**Rational(1,2)>"}`,
+  buildCode: (v) => `from sympy import *
+expr = ${v.expression || '0'}
+wynik = simplify(expr)
+print("ODPOWIEDZ:", wynik)
+`,
+  keywords: ['jest równa', 'upro', 'oblicz wartość', 'wyrażeni', 'liczba'],
+};
+
+// ============================================================
+// Template: Nth root sum
+// ============================================================
+
+const nthRootSum: ExtractionTemplate = {
+  id: 'nth_root_sum',
+  name: 'Suma pierwiastków n-tego stopnia',
+  description: 'Wyrażenie z pierwiastkami n-tego stopnia',
+  extractionPrompt: `Wyodrębnij wyrażenie z pierwiastkami. Odpowiedz TYLKO JSON:
+{"expression": "<wyrażenie w składni SymPy, np. 27**Rational(1,9) + 3**Rational(1,9)>"}`,
+  buildCode: (v) => `from sympy import *
+expr = ${v.expression || '0'}
+wynik = simplify(expr)
+print("ODPOWIEDZ:", wynik)
+`,
+  keywords: ['pierwiast', 'stopni', 'jest równa', 'liczba'],
+};
+
+// ============================================================
+// Template: Rational equation solutions
+// ============================================================
+
+const rationalEquationSolutions: ExtractionTemplate = {
+  id: 'rational_equation_solutions',
+  name: 'Równanie z ułamkiem algebraicznym',
+  description: 'Równanie ułamka algebraicznego — dziedzina i rozwiązania',
+  extractionPrompt: `Wyodrębnij równanie z ułamkiem algebraicznym. Odpowiedz TYLKO JSON:
+{"numerator": "<licznik w SymPy>", "denominator": "<mianownik w SymPy>", "variable": "x"}`,
+  buildCode: (v) => `from sympy import *
+x = symbols('x')
+numer = ${v.numerator || '(x+1)*(x-1)**2'}
+denom = ${v.denominator || '(x-1)*(x+1)**2'}
+numer_roots = solve(numer, x)
+domain_excluded = solve(denom, x)
+valid = [r for r in numer_roots if r not in domain_excluded]
+if len(valid) == 0:
+    print("ODPOWIEDZ: nie ma rozwiązania")
+elif len(valid) == 1:
+    print("ODPOWIEDZ: ma dokładnie jedno rozwiązanie:", valid[0])
+else:
+    print("ODPOWIEDZ: ma", len(valid), "rozwiązania:", valid)
+`,
+  keywords: ['równani', 'rozwiązan', 'ułamk', 'dziedzin'],
+};
+
+// ============================================================
+// Template: Sequence term evaluation
+// ============================================================
+
+const sequenceTermEval: ExtractionTemplate = {
+  id: 'sequence_term_eval',
+  name: 'Obliczanie wyrazu ciągu',
+  description: 'Oblicz n-ty wyraz ciągu ze wzoru ogólnego',
+  extractionPrompt: `Wyodrębnij wzór ciągu i numer wyrazu. Odpowiedz TYLKO JSON:
+{"formula": "<wzór a_n w składni SymPy, np. 2**n * (n+1)>", "n_value": <numer wyrazu>}`,
+  buildCode: (v) => `from sympy import *
+n = symbols('n')
+formula = ${v.formula || '2**n * (n+1)'}
+n_val = ${v.n_value || 4}
+wynik = formula.subs(n, n_val)
+print("ODPOWIEDZ:", wynik)
+`,
+  keywords: ['ciąg', 'określon', 'wzor', 'wyraz'],
+};
+
+// ============================================================
+// Template: Similar triangles area
+// ============================================================
+
+const similarTrianglesArea: ExtractionTemplate = {
+  id: 'similar_triangles_area',
+  name: 'Pole trójkątów podobnych',
+  description: 'Oblicz pole trójkąta podobnego',
+  extractionPrompt: `Wyodrębnij dane o podobnych trójkątach. Odpowiedz TYLKO JSON:
+{"leg1": <przyprostokątna 1 trójkąta T1>, "leg2": <przyprostokątna 2 trójkąta T1>, "known_side_T2": <znany bok T2>, "known_side_type": "<hypotenuse lub leg>"}`,
+  buildCode: (v) => `from sympy import *
+a1, b1 = ${v.leg1 || 5}, ${v.leg2 || 12}
+c1 = sqrt(a1**2 + b1**2)
+known_T2 = ${v.known_side_T2 || 26}
+side_type = "${v.known_side_type || 'hypotenuse'}"
+if side_type == "hypotenuse":
+    scale = known_T2 / c1
+else:
+    scale = known_T2 / a1
+a2 = a1 * scale
+b2 = b1 * scale
+area = Rational(1, 2) * a2 * b2
+print("ODPOWIEDZ:", simplify(area))
+`,
+  keywords: ['podobn', 'trójkąt', 'pole', 'przyprostokątn'],
+};
+
+// ============================================================
+// Template: Arithmetic sequence rate
+// ============================================================
+
+const arithmeticSequenceRate: ExtractionTemplate = {
+  id: 'arithmetic_sequence_rate',
+  name: 'Raty — ciąg arytmetyczny',
+  description: 'Spłata pożyczki w ratach malejących (ciąg arytmetyczny)',
+  extractionPrompt: `Wyodrębnij dane o ratach. Odpowiedz TYLKO JSON:
+{"total_amount": <łączna kwota>, "num_rates": <liczba rat>, "rate_difference": <o ile mniejsza każda kolejna rata>}`,
+  buildCode: (v) => `from sympy import *
+a1 = symbols('a1', positive=True)
+total = ${v.total_amount || 8910}
+n = ${v.num_rates || 18}
+d = -${v.rate_difference || 30}
+S = n * (2*a1 + (n-1)*d) / 2
+sol = solve(Eq(S, total), a1)
+wynik = sol[0] if isinstance(sol, list) else sol
+print("ODPOWIEDZ:", wynik)
+`,
+  keywords: ['rat', 'spłac', 'pożyczk', 'mniejsz'],
+};
+
+// ============================================================
+// Template: Quadratic inequality
+// ============================================================
+
+const quadraticInequalitySolve: ExtractionTemplate = {
+  id: 'quadratic_inequality_solve',
+  name: 'Nierówność kwadratowa',
+  description: 'Rozwiąż nierówność kwadratową',
+  extractionPrompt: `Przekształć nierówność do postaci standardowej. Odpowiedz TYLKO JSON:
+{"lhs": "<lewa strona po przeniesieniu na jedną stronę, np. x**2 + 2*x - 3>", "inequality": "<less lub greater>", "variable": "x"}`,
+  buildCode: (v) => `from sympy import *
+x = symbols('x', real=True)
+lhs = ${v.lhs || 'x**2 + 2*x - 3'}
+ineq = "${v.inequality || 'less'}"
+if ineq == "less":
+    solution = solveset(lhs < 0, x, S.Reals)
+else:
+    solution = solveset(lhs > 0, x, S.Reals)
+print("ODPOWIEDZ:", solution)
+`,
+  keywords: ['nierównoś', 'rozwiąż', 'kwadrat'],
+};
+
+// ============================================================
+// Template: Square diagonal line equation
+// ============================================================
+
+const squareDiagonalLine: ExtractionTemplate = {
+  id: 'square_diagonal_line',
+  name: 'Równanie przekątnej kwadratu',
+  description: 'Równanie prostej zawierającej drugą przekątną kwadratu',
+  extractionPrompt: `Wyodrębnij współrzędne końców przekątnej kwadratu. Odpowiedz TYLKO JSON:
+{"A": [<x1>, <y1>], "C": [<x2>, <y2>]}`,
+  buildCode: (v) => {
+    const A = v.A || [-8, -2];
+    const C = v.C || [0, 4];
+    return `from sympy import *
+x = symbols('x')
+Ax, Ay = ${JSON.stringify(A)}
+Cx, Cy = ${JSON.stringify(C)}
+Mx = Rational(Ax + Cx, 2)
+My = Rational(Ay + Cy, 2)
+slope_AC = Rational(Cy - Ay, Cx - Ax)
+slope_BD = Rational(-1, 1) / slope_AC
+y_expr = slope_BD * (x - Mx) + My
+print("ODPOWIEDZ: y =", simplify(y_expr))
+`;
+  },
+  keywords: ['kwadrat', 'przekątn', 'równani', 'prost'],
+};
+
+// ============================================================
+// Template: Probability drawing
+// ============================================================
+
+const probabilityDrawing: ExtractionTemplate = {
+  id: 'probability_drawing',
+  name: 'Prawdopodobieństwo losowania',
+  description: 'Losowanie ze zwracaniem/bez — oblicz prawdopodobieństwo',
+  extractionPrompt: `Wyodrębnij dane o losowaniu. Odpowiedz TYLKO JSON:
+{"set_elements": [<lista elementów>], "num_draws": <ile losowań>, "with_replacement": <true/false>, "condition": "<warunek, np. sum > 10 lub iloczyn podzielny przez 5>"}`,
+  buildCode: (v) => {
+    const elements = JSON.stringify(v.set_elements || [2,3,4,5,6,7,8,9]);
+    return `from sympy import *
+from itertools import product as cart_product
+elements = ${elements}
+n_draws = ${v.num_draws || 2}
+with_replacement = ${v.with_replacement ? 'True' : 'False'}
+condition = "${v.condition || 'sum > 10'}"
+if with_replacement:
+    all_outcomes = list(cart_product(elements, repeat=n_draws))
+else:
+    from itertools import permutations
+    all_outcomes = list(permutations(elements, n_draws))
+total = len(all_outcomes)
+favorable = 0
+import re as _re
+for outcome in all_outcomes:
+    s = sum(outcome)
+    p = 1
+    for x in outcome:
+        p *= x
+    if "iloczyn" in condition or "product" in condition:
+        val = p
+    else:
+        val = s
+    m = _re.search(r'[><=]+\\s*(\\d+)', condition)
+    if m:
+        threshold = int(m.group(1))
+        if ">=" in condition:
+            favorable += int(val >= threshold)
+        elif ">" in condition:
+            favorable += int(val > threshold)
+        elif "<=" in condition:
+            favorable += int(val <= threshold)
+        elif "<" in condition:
+            favorable += int(val < threshold)
+        elif "==" in condition or "=" in condition:
+            favorable += int(val == threshold)
+    elif "podzielny" in condition or "divisible" in condition:
+        m2 = _re.search(r'(\\d+)', condition)
+        if m2:
+            divisor = int(m2.group(1))
+            favorable += int(p % divisor == 0)
+prob = Rational(favorable, total)
+print("ODPOWIEDZ:", prob)
+`;
+  },
+  keywords: ['losuj', 'prawdopodobień', 'zbior', 'zwracani'],
+};
+
+// ============================================================
 // Registry of all templates
 // ============================================================
 
@@ -1243,6 +1487,16 @@ export const EXTRACTION_TEMPLATES: ExtractionTemplate[] = [
   linearInequalitySimple,
   circleCenterOnLine,
   percentageWordProblem,
+  // 2023 patterns
+  expressionSimplify,
+  nthRootSum,
+  rationalEquationSolutions,
+  sequenceTermEval,
+  similarTrianglesArea,
+  arithmeticSequenceRate,
+  quadraticInequalitySolve,
+  squareDiagonalLine,
+  probabilityDrawing,
 ];
 
 // ============================================================

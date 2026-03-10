@@ -1,187 +1,187 @@
 [
-    {
-        "question": "Liczba $\\log_3 \\sqrt{27} - \\log_{27} \\sqrt{3}$ jest równa",
-        "answer": "C",
-        "options": {
-            "A": "$\\frac{4}{3}$",
-            "B": "$\\frac{1}{2}$",
-            "C": "$\\frac{11}{12}$",
-            "D": "$3$"
-        },
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 1,
-            "max_points": 1
-        }
+  {
+    "question": "Liczba $\\log_3 \\sqrt{27} - \\log_{27} \\sqrt{3}$ jest równa",
+    "answer": "C",
+    "options": {
+      "A": "$\\frac{4}{3}$",
+      "B": "$\\frac{1}{2}$",
+      "C": "$\\frac{11}{12}$",
+      "D": "$3$"
     },
-    {
-        "question": "Funkcja $f$ jest określona wzorem $f(x) = \\frac{x^3 - 8}{x - 2}$ dla każdej liczby rzeczywistej $x \\neq 2$. Wartość pochodnej tej funkcji dla argumentu $x = \\frac{1}{2}$ jest równa",
-        "answer": "A",
-        "options": {
-            "A": "$\\frac{3}{4}$",
-            "B": "$\\frac{9}{4}$",
-            "C": "$3$",
-            "D": "$\\frac{54}{8}$"
-        },
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 2,
-            "max_points": 1
-        }
-    },
-    {
-        "question": "Jeżeli $\\cos \\beta = -\\frac{1}{3}$ i $\\beta \\in (\\pi, \\frac{3}{2}\\pi)$, to wartość wyrażenia $\\sin(\\beta - \\frac{\\pi}{3})$ jest równa",
-        "answer": "D",
-        "options": {
-            "A": "$\\frac{-2\\sqrt{2} + \\sqrt{3}}{6}$",
-            "B": "$\\frac{2\\sqrt{6} + 1}{6}$",
-            "C": "$\\frac{2\\sqrt{2} + \\sqrt{3}}{6}$",
-            "D": "$\\frac{1 - 2\\sqrt{6}}{6}$"
-        },
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 3,
-            "max_points": 1
-        }
-    },
-    {
-        "question": "Dane są dwie urny z kulami. W każdej z urn jest siedem kul. W pierwszej urnie są jedna kula biała i sześć kul czarnych, w drugiej urnie są cztery kule białe i trzy kule czarne. Rzucamy jeden raz symetryczną monetą. Jeżeli wypadnie reszka, to losujemy jedną kulę z pierwszej urny, w przeciwnym przypadku -- jedną kulę z drugiej urny. Prawdopodobieństwo zdarzenia polegającego na tym, że wylosujemy kulę białą w tym doświadczeniu, jest równe",
-        "answer": "A",
-        "options": {
-            "A": "$\\frac{5}{14}$",
-            "B": "$\\frac{9}{14}$",
-            "C": "$\\frac{5}{7}$",
-            "D": "$\\frac{6}{7}$"
-        },
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 4,
-            "max_points": 1
-        }
-    },
-    {
-        "question": "Ciąg $(a_n)$ jest określony dla każdej liczby naturalnej $n \\geq 1$ wzorem $a_n = \\frac{(7p-1)n^3 + 5pn - 3}{(p+1)n^3 + n^2 + p}$, gdzie $p$ jest liczbą rzeczywistą dodatnią. Oblicz wartość $p$, dla której granica ciągu $(a_n)$ jest równa $\\frac{4}{3}$.",
-        "answer": "Granica ciągu to $\\frac{7p-1}{p+1}$. Z równania $\\frac{7p-1}{p+1} = \\frac{4}{3}$ otrzymujemy $3(7p-1) = 4(p+1)$, czyli $21p - 3 = 4p + 4$, stąd $17p = 7$, zatem $p = \\frac{7}{17} = 0.411...$. Trzy cyfry po przecinku: 4, 1, 1.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 5,
-            "max_points": 2
-        }
-    },
-    {
-        "question": "Wykaż, że dla każdej liczby rzeczywistej $x$ i dla każdej liczby rzeczywistej $y$ takich, że $2x > y$, spełniona jest nierówność $7x^3 + 4x^2 y \\geq y^3 + 2xy^2 - x^3$.",
-        "answer": "Nierówność jest równoważna $8x^3 + 4x^2 y - 2xy^2 - y^3 \\geq 0$, co można rozłożyć jako $(2x - y)(4x^2 + 4xy + y^2) = (2x - y)(2x + y)^2 \\geq 0$. Ponieważ $2x > y$, to $(2x - y) > 0$, a $(2x + y)^2 \\geq 0$, więc iloczyn jest nieujemny.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 6,
-            "max_points": 3
-        }
-    },
-    {
-        "question": "Rozwiąż równanie $|x - 3| = 2x + 11$.",
-        "answer": "Dla $x \\geq 3$: $x - 3 = 2x + 11$, stąd $x = -14$ (sprzeczność z $x \\geq 3$). Dla $x < 3$: $-(x - 3) = 2x + 11$, stąd $-x + 3 = 2x + 11$, czyli $3x = -8$, $x = -\\frac{8}{3}$. Sprawdzenie: $|-\\frac{8}{3} - 3| = \\frac{17}{3}$ i $2 \\cdot (-\\frac{8}{3}) + 11 = \\frac{17}{3}$. Rozwiązanie: $x = -\\frac{8}{3}$.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 7,
-            "max_points": 3
-        }
-    },
-    {
-        "question": "Punkt $P$ jest punktem przecięcia przekątnych trapezu $ABCD$. Długość podstawy $CD$ jest o $2$ mniejsza od długości podstawy $AB$. Promień okręgu opisanego na trójkącie ostrokątnym $CPD$ jest o $3$ mniejszy od promienia okręgu opisanego na trójkącie $APB$. Wykaż, że spełniony jest warunek $|DP|^2 + |CP|^2 - |CD|^2 = \\frac{4\\sqrt{2}}{3} \\cdot |DP| \\cdot |CP|$.",
-        "answer": "Niech $|AB| = a$, $|CD| = a - 2$. Trójkąty $APB$ i $CPD$ są podobne ze skalą $k = \\frac{a-2}{a}$. Z twierdzenia sinusów: $R_1 = \\frac{a}{2\\sin\\angle APB}$ i $R_2 = \\frac{a-2}{2\\sin\\angle CPD}$. Ponieważ $\\angle APB = \\angle CPD$ (kąty wierzchołkowe), mamy $R_2 = R_1 \\cdot \\frac{a-2}{a}$. Z warunku $R_1 - R_2 = 3$ otrzymujemy $R_1 \\cdot \\frac{2}{a} = 3$, więc $R_1 = \\frac{3a}{2}$. Stąd $\\sin\\angle CPD = \\frac{1}{3}$ i $\\cos\\angle CPD = \\frac{2\\sqrt{2}}{3}$. Z tw. cosinusów: $|CD|^2 = |DP|^2 + |CP|^2 - 2|DP||CP|\\cos\\angle CPD$, co daje tezę.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 8,
-            "max_points": 3
-        }
-    },
-    {
-        "question": "Reszta z dzielenia wielomianu $W(x) = 4x^3 - 6x^2 - (5m+1)x - 2m$ przez dwumian $x + 2$ jest równa $(-30)$. Oblicz $m$ i dla wyznaczonej wartości $m$ rozwiąż nierówność $W(x) \\geq 0$.",
-        "answer": "Z tw. Bezout: $W(-2) = -30$, czyli $4(-8) - 6(4) - (5m+1)(-2) - 2m = -30$. Stąd $-32 - 24 + 10m + 2 - 2m = -30$, $8m - 54 = -30$, $m = 3$. Wtedy $W(x) = 4x^3 - 6x^2 - 16x - 6$. Dzielimy: $W(x) = 2(2x^3 - 3x^2 - 8x - 3) = 2(x - 3)(2x^2 + 3x + 1) = 2(x-3)(2x+1)(x+1)$. Nierówność $W(x) \\geq 0$ spełniona dla $x \\in [-1, -\\frac{1}{2}] \\cup [3, +\\infty)$.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 9,
-            "max_points": 4
-        }
-    },
-    {
-        "question": "Ciąg $(a_n)$, określony dla każdej liczby naturalnej $n \\geq 1$, jest geometryczny i ma wszystkie wyrazy dodatnie. Ponadto $a_1 = 675$ i $a_{22} = \\frac{5}{4} a_{23} + \\frac{1}{5} a_{21}$. Ciąg $(b_n)$, określony dla każdej liczby naturalnej $n \\geq 1$, jest arytmetyczny. Suma wszystkich wyrazów ciągu $(a_n)$ jest równa sumie dwudziestu pięciu początkowych kolejnych wyrazów ciągu $(b_n)$. Ponadto $a_3 = b_4$. Oblicz $b_1$.",
-        "answer": "Niech $q$ będzie ilorazem ciągu $(a_n)$. Z warunku $a_{22} = \\frac{5}{4}a_{23} + \\frac{1}{5}a_{21}$: $a_1 q^{21} = \\frac{5}{4}a_1 q^{22} + \\frac{1}{5}a_1 q^{20}$. Dzielimy przez $a_1 q^{20}$: $q = \\frac{5}{4}q^2 + \\frac{1}{5}$, czyli $25q^2 - 20q + 4 = 0$, $(5q - 2)^2 = 0$, $q = \\frac{2}{5}$. Suma ciągu geometrycznego: $S = \\frac{675}{1 - \\frac{2}{5}} = 1125$. Ponadto $a_3 = 675 \\cdot \\frac{4}{25} = 108 = b_4$. Suma arytmetycznego: $S_{25} = 25b_{13} = 1125$, więc $b_{13} = 45$. Z $b_4 = 108$ i $b_{13} = 45$: $r = \\frac{45 - 108}{9} = -7$. Stąd $b_1 = b_4 - 3r = 108 + 21 = 129$.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 10,
-            "max_points": 4
-        }
-    },
-    {
-        "question": "Rozwiąż równanie $\\sin x + \\sin 2x + \\sin 3x = 0$ w przedziale $\\langle 0, \\pi \\rangle$.",
-        "answer": "Grupujemy: $(\\sin x + \\sin 3x) + \\sin 2x = 0$, czyli $2\\sin 2x \\cos x + \\sin 2x = 0$, $\\sin 2x (2\\cos x + 1) = 0$. Stąd $\\sin 2x = 0$ lub $\\cos x = -\\frac{1}{2}$. Dla $x \\in \\langle 0, \\pi \\rangle$: $\\sin 2x = 0$ daje $x = 0, \\frac{\\pi}{2}, \\pi$; $\\cos x = -\\frac{1}{2}$ daje $x = \\frac{2\\pi}{3}$. Rozwiązanie: $x \\in \\{0, \\frac{\\pi}{2}, \\frac{2\\pi}{3}, \\pi\\}$.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 11,
-            "max_points": 4
-        }
-    },
-    {
-        "question": "Wyznacz wszystkie wartości parametru $m$, dla których równanie $x^2 - (m+1)x + m = 0$ ma dwa różne rozwiązania rzeczywiste $x_1$ oraz $x_2$, spełniające warunki: $x_1 \\neq 0$, $x_2 \\neq 0$ oraz $\\frac{1}{x_1} + \\frac{1}{x_2} + 2 = \\frac{1}{x_1^2} + \\frac{1}{x_2^2}$.",
-        "answer": "Z wzorów Viete'a: $x_1 + x_2 = m + 1$ i $x_1 x_2 = m$. Warunek: $\\frac{x_1 + x_2}{x_1 x_2} + 2 = \\frac{x_1^2 + x_2^2}{(x_1 x_2)^2} = \\frac{(x_1+x_2)^2 - 2x_1 x_2}{(x_1 x_2)^2}$. Podstawiając: $\\frac{m+1}{m} + 2 = \\frac{(m+1)^2 - 2m}{m^2} = \\frac{m^2+1}{m^2}$. Mnożymy przez $m^2$: $m(m+1) + 2m^2 = m^2 + 1$, $m^2 + m + 2m^2 = m^2 + 1$, $2m^2 + m - 1 = 0$, $(2m - 1)(m + 1) = 0$. Stąd $m = \\frac{1}{2}$ lub $m = -1$. Sprawdzamy: $\\Delta > 0$, $m \\neq 0$, $x_1 \\neq x_2$. Dla $m = -1$: $\\Delta = 0$ (odrzucamy). Odpowiedź: $m = \\frac{1}{2}$.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 12,
-            "max_points": 5
-        }
-    },
-    {
-        "question": "Dany jest graniastosłup prosty $ABCDEFGH$ o podstawie prostokątnej $ABCD$. Przekątne $AH$ i $AF$ ścian bocznych tworzą kąt ostry o mierze $\\alpha$ takiej, że $\\sin \\alpha = \\frac{12}{13}$. Pole trójkąta $AFH$ jest równe $26{,}4$. Oblicz wysokość $h$ tego graniastosłupa.",
-        "answer": "Niech $|AD| = a$, $|AB| = b$, $h$ -- wysokość graniastosłupa. Wówczas $|AH| = \\sqrt{a^2 + h^2}$ i $|AF| = \\sqrt{b^2 + h^2}$. Kąt $\\alpha$ jest kątem $\\angle HAF$. Pole trójkąta $AFH$: $P = \\frac{1}{2}|AH||AF|\\sin\\alpha = 26{,}4$, czyli $|AH||AF| = \\frac{2 \\cdot 26{,}4}{\\frac{12}{13}} = 57{,}2$. Ponieważ $\\cos\\alpha = \\frac{5}{13}$ i $\\vec{AH} \\cdot \\vec{AF} = h^2$, mamy $h^2 = |AH||AF|\\cos\\alpha = 57{,}2 \\cdot \\frac{5}{13} = 22$. Zatem $h = \\sqrt{22}$.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 13,
-            "max_points": 5
-        }
-    },
-    {
-        "question": "Punkt $A = (-3, 2)$ jest wierzchołkiem trójkąta równoramiennego $ABC$, w którym $|AC| = |BC|$. Pole tego trójkąta jest równe $15$. Bok $BC$ zawarty jest w prostej o równaniu $y = x - 1$. Oblicz współrzędne wierzchołków $B$ i $C$ tego trójkąta.",
-        "answer": "Prosta $BC$: $y = x - 1$, czyli $x - y - 1 = 0$. Odległość $A$ od prostej $BC$: $d = \\frac{|-3 - 2 - 1|}{\\sqrt{2}} = \\frac{6}{\\sqrt{2}} = 3\\sqrt{2}$. Pole: $P = \\frac{1}{2}|BC| \\cdot d = 15$, więc $|BC| = \\frac{30}{3\\sqrt{2}} = 5\\sqrt{2}$. Rzut $A$ na prostą $BC$: $M = (0, -1)$ (środek $BC$, bo $|AC| = |BC|$ -- trójkąt równoramienny, więc $C$ leży na $BC$ a $M$ jest spustem wysokości). Ponieważ $|AC| = |BC|$, wysokość z $C$ nie jest tu poprawna -- korzystamy z tego, że $M$ jest rzutem $A$ na $BC$ i jednocześnie środkiem $BC$. Wektor kierunkowy prostej $BC$: $(1, 1)$. $B = M - \\frac{5\\sqrt{2}}{2} \\cdot \\frac{(1,1)}{\\sqrt{2}} = (0 - \\frac{5}{2}, -1 - \\frac{5}{2}) = (-\\frac{5}{2}, -\\frac{7}{2})$, $C = (\\frac{5}{2}, \\frac{3}{2})$. Sprawdzenie: $|AC| = |BC|$ -- $|AC| = \\sqrt{(\\frac{5}{2}+3)^2 + (\\frac{3}{2}-2)^2} = \\sqrt{\\frac{121}{4} + \\frac{1}{4}} = \\sqrt{\\frac{122}{4}}$. Należy zweryfikować oba rozwiązania. Odpowiedź: $B = (-\\frac{5}{2}, -\\frac{7}{2}),\\ C = (\\frac{5}{2}, \\frac{3}{2})$ lub $B = (\\frac{5}{2}, \\frac{3}{2}),\\ C = (-\\frac{5}{2}, -\\frac{7}{2})$.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 14,
-            "max_points": 6
-        }
-    },
-    {
-        "question": "Rozpatrujemy wszystkie trójkąty równoramienne o obwodzie równym $18$.\na) Wykaż, że pole $P$ każdego z tych trójkątów, jako funkcja długości $b$ ramienia, wyraża się wzorem $P(b) = \\frac{(18 - 2b) \\cdot \\sqrt{18b - 81}}{2}$.\nb) Wyznacz dziedzinę funkcji $P$.\nc) Oblicz długości boków tego z rozpatrywanych trójkątów, który ma największe pole.",
-        "answer": "a) Podstawa $a = 18 - 2b$. Wysokość na podstawę: $h = \\sqrt{b^2 - (\\frac{a}{2})^2} = \\sqrt{b^2 - (9-b)^2} = \\sqrt{18b - 81}$. Pole: $P = \\frac{a \\cdot h}{2} = \\frac{(18 - 2b)\\sqrt{18b - 81}}{2}$.\nb) Warunki: $18b - 81 \\geq 0 \\Rightarrow b \\geq \\frac{9}{2}$; $a > 0 \\Rightarrow b < 9$; nierówność trójkąta $2b > a$: $2b > 18 - 2b \\Rightarrow b > \\frac{9}{2}$. Dziedzina: $b \\in (\\frac{9}{2}, 9)$.\nc) Maksymalizujemy $P^2(b) = \\frac{(18-2b)^2(18b-81)}{4}$. Niech $g(b) = (18-2b)^2(18b-81)$. $g'(b) = 2(18-2b)(-2)(18b-81) + (18-2b)^2 \\cdot 18 = (18-2b)[-4(18b-81) + 18(18-2b)] = (18-2b)(-72b + 324 + 324 - 36b) = (18-2b)(648 - 108b) = 0$. Stąd $b = 9$ (wykluczone) lub $b = 6$. Dla $b = 6$: $a = 6$, trójkąt równoboczny o boku $6$. Pole: $P(6) = \\frac{6\\sqrt{27}}{2} = 9\\sqrt{3}$.",
-        "options": null,
-        "metadata": {
-            "year": 2022,
-            "level": 2,
-            "task_number": 15,
-            "max_points": 7
-        }
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 1,
+      "max_points": 1
     }
+  },
+  {
+    "question": "Funkcja $f$ jest określona wzorem $f(x) = \\frac{x^3 - 8}{x - 2}$ dla każdej liczby rzeczywistej $x \\neq 2$. Wartość pochodnej tej funkcji dla argumentu $x = \\frac{1}{2}$ jest równa",
+    "answer": "A",
+    "options": {
+      "A": "$\\frac{3}{4}$",
+      "B": "$\\frac{9}{4}$",
+      "C": "$3$",
+      "D": "$\\frac{54}{8}$"
+    },
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 2,
+      "max_points": 1
+    }
+  },
+  {
+    "question": "Jeżeli $\\cos \\beta = -\\frac{1}{3}$ i $\\beta \\in (\\pi, \\frac{3}{2}\\pi)$, to wartość wyrażenia $\\sin(\\beta - \\frac{\\pi}{3})$ jest równa",
+    "answer": "D",
+    "options": {
+      "A": "$\\frac{-2\\sqrt{2} + \\sqrt{3}}{6}$",
+      "B": "$\\frac{2\\sqrt{6} + 1}{6}$",
+      "C": "$\\frac{2\\sqrt{2} + \\sqrt{3}}{6}$",
+      "D": "$\\frac{1 - 2\\sqrt{6}}{6}$"
+    },
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 3,
+      "max_points": 1
+    }
+  },
+  {
+    "question": "Dane są dwie urny z kulami. W każdej z urn jest siedem kul. W pierwszej urnie są jedna kula biała i sześć kul czarnych, w drugiej urnie są cztery kule białe i trzy kule czarne. Rzucamy jeden raz symetryczną monetą. Jeżeli wypadnie reszka, to losujemy jedną kulę z pierwszej urny, w przeciwnym przypadku -- jedną kulę z drugiej urny. Prawdopodobieństwo zdarzenia polegającego na tym, że wylosujemy kulę białą w tym doświadczeniu, jest równe",
+    "answer": "A",
+    "options": {
+      "A": "$\\frac{5}{14}$",
+      "B": "$\\frac{9}{14}$",
+      "C": "$\\frac{5}{7}$",
+      "D": "$\\frac{6}{7}$"
+    },
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 4,
+      "max_points": 1
+    }
+  },
+  {
+    "question": "Ciąg $(a_n)$ jest określony dla każdej liczby naturalnej $n \\geq 1$ wzorem $a_n = \\frac{(7p-1)n^3 + 5pn - 3}{(p+1)n^3 + n^2 + p}$, gdzie $p$ jest liczbą rzeczywistą dodatnią. Oblicz wartość $p$, dla której granica ciągu $(a_n)$ jest równa $\\frac{4}{3}$.",
+    "answer": "\\frac{7}{17}",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 5,
+      "max_points": 2
+    }
+  },
+  {
+    "question": "Wykaż, że dla każdej liczby rzeczywistej $x$ i dla każdej liczby rzeczywistej $y$ takich, że $2x > y$, spełniona jest nierówność $7x^3 + 4x^2 y \\geq y^3 + 2xy^2 - x^3$.",
+    "answer": "Nierówność jest równoważna $8x^3 + 4x^2 y - 2xy^2 - y^3 \\geq 0$, co można rozłożyć jako $(2x - y)(4x^2 + 4xy + y^2) = (2x - y)(2x + y)^2 \\geq 0$. Ponieważ $2x > y$, to $(2x - y) > 0$, a $(2x + y)^2 \\geq 0$, więc iloczyn jest nieujemny.",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 6,
+      "max_points": 3
+    }
+  },
+  {
+    "question": "Rozwiąż równanie $|x - 3| = 2x + 11$.",
+    "answer": "-\\frac{8}{3}",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 7,
+      "max_points": 3
+    }
+  },
+  {
+    "question": "Punkt $P$ jest punktem przecięcia przekątnych trapezu $ABCD$. Długość podstawy $CD$ jest o $2$ mniejsza od długości podstawy $AB$. Promień okręgu opisanego na trójkącie ostrokątnym $CPD$ jest o $3$ mniejszy od promienia okręgu opisanego na trójkącie $APB$. Wykaż, że spełniony jest warunek $|DP|^2 + |CP|^2 - |CD|^2 = \\frac{4\\sqrt{2}}{3} \\cdot |DP| \\cdot |CP|$.",
+    "answer": "Niech $|AB| = a$, $|CD| = a - 2$. Trójkąty $APB$ i $CPD$ są podobne ze skalą $k = \\frac{a-2}{a}$. Z twierdzenia sinusów: $R_1 = \\frac{a}{2\\sin\\angle APB}$ i $R_2 = \\frac{a-2}{2\\sin\\angle CPD}$. Ponieważ $\\angle APB = \\angle CPD$ (kąty wierzchołkowe), mamy $R_2 = R_1 \\cdot \\frac{a-2}{a}$. Z warunku $R_1 - R_2 = 3$ otrzymujemy $R_1 \\cdot \\frac{2}{a} = 3$, więc $R_1 = \\frac{3a}{2}$. Stąd $\\sin\\angle CPD = \\frac{1}{3}$ i $\\cos\\angle CPD = \\frac{2\\sqrt{2}}{3}$. Z tw. cosinusów: $|CD|^2 = |DP|^2 + |CP|^2 - 2|DP||CP|\\cos\\angle CPD$, co daje tezę.",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 8,
+      "max_points": 3
+    }
+  },
+  {
+    "question": "Reszta z dzielenia wielomianu $W(x) = 4x^3 - 6x^2 - (5m+1)x - 2m$ przez dwumian $x + 2$ jest równa $(-30)$. Oblicz $m$ i dla wyznaczonej wartości $m$ rozwiąż nierówność $W(x) \\geq 0$.",
+    "answer": "m = 3, x \\in [-1, -\\frac{1}{2}] \\cup [3, \\infty)",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 9,
+      "max_points": 4
+    }
+  },
+  {
+    "question": "Ciąg $(a_n)$, określony dla każdej liczby naturalnej $n \\geq 1$, jest geometryczny i ma wszystkie wyrazy dodatnie. Ponadto $a_1 = 675$ i $a_{22} = \\frac{5}{4} a_{23} + \\frac{1}{5} a_{21}$. Ciąg $(b_n)$, określony dla każdej liczby naturalnej $n \\geq 1$, jest arytmetyczny. Suma wszystkich wyrazów ciągu $(a_n)$ jest równa sumie dwudziestu pięciu początkowych kolejnych wyrazów ciągu $(b_n)$. Ponadto $a_3 = b_4$. Oblicz $b_1$.",
+    "answer": "Niech $q$ będzie ilorazem ciągu $(a_n)$. Z warunku $a_{22} = \\frac{5}{4}a_{23} + \\frac{1}{5}a_{21}$: $a_1 q^{21} = \\frac{5}{4}a_1 q^{22} + \\frac{1}{5}a_1 q^{20}$. Dzielimy przez $a_1 q^{20}$: $q = \\frac{5}{4}q^2 + \\frac{1}{5}$, czyli $25q^2 - 20q + 4 = 0$, $(5q - 2)^2 = 0$, $q = \\frac{2}{5}$. Suma ciągu geometrycznego: $S = \\frac{675}{1 - \\frac{2}{5}} = 1125$. Ponadto $a_3 = 675 \\cdot \\frac{4}{25} = 108 = b_4$. Suma arytmetycznego: $S_{25} = 25b_{13} = 1125$, więc $b_{13} = 45$. Z $b_4 = 108$ i $b_{13} = 45$: $r = \\frac{45 - 108}{9} = -7$. Stąd $b_1 = b_4 - 3r = 108 + 21 = 129$.",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 10,
+      "max_points": 4
+    }
+  },
+  {
+    "question": "Rozwiąż równanie $\\sin x + \\sin 2x + \\sin 3x = 0$ w przedziale $\\langle 0, \\pi \\rangle$.",
+    "answer": "Grupujemy: $(\\sin x + \\sin 3x) + \\sin 2x = 0$, czyli $2\\sin 2x \\cos x + \\sin 2x = 0$, $\\sin 2x (2\\cos x + 1) = 0$. Stąd $\\sin 2x = 0$ lub $\\cos x = -\\frac{1}{2}$. Dla $x \\in \\langle 0, \\pi \\rangle$: $\\sin 2x = 0$ daje $x = 0, \\frac{\\pi}{2}, \\pi$; $\\cos x = -\\frac{1}{2}$ daje $x = \\frac{2\\pi}{3}$. Rozwiązanie: $x \\in \\{0, \\frac{\\pi}{2}, \\frac{2\\pi}{3}, \\pi\\}$.",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 11,
+      "max_points": 4
+    }
+  },
+  {
+    "question": "Wyznacz wszystkie wartości parametru $m$, dla których równanie $x^2 - (m+1)x + m = 0$ ma dwa różne rozwiązania rzeczywiste $x_1$ oraz $x_2$, spełniające warunki: $x_1 \\neq 0$, $x_2 \\neq 0$ oraz $\\frac{1}{x_1} + \\frac{1}{x_2} + 2 = \\frac{1}{x_1^2} + \\frac{1}{x_2^2}$.",
+    "answer": "Z wzorów Viete'a: $x_1 + x_2 = m + 1$ i $x_1 x_2 = m$. Warunek: $\\frac{x_1 + x_2}{x_1 x_2} + 2 = \\frac{x_1^2 + x_2^2}{(x_1 x_2)^2} = \\frac{(x_1+x_2)^2 - 2x_1 x_2}{(x_1 x_2)^2}$. Podstawiając: $\\frac{m+1}{m} + 2 = \\frac{(m+1)^2 - 2m}{m^2} = \\frac{m^2+1}{m^2}$. Mnożymy przez $m^2$: $m(m+1) + 2m^2 = m^2 + 1$, $m^2 + m + 2m^2 = m^2 + 1$, $2m^2 + m - 1 = 0$, $(2m - 1)(m + 1) = 0$. Stąd $m = \\frac{1}{2}$ lub $m = -1$. Sprawdzamy: $\\Delta > 0$, $m \\neq 0$, $x_1 \\neq x_2$. Dla $m = -1$: $\\Delta = 0$ (odrzucamy). Odpowiedź: $m = \\frac{1}{2}$.",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 12,
+      "max_points": 5
+    }
+  },
+  {
+    "question": "Dany jest graniastosłup prosty $ABCDEFGH$ o podstawie prostokątnej $ABCD$. Przekątne $AH$ i $AF$ ścian bocznych tworzą kąt ostry o mierze $\\alpha$ takiej, że $\\sin \\alpha = \\frac{12}{13}$. Pole trójkąta $AFH$ jest równe $26{,}4$. Oblicz wysokość $h$ tego graniastosłupa.",
+    "answer": "Niech $|AD| = a$, $|AB| = b$, $h$ -- wysokość graniastosłupa. Wówczas $|AH| = \\sqrt{a^2 + h^2}$ i $|AF| = \\sqrt{b^2 + h^2}$. Kąt $\\alpha$ jest kątem $\\angle HAF$. Pole trójkąta $AFH$: $P = \\frac{1}{2}|AH||AF|\\sin\\alpha = 26{,}4$, czyli $|AH||AF| = \\frac{2 \\cdot 26{,}4}{\\frac{12}{13}} = 57{,}2$. Ponieważ $\\cos\\alpha = \\frac{5}{13}$ i $\\vec{AH} \\cdot \\vec{AF} = h^2$, mamy $h^2 = |AH||AF|\\cos\\alpha = 57{,}2 \\cdot \\frac{5}{13} = 22$. Zatem $h = \\sqrt{22}$.",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 13,
+      "max_points": 5
+    }
+  },
+  {
+    "question": "Punkt $A = (-3, 2)$ jest wierzchołkiem trójkąta równoramiennego $ABC$, w którym $|AC| = |BC|$. Pole tego trójkąta jest równe $15$. Bok $BC$ zawarty jest w prostej o równaniu $y = x - 1$. Oblicz współrzędne wierzchołków $B$ i $C$ tego trójkąta.",
+    "answer": "Prosta $BC$: $y = x - 1$, czyli $x - y - 1 = 0$. Odległość $A$ od prostej $BC$: $d = \\frac{|-3 - 2 - 1|}{\\sqrt{2}} = \\frac{6}{\\sqrt{2}} = 3\\sqrt{2}$. Pole: $P = \\frac{1}{2}|BC| \\cdot d = 15$, więc $|BC| = \\frac{30}{3\\sqrt{2}} = 5\\sqrt{2}$. Rzut $A$ na prostą $BC$: $M = (0, -1)$ (środek $BC$, bo $|AC| = |BC|$ -- trójkąt równoramienny, więc $C$ leży na $BC$ a $M$ jest spustem wysokości). Ponieważ $|AC| = |BC|$, wysokość z $C$ nie jest tu poprawna -- korzystamy z tego, że $M$ jest rzutem $A$ na $BC$ i jednocześnie środkiem $BC$. Wektor kierunkowy prostej $BC$: $(1, 1)$. $B = M - \\frac{5\\sqrt{2}}{2} \\cdot \\frac{(1,1)}{\\sqrt{2}} = (0 - \\frac{5}{2}, -1 - \\frac{5}{2}) = (-\\frac{5}{2}, -\\frac{7}{2})$, $C = (\\frac{5}{2}, \\frac{3}{2})$. Sprawdzenie: $|AC| = |BC|$ -- $|AC| = \\sqrt{(\\frac{5}{2}+3)^2 + (\\frac{3}{2}-2)^2} = \\sqrt{\\frac{121}{4} + \\frac{1}{4}} = \\sqrt{\\frac{122}{4}}$. Należy zweryfikować oba rozwiązania. Odpowiedź: $B = (-\\frac{5}{2}, -\\frac{7}{2}),\\ C = (\\frac{5}{2}, \\frac{3}{2})$ lub $B = (\\frac{5}{2}, \\frac{3}{2}),\\ C = (-\\frac{5}{2}, -\\frac{7}{2})$.",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 14,
+      "max_points": 6
+    }
+  },
+  {
+    "question": "Rozpatrujemy wszystkie trójkąty równoramienne o obwodzie równym $18$.\na) Wykaż, że pole $P$ każdego z tych trójkątów, jako funkcja długości $b$ ramienia, wyraża się wzorem $P(b) = \\frac{(18 - 2b) \\cdot \\sqrt{18b - 81}}{2}$.\nb) Wyznacz dziedzinę funkcji $P$.\nc) Oblicz długości boków tego z rozpatrywanych trójkątów, który ma największe pole.",
+    "answer": "a) Podstawa $a = 18 - 2b$. Wysokość na podstawę: $h = \\sqrt{b^2 - (\\frac{a}{2})^2} = \\sqrt{b^2 - (9-b)^2} = \\sqrt{18b - 81}$. Pole: $P = \\frac{a \\cdot h}{2} = \\frac{(18 - 2b)\\sqrt{18b - 81}}{2}$.\nb) Warunki: $18b - 81 \\geq 0 \\Rightarrow b \\geq \\frac{9}{2}$; $a > 0 \\Rightarrow b < 9$; nierówność trójkąta $2b > a$: $2b > 18 - 2b \\Rightarrow b > \\frac{9}{2}$. Dziedzina: $b \\in (\\frac{9}{2}, 9)$.\nc) Maksymalizujemy $P^2(b) = \\frac{(18-2b)^2(18b-81)}{4}$. Niech $g(b) = (18-2b)^2(18b-81)$. $g'(b) = 2(18-2b)(-2)(18b-81) + (18-2b)^2 \\cdot 18 = (18-2b)[-4(18b-81) + 18(18-2b)] = (18-2b)(-72b + 324 + 324 - 36b) = (18-2b)(648 - 108b) = 0$. Stąd $b = 9$ (wykluczone) lub $b = 6$. Dla $b = 6$: $a = 6$, trójkąt równoboczny o boku $6$. Pole: $P(6) = \\frac{6\\sqrt{27}}{2} = 9\\sqrt{3}$.",
+    "options": null,
+    "metadata": {
+      "year": 2022,
+      "level": 2,
+      "task_number": 15,
+      "max_points": 7
+    }
+  }
 ]

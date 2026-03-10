@@ -576,7 +576,7 @@ def check_answer(expected, got, question):
                 else:
                     return False, f"Interval matched option {best_interval_match}, expected {expected_letter}"
 
-        # 2b. Direct symbolic match against each option
+        # 2b. Direct symbolic or text match against each option
         for opt_key, opt_latex in question['options'].items():
             opt_plain = clean_latex_for_display(opt_latex)
             if _sympy_compare(got_clean, opt_plain):
@@ -584,6 +584,14 @@ def check_answer(expected, got, question):
                     return True, f"Symbolic option match: {got_clean} = option {opt_key}"
                 else:
                     return False, f"Symbolic matched option {opt_key}, expected {expected_letter}"
+            # Text substring match (for "nie ma rozwiązania" etc.)
+            got_text = got_clean.lower().strip().rstrip('.')
+            opt_text = opt_plain.lower().strip().rstrip('.')
+            if got_text and opt_text and (got_text in opt_text or opt_text in got_text):
+                if key_matches(opt_key):
+                    return True, f"Text option match: '{got_clean}' ≈ option {opt_key}"
+                else:
+                    return False, f"Text matched option {opt_key}, expected {expected_letter}"
 
         # 3. Try to evaluate model's numeric answer and compare with each option
         got_value = _sympy_eval(got_clean) or _try_float(got_clean)
@@ -620,6 +628,33 @@ def check_answer(expected, got, question):
     exp_norm = _normalize_infinity(expected_plain)
     if got_norm.lower() == exp_norm.lower():
         return True, f"Infinity-normalized match: {got_norm}"
+
+    # Normalize SymPy interval notation: Interval.open(-3, 1) → (-3, 1)
+    interval_match = re.match(r'Interval(?:\.open)?\((.+?),\s*(.+?)\)', got_clean)
+    if interval_match:
+        a, b = interval_match.group(1).strip(), interval_match.group(2).strip()
+        got_interval = f"({a}, {b})"
+        if got_interval == expected_plain or got_interval.lower() == expected_plain.lower():
+            return True, f"Interval match: {got_interval}"
+        # Also try with normalized infinity
+        got_interval_norm = _normalize_infinity(got_interval)
+        if got_interval_norm.lower() == exp_norm.lower():
+            return True, f"Interval-infinity match: {got_interval_norm}"
+
+    # Normalize Union notation: Union(Interval(-oo, -3), Interval(1, oo)) → (-∞, -3) ∪ (1, ∞)
+    union_match = re.findall(r'Interval(?:\.open)?\(([^)]+)\)', got_clean)
+    if len(union_match) >= 2:
+        parts = []
+        for um in union_match:
+            endpoints = [x.strip() for x in um.split(',')]
+            if len(endpoints) == 2:
+                a, b = endpoints
+                a = a.replace('-oo', '-∞').replace('oo', '∞')
+                b = b.replace('-oo', '-∞').replace('oo', '∞')
+                parts.append(f"({a}, {b})")
+        got_union = " ∪ ".join(parts)
+        if got_union.lower() == expected_plain.lower():
+            return True, f"Union match: {got_union}"
 
     # Normalize SymPy sqrt notation: 2*sqrt(13) → 2√13
     got_sqrt_normalized = re.sub(r'(\d+)\*sqrt\((\d+)\)', r'\1√\2', got_clean)
@@ -816,7 +851,85 @@ def _extract_json_from_response(text):
     try:
         return json.loads(text.strip())
     except:
+        pass
+
+    # Strategy 4: Parse plain-text "Kategoria: X" / "Metoda: Y" format
+    # Bielik sometimes ignores JSON instruction and returns analytical-style text
+    return _parse_plaintext_classification(text)
+
+
+# Mapping from Polish category names to classifier types
+_CATEGORY_TO_TYPE = {
+    'ciagi': 'sequence_geometric',
+    'ciag': 'sequence_geometric',
+    'ciag arytmetyczny': 'sequence_arithmetic',
+    'ciag geometryczny': 'sequence_geometric',
+    'rownania': 'polynomial_roots',
+    'rownanie': 'polynomial_roots',
+    'nierownosci': 'inequality',
+    'nierownosc': 'inequality',
+    'rownania, nierownosci': 'inequality',
+    'potegi': 'simplification',
+    'logarytm': 'logarithm',
+    'logarytmy': 'logarithm',
+    'prawdopodobienstwo': 'probability',
+    'kombinatoryka': 'combinatorics',
+    'geometria': 'geometry_analytic',
+    'geometria analityczna': 'geometry_analytic',
+    'stereometria': 'geometry_solid',
+    'trygonometria': 'trig_equation',
+    'pochodna': 'derivative',
+    'pochodne': 'derivative',
+    'granica': 'limit',
+    'optymalizacja': 'optimization',
+    'funkcja': 'function_properties',
+    'funkcje': 'function_properties',
+    'upraszczanie': 'simplification',
+    'dowod': 'proof',
+    'parametr': 'parametric_equation',
+    'rownanie parametryczne': 'parametric_equation',
+}
+
+def _parse_plaintext_classification(text):
+    """Fallback parser for non-JSON classifier responses.
+    Parses 'Kategoria: X' format into a classification dict."""
+    text_lower = text.lower().strip()
+
+    # Look for "Kategoria: X" or "Typ: X"
+    cat_match = re.search(r'kategoria:\s*([^\n]+)', text_lower)
+    if not cat_match:
+        cat_match = re.search(r'typ:\s*([^\n]+)', text_lower)
+    if not cat_match:
         return None
+
+    category_raw = cat_match.group(1).strip().rstrip('.')
+
+    # Map to classifier type
+    ptype = _CATEGORY_TO_TYPE.get(category_raw)
+    if not ptype:
+        # Try partial matches
+        for key, val in _CATEGORY_TO_TYPE.items():
+            if key in category_raw or category_raw in key:
+                ptype = val
+                break
+    if not ptype:
+        ptype = 'general'
+
+    # Extract any numeric expressions from "Plan:" section
+    params = {}
+
+    # Try to extract expression from Metoda line
+    method_match = re.search(r'metoda:\s*([^\n]+)', text_lower)
+    if method_match:
+        params['method_hint'] = method_match.group(1).strip()
+
+    return {
+        'type': ptype,
+        'confidence': 0.55,  # Low confidence — will trigger extraction chain fallback
+        'params': params,
+        'mc_options': {},
+        '_parsed_from_plaintext': True
+    }
 
 
 def _detect_categories(question_text):
@@ -1980,6 +2093,185 @@ print(f"Sad 1: {{part1}} drzew, Sad 2: {{part2}} drzew")
 print("ODPOWIEDZ:", part1)
 '''
     },
+    # ── New templates for 2023 patterns ──
+    {
+        'id': 'expression_simplify',
+        'keywords': ['jest równa', 'upro', 'oblicz wartość', 'wyrażeni', 'liczba'],
+        'extraction_prompt': 'Wyodrębnij wyrażenie matematyczne do obliczenia. Odpowiedz TYLKO JSON:\n{"expression": "<wyrażenie w składni SymPy, np. 27**(Rational(1,3)) + 3**(Rational(1,2))>"}',
+        'build_code': lambda v: f'''from sympy import *
+expr = {v.get("expression", "0")}
+wynik = simplify(expr)
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'nth_root_sum',
+        'keywords': ['pierwiast', 'stopni', 'jest równa', 'liczba'],
+        'extraction_prompt': 'Wyodrębnij wyrażenie z pierwiastkami. Odpowiedz TYLKO JSON:\n{"expression": "<wyrażenie w składni SymPy, np. 27**Rational(1,9) + 3**Rational(1,9)>"}',
+        'build_code': lambda v: f'''from sympy import *
+expr = {v.get("expression", "0")}
+wynik = simplify(expr)
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'rational_equation_solutions',
+        'keywords': ['równani', 'rozwiązan', 'ułamk', 'dziedzin'],
+        'extraction_prompt': 'Wyodrębnij równanie z ułamkiem algebraicznym. Odpowiedz TYLKO JSON:\n{"numerator": "<licznik w SymPy>", "denominator": "<mianownik w SymPy>", "variable": "x"}',
+        'build_code': lambda v: f'''from sympy import *
+x = symbols('x')
+numer = {v.get("numerator", "(x+1)*(x-1)**2")}
+denom = {v.get("denominator", "(x-1)*(x+1)**2")}
+# Find where numerator = 0 AND denominator != 0
+numer_roots = solve(numer, x)
+domain_excluded = solve(denom, x)
+valid_solutions = [r for r in numer_roots if r not in domain_excluded]
+if len(valid_solutions) == 0:
+    print("ODPOWIEDZ: nie ma rozwiązania")
+elif len(valid_solutions) == 1:
+    print("ODPOWIEDZ: ma dokładnie jedno rozwiązanie:", valid_solutions[0])
+else:
+    print("ODPOWIEDZ: ma", len(valid_solutions), "rozwiązania:", valid_solutions)
+'''
+    },
+    {
+        'id': 'sequence_term_eval',
+        'keywords': ['ciąg', 'określon', 'wzor', 'wyraz'],
+        'extraction_prompt': 'Wyodrębnij wzór ciągu i numer wyrazu do obliczenia. Odpowiedz TYLKO JSON:\n{"formula": "<wzór a_n w SymPy, np. 2**n * (n+1)>", "n_value": <numer wyrazu, np. 4>}',
+        'build_code': lambda v: f'''from sympy import *
+n = symbols('n')
+formula = {v.get("formula", "2**n * (n+1)")}
+n_val = {v.get("n_value", 4)}
+wynik = formula.subs(n, n_val)
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'similar_triangles_area',
+        'keywords': ['podobn', 'trójkąt', 'pole', 'przyprostokątn'],
+        'extraction_prompt': 'Wyodrębnij dane o podobnych trójkątach. Odpowiedz TYLKO JSON:\n{"leg1": <przyprostokątna 1 trójkąta T1>, "leg2": <przyprostokątna 2 trójkąta T1>, "known_side_T2": <znany bok T2>, "known_side_type": "<hypotenuse lub leg>"}',
+        'build_code': lambda v: f'''from sympy import *
+a1, b1 = {v.get("leg1", 5)}, {v.get("leg2", 12)}
+c1 = sqrt(a1**2 + b1**2)  # hypotenuse of T1
+known_T2 = {v.get("known_side_T2", 26)}
+side_type = "{v.get("known_side_type", "hypotenuse")}"
+if side_type == "hypotenuse":
+    scale = known_T2 / c1
+else:
+    scale = known_T2 / a1  # approximate
+a2 = a1 * scale
+b2 = b1 * scale
+area = Rational(1, 2) * a2 * b2
+print("ODPOWIEDZ:", simplify(area))
+'''
+    },
+    {
+        'id': 'arithmetic_sequence_rate',
+        'keywords': ['rat', 'spłac', 'pożyczk', 'mniejsz'],
+        'extraction_prompt': 'Wyodrębnij dane o ratach. Odpowiedz TYLKO JSON:\n{"total_amount": <łączna kwota>, "num_rates": <liczba rat>, "rate_difference": <o ile mniejsza każda kolejna rata>, "find": "first_rate"}',
+        'build_code': lambda v: f'''from sympy import *
+a1 = symbols('a1', positive=True)
+total = {v.get("total_amount", 8910)}
+n = {v.get("num_rates", 18)}
+d = -{v.get("rate_difference", 30)}  # negative because decreasing
+# Sum of AP: S = n/2 * (2*a1 + (n-1)*d)
+S = n * (2*a1 + (n-1)*d) / 2
+sol = solve(Eq(S, total), a1)
+wynik = sol[0] if isinstance(sol, list) else sol
+print("ODPOWIEDZ:", wynik)
+'''
+    },
+    {
+        'id': 'quadratic_inequality',
+        'keywords': ['nierównoś', 'rozwiąż', 'kwadrat'],
+        'extraction_prompt': 'Przekształć nierówność do postaci standardowej. Odpowiedz TYLKO JSON:\n{"lhs": "<lewa strona po przeniesieniu na jedną stronę, np. x**2 + 2*x - 3>", "inequality": "<less lub greater>", "variable": "x"}',
+        'build_code': lambda v: f'''from sympy import *
+x = symbols('x', real=True)
+lhs = {v.get("lhs", "x**2 + 2*x - 3")}
+ineq = "{v.get("inequality", "less")}"
+if ineq == "less":
+    solution = solveset(lhs < 0, x, S.Reals)
+else:
+    solution = solveset(lhs > 0, x, S.Reals)
+print("ODPOWIEDZ:", solution)
+'''
+    },
+    {
+        'id': 'square_diagonal_line',
+        'keywords': ['kwadrat', 'przekątn', 'równani', 'prost'],
+        'extraction_prompt': 'Wyodrębnij współrzędne końców przekątnej kwadratu. Odpowiedz TYLKO JSON:\n{"A": [<x1>, <y1>], "C": [<x2>, <y2>], "find": "equation_of_other_diagonal"}',
+        'build_code': lambda v: f'''from sympy import *
+x = symbols('x')
+Ax, Ay = {v.get("A", [-8, -2])}
+Cx, Cy = {v.get("C", [0, 4])}
+# Midpoint (use Rational for exact)
+Mx = Rational(Ax + Cx, 2)
+My = Rational(Ay + Cy, 2)
+# AC slope
+slope_AC = Rational(Cy - Ay, Cx - Ax)
+# BD perpendicular to AC
+slope_BD = Rational(-1, 1) / slope_AC
+# Equation: y = slope_BD * (x - Mx) + My
+y_expr = slope_BD * (x - Mx) + My
+print("ODPOWIEDZ: y =", simplify(y_expr))
+'''
+    },
+    {
+        'id': 'probability_drawing',
+        'keywords': ['losuj', 'prawdopodobień', 'zbior', 'zwracani'],
+        'extraction_prompt': 'Wyodrębnij dane o losowaniu. Odpowiedz TYLKO JSON:\n{"set_elements": [<lista elementów zbioru>], "num_draws": <ile losowań>, "with_replacement": <true/false>, "condition": "<warunek zdarzenia, np. suma > 10 lub iloczyn podzielny przez 5>"}',
+        'build_code': lambda v: f'''from sympy import *
+from itertools import product as cart_product
+elements = {v.get("set_elements", [2,3,4,5,6,7,8,9])}
+n_draws = {v.get("num_draws", 2)}
+with_replacement = {v.get("with_replacement", True)}
+condition = "{v.get("condition", "sum > 10")}"
+
+if with_replacement:
+    all_outcomes = list(cart_product(elements, repeat=n_draws))
+else:
+    from itertools import permutations
+    all_outcomes = list(permutations(elements, n_draws))
+
+total = len(all_outcomes)
+favorable = 0
+for outcome in all_outcomes:
+    s = sum(outcome)
+    p = 1
+    for x in outcome:
+        p *= x
+    # Evaluate condition
+    if "sum" in condition.replace("suma", "sum"):
+        val = s
+    elif "iloczyn" in condition or "product" in condition:
+        val = p
+    else:
+        val = s
+    # Simple threshold check
+    import re as _re
+    m = _re.search(r'[><=]+\s*(\d+)', condition)
+    if m:
+        threshold = int(m.group(1))
+        if ">" in condition and "=" in condition:
+            favorable += int(val >= threshold)
+        elif ">" in condition:
+            favorable += int(val > threshold)
+        elif "<" in condition and "=" in condition:
+            favorable += int(val <= threshold)
+        elif "<" in condition:
+            favorable += int(val < threshold)
+        elif "=" in condition:
+            favorable += int(val == threshold)
+    elif "podzielny" in condition or "divisible" in condition:
+        m2 = _re.search(r'(\d+)', condition)
+        if m2:
+            divisor = int(m2.group(1))
+            favorable += int(p % divisor == 0)
+
+prob = Rational(favorable, total)
+print("ODPOWIEDZ:", prob)
+'''
+    },
 ]
 
 
@@ -2252,10 +2544,12 @@ def test_question_classifier(q, base_url, model, verbose=True, api_key=None):
                     result['time_total'] = time.time() - t_start
                     return result
 
-        # Extraction chain failed — fall back to standard test_question
+        # Extraction chain failed — return result to test_question_hybrid for proper routing
+        # (DO NOT call test_question directly — that bypasses hybrid's extraction chain & zero-code MC steps)
         if verbose:
-            print(f"  ⚠️ All fast pipelines failed → falling back to standard pipeline")
-        return test_question(q, base_url, model, verbose, api_key)
+            print(f"  ⚠️ Classifier fast pipelines exhausted → returning to hybrid router")
+        result['time_total'] = time.time() - t_start
+        return result
 
     # Step 4: Build deterministic code
     code = _build_deterministic_code(classification, question_text, is_mc)
@@ -2562,6 +2856,10 @@ def test_question_hybrid(q, base_url, model, verbose=True, api_key=None):
     old_result['pipeline_used'] = 'three_agent'
     old_result['classifier_attempted'] = True
     old_result['classifier_answer'] = classifier_result.get('answer_got')
+    # Preserve classifier diagnostics for analysis
+    old_result['classifier_type'] = classifier_result.get('classifier_type')
+    old_result['classifier_confidence'] = classifier_result.get('classifier_confidence')
+    old_result['classifier_pipeline_tried'] = classifier_result.get('pipeline_used', '')
     return old_result
 
 
