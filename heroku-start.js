@@ -153,7 +153,11 @@ app.listen(PORT, () => {
   console.log(`   SPA:  http://localhost:${PORT}${basePath}/`);
   console.log(`   MCP:  http://localhost:${PORT}/api/mcp/health`);
   console.log(`   RAG:  http://localhost:${PORT}/api/rag/health`);
-  console.log(`   BOT:  active: ${bot_active}`)
+  console.log(`   BOT:  active: ${bot_active}`);
+  console.log(`   ENV:  DISCORD_TOKEN=${process.env.DISCORD_TOKEN ? 'set' : 'MISSING'}`);
+  console.log(`   ENV:  DISCORD_CHANNEL_ID=${process.env.DISCORD_CHANNEL_ID ? process.env.DISCORD_CHANNEL_ID : 'MISSING'}`);
+  console.log(`   ENV:  BIELIK_API_URL=${process.env.BIELIK_API_URL || 'MISSING'}`);
+  console.log(`   ENV:  BIELIK_API_KEY=${process.env.BIELIK_API_KEY ? 'set' : 'MISSING'}`);
 });
 
 // ── Graceful shutdown ───────────────────────────────────────────────────
