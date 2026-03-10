@@ -461,7 +461,7 @@
     },
     {
         "question": "Dany jest równoległobok $ABCD$, w którym $A = (-2, 6)$ oraz $B = (10, 2)$. Przekątne $AC$ oraz $BD$ tego równoległoboku przecinają się w punkcie $P = (6, 7)$. Oblicz długość boku $BC$ tego równoległoboku.",
-        "answer": "$|BC| = \boxed{2\root{13}$}$",
+        "answer": "$2\\sqrt{13}$",
         "options": null,
         "metadata": {
             "year": 2024,

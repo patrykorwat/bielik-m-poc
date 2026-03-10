@@ -1,6 +1,7 @@
 import { LLMAgent, LLMProviderType } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
 import { LeanProverServiceBrowser } from './leanProverService.browser';
+import { LeanProofSolver } from './leanProofSolver';
 import { RAGService } from './ragService';
 import { classifyProblem, shouldUseFallback } from './classifierService';
 import { routeAndSolveWithRetry } from './solverRouter';
@@ -728,6 +729,93 @@ ${result.error || ''}`;
           lines.push(`print("ODPOWIEDZ:", ${assignMatch[1]})`);
           break;
         }
+      }
+    }
+
+    // 10. Fix evaluate(expr, x=val) → expr.subs(x, val)
+    // Bielik sometimes generates evaluate() which doesn't exist in SymPy
+    lines = lines.map(line => {
+      return line.replace(
+        /evaluate\(([^,]+),\s*(\w+)\s*=\s*([^)]+)\)/g,
+        '($1).subs($2, $3)'
+      );
+    });
+
+    // 11. Safe solve()[index] guard — prevent IndexError on empty solution lists
+    lines = lines.map(line => {
+      const solveIndexMatch = line.match(/^(\s*)(\w+)\s*=\s*solve\(([^)]*)\)\[(\d+)\]/);
+      if (solveIndexMatch) {
+        const [, indent, varName, solveArgs, idx] = solveIndexMatch;
+        return `${indent}_tmp_sol = solve(${solveArgs})\n${indent}${varName} = _tmp_sol[${idx}] if len(_tmp_sol) > ${idx} else None`;
+      }
+      return line;
+    });
+
+    // 12. Fix sympify([(a,b), ...]) → just [(a,b), ...]
+    // SymPy's sympify doesn't handle list-of-tuples well
+    lines = lines.map(line => {
+      return line.replace(
+        /sympify\(\[(\([^)]+\)(?:,\s*\([^)]+\))*)\]\)/g,
+        '[$1]'
+      );
+    });
+
+    // 13. Fix Symbol-not-callable: detect Symbol('f') then f(...) usage
+    // Replace with Function('f') when the symbol is later called as a function
+    {
+      const symbolDefs = new Map<string, number>();
+      lines.forEach((line, idx) => {
+        const symMatch = line.match(/(\w+)\s*=\s*Symbol\s*\(\s*['"](\w+)['"]\s*\)/);
+        if (symMatch) {
+          symbolDefs.set(symMatch[1], idx);
+        }
+      });
+      for (const [name, defIdx] of symbolDefs) {
+        // Check if this symbol name is used as a function call later
+        const isCalledAsFunction = lines.some((line, idx) =>
+          idx > defIdx && new RegExp(`\\b${name}\\s*\\(`).test(line) && !line.trim().startsWith('#')
+        );
+        if (isCalledAsFunction) {
+          lines[defIdx] = lines[defIdx].replace(
+            /Symbol\s*\(\s*(['"])\w+\1\s*\)/,
+            `Function('${name}')`
+          );
+          // Ensure Function is imported
+          const hasImportFunction = lines.some(l => l.includes('Function') && (l.includes('from sympy') || l.includes('import')));
+          if (!hasImportFunction) {
+            const importIdx = lines.findIndex(l => l.trim().startsWith('from sympy'));
+            if (importIdx >= 0) {
+              lines[importIdx] = lines[importIdx].replace(
+                /from sympy import (.+)/,
+                'from sympy import $1, Function'
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // 14. Global try/except safety net — ensures code ALWAYS produces output
+    // This MUST be the last transformation step
+    {
+      const codeStr = lines.join('\n');
+      // Only wrap if the code doesn't already have a top-level try block
+      if (!codeStr.match(/^try\s*:/m)) {
+        const indentedLines = lines.map(line => line === '' ? '' : '    ' + line);
+        const wrappedCode = [
+          'try:',
+          ...indentedLines,
+          'except Exception as _e:',
+          '    print(f"Error: {str(_e)[:200]}")',
+          'finally:',
+          '    import sys as _sys',
+          '    _local_vars = dict(locals())',
+          '    for _v in ["wynik", "result", "odpowiedz", "answer", "rozwiazanie", "pole", "objetosc", "obwod"]:',
+          '        if _v in _local_vars and _local_vars[_v] is not None:',
+          '            print(f"ODPOWIEDZ: {_local_vars[_v]}")',
+          '            break',
+        ];
+        lines = wrappedCode;
       }
     }
 
@@ -1740,6 +1828,52 @@ ${result.error || ''}`;
       ragContext = this.ragService.formatContextForAgent([], problemCategories);
       if (ragContext) {
         console.log(`📚 Injecting category strategies (no RAG results) for: ${problemCategories.join(' + ')}`);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LEAN PRIMARY SOLVER: Route proof tasks through Lean BEFORE three-agent
+    // ═══════════════════════════════════════════════════════════════════
+    const isProofProblem = this.couldBenefitFromVerification(userMessage);
+    if (isProofProblem && this.leanAvailable && this.leanClient) {
+      console.log('🎯 Proof problem detected — trying Lean primary solver...');
+
+      try {
+        const solver = new LeanProofSolver(this.leanClient, this.llmAgent);
+        const proofResult = await solver.solveProof(userMessage, ragContext || undefined);
+
+        if (proofResult.success) {
+          console.log('✅ Lean proof successful!');
+
+          const leanMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `**Dowód zweryfikowany przez Lean 4** (${proofResult.attempt})\n\n\`\`\`lean\n${proofResult.leanCode}\n\`\`\`\n\n${proofResult.output}`,
+            agentName: '🎯 Lean Prover',
+            timestamp: new Date(),
+          };
+          this.conversationHistory.push(leanMsg);
+          newMessages.push(leanMsg);
+          if (onMessageCallback) onMessageCallback(leanMsg);
+
+          // Extract answer from Lean output or provide confirmation
+          const answerMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: `ODPOWIEDZ: Dowód przeprowadzony i zweryfikowany formalnie.`,
+            agentName: '📊 Wynik',
+            timestamp: new Date(),
+          };
+          this.conversationHistory.push(answerMsg);
+          newMessages.push(answerMsg);
+          if (onMessageCallback) onMessageCallback(answerMsg);
+
+          return newMessages;
+        } else {
+          console.log('⚠️ Lean proof failed, falling through to three-agent pipeline...');
+        }
+      } catch (leanError) {
+        console.warn('⚠️ Lean solver error (continuing to three-agent):', leanError);
       }
     }
 

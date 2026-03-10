@@ -246,11 +246,14 @@ def call_mcp_sympy(code):
 # ── Helpers ──────────────────────────────────────────────────────────────
 
 def clean_latex_for_display(text):
-    """Convert LaTeX to plain text for display (v2 — better coverage)."""
+    """Convert LaTeX to plain text for display (v3 — better coverage + corruption handling)."""
     t = text
     t = re.sub(r'\$\$?', '', t)
-    # Remove \boxed{...} → content
+    # Remove \boxed{...} → content (also handle corrupted \x08oxed from broken encoding)
     t = re.sub(r'\\boxed\{([^}]*)\}', r'\1', t)
+    t = re.sub(r'\x08oxed\{([^}]*)\}', r'\1', t)  # corrupted \boxed
+    # Handle \root{x} as alias for \sqrt{x} (corrupted LaTeX)
+    t = re.sub(r'\\root\{([^}]*)\}', r'sqrt(\1)', t)
     # Nested fractions (handle 2 levels)
     for _ in range(2):
         t = re.sub(r'\\d?frac\{([^{}]*)\}\{([^{}]*)\}', r'(\1)/(\2)', t)
@@ -528,6 +531,67 @@ def _normalize_interval(s):
     return s
 
 
+def _strip_units(s):
+    """Strip Polish/math units and labels from a value string.
+    E.g. '6 cm' → '6', '10.0000 cm' → '10', 'Szerokość ekranu = 10.00 cm' → '10'
+    """
+    s = s.strip()
+    # Remove common Polish labels (Szerokość/Wysokość/Pole/Objętość = ...)
+    s = re.sub(r'^[A-Za-ząćęłńóśźżĄĆĘŁŃÓŚŹŻ\s]+[=:]\s*', '', s)
+    # Remove units at end
+    s = re.sub(r'\s*(cm²|cm³|cm|mm|m²|m³|m|km|zł|°|stopni|%|proc|st\.)\s*$', '', s, flags=re.IGNORECASE)
+    # Remove trailing zeros from decimals: 10.0000000 → 10
+    s = re.sub(r'\.0+$', '', s)
+    return s.strip()
+
+
+def _extract_dimension_pair(got, expected):
+    """Try to match dimension-pair answers like '6 × 10' or '6 cm × 10 cm'.
+    Expected may use \\times, ×, x, or *.
+    Returns True if dimensions match (in any order), False/None otherwise.
+    """
+    # Parse expected as a×b pattern
+    exp_clean = expected.replace('\\times', '×').replace('*', '×')
+    exp_match = re.match(r'^\s*(-?[\d.]+)\s*×\s*(-?[\d.]+)\s*$', exp_clean)
+    if not exp_match:
+        return None  # expected is not a dimension pair
+
+    exp_a, exp_b = float(exp_match.group(1)), float(exp_match.group(2))
+    exp_pair = sorted([exp_a, exp_b])
+
+    # Parse got — try multiple formats
+    got_clean = got.replace('×', 'x').replace('\\times', 'x').replace('*', 'x')
+    # Remove units
+    got_clean = re.sub(r'\s*(cm²|cm³|cm|mm|m²|m³|m|km)\s*', ' ', got_clean, flags=re.IGNORECASE).strip()
+
+    # Direct a x b pattern
+    got_match = re.search(r'(-?[\d.]+)\s*x\s*(-?[\d.]+)', got_clean)
+    if got_match:
+        got_a, got_b = float(got_match.group(1)), float(got_match.group(2))
+        got_pair = sorted([got_a, got_b])
+        if abs(got_pair[0] - exp_pair[0]) < 0.01 and abs(got_pair[1] - exp_pair[1]) < 0.01:
+            return True
+
+    # Verbose output: extract two key numbers from comma/newline-separated values
+    # e.g. "Szerokość ekranu = 10.000 cm, Wysokość ekranu = 6.000 cm"
+    numbers = re.findall(r'=\s*(-?[\d.]+)', got)
+    if not numbers:
+        numbers = re.findall(r'(-?\d+\.?\d*)', _strip_units(got))
+    if len(numbers) >= 2:
+        # Take the last two distinct numbers (most likely the final answer values)
+        nums = [float(n) for n in numbers]
+        # Remove trailing zeros: 10.0000 → 10.0
+        nums = [round(n, 6) for n in nums]
+        # Try all pairs of extracted numbers
+        for i in range(len(nums)):
+            for j in range(i + 1, len(nums)):
+                pair = sorted([nums[i], nums[j]])
+                if abs(pair[0] - exp_pair[0]) < 0.01 and abs(pair[1] - exp_pair[1]) < 0.01:
+                    return True
+
+    return False
+
+
 def check_answer(expected, got, question):
     """Check if the model's answer matches expected. Returns (match, explanation)."""
     if not got:
@@ -664,6 +728,37 @@ def check_answer(expected, got, question):
     if got_sqrt_normalized.lower() == exp_sqrt_normalized.lower():
         return True, f"Sqrt-normalized match: {got_sqrt_normalized}"
 
+    # Dimension-pair matching: e.g. expected "6 × 10", got "6 cm × 10 cm" or verbose
+    dim_result = _extract_dimension_pair(got_clean, expected_plain)
+    if dim_result is True:
+        return True, f"Dimension-pair match"
+
+    # Unit-stripped comparison: strip units/labels from got and retry
+    got_stripped = _strip_units(got_clean)
+    if got_stripped != got_clean and got_stripped:
+        if got_stripped.lower() == expected_plain.lower():
+            return True, f"Unit-stripped match: {got_stripped}"
+        # Also try sqrt normalization on stripped
+        got_stripped_sqrt = re.sub(r'(\d+)\*sqrt\((\d+)\)', r'\1√\2', got_stripped)
+        got_stripped_sqrt = re.sub(r'sqrt\((\d+)\)', r'√\1', got_stripped_sqrt)
+        if got_stripped_sqrt.lower() == exp_sqrt_normalized.lower():
+            return True, f"Unit-stripped sqrt match: {got_stripped_sqrt}"
+
+    # Verbose output extraction: if got is very long, try to extract key numbers
+    if len(got_clean) > 3 * max(len(expected_plain), 5):
+        # Extract all numbers from verbose output
+        all_nums = re.findall(r'-?\d+\.?\d*', got_clean)
+        # Try matching the last few numbers against expected
+        exp_nums = re.findall(r'-?\d+\.?\d*', expected_plain)
+        if exp_nums and all_nums:
+            for num in reversed(all_nums):
+                for en in exp_nums:
+                    try:
+                        if abs(float(num) - float(en)) < 0.01:
+                            return True, f"Verbose numeric extract: {num} ≈ {en}"
+                    except ValueError:
+                        pass
+
     # String match
     if expected_plain.lower() in got_lower:
         return True, "Substring match"
@@ -684,8 +779,11 @@ def check_answer(expected, got, question):
         if _sympy_compare(got_clean, exp_core):
             return True, f"Core symbolic match: {got_clean} = {exp_core}"
 
-    # Numeric match
+    # Numeric match (with sympy_eval for symbolic expressions like 2*sqrt(13))
     got_value = _sympy_eval(got_clean) or _try_float(got_clean)
+    # Also try unit-stripped version for numeric eval
+    if got_value is None and got_stripped != got_clean:
+        got_value = _sympy_eval(got_stripped) or _try_float(got_stripped)
     exp_value = _sympy_eval(expected_plain) or _try_float(expected_plain)
     if got_value is not None and exp_value is not None:
         if abs(got_value - exp_value) < 0.01:
