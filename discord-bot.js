@@ -200,7 +200,7 @@ class ServerOrchestrator {
    * Run the full multi-agent pipeline.
    * @param {string} problem - User's math problem
    * @param {(msg: string) => Promise<void>} onProgress - Progress callback
-   * @returns {string} Final answer
+   * @returns {{ analytical: string, sympy: string, summary: string }}
    */
   async solve(problem, onProgress) {
     // Step 1: RAG retrieval
@@ -291,7 +291,7 @@ class ServerOrchestrator {
       SUMMARY_TEMP,
     );
 
-    return summaryResponse;
+    return { analytical: analyticalResponse, sympy: sympyResult, summary: summaryResponse };
   }
 }
 
@@ -364,7 +364,7 @@ client.on('messageCreate', async (message) => {
   };
 
   try {
-    const answer = await orchestrator.solve(problem, onProgress);
+    const { analytical, sympy, summary } = await orchestrator.solve(problem, onProgress);
 
     // Delete progress message
     try {
@@ -373,9 +373,14 @@ client.on('messageCreate', async (message) => {
       // Ignore
     }
 
-    // Send answer, splitting if needed
-    const chunks = splitMessage(answer);
-    for (const chunk of chunks) {
+    // Send each agent's output as a separate message
+    for (const chunk of splitMessage(`⚙️ **Analiza:**\n${analytical}`)) {
+      await message.channel.send(chunk);
+    }
+    for (const chunk of splitMessage(`🧮 **Wynik SymPy:**\n${sympy}`)) {
+      await message.channel.send(chunk);
+    }
+    for (const chunk of splitMessage(`📝 **Wyjaśnienie:**\n${summary}`)) {
       await message.channel.send(chunk);
     }
   } catch (err) {
