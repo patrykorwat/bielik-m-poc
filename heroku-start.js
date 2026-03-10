@@ -156,8 +156,8 @@ app.listen(PORT, () => {
   console.log(`   BOT:  active: ${bot_active}`);
   console.log(`   ENV:  DISCORD_TOKEN=${process.env.DISCORD_TOKEN ? 'set' : 'MISSING'}`);
   console.log(`   ENV:  DISCORD_CHANNEL_ID=${process.env.DISCORD_CHANNEL_ID ? process.env.DISCORD_CHANNEL_ID : 'MISSING'}`);
-  console.log(`   ENV:  BIELIK_API_URL=${process.env.BIELIK_API_URL || 'MISSING'}`);
-  console.log(`   ENV:  BIELIK_API_KEY=${process.env.BIELIK_API_KEY ? 'set' : 'MISSING'}`);
+  console.log(`   ENV:  LLM_API_URL=${process.env.LLM_API_URL || 'MISSING'}`);
+  console.log(`   ENV:  LLM_API_KEY=${process.env.LLM_API_KEY ? 'set' : 'MISSING'}`);
 });
 
 // ── Graceful shutdown ───────────────────────────────────────────────────

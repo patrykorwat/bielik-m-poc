@@ -30,8 +30,8 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
 const MCP_PROXY_URL = process.env.MCP_PROXY_URL || 'http://localhost:3001';
 const RAG_URL = process.env.RAG_URL || 'http://localhost:3003';
-const LLM_API_URL = process.env.BIELIK_API_URL || '';
-const LLM_API_KEY = process.env.BIELIK_API_KEY || '';
+const LLM_API_URL = process.env.LLM_API_URL || '';
+const LLM_API_KEY = process.env.LLM_API_KEY || '';
 const LLM_MODEL = process.env.LLM_MODEL || 'bielik-11b-v3.0';
 
 if (!DISCORD_TOKEN) {
