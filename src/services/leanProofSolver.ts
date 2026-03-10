@@ -10,7 +10,7 @@
  * 3. If verified, return success; otherwise fall through to three-agent
  */
 
-import { LeanProverServiceBrowser, LeanProverResult } from './leanProverService.browser';
+import { LeanProverServiceBrowser } from './leanProverService.browser';
 import { LLMAgent } from './mlxAgent';
 
 export interface ProofResult {
