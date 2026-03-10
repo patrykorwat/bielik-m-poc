@@ -66,6 +66,14 @@ spawnChild('rag', pythonCmd, [join(__dirname, 'rag_service', 'main.py')], {
   RAG_HOST: '127.0.0.1',
 });
 
+// Start Discord bot (optional — only if DISCORD_TOKEN is set)
+if (process.env.DISCORD_TOKEN) {
+  console.log('Starting Discord bot...');
+  spawnChild('discord-bot', 'node', ['discord-bot.js']);
+} else {
+  console.log('DISCORD_TOKEN not set — skipping Discord bot');
+}
+
 // Give child processes a moment to start
 await new Promise((resolve) => setTimeout(resolve, 3000));
 

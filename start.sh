@@ -348,6 +348,20 @@ else
 fi
 echo ""
 
+# Start Discord bot (optional)
+if [ -n "$DISCORD_TOKEN" ]; then
+    print_info "Starting Discord bot..."
+    node discord-bot.js > "$SCRIPT_DIR/logs/discord-bot.log" 2>&1 &
+    DISCORD_BOT_PID=$!
+    sleep 2
+    if kill -0 $DISCORD_BOT_PID 2>/dev/null; then
+        print_success "Discord bot started (PID: $DISCORD_BOT_PID)"
+    else
+        print_warning "Discord bot failed to start. Check logs/discord-bot.log"
+    fi
+    echo ""
+fi
+
 # Start Vite dev server - MANDATORY
 print_info "Starting Vite dev server on port 5173..."
 npm run dev > logs/vite.log 2>&1 &
