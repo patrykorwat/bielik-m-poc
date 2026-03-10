@@ -66,10 +66,13 @@ spawnChild('rag', pythonCmd, [join(__dirname, 'rag_service', 'main.py')], {
   RAG_HOST: '127.0.0.1',
 });
 
+let bot_active = false;
+
 // Start Discord bot (optional — only if DISCORD_TOKEN is set)
 if (process.env.DISCORD_TOKEN) {
   console.log('Starting Discord bot...');
   spawnChild('discord-bot', 'node', ['discord-bot.js']);
+  bot_active = true;
 } else {
   console.log('DISCORD_TOKEN not set — skipping Discord bot');
 }
@@ -150,6 +153,7 @@ app.listen(PORT, () => {
   console.log(`   SPA:  http://localhost:${PORT}${basePath}/`);
   console.log(`   MCP:  http://localhost:${PORT}/api/mcp/health`);
   console.log(`   RAG:  http://localhost:${PORT}/api/rag/health`);
+  console.log(`   BOT:  active: ${bot_active}`)
 });
 
 // ── Graceful shutdown ───────────────────────────────────────────────────
