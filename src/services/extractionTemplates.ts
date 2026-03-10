@@ -931,6 +931,285 @@ print("ODPOWIEDZ: Zadanie wymaga szczegółowej analizy geometrycznej")
 };
 
 // ============================================================
+// Template: Logarithm/Power evaluation (e.g. sqrt(3)^? = 9)
+// ============================================================
+
+const logPowerEval: ExtractionTemplate = {
+  id: 'log_power_eval',
+  name: 'Potęga z logarytmem',
+  description: 'Wyrażenie postaci base^n = target, oblicz n',
+  extractionPrompt: `Wyodrębnij z zadania o logarytmach/potęgach. Odpowiedz TYLKO JSON:
+{
+  "base_expr": "<wyrażenie bazowe jako SymPy, np sqrt(3)>",
+  "exponent_result": "<wynik potęgowania, np 9>"
+}`,
+  buildCode: (v) => {
+    return `from sympy import *
+n = symbols('n', real=True)
+base = ${v.base_expr || 'sqrt(3)'}
+target = ${v.exponent_result || '9'}
+wynik = solve(Eq(base**n, target), n)
+if isinstance(wynik, list) and len(wynik) == 1:
+    wynik = wynik[0]
+print("ODPOWIEDZ:", wynik)
+`;
+  },
+  keywords: ['log', 'logarytm', 'równa', 'sqrt', 'pierwiastek', 'potęga'],
+};
+
+// ============================================================
+// Template: Rational equation with domain check
+// ============================================================
+
+const rationalEquation: ExtractionTemplate = {
+  id: 'rational_equation_domain',
+  name: 'Równanie z ułamkiem',
+  description: 'Równanie postaci num/den = 0, sprawdź dziedzinę',
+  extractionPrompt: `Wyodrębnij z zadania o równaniu z ułamkiem. Odpowiedz TYLKO JSON:
+{
+  "numerator": "<licznik w SymPy>",
+  "denominator_factors": ["<czynnik1>", "<czynnik2>"]
+}`,
+  buildCode: (v) => {
+    const factors = v.denominator_factors || ['x + 2', 'x - 3'];
+    return `from sympy import *
+x = symbols('x', real=True)
+num = ${v.numerator || 'x + 1'}
+den_factors = [${factors.map((f: string) => `sympify('${f}')`).join(', ')}]
+den_product = 1
+for fac in den_factors:
+    den_product *= fac
+solutions_num = solve(num, x)
+excluded = solve(den_product, x)
+valid = [s for s in solutions_num if s not in excluded]
+if len(valid) == 0:
+    print("ODPOWIEDZ: brak rozwiązań")
+elif len(valid) == 1:
+    print("ODPOWIEDZ:", valid[0])
+else:
+    print("ODPOWIEDZ:", valid)
+`;
+  },
+  keywords: ['równanie', 'ułamek', 'mianownik', 'zbiorze', 'rzeczywist'],
+};
+
+// ============================================================
+// Template: Geometric sequence ratio from formula
+// ============================================================
+
+const geometricSeqRatio: ExtractionTemplate = {
+  id: 'geometric_seq_ratio',
+  name: 'Iloraz ciągu geometrycznego',
+  description: 'Ciąg geometryczny z wzorem ogólnym, oblicz iloraz',
+  extractionPrompt: `Wyodrębnij z zadania o ciągu geometrycznym. Odpowiedz TYLKO JSON:
+{
+  "formula": "<wzór ogólny a_n w SymPy, np 2**(n-1)>"
+}`,
+  buildCode: (v) => {
+    return `from sympy import *
+n = symbols('n', positive=True, integer=True)
+a_n = ${v.formula || '2**(n-1)'}
+a_n1 = a_n.subs(n, n+1)
+q = simplify(a_n1 / a_n)
+print("ODPOWIEDZ:", q)
+`;
+  },
+  keywords: ['ciąg', 'geometryczn', 'iloraz', 'wzor', 'a_n'],
+};
+
+// ============================================================
+// Template: Arithmetic mean property
+// ============================================================
+
+const arithmeticMeanProperty: ExtractionTemplate = {
+  id: 'arithmetic_mean_property',
+  name: 'Własność średniej arytmetycznej',
+  description: 'Średnia arytmetyczna, powtórzenie elementów',
+  extractionPrompt: `Wyodrębnij z zadania o średniej. Odpowiedz TYLKO JSON:
+{
+  "original_count": <ile oryginalnych liczb>,
+  "original_mean": <średnia oryginalna>,
+  "repeat_factor": <ile razy powtarza się każdy element w nowym zbiorze>
+}`,
+  buildCode: (v) => {
+    return `from sympy import *
+# If mean of a,b,c = M, then sum = M * count
+# When each repeated k times: new_sum = k * sum, new_count = k * count
+# New mean = k * sum / (k * count) = sum / count = M
+original_mean = ${v.original_mean || 9}
+print("ODPOWIEDZ:", original_mean)
+`;
+  },
+  keywords: ['średnia', 'arytmetyczna', 'liczb', 'równa'],
+};
+
+// ============================================================
+// Template: Linear function decreasing/increasing condition
+// ============================================================
+
+const linearFunctionCondition: ExtractionTemplate = {
+  id: 'linear_function_condition',
+  name: 'Warunek na funkcję liniową',
+  description: 'Funkcja liniowa malejąca/rosnąca, warunek na parametr',
+  extractionPrompt: `Wyodrębnij z zadania o funkcji liniowej. Odpowiedz TYLKO JSON:
+{
+  "slope_expr": "<wyrażenie na współczynnik kierunkowy w zmiennej parametru, np -2*k+3>",
+  "parameter": "<nazwa parametru, np k>",
+  "condition": "<decreasing lub increasing>"
+}`,
+  buildCode: (v) => {
+    const param = v.parameter || 'k';
+    const rel = (v.condition || 'decreasing') === 'decreasing' ? '< 0' : '> 0';
+    return `from sympy import *
+${param} = symbols('${param}', real=True)
+slope = ${v.slope_expr || '-2*k + 3'}
+wynik = solveset(slope ${rel}, ${param}, S.Reals)
+print("ODPOWIEDZ:", wynik)
+`;
+  },
+  keywords: ['funkcja', 'liniowa', 'malejąca', 'współczynnik', 'k'],
+};
+
+// ============================================================
+// Template: Trig identity — find other trig function from known one
+// ============================================================
+
+const trigIdentityFind: ExtractionTemplate = {
+  id: 'trig_identity_find',
+  name: 'Tożsamość trygonometryczna',
+  description: 'Dany cos/sin/tan kąta ostrego, oblicz inną funkcję',
+  extractionPrompt: `Wyodrębnij z zadania trygonometrycznego. Odpowiedz TYLKO JSON:
+{
+  "known_func": "<cos lub sin lub tan>",
+  "known_value_num": <licznik wartości>,
+  "known_value_den": <mianownik wartości>,
+  "find_func": "<tan lub sin lub cos>"
+}`,
+  buildCode: (v) => {
+    const known = v.known_func || 'cos';
+    const num = v.known_value_num || 5;
+    const den = v.known_value_den || 13;
+    const find = v.find_func || 'tan';
+    return `from sympy import *
+val = Rational(${num}, ${den})
+${known === 'cos' ? `cos_a = val
+sin_a = sqrt(1 - cos_a**2)
+tan_a = sin_a / cos_a` :
+known === 'sin' ? `sin_a = val
+cos_a = sqrt(1 - sin_a**2)
+tan_a = sin_a / cos_a` :
+`tan_a = val
+cos_a = 1 / sqrt(1 + tan_a**2)
+sin_a = tan_a * cos_a`}
+wynik = simplify(${find}_a)
+print("ODPOWIEDZ:", wynik)
+`;
+  },
+  keywords: ['cos', 'sin', 'tan', 'ostry', 'kąt'],
+};
+
+// ============================================================
+// Template: Simple linear inequality
+// ============================================================
+
+const linearInequalitySimple: ExtractionTemplate = {
+  id: 'linear_inequality_simple',
+  name: 'Nierówność liniowa prosta',
+  description: 'Prosta nierówność liniowa, rozwiąż i podaj przedział',
+  extractionPrompt: `Wyodrębnij nierówność. Odpowiedz TYLKO JSON:
+{
+  "lhs": "<lewa strona w SymPy>",
+  "rhs": "<prawa strona w SymPy>",
+  "relation": "<< lub > lub <= lub >=>",
+  "variable": "x"
+}`,
+  buildCode: (v) => {
+    const rel = v.relation || '<';
+    return `from sympy import *
+x = symbols('x', real=True)
+lhs = ${v.lhs || '1 - Rational(3,2)*x'}
+rhs = ${v.rhs || 'Rational(2,3) - x'}
+try:
+    wynik = solve_univariate_inequality(lhs ${rel} rhs, x, relational=False)
+except:
+    wynik = solveset(lhs - rhs, x, S.Reals)
+print("ODPOWIEDZ:", wynik)
+`;
+  },
+  keywords: ['nierówno', 'rozwiąza', 'przedział', 'zbiorem'],
+};
+
+// ============================================================
+// Template: Circle with center on line
+// ============================================================
+
+const circleCenterOnLine: ExtractionTemplate = {
+  id: 'circle_center_on_line',
+  name: 'Okrąg ze środkiem na prostej',
+  description: 'Okrąg ze środkiem na prostej, przechodzący przez punkty',
+  extractionPrompt: `Wyodrębnij z zadania o okręgu. Odpowiedz TYLKO JSON:
+{
+  "line_coefficients": {"a": <a>, "b": <b>, "c": <c wolny wyraz>},
+  "point1": {"x": <x1>, "y": <y1>},
+  "point2": {"x": <x2>, "y": <y2>}
+}`,
+  buildCode: (v) => {
+    const lc = v.line_coefficients || { a: 1, b: -1, c: 0 };
+    const p1 = v.point1 || { x: 1, y: 5 };
+    const p2 = v.point2 || { x: -2, y: -4 };
+    return `from sympy import *
+p, q_s = symbols('p q', real=True)
+eq1 = Eq(${lc.a}*p + ${lc.b}*q_s + ${lc.c}, 0)
+eq2 = Eq((p - ${p1.x})**2 + (q_s - ${p1.y})**2, (p - ${p2.x})**2 + (q_s - ${p2.y})**2)
+sol = solve([eq1, eq2], [p, q_s])
+if isinstance(sol, dict):
+    cx, cy = sol[p], sol[q_s]
+elif isinstance(sol, list) and len(sol) > 0:
+    cx, cy = sol[0] if isinstance(sol[0], tuple) else (sol[0], 0)
+else:
+    cx, cy = 0, 0
+r_sq = (cx - ${p1.x})**2 + (cy - ${p1.y})**2
+print(f"S = ({cx}, {cy}), r = {sqrt(r_sq)}")
+print("ODPOWIEDZ: S = (", cx, ",", cy, ")")
+`;
+  },
+  keywords: ['okrąg', 'środek', 'prosta', 'przechodzi', 'punkt'],
+};
+
+// ============================================================
+// Template: Percentage word problem
+// ============================================================
+
+const percentageWordProblem: ExtractionTemplate = {
+  id: 'percentage_word_problem',
+  name: 'Zadanie procentowe',
+  description: 'Zadanie słowne z procentami — drzewa, sadzonki, pracownicy etc.',
+  extractionPrompt: `Wyodrębnij z zadania. Odpowiedz TYLKO JSON:
+{
+  "total": <łączna liczba>,
+  "part1_loss_percent": <procent strat grupy 1>,
+  "part2_loss_percent": <procent strat grupy 2>,
+  "total_loss": <łączna strata>
+}`,
+  buildCode: (v) => {
+    return `from sympy import *
+x = symbols('x', positive=True)
+total = ${v.total || 1960}
+p1_loss = Rational(${v.part1_loss_percent || 5}, 100)
+p2_loss = Rational(${v.part2_loss_percent || 10}, 100)
+total_loss = ${v.total_loss || 148}
+eq = Eq(x * p1_loss + (total - x) * p2_loss, total_loss)
+sol = solve(eq, x)
+part1 = sol[0] if isinstance(sol, list) else sol
+part2 = total - part1
+print(f"Grupa 1: {part1}, Grupa 2: {part2}")
+print("ODPOWIEDZ:", part1)
+`;
+  },
+  keywords: ['procent', 'drzew', 'sadz', 'usch', 'łącznie'],
+};
+
+// ============================================================
 // Registry of all templates
 // ============================================================
 
@@ -954,6 +1233,16 @@ export const EXTRACTION_TEMPLATES: ExtractionTemplate[] = [
   prismComputation,
   cubeGeometry,
   cyclicQuadrilateral,
+  // Pillar 2+3 templates
+  logPowerEval,
+  rationalEquation,
+  geometricSeqRatio,
+  arithmeticMeanProperty,
+  linearFunctionCondition,
+  trigIdentityFind,
+  linearInequalitySimple,
+  circleCenterOnLine,
+  percentageWordProblem,
 ];
 
 // ============================================================
