@@ -263,6 +263,18 @@ export class ThreeAgentOrchestrator {
       }
     }
 
+    // Pattern 4: Regular tetrahedron + inscribed sphere + cross-section
+    console.log('🔍 Template: checking tetrahedron sphere...');
+    const tetraParams = this.detectTetrahedronSphereParams(problemText);
+    console.log('🔍 Template: tetraParams =', tetraParams ? JSON.stringify(tetraParams) : 'null');
+    if (tetraParams) {
+      const code = this.buildTetrahedronSphereCode(tetraParams);
+      if (code) {
+        console.log('🔍 Template: tetrahedron sphere code generated =', code.length, 'chars');
+        return this.executeTemplateSolverCode(code, `tetrahedron_sphere`);
+      }
+    }
+
     return null;
   }
 
@@ -781,6 +793,244 @@ elif len(valid_${paramName}) > 1:
     print("ODPOWIEDZ: ${paramName} in " + str(set(valid_${paramName})))
 else:
     print("ODPOWIEDZ: brak rozwiazania")
+`;
+  }
+
+  // ─── Pattern 4: Regular Tetrahedron + Inscribed Sphere + Cross-Section ───
+
+  private detectTetrahedronSphereParams(text: string): {
+    edgeLength: number;
+    volNum: number | null;
+    volDen: number | null;
+    hasPlane: boolean;
+    findWhat: string;
+  } | null {
+    const normalized = this.normalizeUnicodeMath(text);
+    const lower = normalized.toLowerCase();
+
+    // Must mention tetrahedron (regular)
+    if (!/czworo[sś]cian|tetraed/.test(lower)) return null;
+
+    // Must be regular (equal edges or "foremny")
+    if (!/kraw[eę]d[zź].*(?:równ|takiej samej|jednakow|d[lł]ugo[sś])|foremnr?y/.test(lower)
+        && !/(?:równ|takiej samej|jednakow).*kraw[eę]d[zź]/.test(lower)
+        && !/wszystkie\s+kraw/.test(lower)) return null;
+
+    // Extract edge length
+    let edge: number | null = null;
+    const edgeMatch = normalized.match(/d[lł]ugo[sś][ctć]\w*\s+(\d+(?:[.,]\d+)?)/);
+    if (edgeMatch) {
+      edge = parseFloat(edgeMatch[1].replace(',', '.'));
+    }
+    if (!edge) {
+      const edgeMatch2 = normalized.match(/kraw[eę]d[zź]\w*\s+.*?(\d+(?:[.,]\d+)?)/);
+      if (edgeMatch2) edge = parseFloat(edgeMatch2[1].replace(',', '.'));
+    }
+    if (!edge || edge <= 0) return null;
+
+    // Extract volume fraction (optional — not all problems have a cross-section)
+    let volNum: number | null = null;
+    let volDen: number | null = null;
+
+    const fracMatch = normalized.match(/\\frac\{(\d+)\}\{(\d+)\}/);
+    if (fracMatch) {
+      volNum = parseInt(fracMatch[1]);
+      volDen = parseInt(fracMatch[2]);
+    }
+    if (!volNum) {
+      const plainFrac = lower.match(/(\d+)\s*[\/]\s*(\d+)/);
+      if (plainFrac) {
+        const n = parseInt(plainFrac[1]);
+        const d = parseInt(plainFrac[2]);
+        if (n > 0 && d > 0 && n < d) { volNum = n; volDen = d; }
+      }
+    }
+
+    const hasPlane = /p[lł]aszczyzn|przekr[oó]j|dzieli|r[oó]wnole[gł]/.test(lower);
+    const hasSphere = /kul[aeioy]|sfery|spher/.test(lower);
+
+    // Determine what to find
+    let findWhat = 'all'; // compute everything, let SymPy pick the answer
+
+    if (hasPlane && hasSphere && /odleg[lł]o[sś][cć].*[sś]rodk/.test(lower)) {
+      findWhat = 'distance_center_to_plane';
+    } else if (hasPlane && hasSphere && /odleg[lł]o[sś]/.test(lower)) {
+      findWhat = 'distance_center_to_plane';
+    } else if (/promie[nń]\w*\s+kul\w*\s+wpisan/.test(lower) || /kul\w*\s+wpisan\w*.*promie/.test(lower)) {
+      findWhat = 'inradius';
+    } else if (/promie[nń]\w*\s+kul\w*\s+opisan/.test(lower) || /kul\w*\s+opisan\w*.*promie/.test(lower)) {
+      findWhat = 'circumradius';
+    } else if (/obj[eę]to[sś][cć]\w*\s+kul/.test(lower) || /kul\w*.*obj[eę]to[sś]/.test(lower)) {
+      findWhat = 'sphere_volume';
+    } else if (/pol[eua]\s+(?:powierzchni|czworo)/.test(lower)) {
+      findWhat = 'surface_area';
+    } else if (/pol[eua]\s+(?:pod|przek|tr[oó]jk)/.test(lower)) {
+      findWhat = 'base_area';
+    } else if (/wysoko[sś][cć]/.test(lower) && !hasPlane) {
+      findWhat = 'height';
+    } else if (/obj[eę]to[sś][cć]/.test(lower) && !hasPlane) {
+      findWhat = 'volume';
+    } else if (/obj[eę]to[sś][cć].*[sś]ci[eę]t/.test(lower) || /ostros[lł]up\w*\s+[sś]ci[eę]t/.test(lower)) {
+      findWhat = 'frustum_volume';
+    } else if (hasPlane && /pol[eua]\s+przek/.test(lower)) {
+      findWhat = 'cross_section_area';
+    } else if (hasSphere) {
+      findWhat = 'all_sphere';
+    }
+
+    // Must have sphere OR some geometric question to be worth solving
+    if (!hasSphere && findWhat === 'all') {
+      // Basic tetrahedron question without sphere — still useful
+      if (!/wysoko|obj[eę]to|pol[eua]|przek[aą]tn|promie/.test(lower)) return null;
+    }
+
+    console.log(`🔍 Tetrahedron: edge=${edge}, vol=${volNum}/${volDen}, plane=${hasPlane}, find=${findWhat}`);
+
+    return { edgeLength: edge, volNum, volDen, hasPlane, findWhat };
+  }
+
+  private buildTetrahedronSphereCode(params: {
+    edgeLength: number;
+    volNum: number | null;
+    volDen: number | null;
+    hasPlane: boolean;
+    findWhat: string;
+  }): string | null {
+    const { edgeLength, volNum, volDen, hasPlane, findWhat } = params;
+
+    // Build cross-section block only if we have a plane with volume ratio
+    const planeBlock = (hasPlane && volNum && volDen) ? `
+# === Przekroj plaszczyzna rownoleglej do podstawy ===
+vol_ratio = Rational(${volNum}, ${volDen})
+print("Stosunek objetosci malego ostroslupa =", vol_ratio)
+k_scale = cbrt(vol_ratio)
+print("Wspolczynnik skali k =", simplify(k_scale))
+
+# Maly ostroslup od wierzcholka: wysokosc = k*h
+small_h = k_scale * h
+plane_height = h - small_h
+plane_height = simplify(plane_height)
+print("Plaszczyzna pi na wysokosci", plane_height, "od podstawy")
+
+# Krawedz przekroju
+cross_edge = k_scale * a
+cross_area = sqrt(3) / 4 * cross_edge**2
+cross_area = simplify(cross_area)
+print("Krawedz przekroju =", simplify(cross_edge))
+print("Pole przekroju =", cross_area)
+
+# Objetosc ostroslupa scietego = V_total - V_small
+V_small = vol_ratio * V
+V_frustum = V - V_small
+print("Objetosc malego ostroslupa =", simplify(V_small))
+print("Objetosc ostroslupa scietego =", simplify(V_frustum))
+
+# Odleglosc srodka kuli wpisanej od plaszczyzny
+dist_S_plane = Abs(r_in - plane_height)
+dist_S_plane = simplify(dist_S_plane)
+dist_S_plane = radsimp(dist_S_plane)
+print("Odleglosc srodka kuli od plaszczyzny =", dist_S_plane)
+` : '';
+
+    // Build answer block based on findWhat
+    let answerBlock: string;
+    switch (findWhat) {
+      case 'distance_center_to_plane':
+        answerBlock = `answer = dist_S_plane`;
+        break;
+      case 'inradius':
+        answerBlock = `answer = r_in`;
+        break;
+      case 'circumradius':
+        answerBlock = `answer = R_out`;
+        break;
+      case 'sphere_volume':
+        answerBlock = `answer = V_sphere_in`;
+        break;
+      case 'surface_area':
+        answerBlock = `answer = S_total`;
+        break;
+      case 'base_area':
+        answerBlock = `answer = S_face`;
+        break;
+      case 'height':
+        answerBlock = `answer = h`;
+        break;
+      case 'volume':
+        answerBlock = `answer = V`;
+        break;
+      case 'frustum_volume':
+        answerBlock = `answer = V_frustum`;
+        break;
+      case 'cross_section_area':
+        answerBlock = `answer = cross_area`;
+        break;
+      default:
+        // For 'all' or 'all_sphere' — print everything, use last relevant
+        if (hasPlane && volNum && volDen) {
+          answerBlock = `answer = dist_S_plane`;
+        } else {
+          answerBlock = `answer = r_in`;
+        }
+        break;
+    }
+
+    return `from sympy import *
+
+a = Integer(${edgeLength})
+print("=== Czworoscian foremny, krawedz a =", a, "===")
+print()
+
+# === Podstawowe wielkosci ===
+# Wysokosc
+h = a * sqrt(6) / 3
+print("Wysokosc h =", simplify(h))
+
+# Pole jednej sciany (trojkat rownoboczny)
+S_face = sqrt(3) / 4 * a**2
+S_face = simplify(S_face)
+print("Pole sciany =", S_face)
+
+# Pole calkowite (4 sciany)
+S_total = 4 * S_face
+S_total = simplify(S_total)
+print("Pole powierzchni calkowitej =", S_total)
+
+# Objetosc
+V = a**3 * sqrt(2) / 12
+V = simplify(V)
+print("Objetosc V =", V)
+
+# === Kula wpisana ===
+# r = a*sqrt(6)/12 = h/4
+r_in = a * sqrt(6) / 12
+r_in = simplify(r_in)
+print()
+print("Promien kuli wpisanej r =", r_in)
+print("Srodek kuli na wysokosci r =", r_in, "od podstawy (= h/4)")
+
+V_sphere_in = Rational(4, 3) * pi * r_in**3
+V_sphere_in = simplify(V_sphere_in)
+print("Objetosc kuli wpisanej =", V_sphere_in)
+
+# === Kula opisana ===
+# R = a*sqrt(6)/4 = 3r = 3h/4
+R_out = a * sqrt(6) / 4
+R_out = simplify(R_out)
+print()
+print("Promien kuli opisanej R =", R_out)
+
+V_sphere_out = Rational(4, 3) * pi * R_out**3
+V_sphere_out = simplify(V_sphere_out)
+print("Objetosc kuli opisanej =", V_sphere_out)
+
+# Stosunek R/r = 3
+print("R/r =", simplify(R_out / r_in))
+${planeBlock}
+# === ODPOWIEDZ ===
+print()
+${answerBlock}
+print("ODPOWIEDZ:", radsimp(simplify(answer)))
 `;
   }
 

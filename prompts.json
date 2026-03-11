@@ -5,7 +5,7 @@
   },
   "agents": {
     "analytical": {
-      "max_tokens": 350,
+      "max_tokens": 500,
       "temperature": 0.2
     },
     "executor": {

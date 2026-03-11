@@ -109,7 +109,7 @@
     },
     {
         "question": "W czworoscianie, ktorego wszystkie krawedzie maja taka sama dlugosc $6$, umieszczono kule tak, ze ma ona dokladnie jeden punkt wspolny z kazda sciana czworoscianu. Plaszczyzna $\\pi$, rownlegla do podstawy tego czworoscianu, dzieli go na dwie bryly: ostroslup o objetosci rownej $\\frac{8}{27}$ objetosci dzielonego czworoscianu i ostroslup sciety. Oblicz odleglosc srodka $S$ kuli od plaszczyzny $\\pi$.",
-        "answer": "$\\frac{2\\sqrt{6}}{9}$",
+        "answer": "$\\frac{sqrt{6}}{6}$",
         "options": null,
         "metadata": {
             "year": 2017,

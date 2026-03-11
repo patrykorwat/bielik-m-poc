@@ -1271,6 +1271,180 @@ else:
 """
 
 
+def _detect_tetrahedron_sphere_params(text):
+    """Detect regular tetrahedron questions (with or without sphere/cross-section)."""
+    lower = text.lower()
+
+    if not re.search(r'czworo[sś]cian|tetraed', lower):
+        return None
+
+    # Must be regular
+    if not re.search(r'kraw[eę]d[zź].*(?:równ|takiej samej|jednakow|d[lł]ugo[sś])|foremnr?y|wszystkie\s+kraw', lower):
+        if not re.search(r'(?:równ|takiej samej|jednakow).*kraw[eę]d[zź]', lower):
+            return None
+
+    # Extract edge length
+    edge = None
+    m = re.search(r'd[lł]ugo[sś][ctć]\w*\s+(\d+(?:[.,]\d+)?)', text)
+    if m:
+        edge = float(m.group(1).replace(',', '.'))
+    if not edge:
+        m = re.search(r'kraw[eę]d[zź]\w*\s+.*?(\d+(?:[.,]\d+)?)', text)
+        if m:
+            edge = float(m.group(1).replace(',', '.'))
+    if not edge or edge <= 0:
+        return None
+
+    # Extract volume fraction (optional)
+    vol_num = vol_den = None
+    m = re.search(r'\\frac\{(\d+)\}\{(\d+)\}', text)
+    if m:
+        vol_num, vol_den = int(m.group(1)), int(m.group(2))
+    if not vol_num:
+        m = re.search(r'(\d+)\s*/\s*(\d+)', text)
+        if m:
+            n, d = int(m.group(1)), int(m.group(2))
+            if 0 < n < d:
+                vol_num, vol_den = n, d
+
+    has_plane = bool(re.search(r'p[lł]aszczyzn|przekr[oó]j|dzieli|r[oó]wnole[gł]', lower))
+    has_sphere = bool(re.search(r'kul[aeioy]|sfery|spher', lower))
+
+    # Determine what to find
+    find_what = 'all'
+    if has_plane and has_sphere and re.search(r'odleg[lł]o[sś]', lower):
+        find_what = 'distance_center_to_plane'
+    elif re.search(r'promie[nń]\w*.*kul\w*\s+wpisan|kul\w*\s+wpisan\w*.*promie', lower):
+        find_what = 'inradius'
+    elif re.search(r'promie[nń]\w*.*kul\w*\s+opisan|kul\w*\s+opisan\w*.*promie', lower):
+        find_what = 'circumradius'
+    elif re.search(r'obj[eę]to[sś][cć]\w*\s+kul|kul\w*.*obj[eę]to[sś]', lower):
+        find_what = 'sphere_volume'
+    elif re.search(r'pol[eua]\s+(?:powierzchni|czworo)', lower):
+        find_what = 'surface_area'
+    elif re.search(r'pol[eua]\s+(?:pod|przek|tr[oó]jk)', lower):
+        find_what = 'base_area'
+    elif re.search(r'wysoko[sś][cć]', lower) and not has_plane:
+        find_what = 'height'
+    elif re.search(r'obj[eę]to[sś][cć]', lower) and not has_plane:
+        find_what = 'volume'
+    elif re.search(r'obj[eę]to[sś][cć].*[sś]ci[eę]t|ostros[lł]up\w*\s+[sś]ci[eę]t', lower):
+        find_what = 'frustum_volume'
+    elif has_plane and re.search(r'pol[eua]\s+przek', lower):
+        find_what = 'cross_section_area'
+    elif has_sphere:
+        find_what = 'all_sphere'
+
+    if not has_sphere and find_what == 'all':
+        if not re.search(r'wysoko|obj[eę]to|pol[eua]|przek[aą]tn|promie', lower):
+            return None
+
+    print(f"  🔍 Tetrahedron: edge={edge}, vol={vol_num}/{vol_den}, plane={has_plane}, find={find_what}")
+    return {
+        'edge': edge,
+        'vol_num': vol_num,
+        'vol_den': vol_den,
+        'has_plane': has_plane,
+        'find_what': find_what,
+    }
+
+
+def _build_tetrahedron_sphere_code(params):
+    """Generate SymPy code for regular tetrahedron — handles any question type."""
+    edge = params['edge']
+    vol_num = params.get('vol_num')
+    vol_den = params.get('vol_den')
+    has_plane = params.get('has_plane', False)
+    find_what = params.get('find_what', 'all')
+
+    edge_str = str(int(edge)) if edge == int(edge) else str(edge)
+
+    plane_block = ""
+    if has_plane and vol_num and vol_den:
+        plane_block = f"""
+# === Przekroj plaszczyzna ===
+vol_ratio = Rational({vol_num}, {vol_den})
+print("Stosunek objetosci malego ostroslupa =", vol_ratio)
+k_scale = cbrt(vol_ratio)
+print("Wspolczynnik skali k =", simplify(k_scale))
+
+small_h = k_scale * h
+plane_height = simplify(h - small_h)
+print("Plaszczyzna pi na wysokosci", plane_height, "od podstawy")
+
+cross_edge = k_scale * a
+cross_area = simplify(sqrt(3) / 4 * cross_edge**2)
+print("Krawedz przekroju =", simplify(cross_edge))
+print("Pole przekroju =", cross_area)
+
+V_small = vol_ratio * V
+V_frustum = simplify(V - V_small)
+print("Objetosc malego ostroslupa =", simplify(V_small))
+print("Objetosc ostroslupa scietego =", V_frustum)
+
+dist_S_plane = radsimp(simplify(Abs(r_in - plane_height)))
+print("Odleglosc srodka kuli od plaszczyzny =", dist_S_plane)
+"""
+
+    answer_map = {
+        'distance_center_to_plane': 'dist_S_plane',
+        'inradius': 'r_in',
+        'circumradius': 'R_out',
+        'sphere_volume': 'V_sphere_in',
+        'surface_area': 'S_total',
+        'base_area': 'S_face',
+        'height': 'h',
+        'volume': 'V',
+        'frustum_volume': 'V_frustum',
+        'cross_section_area': 'cross_area',
+    }
+
+    if find_what in answer_map:
+        answer_expr = answer_map[find_what]
+    elif has_plane and vol_num and vol_den:
+        answer_expr = 'dist_S_plane'
+    else:
+        answer_expr = 'r_in'
+
+    return f"""from sympy import *
+
+a = Integer({edge_str})
+print("=== Czworoscian foremny, krawedz a =", a, "===")
+print()
+
+h = a * sqrt(6) / 3
+print("Wysokosc h =", simplify(h))
+
+S_face = simplify(sqrt(3) / 4 * a**2)
+S_total = simplify(4 * S_face)
+print("Pole sciany =", S_face)
+print("Pole powierzchni calkowitej =", S_total)
+
+V = simplify(a**3 * sqrt(2) / 12)
+print("Objetosc V =", V)
+
+r_in = simplify(a * sqrt(6) / 12)
+print()
+print("Promien kuli wpisanej r =", r_in)
+print("Srodek kuli na wysokosci r =", r_in, "od podstawy (= h/4)")
+
+V_sphere_in = simplify(Rational(4, 3) * pi * r_in**3)
+print("Objetosc kuli wpisanej =", V_sphere_in)
+
+R_out = simplify(a * sqrt(6) / 4)
+print()
+print("Promien kuli opisanej R =", R_out)
+
+V_sphere_out = simplify(Rational(4, 3) * pi * R_out**3)
+print("Objetosc kuli opisanej =", V_sphere_out)
+print("R/r =", simplify(R_out / r_in))
+{plane_block}
+print()
+answer = {answer_expr}
+print("ODPOWIEDZ:", radsimp(simplify(answer)))
+"""
+
+
 def _try_template_solver(question_text):
     """Try to solve the problem using a deterministic template (no LLM needed).
     Returns dict with 'code', 'answer', 'output' or None if no template matches."""
@@ -1350,6 +1524,31 @@ def _try_template_solver(question_text):
                     }
             except Exception as e:
                 print(f"  ⚠️ Template solver error (parametric_quadratic): {e}")
+                return None
+
+    # Pattern 4: Regular tetrahedron + inscribed sphere + cross-section
+    tetra_params = _detect_tetrahedron_sphere_params(question_text)
+    if tetra_params:
+        code = _build_tetrahedron_sphere_code(tetra_params)
+        if code:
+            local_ns = {}
+            import io, contextlib
+            output_buf = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(output_buf):
+                    exec(code, {'__builtins__': __builtins__}, local_ns)
+                output = output_buf.getvalue()
+                answer_m = re.search(r'ODPOWIEDZ:\s*(.+)', output)
+                if answer_m:
+                    return {
+                        'success': True,
+                        'code': code,
+                        'output': output,
+                        'answer': answer_m.group(1).strip(),
+                        'template': 'tetrahedron_sphere',
+                    }
+            except Exception as e:
+                print(f"  ⚠️ Template solver error (tetrahedron_sphere): {e}")
                 return None
 
     # Future patterns can be added here

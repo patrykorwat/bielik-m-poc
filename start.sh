@@ -16,8 +16,19 @@ set -e  # Exit on error
 # Parse CLI arguments
 API_KEY=""
 API_URL=""
+START_MLX=false
+MLX_MODEL_PATH=""
 while [[ $# -gt 0 ]]; do
     case $1 in
+        --mlx)
+            START_MLX=true
+            shift
+            ;;
+        --mlx=*)
+            START_MLX=true
+            MLX_MODEL_PATH="${1#*=}"
+            shift
+            ;;
         --api-key)
             API_KEY="$2"
             shift 2
@@ -38,9 +49,16 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
+            echo "  --mlx [PATH]    Start local MLX server with Bielik model"
+            echo "                  Default: ./B-11B-R-mlx-q4"
             echo "  --api-key KEY   Set API key for remote LLM provider"
             echo "  --api-url URL   Set remote LLM API base URL"
             echo "  -h, --help      Show this help"
+            echo ""
+            echo "Examples:"
+            echo "  $0 --mlx                    # Local Bielik via MLX"
+            echo "  $0 --mlx=./my-model-dir     # Custom local model"
+            echo "  $0 --api-key sk-xxx         # Remote API"
             exit 0
             ;;
         *)
@@ -51,12 +69,22 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Default MLX model path
+if [ "$START_MLX" = true ] && [ -z "$MLX_MODEL_PATH" ]; then
+    MLX_MODEL_PATH="./B-11B-R-mlx-q4"
+fi
+
 # Also accept from environment variables
 if [ -z "$API_KEY" ] && [ -n "$BIELIK_API_KEY" ]; then
     API_KEY="$BIELIK_API_KEY"
 fi
 if [ -z "$API_URL" ] && [ -n "$BIELIK_API_URL" ]; then
     API_URL="$BIELIK_API_URL"
+fi
+
+# Default: use PLGrid LLM Lab when no --mlx and no explicit URL
+if [ "$START_MLX" = false ] && [ -z "$API_URL" ]; then
+    API_URL="https://llmlab.plgrid.pl/api"
 fi
 
 echo "🎓 Starting Bielik Matura"
@@ -106,6 +134,9 @@ kill_port() {
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Create log directory early (needed for --mlx before Step 6)
+mkdir -p logs
+
 MLX_PORT=8011
 if [ -f "prompts.json" ]; then
     # Extract port from base_url in prompts.json
@@ -116,7 +147,7 @@ with open('prompts.json') as f:
 url = cfg.get('model', {}).get('base_url', '')
 if ':' in url:
     print(url.split(':')[-1])
-" 2>/dev/null)
+" 2>/dev/null || true)
     if [ -n "$EXTRACTED_PORT" ]; then
         MLX_PORT=$EXTRACTED_PORT
     fi
@@ -130,11 +161,14 @@ cleanup() {
     # Kill all background jobs
     jobs -p | xargs kill 2>/dev/null || true
 
-    # Kill specific ports (only our servers, NOT MLX)
+    # Kill specific ports
     kill_port 3001 2>/dev/null || true
     kill_port 3002 2>/dev/null || true
     kill_port 3003 2>/dev/null || true
     kill_port 5173 2>/dev/null || true
+    if [ "$START_MLX" = true ]; then
+        kill_port $MLX_PORT 2>/dev/null || true
+    fi
 
     print_success "Servers stopped"
     exit 0
@@ -173,31 +207,18 @@ print_success "Main dependencies installed"
 
 echo ""
 
-# ── Step 2: MANDATORY Lean Prover Check ──────────────────────────────────
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "🎯 MANDATORY: Lean Prover Verification"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
+# ── Step 2: Lean Prover Check (optional) ─────────────────────────────────
+echo "🎯 Checking Lean Prover..."
 
-if ! command_exists lean; then
-    print_error "CRITICAL: Lean Prover is NOT installed!"
-    echo ""
-    echo "Lean Prover is MANDATORY for this application."
-    echo "It provides formal mathematical verification."
-    echo ""
-    echo "Please run the setup script to install Lean:"
-    echo "   ${GREEN}./setup.sh${NC}"
-    echo ""
-    echo "Or install manually:"
-    echo "   macOS: ${GREEN}brew install elan-init && elan default leanprover/lean4:stable${NC}"
-    echo "   Linux: ${GREEN}curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh${NC}"
-    echo "          ${GREEN}elan default leanprover/lean4:stable${NC}"
-    echo ""
-    exit 1
+LEAN_AVAILABLE=false
+if command_exists lean; then
+    LEAN_VERSION=$(lean --version 2>&1 | head -n 1 || echo "unknown")
+    print_success "Lean Prover installed: $LEAN_VERSION"
+    LEAN_AVAILABLE=true
+else
+    print_warning "Lean Prover not installed (formal verification disabled)"
+    echo "     Install with: brew install elan-init && elan default leanprover/lean4:stable"
 fi
-
-LEAN_VERSION=$(lean --version 2>&1 | head -n 1 || echo "unknown")
-print_success "Lean Prover installed: $LEAN_VERSION"
 echo ""
 
 # ── Step 3: Build MCP SymPy server if needed ─────────────────────────────
@@ -229,22 +250,90 @@ fi
 
 echo ""
 
-# ── Step 4: Check MLX server (optional) ──────────────────────────────────
-echo "🤖 Checking MLX/Bielik LLM server (port $MLX_PORT) [OPTIONAL]..."
-
+# ── Step 4: MLX server ────────────────────────────────────────────────────
 MLX_READY=false
-if port_in_use $MLX_PORT; then
-    # Try to actually reach the API
-    MLX_RESPONSE=$(curl -s --connect-timeout 3 "http://localhost:$MLX_PORT/v1/models" 2>/dev/null || echo "")
-    if echo "$MLX_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data'][0]['id'])" 2>/dev/null; then
-        MLX_READY=true
-        MLX_MODEL=$(echo "$MLX_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data'][0]['id'])" 2>/dev/null)
-        print_success "MLX server running — model: $MLX_MODEL"
-    else
-        print_warning "Port $MLX_PORT is in use but MLX API not responding"
+
+if [ "$START_MLX" = true ]; then
+    echo "🤖 Starting MLX server with local model..."
+    echo ""
+
+    # Validate model path
+    if [ ! -d "$MLX_MODEL_PATH" ]; then
+        print_error "MLX model directory not found: $MLX_MODEL_PATH"
+        echo ""
+        echo "Make sure the model directory exists and contains .safetensors files."
+        echo "Expected path: $MLX_MODEL_PATH"
+        exit 1
+    fi
+
+    if ! command_exists mlx_lm.server; then
+        print_error "mlx_lm not installed"
+        echo ""
+        echo "Install with: pip install mlx mlx-lm"
+        exit 1
+    fi
+
+    # Kill existing MLX on this port
+    if port_in_use $MLX_PORT; then
+        print_warning "Port $MLX_PORT already in use, killing existing process..."
+        kill_port $MLX_PORT
+        sleep 1
+    fi
+
+    print_info "Starting: mlx_lm.server --model $MLX_MODEL_PATH --port $MLX_PORT"
+    mlx_lm.server --model "$MLX_MODEL_PATH" --port "$MLX_PORT" > logs/mlx-server.log 2>&1 &
+    MLX_PID=$!
+
+    # Wait for MLX to be ready (loading model takes time)
+    echo -n "  Waiting for model to load"
+    for i in $(seq 1 60); do
+        if ! kill -0 $MLX_PID 2>/dev/null; then
+            echo ""
+            print_error "MLX server crashed during startup"
+            echo "  Check logs/mlx-server.log for details:"
+            tail -10 logs/mlx-server.log 2>/dev/null
+            exit 1
+        fi
+        MLX_RESPONSE=$(curl -s --connect-timeout 2 "http://localhost:$MLX_PORT/v1/models" 2>/dev/null || echo "")
+        if echo "$MLX_RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+            echo ""
+            MLX_READY=true
+            MLX_MODEL="$MLX_MODEL_PATH"
+            print_success "MLX server ready — model: $MLX_MODEL (PID: $MLX_PID)"
+            break
+        fi
+        echo -n "."
+        sleep 2
+    done
+
+    if [ "$MLX_READY" = false ]; then
+        echo ""
+        print_error "MLX server did not respond within 120s"
+        echo "  Check logs/mlx-server.log for details"
+        exit 1
     fi
 else
-    print_info "MLX server not running (you can use Claude instead)"
+    echo "🤖 Checking MLX/Bielik LLM server (port $MLX_PORT) [OPTIONAL]..."
+
+    if port_in_use $MLX_PORT; then
+        MLX_RESPONSE=$(curl -s --connect-timeout 3 "http://localhost:$MLX_PORT/v1/models" 2>/dev/null || echo "")
+        if echo "$MLX_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data'][0]['id'])" 2>/dev/null; then
+            MLX_READY=true
+            MLX_MODEL=$(echo "$MLX_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data'][0]['id'])" 2>/dev/null)
+            # Warn if wrong model is loaded
+            if echo "$MLX_MODEL" | grep -qi "bielik"; then
+                print_success "MLX server running — model: $MLX_MODEL"
+            else
+                print_warning "MLX server running but with WRONG model: $MLX_MODEL"
+                echo -e "     Expected Bielik model. Restart with:"
+                echo -e "     ${GREEN}./start.sh --mlx${NC}"
+            fi
+        else
+            print_warning "Port $MLX_PORT is in use but MLX API not responding"
+        fi
+    else
+        print_info "MLX server not running (use --mlx to start, or use Claude instead)"
+    fi
 fi
 
 echo ""
@@ -309,29 +398,21 @@ else
     exit 1
 fi
 
-# Start Lean Proxy - MANDATORY
-print_info "Starting Lean Proxy on port 3002..."
-npm run lean-proxy > logs/lean-proxy.log 2>&1 &
-LEAN_PID=$!
-sleep 8
+# Start Lean Proxy - optional (requires Lean)
+if [ "$LEAN_AVAILABLE" = true ]; then
+    print_info "Starting Lean Proxy on port 3002..."
+    npm run lean-proxy > logs/lean-proxy.log 2>&1 &
+    LEAN_PID=$!
+    sleep 8
 
-if kill -0 $LEAN_PID 2>/dev/null && port_in_use 3002; then
-    print_success "Lean Proxy started (PID: $LEAN_PID)"
+    if kill -0 $LEAN_PID 2>/dev/null && port_in_use 3002; then
+        print_success "Lean Proxy started (PID: $LEAN_PID)"
+    else
+        print_warning "Lean Proxy failed to start (formal verification disabled)"
+        echo "  Check logs/lean-proxy.log for details"
+    fi
 else
-    print_error "CRITICAL: Lean Proxy failed to start"
-    echo ""
-    echo "Lean Prover backend is MANDATORY for this application."
-    echo ""
-    echo "Check logs/lean-proxy.log for details:"
-    cat logs/lean-proxy.log 2>/dev/null | tail -20
-    echo ""
-    echo "Troubleshooting:"
-    echo "  1. Verify Lean is installed: ${GREEN}lean --version${NC}"
-    echo "  2. Check if lean-proxy-server.js exists"
-    echo "  3. Try running manually: ${GREEN}npm run lean-proxy${NC}"
-    echo ""
-    cleanup
-    exit 1
+    print_info "Lean Proxy skipped (Lean not installed)"
 fi
 
 # Start RAG Service (mathematical methods knowledge base) - OPTIONAL
@@ -405,7 +486,11 @@ else
     echo -e "  🤖 MLX Server (LLM):   ${YELLOW}Not running (use Claude instead)${NC}"
 fi
 echo -e "  🔌 MCP Proxy (SymPy):  ${GREEN}http://localhost:3001${NC}  ✓ RUNNING"
-echo -e "  🎯 Lean Proxy:         ${GREEN}http://localhost:3002${NC}  ✓ RUNNING"
+if port_in_use 3002; then
+    echo -e "  🎯 Lean Proxy:         ${GREEN}http://localhost:3002${NC}  ✓ RUNNING"
+else
+    echo -e "  🎯 Lean Proxy:         ${YELLOW}Not running (optional)${NC}"
+fi
 if port_in_use 3003; then
     echo -e "  📚 RAG Service:        ${GREEN}http://localhost:3003${NC}  ✓ RUNNING"
 else
@@ -419,8 +504,8 @@ echo ""
 
 if [ "$MLX_READY" = false ]; then
     echo -e "  ${BLUE}ℹ  MLX server not detected (optional)${NC}"
-    echo "     You can use Claude API instead, or start MLX:"
-    echo -e "     ${GREEN}mlx_lm.server --model LibraxisAI/Bielik-11B-v3.0-mlx-q4 --port $MLX_PORT${NC}"
+    echo "     You can use Claude API instead, or restart with --mlx:"
+    echo -e "     ${GREEN}./start.sh --mlx${NC}"
     echo ""
 fi
 
@@ -436,7 +521,11 @@ fi
 
 echo "✅ All mandatory services are running!"
 echo ""
-echo "📝 Logs:  logs/mcp-proxy.log  |  logs/lean-proxy.log  |  logs/rag-service.log  |  logs/vite.log"
+if [ "$START_MLX" = true ]; then
+    echo "📝 Logs:  logs/mlx-server.log  |  logs/mcp-proxy.log  |  logs/lean-proxy.log  |  logs/rag-service.log  |  logs/vite.log"
+else
+    echo "📝 Logs:  logs/mcp-proxy.log  |  logs/lean-proxy.log  |  logs/rag-service.log  |  logs/vite.log"
+fi
 echo ""
 echo -e "🌐 Open:  ${BLUE}http://localhost:5173${NC}"
 echo ""

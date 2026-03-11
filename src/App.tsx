@@ -48,7 +48,7 @@ const Icon = ({ type, label }: { type: string; label?: string }) => {
 const MCP_PROXY_URL = import.meta.env.VITE_MCP_PROXY_URL || 'http://localhost:3001';
 const LEAN_PROXY_URL = import.meta.env.VITE_LEAN_PROXY_URL || 'http://localhost:3002';
 const DEFAULT_REMOTE_MODEL = import.meta.env.VITE_REMOTE_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
-const DEFAULT_REMOTE_API_URL = import.meta.env.VITE_REMOTE_API_URL || '';
+const DEFAULT_REMOTE_API_URL = import.meta.env.VITE_REMOTE_API_URL || 'https://llmlab.plgrid.pl/api';
 
 function App() {
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
@@ -106,12 +106,14 @@ function App() {
     }
   }, [inputMessage]);
 
-  // Check if proxy has API key configured (key stays server-side)
-  // If yes, auto-configure as remote and skip config screen → go straight to chat
+  // Auto-detect available LLM backend and skip config screen
+  // Priority: 1) Proxy with API key (remote) → 2) MLX on port 8011 → 3) Ollama on 11434 → show config
   useEffect(() => {
-    fetch(`${MCP_PROXY_URL}/llm-proxy/config`)
-      .then(res => res.json())
-      .then(async (data) => {
+    const autoDetect = async () => {
+      // 1. Check if proxy has API key (remote provider like Cyfronet)
+      try {
+        const configRes = await fetch(`${MCP_PROXY_URL}/llm-proxy/config`);
+        const data = await configRes.json();
         if (data.hasApiKey && data.llmUrl) {
           const remoteUrl = data.llmUrl;
           setProxyHasApiKey(true);
@@ -119,27 +121,85 @@ function App() {
           setMlxBaseUrl(remoteUrl);
           setMlxModel(DEFAULT_REMOTE_MODEL);
 
-          // Auto-start: skip config screen, connect MCP, go to chat
-          try {
-            const mlxConfig: MLXConfig = {
-              provider: 'remote',
-              baseUrl: remoteUrl,
-              model: DEFAULT_REMOTE_MODEL,
-              temperature: 0.7,
-              maxTokens: 4096,
-            };
-            orchestratorRef.current = new ThreeAgentOrchestrator('sympy', mlxConfig, false);
-            await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
-            setMcpConnected(true);
-            const newChatId = ChatHistoryService.generateChatId();
-            setCurrentChatId(newChatId);
-            setIsConfigured(true);
-          } catch (err) {
-            console.warn('Auto-configure failed, showing config screen:', err);
-          }
+          const mlxConfig: MLXConfig = {
+            provider: 'remote',
+            baseUrl: remoteUrl,
+            model: DEFAULT_REMOTE_MODEL,
+            temperature: 0.7,
+            maxTokens: 4096,
+          };
+          orchestratorRef.current = new ThreeAgentOrchestrator('sympy', mlxConfig, false);
+          await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
+          setMcpConnected(true);
+          const newChatId = ChatHistoryService.generateChatId();
+          setCurrentChatId(newChatId);
+          setIsConfigured(true);
+          return; // done — remote configured
         }
-      })
-      .catch(() => { /* proxy not ready yet, ignore */ });
+      } catch { /* proxy not ready, continue to MLX check */ }
+
+      // 2. Check if MLX is running locally (port 8011)
+      try {
+        const mlxRes = await fetch('http://localhost:8011/v1/models', { signal: AbortSignal.timeout(2000) });
+        const mlxData = await mlxRes.json();
+        if (mlxData?.data?.length > 0) {
+          const detectedModel = mlxData.data[0].id || 'local-model';
+          console.log('Auto-detected MLX model:', detectedModel);
+          setLlmProvider('mlx');
+          setMlxBaseUrl('http://localhost:8011');
+          setMlxModel(detectedModel);
+
+          const mlxConfig: MLXConfig = {
+            provider: 'mlx',
+            baseUrl: 'http://localhost:8011',
+            model: detectedModel,
+            temperature: 0.7,
+            maxTokens: 4096,
+          };
+          orchestratorRef.current = new ThreeAgentOrchestrator('sympy', mlxConfig, false);
+          await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
+          setMcpConnected(true);
+          const newChatId = ChatHistoryService.generateChatId();
+          setCurrentChatId(newChatId);
+          setIsConfigured(true);
+          return; // done — MLX configured
+        }
+      } catch { /* MLX not running, continue to Ollama check */ }
+
+      // 3. Check if Ollama is running locally (port 11434)
+      try {
+        const ollamaRes = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) });
+        const ollamaData = await ollamaRes.json();
+        if (ollamaData?.models?.length > 0) {
+          // Find Bielik model or use first available
+          const bielikModel = ollamaData.models.find((m: { name: string }) => /bielik/i.test(m.name));
+          const selectedModel = bielikModel?.name || ollamaData.models[0].name;
+          console.log('Auto-detected Ollama model:', selectedModel);
+          setLlmProvider('ollama');
+          setMlxBaseUrl('http://localhost:11434');
+          setMlxModel(selectedModel);
+
+          const mlxConfig: MLXConfig = {
+            provider: 'ollama',
+            baseUrl: 'http://localhost:11434',
+            model: selectedModel,
+            temperature: 0.7,
+            maxTokens: 4096,
+          };
+          orchestratorRef.current = new ThreeAgentOrchestrator('sympy', mlxConfig, false);
+          await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
+          setMcpConnected(true);
+          const newChatId = ChatHistoryService.generateChatId();
+          setCurrentChatId(newChatId);
+          setIsConfigured(true);
+          return; // done — Ollama configured
+        }
+      } catch { /* Ollama not running, show config screen */ }
+
+      // No backend auto-detected — show config screen
+      console.log('No LLM backend auto-detected, showing config screen');
+    };
+    autoDetect();
   }, []);
 
   // Load chat sessions on mount
