@@ -2199,16 +2199,18 @@ ${result.error || ''}`;
 
         // Dodaj wiadomość RAG do konwersacji (wyświetlana użytkownikowi)
         const ragDisplayMsg = this.formatRAGForDisplay(ragResults);
-        const ragMsg: Message = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: ragDisplayMsg,
-          agentName: '📚 Baza Wiedzy',
-          timestamp: new Date(),
-        };
-        this.conversationHistory.push(ragMsg);
-        newMessages.push(ragMsg);
-        if (onMessageCallback) onMessageCallback(ragMsg);
+        if (ragDisplayMsg) {
+          const ragMsg: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: ragDisplayMsg,
+            agentName: '📚 Baza Wiedzy',
+            timestamp: new Date(),
+          };
+          this.conversationHistory.push(ragMsg);
+          newMessages.push(ragMsg);
+          if (onMessageCallback) onMessageCallback(ragMsg);
+        }
       }
     } catch (err) {
       console.warn('⚠️ RAG unavailable (continuing without):', err);
