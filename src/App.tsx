@@ -326,15 +326,17 @@ function App() {
 
     try {
       // Create a clean wrapper for export
+      // Position it on-screen (left: -9999px scrolled area) to ensure proper text layout.
+      // html2canvas has bugs with off-screen text rendering (missing spaces, overlapping fonts).
       const exportWrapper = document.createElement('div');
-      exportWrapper.style.position = 'fixed';
-      exportWrapper.style.top = '-100000px'; // Move far off screen
-      exportWrapper.style.left = '0';
+      exportWrapper.style.position = 'absolute';
+      exportWrapper.style.top = '0';
+      exportWrapper.style.left = '-9999px';
       exportWrapper.style.width = '800px';
       exportWrapper.style.backgroundColor = '#ffffff';
       exportWrapper.style.padding = '30px';
       exportWrapper.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif';
-      exportWrapper.style.zIndex = '-1';
+      exportWrapper.style.zIndex = '1';
       exportWrapper.style.pointerEvents = 'none';
 
       // Add title
@@ -351,22 +353,52 @@ function App() {
         msgClone.style.marginBottom = '15px';
         msgClone.style.opacity = '1';
         msgClone.style.animation = 'none';
+        msgClone.style.maxWidth = '100%';
+        msgClone.style.width = 'auto';
+        msgClone.style.boxSizing = 'border-box';
         msgClone.style.backgroundColor = msgClone.classList.contains('user') ? '#667eea' : '#f0f0f0';
 
-        // Remove any inherited opacity/background issues and animations
+        // Fix text rendering in all child elements
         const allElements = msgClone.querySelectorAll('*');
         allElements.forEach((el) => {
           const htmlEl = el as HTMLElement;
           htmlEl.style.opacity = '1';
           htmlEl.style.animation = 'none';
+          // Fix html2canvas text rendering issues
+          htmlEl.style.wordSpacing = 'normal';
+          htmlEl.style.letterSpacing = 'normal';
+          htmlEl.style.textRendering = 'auto';
         });
+
+        // Fix message-content elements specifically
+        const contentEls = msgClone.querySelectorAll('.message-content');
+        contentEls.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          htmlEl.style.whiteSpace = 'pre-wrap';
+          htmlEl.style.wordWrap = 'break-word';
+          htmlEl.style.overflowWrap = 'break-word';
+          htmlEl.style.wordSpacing = 'normal';
+          htmlEl.style.lineHeight = '1.6';
+          htmlEl.style.maxWidth = '100%';
+        });
+
+        // Fix code blocks
+        const codeBlocks = msgClone.querySelectorAll('pre, code');
+        codeBlocks.forEach((el) => {
+          const htmlEl = el as HTMLElement;
+          htmlEl.style.whiteSpace = 'pre-wrap';
+          htmlEl.style.wordBreak = 'break-word';
+          htmlEl.style.overflow = 'hidden';
+          htmlEl.style.maxWidth = '100%';
+        });
+
         exportWrapper.appendChild(msgClone);
       });
 
       document.body.appendChild(exportWrapper);
 
-      // Wait for render
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Wait for render — html2canvas needs layout to be stable
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Generate canvas
       const canvas = await html2canvas(exportWrapper, {
@@ -375,6 +407,8 @@ function App() {
         logging: false,
         useCORS: true,
         allowTaint: true,
+        windowWidth: 800,
+        width: 800,
         ignoreElements: (element) => {
           // Skip elements with animations that might affect opacity
           return element.classList.contains('processing-indicator') ||

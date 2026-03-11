@@ -6,7 +6,7 @@ Zaawansowany asystent matematyczny oparty na polskim modelu AI Bielik, wyposażo
 
 ## 📋 O projekcie
 
-![math-simple](math-simple.png)
+![kombinarotyka](kombinarotyka.png)
 
 **Bielik Matura** to aplikacja stworzona z myślą o maturzystach przygotowujących się do egzaminu z matematyki na poziomie rozszerzonym. System został zaprojektowany w oparciu o analizę Informatora Maturalnego CKE i obejmuje wszystkie kluczowe obszary tematyczne:
 
