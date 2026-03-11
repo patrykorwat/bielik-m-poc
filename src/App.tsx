@@ -3,6 +3,7 @@ import { ThreeAgentOrchestrator, Message, MLXConfig, ProverBackend, LLMProvider 
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
+import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -326,27 +327,25 @@ function App() {
 
     try {
       // Create a clean wrapper for export
-      // Position it on-screen (left: -9999px scrolled area) to ensure proper text layout.
-      // html2canvas has bugs with off-screen text rendering (missing spaces, overlapping fonts).
       const exportWrapper = document.createElement('div');
       exportWrapper.style.position = 'absolute';
       exportWrapper.style.top = '0';
-      exportWrapper.style.left = '-9999px';
+      exportWrapper.style.left = '0';
       exportWrapper.style.width = '800px';
       exportWrapper.style.backgroundColor = '#ffffff';
       exportWrapper.style.padding = '30px';
       exportWrapper.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif';
-      exportWrapper.style.zIndex = '1';
-      exportWrapper.style.pointerEvents = 'none';
+      exportWrapper.style.zIndex = '99999';
+      exportWrapper.style.boxSizing = 'border-box';
 
       // Add title
       const title = document.createElement('h2');
-      title.textContent = '🎓 Konwersacja - Bielik Matura';
+      title.textContent = '\u{1F393} Konwersacja - Bielik Matura';
       title.style.marginBottom = '20px';
       title.style.color = '#333';
       exportWrapper.appendChild(title);
 
-      // Clone each message individually and clean them
+      // Clone each message individually
       const messageElements = messagesContainer.querySelectorAll('.message');
       messageElements.forEach((msgElement) => {
         const msgClone = msgElement.cloneNode(true) as HTMLElement;
@@ -354,35 +353,37 @@ function App() {
         msgClone.style.opacity = '1';
         msgClone.style.animation = 'none';
         msgClone.style.maxWidth = '100%';
-        msgClone.style.width = 'auto';
         msgClone.style.boxSizing = 'border-box';
+        msgClone.style.borderRadius = '12px';
+        msgClone.style.padding = '15px 20px';
         msgClone.style.backgroundColor = msgClone.classList.contains('user') ? '#667eea' : '#f0f0f0';
+        if (msgClone.classList.contains('user')) {
+          msgClone.style.color = 'white';
+        }
 
-        // Fix text rendering in all child elements
+        // Remove animations and fix font issues for html-to-image
         const allElements = msgClone.querySelectorAll('*');
         allElements.forEach((el) => {
           const htmlEl = el as HTMLElement;
           htmlEl.style.opacity = '1';
           htmlEl.style.animation = 'none';
-          // Fix html2canvas text rendering issues
-          htmlEl.style.wordSpacing = 'normal';
-          htmlEl.style.letterSpacing = 'normal';
-          htmlEl.style.textRendering = 'auto';
+        });
+        // KaTeX elements use custom fonts that crash html-to-image.
+        // Replace KaTeX rendered math with its source text (annotation).
+        msgClone.querySelectorAll('.katex').forEach(katexEl => {
+          const annotation = katexEl.querySelector('annotation');
+          const texSource = annotation?.textContent || katexEl.textContent || '';
+          const replacement = document.createElement('code');
+          replacement.textContent = texSource;
+          replacement.style.fontFamily = 'monospace';
+          replacement.style.fontSize = '0.9em';
+          replacement.style.backgroundColor = 'rgba(0,0,0,0.05)';
+          replacement.style.padding = '1px 4px';
+          replacement.style.borderRadius = '3px';
+          katexEl.replaceWith(replacement);
         });
 
-        // Fix message-content elements specifically
-        const contentEls = msgClone.querySelectorAll('.message-content');
-        contentEls.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          htmlEl.style.whiteSpace = 'pre-wrap';
-          htmlEl.style.wordWrap = 'break-word';
-          htmlEl.style.overflowWrap = 'break-word';
-          htmlEl.style.wordSpacing = 'normal';
-          htmlEl.style.lineHeight = '1.6';
-          htmlEl.style.maxWidth = '100%';
-        });
-
-        // Fix code blocks
+        // Ensure code blocks don't overflow
         const codeBlocks = msgClone.querySelectorAll('pre, code');
         codeBlocks.forEach((el) => {
           const htmlEl = el as HTMLElement;
@@ -397,40 +398,47 @@ function App() {
 
       document.body.appendChild(exportWrapper);
 
-      // Wait for render — html2canvas needs layout to be stable
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for layout
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Generate canvas
-      const canvas = await html2canvas(exportWrapper, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        windowWidth: 800,
-        width: 800,
-        ignoreElements: (element) => {
-          // Skip elements with animations that might affect opacity
-          return element.classList.contains('processing-indicator') ||
-                 element.classList.contains('spinner');
-        },
-      });
+      // Try html-to-image first (SVG foreignObject — proper text rendering),
+      // fallback to html2canvas if it fails (e.g. KaTeX font issues)
+      let dataUrl: string | null = null;
+      try {
+        dataUrl = await toPng(exportWrapper, {
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+          style: { transform: 'none' },
+          filter: (node: HTMLElement) => {
+            if (!node.classList) return true;
+            return !node.classList.contains('processing-indicator') &&
+                   !node.classList.contains('spinner');
+          },
+        });
+      } catch (e) {
+        console.warn('html-to-image failed, falling back to html2canvas:', e);
+        // Fallback: html2canvas (may have spacing issues but at least works)
+        const canvas = await html2canvas(exportWrapper, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          logging: false,
+          useCORS: true,
+          allowTaint: true,
+        });
+        dataUrl = canvas.toDataURL('image/png');
+      }
 
       // Remove temporary container
       document.body.removeChild(exportWrapper);
 
-      // Convert to blob and download
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          link.download = `konwersacja-${timestamp}.png`;
-          link.href = url;
-          link.click();
-          URL.revokeObjectURL(url);
-        }
-      }, 'image/png');
+      // Download
+      if (dataUrl) {
+        const link = document.createElement('a');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        link.download = `konwersacja-${timestamp}.png`;
+        link.href = dataUrl;
+        link.click();
+      }
     } catch (error) {
       console.error('Błąd eksportu do PNG:', error);
       alert('Wystąpił błąd podczas eksportu do PNG');
