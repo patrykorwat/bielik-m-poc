@@ -251,6 +251,18 @@ export class ThreeAgentOrchestrator {
       }
     }
 
+    // Pattern 3: Parametric quadratic equation with root relationship
+    console.log('🔍 Template: checking parametric quadratic...');
+    const quadParams = this.detectParametricQuadraticParams(problemText);
+    console.log('🔍 Template: quadParams =', quadParams ? JSON.stringify(quadParams) : 'null');
+    if (quadParams) {
+      const code = this.buildParametricQuadraticCode(quadParams);
+      if (code) {
+        console.log('🔍 Template: parametric quadratic code generated =', code.length, 'chars');
+        return this.executeTemplateSolverCode(code, `parametric_quadratic`);
+      }
+    }
+
     return null;
   }
 
@@ -602,6 +614,171 @@ if best_tc:
     print(f"\\nMaks pole: boki=({sides[0]},{sides[1]},{sides[2]})")
     print(f"Pole = {area_exact}")
     print(f"ODPOWIEDZ: {area_exact}")
+else:
+    print("ODPOWIEDZ: brak rozwiazania")
+`;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Pattern 3: Parametric quadratic equation with root relationship
+  // ═══════════════════════════════════════════════════════════════════
+
+  /**
+   * Convert math text from problem to valid SymPy expression.
+   * Handles: implicit multiplication, ^→**, ²→**2, Unicode minus, etc.
+   */
+  private mathTextToSymPy(expr: string): string {
+    let e = expr;
+    // Unicode superscripts
+    e = e.replace(/²/g, '**2').replace(/³/g, '**3');
+    // ^ → **
+    e = e.replace(/\^(\d+)/g, '**$1');
+    // Unicode minus → -
+    e = e.replace(/−/g, '-');
+    // Middle dot → *
+    e = e.replace(/·/g, '*');
+    // Implicit multiplication: digit followed by letter (careful: not inside **)
+    e = e.replace(/(\d)([a-zA-Z])/g, '$1*$2');
+    // ) followed by letter or (
+    e = e.replace(/\)([a-zA-Z(])/g, ')*$1');
+    // letter followed by (
+    e = e.replace(/([a-zA-Z])\(/g, '$1*(');
+    // ) followed by digit
+    e = e.replace(/\)(\d)/g, ')*$1');
+    // )( → )*(
+    e = e.replace(/\)\(/g, ')*(');
+    // Clean up any spaces inside expressions
+    e = e.replace(/\s+/g, ' ').trim();
+    return e;
+  }
+
+  private detectParametricQuadraticParams(text: string): {
+    eqExpr: string;
+    paramName: string;
+    varName: string;
+    rootMult: number;
+  } | null {
+    const normalized = this.normalizeUnicodeMath(text);
+    const lower = normalized.toLowerCase();
+
+    // Must mention equation or roots
+    if (!/równani|rownan|pierwiast|rozwiązan|rozwiazan/.test(lower)) return null;
+
+    // Must have x² pattern
+    if (!/x\s*[\^²]\s*2|x\s*\*\*\s*2/.test(lower)) return null;
+
+    // Must mention two real roots/solutions
+    if (!/dw[aoóu].*(?:rozwiązan|rozwiazan|pierwiast|rzeczywist)/.test(lower)) return null;
+
+    // Detect parameter name: "parametru m" or "parametr m"
+    const paramMatch = lower.match(/parametr\w*\s+([a-z])\b/);
+    if (!paramMatch) return null;
+    const paramName = paramMatch[1];
+
+    // Detect root relationship: x1 = k*x2
+    let rootMult: number | null = null;
+
+    // Direct notation: x1 = 2x2, x1 = 2x^2 (^2 = subscript artifact), x₁ = 2x₂
+    const relMatch = normalized.match(/x\s*[\^_]?\s*1\s*=\s*(\d+)\s*[·*]?\s*x/i);
+    if (relMatch) {
+      rootMult = parseInt(relMatch[1]);
+    }
+
+    // Polish: "dwukrotnie", "trzykrotnie"
+    if (!rootMult) {
+      const polishMults: Record<string, number> = {
+        'dwukrotnie': 2, 'trzykrotnie': 3, 'czterokrotnie': 4,
+      };
+      for (const [kw, mult] of Object.entries(polishMults)) {
+        if (lower.includes(kw)) { rootMult = mult; break; }
+      }
+    }
+
+    if (!rootMult) return null;
+
+    // Extract equation: find "expression_with_x² ... = 0"
+    const eqMatch = normalized.match(/([^.;:!?]*x\s*[\^²]\s*2[^.;:!?]*?)\s*=\s*0/i);
+    if (!eqMatch) return null;
+
+    let eqText = eqMatch[1].trim();
+    // Strip leading text before equation starts (find first digit, minus, or open paren)
+    eqText = eqText.replace(/^.*?(?=[\d(]|−|-)/i, '');
+
+    // Convert to SymPy
+    const eqExpr = this.mathTextToSymPy(eqText);
+    if (!eqExpr) return null;
+
+    // Verify it contains both x and the parameter
+    if (!eqExpr.includes('x') || !eqExpr.includes(paramName)) return null;
+
+    return { eqExpr, paramName, varName: 'x', rootMult };
+  }
+
+  private buildParametricQuadraticCode(params: {
+    eqExpr: string;
+    paramName: string;
+    varName: string;
+    rootMult: number;
+  }): string | null {
+    const { eqExpr, paramName, varName, rootMult } = params;
+    const k = rootMult;
+    const k1 = k + 1;
+
+    return `from sympy import *
+
+${paramName} = symbols('${paramName}', real=True)
+${varName} = symbols('${varName}', real=True)
+
+# Krok 1: Rownanie kwadratowe
+eq_expr = ${eqExpr}
+print("Rownanie: " + str(expand(eq_expr)) + " = 0")
+
+# Krok 2: Wspolczynniki a, b, c
+a_coeff = eq_expr.coeff(${varName}, 2)
+b_coeff = eq_expr.coeff(${varName}, 1)
+c_coeff = eq_expr.coeff(${varName}, 0)
+print("a = " + str(a_coeff) + ", b = " + str(b_coeff) + ", c = " + str(c_coeff))
+
+# Krok 3: Wyroznik
+delta = expand(b_coeff**2 - 4*a_coeff*c_coeff)
+print("Delta = " + str(delta))
+
+# Krok 4: Warunek na pierwiastki: ${varName}1 = ${k}*${varName}2
+# Wzory Viete'a:
+#   ${varName}1 + ${varName}2 = -b/a  =>  ${k1}*${varName}2 = -b/a
+#   ${varName}1 * ${varName}2 = c/a   =>  ${k}*${varName}2^2 = c/a
+print("")
+print("Wzory Viete'a z warunkiem ${varName}1 = ${k}*${varName}2:")
+${varName}2_expr = -b_coeff / (a_coeff * ${k1})
+print("  ${varName}2 = -b/(a*${k1}) = " + str(simplify(${varName}2_expr)))
+
+# Z iloczynu: ${k}*${varName}2^2 = c/a
+vieta_eq = simplify(${k} * ${varName}2_expr**2 - c_coeff / a_coeff)
+vieta_eq_poly = simplify(vieta_eq * a_coeff * ${k1}**2)
+print("  Rownanie: " + str(expand(vieta_eq_poly)) + " = 0")
+
+# Krok 5: Rozwiazanie wzgledem ${paramName}
+${paramName}_solutions = solve(vieta_eq, ${paramName})
+print("")
+print("Rozwiazania ${paramName}: " + str(${paramName}_solutions))
+
+# Krok 6: Sprawdzenie delta > 0 dla kazdego ${paramName}
+valid_${paramName} = []
+for ${paramName}_val in ${paramName}_solutions:
+    d = delta.subs(${paramName}, ${paramName}_val)
+    ${varName}2_val = ${varName}2_expr.subs(${paramName}, ${paramName}_val)
+    ${varName}1_val = ${k} * ${varName}2_val
+    if d > 0:
+        valid_${paramName}.append(${paramName}_val)
+        print("${paramName} = " + str(${paramName}_val) + ": delta = " + str(d) + " > 0")
+        print("  ${varName}1 = " + str(${varName}1_val) + ", ${varName}2 = " + str(${varName}2_val))
+    else:
+        print("${paramName} = " + str(${paramName}_val) + ": delta = " + str(d) + " <= 0, odrzucamy")
+
+if len(valid_${paramName}) == 1:
+    print("ODPOWIEDZ: ${paramName} = " + str(valid_${paramName}[0]))
+elif len(valid_${paramName}) > 1:
+    print("ODPOWIEDZ: ${paramName} in " + str(set(valid_${paramName})))
 else:
     print("ODPOWIEDZ: brak rozwiazania")
 `;

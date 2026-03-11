@@ -1114,6 +1114,163 @@ else:
 """
 
 
+def _math_text_to_sympy(expr):
+    """Convert math text from problem to valid SymPy expression string."""
+    import re as _re
+    e = expr
+    e = e.replace('²', '**2').replace('³', '**3')
+    e = _re.sub(r'\^(\d+)', r'**\1', e)
+    e = e.replace('−', '-').replace('·', '*')
+    # Implicit multiplication: digit followed by letter
+    e = _re.sub(r'(\d)([a-zA-Z])', r'\1*\2', e)
+    # ) followed by letter or (
+    e = _re.sub(r'\)([a-zA-Z(])', r')*\1', e)
+    # letter followed by (
+    e = _re.sub(r'([a-zA-Z])\(', r'\1*(', e)
+    # ) followed by digit
+    e = _re.sub(r'\)(\d)', r')*\1', e)
+    # )( → )*(
+    e = e.replace(')(', ')*(')
+    return e.strip()
+
+
+def _detect_parametric_quadratic_params(problem_text):
+    """Detect parametric quadratic equation with root relationship.
+    Returns dict with eqExpr, paramName, varName, rootMult or None."""
+    # Normalize Unicode math symbols
+    def _norm(ch):
+        cp = ord(ch)
+        if 0x1D400 <= cp <= 0x1D419: return chr(65 + cp - 0x1D400)
+        if 0x1D41A <= cp <= 0x1D433: return chr(97 + cp - 0x1D41A)
+        if 0x1D434 <= cp <= 0x1D44D: return chr(65 + cp - 0x1D434)
+        if 0x1D44E <= cp <= 0x1D467: return chr(97 + cp - 0x1D44E)
+        if 0x1D468 <= cp <= 0x1D481: return chr(65 + cp - 0x1D468)
+        if 0x1D482 <= cp <= 0x1D49B: return chr(97 + cp - 0x1D482)
+        if 0x1D7CE <= cp <= 0x1D7D7: return chr(48 + cp - 0x1D7CE)
+        return ch
+    normalized = ''.join(_norm(ch) for ch in problem_text)
+    lower = normalized.lower()
+
+    # Must mention equation or roots
+    if not re.search(r'równani|rownan|pierwiast|rozwiązan|rozwiazan', lower):
+        return None
+    # Must have x² pattern
+    if not re.search(r'x\s*[\^²]\s*2|x\s*\*\*\s*2', lower):
+        return None
+    # Must mention two real roots/solutions
+    if not re.search(r'dw[aoóu].*(?:rozwiązan|rozwiazan|pierwiast|rzeczywist)', lower):
+        return None
+
+    # Detect parameter name
+    param_m = re.search(r'parametr\w*\s+(\w)\b', lower)
+    if not param_m:
+        return None
+    param_name = param_m.group(1)
+
+    # Detect root relationship: x1 = k*x2
+    root_mult = None
+    rel_m = re.search(r'x\s*[\^_]?\s*1\s*=\s*(\d+)\s*[·*]?\s*x', normalized, re.IGNORECASE)
+    if rel_m:
+        root_mult = int(rel_m.group(1))
+
+    if not root_mult:
+        polish_mults = {'dwukrotnie': 2, 'trzykrotnie': 3, 'czterokrotnie': 4}
+        for kw, mult in polish_mults.items():
+            if kw in lower:
+                root_mult = mult
+                break
+
+    if not root_mult:
+        return None
+
+    # Extract equation: "expression_with_x² ... = 0"
+    eq_m = re.search(r'([^.;:!?]*x\s*[\^²]\s*2[^.;:!?]*?)\s*=\s*0', normalized, re.IGNORECASE)
+    if not eq_m:
+        return None
+
+    eq_text = eq_m.group(1).strip()
+    # Strip leading text before the equation
+    eq_text = re.sub(r'^.*?(?=[\d(]|−|-)', '', eq_text)
+    eq_expr = _math_text_to_sympy(eq_text)
+
+    if 'x' not in eq_expr or param_name not in eq_expr:
+        return None
+
+    return {
+        'eq_expr': eq_expr,
+        'param_name': param_name,
+        'var_name': 'x',
+        'root_mult': root_mult,
+    }
+
+
+def _build_parametric_quadratic_code(params):
+    """Generate SymPy code for parametric quadratic with root relationship."""
+    eq_expr = params['eq_expr']
+    p = params['param_name']
+    v = params['var_name']
+    k = params['root_mult']
+    k1 = k + 1
+
+    return f"""from sympy import *
+
+{p} = symbols('{p}', real=True)
+{v} = symbols('{v}', real=True)
+
+# Krok 1: Rownanie kwadratowe
+eq_expr = {eq_expr}
+print("Rownanie: " + str(expand(eq_expr)) + " = 0")
+
+# Krok 2: Wspolczynniki a, b, c
+a_coeff = eq_expr.coeff({v}, 2)
+b_coeff = eq_expr.coeff({v}, 1)
+c_coeff = eq_expr.coeff({v}, 0)
+print("a = " + str(a_coeff) + ", b = " + str(b_coeff) + ", c = " + str(c_coeff))
+
+# Krok 3: Wyroznik
+delta = expand(b_coeff**2 - 4*a_coeff*c_coeff)
+print("Delta = " + str(delta))
+
+# Krok 4: Warunek na pierwiastki: {v}1 = {k}*{v}2
+# Wzory Viete'a:
+#   {v}1 + {v}2 = -b/a  =>  {k1}*{v}2 = -b/a
+#   {v}1 * {v}2 = c/a   =>  {k}*{v}2^2 = c/a
+print("")
+print("Wzory Viete'a z warunkiem {v}1 = {k}*{v}2:")
+{v}2_expr = -b_coeff / (a_coeff * {k1})
+print("  {v}2 = -b/(a*{k1}) = " + str(simplify({v}2_expr)))
+
+vieta_eq = simplify({k} * {v}2_expr**2 - c_coeff / a_coeff)
+vieta_eq_poly = simplify(vieta_eq * a_coeff * {k1}**2)
+print("  Rownanie: " + str(expand(vieta_eq_poly)) + " = 0")
+
+# Krok 5: Rozwiazanie wzgledem {p}
+{p}_solutions = solve(vieta_eq, {p})
+print("")
+print("Rozwiazania {p}: " + str({p}_solutions))
+
+# Krok 6: Sprawdzenie delta > 0
+valid_{p} = []
+for {p}_val in {p}_solutions:
+    d = delta.subs({p}, {p}_val)
+    {v}2_val = {v}2_expr.subs({p}, {p}_val)
+    {v}1_val = {k} * {v}2_val
+    if d > 0:
+        valid_{p}.append({p}_val)
+        print("{p} = " + str({p}_val) + ": delta = " + str(d) + " > 0")
+        print("  {v}1 = " + str({v}1_val) + ", {v}2 = " + str({v}2_val))
+    else:
+        print("{p} = " + str({p}_val) + ": delta = " + str(d) + " <= 0, odrzucamy")
+
+if len(valid_{p}) == 1:
+    print("ODPOWIEDZ: {p} = " + str(valid_{p}[0]))
+elif len(valid_{p}) > 1:
+    print("ODPOWIEDZ: {p} in " + str(set(valid_{p})))
+else:
+    print("ODPOWIEDZ: brak rozwiazania")
+"""
+
+
 def _try_template_solver(question_text):
     """Try to solve the problem using a deterministic template (no LLM needed).
     Returns dict with 'code', 'answer', 'output' or None if no template matches."""
@@ -1168,6 +1325,31 @@ def _try_template_solver(question_text):
                     }
             except Exception as e:
                 print(f"  ⚠️ Template solver error (triangle_{tri_params['subtype']}): {e}")
+                return None
+
+    # Pattern 3: Parametric quadratic equation with root relationship
+    quad_params = _detect_parametric_quadratic_params(question_text)
+    if quad_params:
+        code = _build_parametric_quadratic_code(quad_params)
+        if code:
+            local_ns = {}
+            import io, contextlib
+            output_buf = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(output_buf):
+                    exec(code, {'__builtins__': __builtins__}, local_ns)
+                output = output_buf.getvalue()
+                answer_m = re.search(r'ODPOWIEDZ:\s*(.+)', output)
+                if answer_m:
+                    return {
+                        'success': True,
+                        'code': code,
+                        'output': output,
+                        'answer': answer_m.group(1).strip(),
+                        'template': 'parametric_quadratic',
+                    }
+            except Exception as e:
+                print(f"  ⚠️ Template solver error (parametric_quadratic): {e}")
                 return None
 
     # Future patterns can be added here

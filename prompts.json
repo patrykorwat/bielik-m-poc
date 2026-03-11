@@ -13,7 +13,7 @@
       "temperature": 0.15
     },
     "summary": {
-      "max_tokens": 500,
+      "max_tokens": 900,
       "temperature": 0.2
     },
     "formalizer": {
