@@ -672,10 +672,20 @@ print("WERYFIKACJA:", count)`;
     ragContext?: string,
   ): Promise<string | null> {
     try {
-      // Only verify numeric answers (counting problems)
+      // Only verify pure integer answers (counting/combinatorics problems)
+      // NEVER verify symbolic answers (sqrt, pi, fractions) — brute-force makes no sense for continuous math
+      if (/sqrt|pi|[*\/^]|[a-zA-Z]{2,}/.test(formulaAnswer)) {
+        console.log(`  ⏭️ Skipping brute-force verification for symbolic answer: ${formulaAnswer}`);
+        return null;
+      }
       const numericAnswer = parseFloat(formulaAnswer);
       if (isNaN(numericAnswer) || numericAnswer < 0 || numericAnswer > 1_000_000) {
         return null; // Skip verification for non-numeric or huge answers
+      }
+      // Must be an integer — brute-force counting only makes sense for whole numbers
+      if (!Number.isInteger(numericAnswer)) {
+        console.log(`  ⏭️ Skipping brute-force verification for non-integer: ${formulaAnswer}`);
+        return null;
       }
 
       const verifyPrompt = `Napisz KRÓTKI kod Python (max 15 linii) który BRUTE-FORCE (przez wyliczenie/iterację) sprawdzi odpowiedź na to zadanie.
