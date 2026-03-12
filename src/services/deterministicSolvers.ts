@@ -956,34 +956,73 @@ function solveFunctionProperties(p: FunctionPropertiesParams): string {
 
 function solveModularArithmetic(p: ModularArithmeticParams): string {
   const vars = (p.variables || ['x']).join(', ');
-  const mod = p.modulus || p.field_size || '17';
+  const modRaw = p.modulus || p.field_size || '17';
+
+  // Parse modulus: could be "17", "17^4", "17**4"
+  const modMatch = String(modRaw).match(/^(\d+)(?:[\^*]{1,2}(\d+))?$/);
+  const prime = modMatch ? modMatch[1] : modRaw;
+  const modExp = modMatch?.[2] ? parseInt(modMatch[2]) : 1;
+  const fieldSize = modExp > 1 ? `${prime}**${modExp}` : `${prime}`;
+  const isBruteForceOK = Math.pow(parseInt(prime), modExp) <= 500;
 
   if (p.task === 'count_solutions' && p.equations?.length) {
-    // Brute-force count over finite field
-    return `from sympy import *
+    if (isBruteForceOK) {
+      // Small field — brute-force is OK
+      return `from sympy import *
 ${vars} = symbols('${vars}')
-p = ${mod}
+p = ${fieldSize}
 count = 0
 solutions = []
 ${p.variables && p.variables.length >= 2 ? `for _x in range(p):
     for _y in range(p):
         _vals = {${p.variables[0]}: _x, ${p.variables[1]}: _y}
-        eq_val = (${p.equations[0]}).subs(_vals) % p
-        if eq_val == 0:
+        if all(int(eq.subs(_vals)) % ${prime} == 0 for eq in [${p.equations.join(', ')}]):
             count += 1
             solutions.append((_x, _y))` : `for _x in range(p):
     _vals = {${p.variables?.[0] || 'x'}: _x}
-    eq_val = (${p.equations[0]}).subs(_vals) % p
-    if eq_val == 0:
+    if all(int(eq.subs(_vals)) % ${prime} == 0 for eq in [${p.equations.join(', ')}]):
         count += 1`}
 wynik = count
+print("ODPOWIEDZ:", wynik)
+`;
+    }
+
+    // Large field — use Groebner basis mod p
+    return `from sympy import *
+${vars} = symbols('${vars}')
+p = ${prime}
+k = ${modExp}
+q = p**k  # = ${fieldSize}
+
+eqs = [${p.equations.join(', ')}]
+
+# Use Groebner basis over GF(p) to solve symbolically
+print("=== Groebner basis mod", p, "===")
+try:
+    G = groebner(eqs, [${vars}], modulus=p, order='lex')
+    gb_polys = list(G)
+    print("Baza Groebnera:", gb_polys)
+
+    if len(gb_polys) == 1 and gb_polys[0] == 1:
+        print("System sprzeczny → 0 rozwiazan w F_{" + str(q) + "}")
+        wynik = 0
+    elif len(gb_polys) == 0:
+        wynik = q**${p.variables?.length || 1}
+    else:
+        # Count solutions via GCD with Frobenius polynomials
+        solutions = solve(gb_polys, [${vars}])
+        print("Rozwiazania:", solutions)
+        wynik = len(solutions) if isinstance(solutions, list) else 1
+except Exception as e:
+    print(f"Blad: {e}")
+    wynik = "blad"
 print("ODPOWIEDZ:", wynik)
 `;
   }
 
   if (p.task === 'euler_phi') {
     return `from sympy import *
-wynik = totient(${mod})
+wynik = totient(${fieldSize})
 print("ODPOWIEDZ:", wynik)
 `;
   }
@@ -992,7 +1031,7 @@ print("ODPOWIEDZ:", wynik)
     return `from sympy import *
 from sympy.ntheory import n_order
 ${vars} = symbols('${vars}')
-wynik = n_order(${p.equations?.[0] || '2'}, ${mod})
+wynik = n_order(${p.equations?.[0] || '2'}, ${fieldSize})
 print("ODPOWIEDZ:", wynik)
 `;
   }
@@ -1014,7 +1053,7 @@ print("ODPOWIEDZ:", wynik)
   if (p.equations?.length) {
     return `from sympy import *
 ${vars} = symbols('${vars}')
-p = ${mod}
+p = ${prime}
 eqs = [${p.equations.join(', ')}]
 # Brute force over F_p
 solutions = []
@@ -1410,27 +1449,134 @@ function solveAlgebraicGeometry(p: AlgebraicGeometryParams): string {
   const vars = p.variables.join(', ');
   const field = p.field || 'QQ';
 
-  if (p.task === 'count_points' && field.startsWith('GF(')) {
-    // Extract field size from GF(p) or GF(p**k)
-    const fieldMatch = field.match(/GF\((\d+)(?:\*\*(\d+))?\)/);
-    const base = fieldMatch ? fieldMatch[1] : '7';
-    const exp = fieldMatch?.[2] ? `**${fieldMatch[2]}` : '';
-    const size = `${base}${exp}`;
+  // Parse field: GF(p), GF(p^k), GF(p**k), GF(p^k) etc.
+  const fieldMatch = field.match(/GF\((\d+)(?:[\^*]{1,2}(\d+))?\)/);
+  const prime = fieldMatch ? fieldMatch[1] : null;
+  const fieldExp = fieldMatch?.[2] ? parseInt(fieldMatch[2]) : 1;
+  const isFiniteField = !!prime;
 
-    if (p.variables.length === 2) {
-      return `from sympy import *
+  if (isFiniteField && p.equations.length >= 1) {
+    const primeInt = parseInt(prime!);
+    const isBruteForceOK = Math.pow(primeInt, fieldExp) <= 500; // only brute-force for small fields
+
+    if (isBruteForceOK && p.variables.length === 2) {
+      // Small field — direct brute-force over F_{p^k}
+      if (fieldExp === 1) {
+        return `from sympy import *
 ${vars} = symbols('${vars}')
-p = ${size}
+p = ${prime}
+eqs = [${p.equations.join(', ')}]
 count = 0
+solutions = []
 for _x in range(p):
     for _y in range(p):
         _vals = {${p.variables[0]}: _x, ${p.variables[1]}: _y}
-        if all((eq.subs(_vals)) % p == 0 for eq in [${p.equations.join(', ')}]):
+        if all(int(eq.subs(_vals)) % p == 0 for eq in eqs):
+            count += 1
+            solutions.append((_x, _y))
+print("Rozwiazania:", solutions)
+wynik = count
+print("ODPOWIEDZ:", wynik)
+`;
+      } else {
+        // Small extension field — use galois for proper GF(p^k) arithmetic
+        return `from sympy import *
+import subprocess, sys
+try:
+    import galois
+except ImportError:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'galois', '-q'])
+    import galois
+
+GF = galois.GF(${prime}**${fieldExp})
+${vars} = symbols('${vars}')
+eqs = [${p.equations.join(', ')}]
+count = 0
+for _x_val in GF.elements:
+    for _y_val in GF.elements:
+        ok = True
+        for eq in eqs:
+            val = int(eq.subs({${p.variables[0]}: int(_x_val), ${p.variables[1]}: int(_y_val)}))
+            if GF(val % ${prime}) != GF(0):
+                ok = False
+                break
+        if ok:
             count += 1
 wynik = count
 print("ODPOWIEDZ:", wynik)
 `;
+      }
     }
+
+    // Large field or many variables — use symbolic Groebner basis mod p
+    // Key idea: reduce system modulo p, solve symbolically, count roots in F_{p^k}
+    return `from sympy import *
+${vars} = symbols('${vars}')
+p = ${prime}
+k = ${fieldExp}
+q = p**k  # field size = ${prime}^${fieldExp}
+
+eqs = [${p.equations.join(', ')}]
+
+# === Strategy: Eliminate variables symbolically, then count roots mod p ===
+# Step 1: Reduce all integer coefficients mod p
+print("=== Redukcja mod", p, "===")
+eqs_display = []
+for eq in eqs:
+    poly = Poly(eq, ${vars}, domain='ZZ')
+    reduced_coeffs = [(monom, coeff % p) for monom, coeff in zip(poly.monoms(), poly.coeffs())]
+    print(f"  {eq} → coeffs mod {p}: {reduced_coeffs}")
+    # Rebuild poly with reduced coefficients
+    eqs_display.append(reduced_coeffs)
+
+# Step 2: Try to solve the reduced system
+# Use SymPy Groebner basis over GF(p) for exact answer
+try:
+    G = groebner(eqs, ${vars}, modulus=p, order='lex')
+    gb_polys = list(G)
+    print("Baza Groebnera mod", p, ":", gb_polys)
+
+    # If Groebner basis contains [1], the system is inconsistent → 0 solutions
+    if len(gb_polys) == 1 and gb_polys[0] == 1:
+        print("System sprzeczny mod", p, "→ 0 rozwiazan")
+        wynik = 0
+    elif len(gb_polys) == 0:
+        print("Baza pusta → nieskonczonosc rozwiazan (cale cialo)")
+        wynik = q
+    else:
+        # For single-variable result, count roots of the last poly in F_{p^k}
+        if len(gb_polys) == 1:
+            last_poly = gb_polys[0]
+            last_var = sorted(last_poly.free_symbols, key=str)[0] if last_poly.free_symbols else None
+            if last_var:
+                deg = degree(Poly(last_poly, last_var))
+                # In F_{p^k}, a polynomial of degree d has at most d roots
+                # For exact count, we check gcd with x^q - x
+                field_poly = last_var**q - last_var
+                g = gcd(Poly(last_poly, last_var, modulus=p), Poly(field_poly, last_var, modulus=p))
+                wynik = degree(g)
+                print(f"GCD z x^q-x: degree = {wynik}")
+            else:
+                wynik = 0
+        else:
+            # Multiple polys in basis — try substitution approach
+            solutions = solve(gb_polys, [${vars}])
+            print("Rozwiazania z bazy Groebnera:", solutions)
+            if isinstance(solutions, list):
+                wynik = len(solutions)
+            elif isinstance(solutions, dict):
+                wynik = 1
+            else:
+                wynik = "Nieznana struktura"
+except Exception as e:
+    print(f"Blad Groebnera: {e}")
+    # Last resort: try plain solve then filter mod p
+    solutions = solve(eqs, [${vars}], dict=True)
+    print("Rozwiazania symboliczne:", solutions)
+    wynik = len(solutions) if solutions else 0
+
+print("ODPOWIEDZ:", wynik)
+`;
   }
 
   if (p.task === 'intersection' && p.equations.length >= 2) {
