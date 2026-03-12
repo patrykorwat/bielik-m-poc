@@ -224,6 +224,13 @@ function App() {
     }
   }, [messages, currentChatId, isConfigured]);
 
+  // Sync classifierMode toggle to orchestrator at runtime
+  useEffect(() => {
+    if (orchestratorRef.current) {
+      orchestratorRef.current.setClassifierMode(classifierMode);
+    }
+  }, [classifierMode]);
+
   const handleConfigure = async () => {
     if (!mlxBaseUrl.trim()) {
       alert('Proszę wprowadzić URL serwera LLM');

@@ -101,6 +101,14 @@ export class ThreeAgentOrchestrator {
   }
 
   /**
+   * Update classifierMode at runtime (e.g. when user toggles the switch in UI)
+   */
+  setClassifierMode(enabled: boolean): void {
+    this.classifierMode = enabled;
+    console.log(`🔧 classifierMode set to ${enabled}`);
+  }
+
+  /**
    * Connect to MCP server (SymPy) — always needed
    */
   async connectMCP(proxyUrl: string = 'http://localhost:3001'): Promise<void> {
