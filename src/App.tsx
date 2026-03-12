@@ -961,6 +961,9 @@ function App() {
         </div>
 
         <div className="input-container">
+          <div style={{ fontSize: '0.75em', padding: '2px 8px', color: classifierMode ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>
+            {classifierMode ? '🔍 CLASSIFIER MODE (deterministyczny)' : '⚠️ 3-AGENT MODE (LLM)'}
+          </div>
           <textarea
             ref={textareaRef}
             value={inputMessage}

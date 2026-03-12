@@ -16,7 +16,8 @@
     "rag-service": "cd rag_service && source venv/bin/activate && python main.py",
     "start:proxies": "concurrently \"npm run mcp-proxy\" \"npm run lean-proxy\"",
     "start:all": "concurrently \"npm run dev\" \"npm run mcp-proxy\" \"npm run lean-proxy\" \"npm run rag-service\"",
-    "heroku-postbuild": "npm run build && cd mcp-sympy-server && npm install && npm run build"
+    "build:server": "tsc --project tsconfig.server.json",
+    "heroku-postbuild": "npm run build && npm run build:server && cd mcp-sympy-server && npm install && npm run build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",

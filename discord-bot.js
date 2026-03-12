@@ -3,8 +3,15 @@
 /**
  * Discord Bot for Bielik Matura
  *
- * Listens to a dedicated Discord channel and runs the full multi-agent pipeline:
- *   RAG retrieval → Analytical agent → Executor (SymPy) → Summary agent
+ * Uses the SAME classifier + deterministic solver pipeline as the web UI.
+ * Compiled TS modules are imported from dist-server/.
+ *
+ * Pipeline:
+ *   1. Classifier (regex + LLM) → classification JSON
+ *   2. Deterministic solver → SymPy code (no LLM needed)
+ *   3. Execute SymPy via MCP proxy
+ *   4. Summary agent (LLM) for explanation
+ *   Fallback: 3-agent pipeline if classifier fails
  *
  * Environment variables:
  *   DISCORD_TOKEN        - Bot token from Discord Developer Portal (required)
@@ -20,6 +27,11 @@ import { Client, GatewayIntentBits } from 'discord.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+
+// ── Import shared modules (compiled from TypeScript) ────────────────────────
+import { classifyProblem, shouldUseFallback } from './dist-server/services/classifierService.js';
+import { buildSolverCode } from './dist-server/services/deterministicSolvers.js';
+import { LLMAgent } from './dist-server/services/mlxAgent.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -57,6 +69,7 @@ try {
 const ANALYTICAL_PROMPT = prompts.analytical;
 const EXECUTOR_PROMPT = prompts.executor_sympy;
 const SUMMARY_PROMPT = prompts.summary;
+const CLASSIFIER_PROMPT = prompts.classifier || '';
 
 const AGENT_CONFIG = prompts.agents || {};
 const ANALYTICAL_MAX_TOKENS = AGENT_CONFIG.analytical?.max_tokens || 350;
@@ -65,6 +78,21 @@ const EXECUTOR_MAX_TOKENS = AGENT_CONFIG.executor?.max_tokens || 900;
 const EXECUTOR_TEMP = AGENT_CONFIG.executor?.temperature ?? 0.15;
 const SUMMARY_MAX_TOKENS = AGENT_CONFIG.summary?.max_tokens || 500;
 const SUMMARY_TEMP = AGENT_CONFIG.summary?.temperature ?? 0.2;
+const CLASSIFIER_MAX_TOKENS = AGENT_CONFIG.classifier?.max_tokens || 800;
+const CLASSIFIER_TEMP = AGENT_CONFIG.classifier?.temperature ?? 0.1;
+
+const UNIVERSITY_ENABLED = prompts.features?.university_level ?? true;
+
+// ── Create shared LLMAgent instance ──────────────────────────────────────────
+
+const llmAgent = new LLMAgent({
+  provider: 'remote',
+  baseUrl: LLM_API_URL,
+  model: LLM_MODEL,
+  temperature: 0.7,
+  maxTokens: 4096,
+  apiKey: LLM_API_KEY || undefined,
+});
 
 // ── ServerOrchestrator ───────────────────────────────────────────────────────
 
@@ -76,7 +104,6 @@ class ServerOrchestrator {
 
   /**
    * Query RAG service for similar problems / math methods.
-   * Returns formatted context string (empty string on failure).
    */
   async queryRAG(problem) {
     try {
@@ -124,19 +151,14 @@ class ServerOrchestrator {
       temperature,
     };
 
-    const body = {
-      payload,
-    };
+    const body = { payload };
 
-    // If server-side URL is set, proxy uses it; otherwise pass targetUrl
     if (!LLM_API_URL) {
       throw new Error('LLM_API_URL is not configured');
     }
     if (LLM_API_KEY) {
       body.apiKey = LLM_API_KEY;
     }
-    // targetUrl is ignored by proxy when LLM_API_URL env var is set on the proxy,
-    // but we send it as a fallback
     body.targetUrl = `${LLM_API_URL}/v1/chat/completions`;
 
     const res = await fetch(`${this.mcpProxyUrl}/llm-proxy`, {
@@ -157,7 +179,6 @@ class ServerOrchestrator {
 
   /**
    * Execute Python SymPy code via MCP proxy /tools/call.
-   * Returns { output, error } where output is stdout text and error is error message or null.
    */
   async callSympy(code) {
     try {
@@ -176,8 +197,6 @@ class ServerOrchestrator {
       }
 
       const result = await res.json();
-
-      // MCP tool result: { content: [{ type: 'text', text: '...' }], isError: bool }
       const text = result.content?.map((c) => c.text || '').join('\n') || '';
       if (result.isError) {
         return { output: '', error: text };
@@ -197,18 +216,92 @@ class ServerOrchestrator {
   }
 
   /**
-   * Run the full multi-agent pipeline.
-   * @param {string} problem - User's math problem
-   * @param {(msg: string) => Promise<void>} onProgress - Progress callback
-   * @returns {{ analytical: string, sympy: string, summary: string }}
+   * Run the full pipeline — CLASSIFIER + DETERMINISTIC SOLVER first, then 3-agent fallback.
+   * Uses the SAME classifyProblem() and buildSolverCode() as the web UI.
    */
   async solve(problem, onProgress) {
-    // Step 1: RAG retrieval
+    // Step 0: RAG retrieval
     await onProgress('🔍 Szukam podobnych zadań...');
     const ragContext = await this.queryRAG(problem);
 
-    // Step 2: Analytical agent
-    await onProgress('⚙️ Analizuję problem...');
+    // ═══════════════════════════════════════════════════════════════════
+    // CLASSIFIER PIPELINE — same logic as ThreeAgentOrchestrator
+    // ═══════════════════════════════════════════════════════════════════
+    try {
+      await onProgress('🏷️ Klasyfikuję problem...');
+
+      // Use shared classifyProblem() from compiled TS
+      const classification = await classifyProblem(
+        problem,
+        CLASSIFIER_PROMPT,
+        llmAgent,
+        ragContext || undefined,
+        {
+          maxTokens: CLASSIFIER_MAX_TOKENS,
+          temperature: CLASSIFIER_TEMP,
+          enableUniversity: UNIVERSITY_ENABLED,
+        }
+      );
+
+      console.log(`[discord-bot] Classification: type=${classification.type}, confidence=${classification.confidence}`);
+
+      if (!shouldUseFallback(classification)) {
+        // Use shared buildSolverCode() from compiled TS
+        const solverCode = buildSolverCode(classification);
+
+        if (solverCode && solverCode !== '# No solver available for this type') {
+          await onProgress(`🧮 Deterministyczny solver: ${classification.type}...`);
+          console.log(`[discord-bot] Running deterministic solver for ${classification.type}`);
+
+          // Execute via MCP (same as web UI uses)
+          const { output, error } = await this.callSympy(solverCode);
+
+          if (!error && output) {
+            const answerMatch = output.match(/ODPOWIEDZ:\s*(.+)/);
+
+            if (answerMatch) {
+              console.log(`[discord-bot] ✅ Deterministic answer: ${answerMatch[1]}`);
+
+              // Summary agent with deterministic result
+              await onProgress('📝 Przygotowuję wyjaśnienie...');
+              const summaryUserMessage =
+                `ZADANIE: ${problem}\n\n` +
+                `KLASYFIKACJA: ${classification.type} (pewność: ${Math.round((classification.confidence || 0) * 100)}%)\n\n` +
+                `KOD SYMPY:\n\`\`\`python\n${solverCode}\n\`\`\`\n\n` +
+                `WYNIK SYMPY:\n${output}\n\n` +
+                `Wytłumacz rozwiązanie krok po kroku.`;
+
+              const summaryResponse = await this.callLLM(
+                SUMMARY_PROMPT,
+                [{ role: 'user', content: summaryUserMessage }],
+                SUMMARY_MAX_TOKENS,
+                SUMMARY_TEMP,
+              );
+
+              return {
+                analytical: `🏷️ Klasyfikacja: **${classification.type}** (pewność: ${Math.round((classification.confidence || 0) * 100)}%)\n📐 Deterministyczny solver — bez generowania kodu przez LLM.`,
+                sympy: output,
+                summary: summaryResponse,
+              };
+            }
+          }
+
+          // Solver execution failed — log and fall through
+          console.log(`[discord-bot] ⚠️ Deterministic solver failed: ${error || 'no ODPOWIEDZ'}`);
+        }
+      } else {
+        console.log(`[discord-bot] ⚠️ Classifier suggests fallback (type=${classification.type}, confidence=${classification.confidence})`);
+      }
+    } catch (classifierError) {
+      console.error('[discord-bot] ⚠️ Classifier pipeline error:', classifierError.message);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // FALLBACK: 3-agent LLM pipeline (same as before)
+    // ═══════════════════════════════════════════════════════════════════
+    console.log('[discord-bot] Using 3-agent fallback pipeline');
+
+    await onProgress('⚙️ Analizuję problem (3-agent fallback)...');
 
     const analyticalUserMessage = ragContext
       ? `STRATEGIE Z BAZY WIEDZY:\n${ragContext}\n\nZADANIE: ${problem}`
@@ -221,7 +314,6 @@ class ServerOrchestrator {
       ANALYTICAL_TEMP,
     );
 
-    // Step 3: Executor agent — generate SymPy code
     await onProgress('🧮 Wykonuję obliczenia...');
 
     const executorUserMessage = `ZADANIE: ${problem}\n\nPLAN ANALITYCZNY:\n${analyticalResponse}\n\nNapisz kod SymPy.`;
@@ -233,7 +325,6 @@ class ServerOrchestrator {
       EXECUTOR_TEMP,
     );
 
-    // Step 4: Run SymPy with retry loop (up to 3 attempts)
     let sympyOutput = '';
     let lastError = '';
     let currentCode = this.extractCode(executorResponse);
@@ -256,7 +347,6 @@ class ServerOrchestrator {
       console.log(`[discord-bot] SymPy attempt ${attempt} failed: ${error}`);
 
       if (attempt < 3) {
-        // Ask executor to fix the error
         const fixMessage = `KOD PYTHON:\n\`\`\`python\n${currentCode}\n\`\`\`\n\nBŁĄD:\n${error}\n\nPopraw kod i wróć TYLKO poprawiony blok \`\`\`python.`;
         const fixResponse = await this.callLLM(
           EXECUTOR_PROMPT,
@@ -275,7 +365,6 @@ class ServerOrchestrator {
 
     const sympyResult = sympyOutput || `(Błąd SymPy: ${lastError})`;
 
-    // Step 5: Summary agent
     await onProgress('📝 Przygotowuję wyjaśnienie...');
 
     const summaryUserMessage =
@@ -310,6 +399,7 @@ const client = new Client({
 client.once('ready', () => {
   console.log(`[discord-bot] Logged in as ${client.user.tag}`);
   console.log(`[discord-bot] Monitoring channel: ${DISCORD_CHANNEL_ID}`);
+  console.log(`[discord-bot] Classifier pipeline: ENABLED (shared with web UI)`);
 });
 
 /**
@@ -322,7 +412,6 @@ function splitMessage(text, maxLen = 1990) {
   let remaining = text;
 
   while (remaining.length > maxLen) {
-    // Try to break on a newline close to the limit
     let splitAt = remaining.lastIndexOf('\n', maxLen);
     if (splitAt <= 0) splitAt = maxLen;
 
@@ -335,10 +424,7 @@ function splitMessage(text, maxLen = 1990) {
 }
 
 client.on('messageCreate', async (message) => {
-  // Skip bots
   if (message.author.bot) return;
-
-  // Only respond in the configured channel
   if (message.channelId !== DISCORD_CHANNEL_ID) return;
 
   const problem = message.content.trim();
@@ -346,7 +432,6 @@ client.on('messageCreate', async (message) => {
 
   console.log(`[discord-bot] Received: ${problem.slice(0, 100)}`);
 
-  // Send initial progress message
   let progressMsg;
   try {
     progressMsg = await message.channel.send('⏳ Przetwarzam zadanie...');
@@ -366,14 +451,12 @@ client.on('messageCreate', async (message) => {
   try {
     const { analytical, sympy, summary } = await orchestrator.solve(problem, onProgress);
 
-    // Delete progress message
     try {
       await progressMsg.delete();
     } catch {
       // Ignore
     }
 
-    // Send each agent's output as a separate message
     for (const chunk of splitMessage(`⚙️ **Analiza:**\n${analytical}`)) {
       await message.channel.send(chunk);
     }

@@ -21,7 +21,7 @@ export interface LLMResponse {
   usage?: any;
 }
 
-const LLM_PROXY_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_MCP_PROXY_URL) || 'http://localhost:3001';
+const LLM_PROXY_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_MCP_PROXY_URL) || 'http://localhost:3001';
 
 /**
  * Unified LLM Agent supporting MLX, Ollama, and Remote APIs (all OpenAI-compatible)
