@@ -319,7 +319,8 @@ function App() {
             // Add new message
             return [...prev, message];
           });
-        }
+        },
+        { classifierMode }
       );
     } catch (error) {
       console.error('Błąd podczas przetwarzania:', error);

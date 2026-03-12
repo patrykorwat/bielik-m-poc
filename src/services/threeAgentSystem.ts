@@ -2600,9 +2600,14 @@ ${result.error || ''}`;
    */
   async processMessage(
     userMessage: string,
-    onMessageCallback?: (message: Message) => void
+    onMessageCallback?: (message: Message) => void,
+    options?: { classifierMode?: boolean }
   ): Promise<Message[]> {
-    console.log('🎯 Processing with multi-agent system:', userMessage);
+    // Allow per-call override of classifierMode
+    if (options?.classifierMode !== undefined) {
+      this.classifierMode = options.classifierMode;
+    }
+    console.log(`🎯 Processing with multi-agent system (classifierMode=${this.classifierMode}):`, userMessage);
 
     // === Parse #UNI=ON/OFF toggle ===
     const uniMatch = userMessage.match(/^#UNI\s*=\s*(ON|OFF)\b/im);
