@@ -14,6 +14,18 @@ import prompts from '../../prompts.json';
 export type LLMProvider = LLMProviderType;
 export type ProverBackend = 'sympy' | 'lean' | 'both';
 
+/**
+ * Strip the "=== Uniwersytet ===" types and examples from classifier prompt.
+ * Keeps matura-level types and examples, removes university section.
+ */
+function stripUniversitySection(prompt: string): string {
+  // Remove the university types line from "Dostepne typy"
+  let result = prompt.replace(/\n=== Uniwersytet ===\n[^\n]*\n/g, '\n');
+  // Remove university examples block (from "=== PRZYKLADY UNIWERSYTECKIE ===" to "WAZNE REGULY")
+  result = result.replace(/\n=== PRZYKLADY UNIWERSYTECKIE ===[\s\S]*?(?=\nWAZNE REGULY:)/g, '\n');
+  return result;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -2584,6 +2596,15 @@ ${result.error || ''}`;
   ): Promise<Message[]> {
     console.log('🎯 Processing with multi-agent system:', userMessage);
 
+    // === Parse #UNI=ON/OFF toggle ===
+    const uniMatch = userMessage.match(/^#UNI\s*=\s*(ON|OFF)\b/im);
+    const universityEnabled = uniMatch ? uniMatch[1].toUpperCase() === 'ON' : ((prompts as any).features?.university_level ?? true);
+    // Strip the #UNI tag from the message so LLM doesn't see it
+    if (uniMatch) {
+      userMessage = userMessage.replace(/^#UNI\s*=\s*(ON|OFF)\s*/im, '').trim();
+      console.log(`🎓 University mode: ${universityEnabled ? 'ON' : 'OFF'} (from #UNI tag)`);
+    }
+
     // Add user message
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -2770,13 +2791,16 @@ ${result.error || ''}`;
 
       try {
         // Step 1: Classify the problem
-        const classifierPromptText = (prompts as any).classifier || '';
+        const classifierPromptRaw = (prompts as any).classifier || '';
+        const classifierPromptText = universityEnabled
+          ? classifierPromptRaw
+          : stripUniversitySection(classifierPromptRaw);
         const classification: ClassificationResult = await classifyProblem(
           userMessage,
           classifierPromptText,
           this.llmAgent,
           ragContext || undefined,
-          { maxTokens: (prompts.agents as any).classifier?.max_tokens || 500, temperature: (prompts.agents as any).classifier?.temperature || 0.1 }
+          { maxTokens: (prompts.agents as any).classifier?.max_tokens || 500, temperature: (prompts.agents as any).classifier?.temperature || 0.1, enableUniversity: universityEnabled }
         );
 
         console.log(`🏷️ Classification: type=${classification.type}, confidence=${classification.confidence}, MC=${classification.isMultipleChoice}`);
@@ -3080,7 +3104,10 @@ ${result.error || ''}`;
       console.log('\n=== DIVIDE & CONQUER: Decomposing problem ===');
 
       try {
-        const classifierPromptText = (prompts as any).classifier || '';
+        const classifierPromptRaw2 = (prompts as any).classifier || '';
+        const classifierPromptText = universityEnabled
+          ? classifierPromptRaw2
+          : stripUniversitySection(classifierPromptRaw2);
         const decomposer = new ProblemDecomposer(
           this.llmAgent,
           this.mcpClient,

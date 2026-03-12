@@ -28,6 +28,17 @@ import {
   FunctionPropertiesParams,
   SimplificationParams,
   GeneralParams,
+  // University-level
+  ModularArithmeticParams,
+  NumberTheoryParams,
+  LinearAlgebraParams,
+  IntegralParams,
+  DifferentialEquationParams,
+  SeriesParams,
+  GroupTheoryParams,
+  ComplexAnalysisParams,
+  AlgebraicGeometryParams,
+  GraphTheoryParams,
 } from './classifierTypes.js';
 
 // ============================================================
@@ -939,6 +950,552 @@ function solveFunctionProperties(p: FunctionPropertiesParams): string {
   return lines.join('\n');
 }
 
+// ============================================================
+// University-level Solvers
+// ============================================================
+
+function solveModularArithmetic(p: ModularArithmeticParams): string {
+  const vars = (p.variables || ['x']).join(', ');
+  const mod = p.modulus || p.field_size || '17';
+
+  if (p.task === 'count_solutions' && p.equations?.length) {
+    // Brute-force count over finite field
+    return `from sympy import *
+${vars} = symbols('${vars}')
+p = ${mod}
+count = 0
+solutions = []
+${p.variables && p.variables.length >= 2 ? `for _x in range(p):
+    for _y in range(p):
+        _vals = {${p.variables[0]}: _x, ${p.variables[1]}: _y}
+        eq_val = (${p.equations[0]}).subs(_vals) % p
+        if eq_val == 0:
+            count += 1
+            solutions.append((_x, _y))` : `for _x in range(p):
+    _vals = {${p.variables?.[0] || 'x'}: _x}
+    eq_val = (${p.equations[0]}).subs(_vals) % p
+    if eq_val == 0:
+        count += 1`}
+wynik = count
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'euler_phi') {
+    return `from sympy import *
+wynik = totient(${mod})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'find_order') {
+    return `from sympy import *
+from sympy.ntheory import n_order
+${vars} = symbols('${vars}')
+wynik = n_order(${p.equations?.[0] || '2'}, ${mod})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'crt' && p.equations?.length) {
+    return `from sympy import *
+from sympy.ntheory.modular import crt
+# CRT: solve system of congruences
+remainders = []
+moduli = []
+${p.equations.map((eq) => `# ${eq}`).join('\n')}
+# Parse and solve
+wynik = crt(moduli, remainders)
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  // Generic: try to solve congruence
+  if (p.equations?.length) {
+    return `from sympy import *
+${vars} = symbols('${vars}')
+p = ${mod}
+eqs = [${p.equations.join(', ')}]
+# Brute force over F_p
+solutions = []
+for _x in range(p):
+    vals = {${p.variables?.[0] || 'x'}: _x}
+    if all((eq.subs(vals)) % p == 0 for eq in eqs):
+        solutions.append(_x)
+wynik = solutions
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  return `from sympy import *
+# ${p.description}
+print("ODPOWIEDZ: TODO - modular arithmetic")
+`;
+}
+
+function solveNumberTheory(p: NumberTheoryParams): string {
+  if (p.task === 'gcd' && p.numbers?.length) {
+    return `from sympy import *
+wynik = gcd(${p.numbers.join(', ')})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'lcm' && p.numbers?.length) {
+    return `from sympy import *
+wynik = lcm(${p.numbers.join(', ')})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'factorize' && p.numbers?.length) {
+    return `from sympy import *
+wynik = factorint(${p.numbers[0]})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'diophantine' && p.equation) {
+    return `from sympy import *
+${(p.variables || ['x', 'y']).join(', ')} = symbols('${(p.variables || ['x', 'y']).join(' ')}', integer=True)
+eq = ${p.equation}
+wynik = diophantine(eq)
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'euler_phi' && p.numbers?.length) {
+    return `from sympy import *
+wynik = totient(${p.numbers[0]})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'divisors' && p.numbers?.length) {
+    return `from sympy import *
+wynik = divisors(${p.numbers[0]})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'legendre_symbol' && p.numbers?.length && p.numbers.length >= 2) {
+    return `from sympy import *
+from sympy.ntheory import legendre_symbol
+wynik = legendre_symbol(${p.numbers[0]}, ${p.numbers[1]})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  return `from sympy import *
+# ${p.description}
+print("ODPOWIEDZ: TODO - number theory")
+`;
+}
+
+function solveLinearAlgebra(p: LinearAlgebraParams): string {
+  const vars = (p.variables || ['x', 'y', 'z']).join(', ');
+
+  if (p.task === 'determinant' && p.matrix) {
+    return `from sympy import *
+M = ${p.matrix}
+wynik = M.det()
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'inverse' && p.matrix) {
+    return `from sympy import *
+M = ${p.matrix}
+wynik = M.inv()
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'eigenvalues' && p.matrix) {
+    return `from sympy import *
+M = ${p.matrix}
+wynik = M.eigenvals()
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'eigenvectors' && p.matrix) {
+    return `from sympy import *
+M = ${p.matrix}
+wynik = M.eigenvects()
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'rank' && p.matrix) {
+    return `from sympy import *
+M = ${p.matrix}
+wynik = M.rank()
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'rref' && p.matrix) {
+    return `from sympy import *
+M = ${p.matrix}
+wynik = M.rref()
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'nullspace' && p.matrix) {
+    return `from sympy import *
+M = ${p.matrix}
+wynik = M.nullspace()
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'characteristic_polynomial' && p.matrix) {
+    return `from sympy import *
+lam = symbols('lambda')
+M = ${p.matrix}
+wynik = M.charpoly(lam)
+print("ODPOWIEDZ:", wynik.as_expr())
+`;
+  }
+
+  if (p.task === 'diagonalize' && p.matrix) {
+    return `from sympy import *
+M = ${p.matrix}
+try:
+    P, D = M.diagonalize()
+    print("P =", P)
+    print("D =", D)
+    wynik = (P, D)
+except Exception as e:
+    print("Macierz nie jest diagonalizowalna:", e)
+    wynik = None
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'solve_system' && p.system_equations?.length) {
+    return `from sympy import *
+${vars} = symbols('${vars}')
+eqs = [${p.system_equations.join(', ')}]
+wynik = solve(eqs, [${vars}])
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  return `from sympy import *
+# ${p.description}
+print("ODPOWIEDZ: TODO - linear algebra")
+`;
+}
+
+function solveIntegral(p: IntegralParams): string {
+  if (p.task === 'definite' && p.lower_bound && p.upper_bound) {
+    return `from sympy import *
+${p.variable} = symbols('${p.variable}', real=True)
+expr = ${p.expression}
+wynik = integrate(expr, (${p.variable}, ${p.lower_bound}, ${p.upper_bound}))
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'improper' && p.lower_bound && p.upper_bound) {
+    return `from sympy import *
+${p.variable} = symbols('${p.variable}', real=True)
+expr = ${p.expression}
+wynik = integrate(expr, (${p.variable}, ${p.lower_bound}, ${p.upper_bound}))
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'double') {
+    return `from sympy import *
+x, y = symbols('x y', real=True)
+expr = ${p.expression}
+wynik = integrate(expr, (x, ${p.lower_bound || '0'}, ${p.upper_bound || '1'}), (y, 0, 1))
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  // Default: indefinite integral
+  return `from sympy import *
+${p.variable} = symbols('${p.variable}', real=True)
+expr = ${p.expression}
+wynik = integrate(expr, ${p.variable})
+print("ODPOWIEDZ:", wynik)
+`;
+}
+
+function solveDifferentialEquation(p: DifferentialEquationParams): string {
+  const fn = p.function_name || 'f';
+  const v = p.variable || 'x';
+
+  let code = `from sympy import *
+${v} = symbols('${v}', real=True)
+${fn} = Function('${fn}')
+eq = Eq(${p.equation}, 0)
+`;
+
+  if (p.task === 'particular_solution' && p.initial_conditions) {
+    const ics: string[] = [];
+    for (const [key, val] of Object.entries(p.initial_conditions)) {
+      ics.push(`${key}: ${val}`);
+    }
+    code += `ics = {${ics.join(', ')}}
+wynik = dsolve(eq, ${fn}(${v}), ics=ics)
+`;
+  } else {
+    code += `wynik = dsolve(eq, ${fn}(${v}))
+`;
+  }
+
+  code += `print("ODPOWIEDZ:", wynik)
+`;
+  return code;
+}
+
+function solveSeries(p: SeriesParams): string {
+  const v = p.variable || 'n';
+
+  if (p.task === 'convergence' || p.task === 'sum') {
+    return `from sympy import *
+${v} = symbols('${v}', positive=True, integer=True)
+expr = ${p.expression}
+wynik = summation(expr, (${v}, 1, oo))
+if wynik.is_finite:
+    print("Szereg zbiezny, suma =", wynik)
+else:
+    print("Szereg rozbiezny")
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'taylor') {
+    return `from sympy import *
+x = symbols('x', real=True)
+expr = ${p.expression}
+wynik = series(expr, x, ${p.point || '0'}, ${p.n_terms || 6})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'partial_sum') {
+    return `from sympy import *
+${v} = symbols('${v}', positive=True, integer=True)
+expr = ${p.expression}
+wynik = summation(expr, (${v}, 1, ${p.n_terms || 'n'}))
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'radius') {
+    return `from sympy import *
+${v} = symbols('${v}', positive=True, integer=True)
+x = symbols('x')
+a_n = ${p.expression}
+ratio = simplify(abs(a_n.subs(${v}, ${v}+1) / a_n))
+L = limit(ratio, ${v}, oo)
+R = 1/L if L != 0 else oo
+wynik = R
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  return `from sympy import *
+${v} = symbols('${v}', positive=True, integer=True)
+expr = ${p.expression}
+wynik = summation(expr, (${v}, 1, oo))
+print("ODPOWIEDZ:", wynik)
+`;
+}
+
+function solveGroupTheory(p: GroupTheoryParams): string {
+  if (p.task === 'order' && p.group) {
+    return `from sympy.combinatorics import *
+G = ${p.group}
+wynik = G.order()
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'is_cyclic' && p.group) {
+    return `from sympy.combinatorics import *
+G = ${p.group}
+wynik = G.is_cyclic
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'subgroups' && p.group) {
+    return `from sympy.combinatorics import *
+G = ${p.group}
+# List subgroups (may be slow for large groups)
+subs = list(G.subgroups())
+wynik = len(subs)
+print("Liczba podgrup:", wynik)
+for s in subs[:20]:
+    print(" -", s)
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'generators' && p.group) {
+    return `from sympy.combinatorics import *
+G = ${p.group}
+wynik = G.generators
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  return `from sympy.combinatorics import *
+# ${p.description}
+print("ODPOWIEDZ: TODO - group theory")
+`;
+}
+
+function solveComplexAnalysis(p: ComplexAnalysisParams): string {
+  const v = p.variable || 'z';
+
+  if (p.task === 'residue' && p.point) {
+    return `from sympy import *
+${v} = symbols('${v}')
+expr = ${p.expression}
+wynik = residue(expr, ${v}, ${p.point})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'poles') {
+    return `from sympy import *
+${v} = symbols('${v}')
+expr = ${p.expression}
+# Find poles (zeros of denominator)
+num, den = fraction(expr)
+wynik = solve(den, ${v})
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'laurent') {
+    return `from sympy import *
+${v} = symbols('${v}')
+expr = ${p.expression}
+wynik = series(expr, ${v}, ${p.point || '0'}, 6)
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'contour_integral') {
+    return `from sympy import *
+${v} = symbols('${v}')
+expr = ${p.expression}
+# Use residue theorem: integral = 2*pi*i * sum of residues inside contour
+num, den = fraction(expr)
+poles = solve(den, ${v})
+total_res = sum(residue(expr, ${v}, p) for p in poles if abs(complex(p)) < 10)
+wynik = 2 * pi * I * total_res
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  return `from sympy import *
+${v} = symbols('${v}')
+# ${p.expression}
+print("ODPOWIEDZ: TODO - complex analysis")
+`;
+}
+
+function solveAlgebraicGeometry(p: AlgebraicGeometryParams): string {
+  const vars = p.variables.join(', ');
+  const field = p.field || 'QQ';
+
+  if (p.task === 'count_points' && field.startsWith('GF(')) {
+    // Extract field size from GF(p) or GF(p**k)
+    const fieldMatch = field.match(/GF\((\d+)(?:\*\*(\d+))?\)/);
+    const base = fieldMatch ? fieldMatch[1] : '7';
+    const exp = fieldMatch?.[2] ? `**${fieldMatch[2]}` : '';
+    const size = `${base}${exp}`;
+
+    if (p.variables.length === 2) {
+      return `from sympy import *
+${vars} = symbols('${vars}')
+p = ${size}
+count = 0
+for _x in range(p):
+    for _y in range(p):
+        _vals = {${p.variables[0]}: _x, ${p.variables[1]}: _y}
+        if all((eq.subs(_vals)) % p == 0 for eq in [${p.equations.join(', ')}]):
+            count += 1
+wynik = count
+print("ODPOWIEDZ:", wynik)
+`;
+    }
+  }
+
+  if (p.task === 'intersection' && p.equations.length >= 2) {
+    return `from sympy import *
+${vars} = symbols('${vars}')
+eqs = [${p.equations.join(', ')}]
+wynik = solve(eqs, [${vars}])
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.task === 'degree') {
+    return `from sympy import *
+${vars} = symbols('${vars}')
+expr = ${p.equations[0]}
+wynik = degree(Poly(expr, ${vars}))
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  return `from sympy import *
+${vars} = symbols('${vars}')
+# ${p.description}
+print("ODPOWIEDZ: TODO - algebraic geometry")
+`;
+}
+
+function solveGraphTheory(p: GraphTheoryParams): string {
+  // Graph theory in SymPy is limited — use networkx-style approach with sympy.combinatorics
+  if (p.adjacency_matrix) {
+    return `from sympy import *
+M = ${p.adjacency_matrix}
+# Analyze adjacency matrix
+n = M.shape[0]
+print("Vertices:", n)
+print("Edges:", sum(M[i,j] for i in range(n) for j in range(i+1, n)))
+wynik = M
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  if (p.edges?.length && p.vertices) {
+    return `from sympy import *
+# Graph with ${p.vertices} vertices and edges ${p.edges.join(', ')}
+vertices = ${p.vertices}
+edges = [${p.edges.join(', ')}]
+# Build adjacency
+adj = {i: set() for i in range(vertices)}
+for (u, v) in edges:
+    adj[u].add(v)
+    adj[v].add(u)
+degrees = {v: len(adj[v]) for v in range(vertices)}
+print("Degrees:", degrees)
+# ${p.task}
+wynik = degrees
+print("ODPOWIEDZ:", wynik)
+`;
+  }
+
+  return `from sympy import *
+# ${p.description}
+print("ODPOWIEDZ: TODO - graph theory")
+`;
+}
+
 function solveGeneral(p: GeneralParams): string {
   if (p.sympy_code) {
     return p.sympy_code;
@@ -1029,6 +1586,41 @@ export function buildSolverCode(classification: ClassificationResult): string {
     case ProblemType.SIMPLIFICATION:
       coreCode = solveSimplification(params as SimplificationParams);
       break;
+    // University-level
+    case ProblemType.MODULAR_ARITHMETIC:
+      coreCode = solveModularArithmetic(params as ModularArithmeticParams);
+      break;
+    case ProblemType.NUMBER_THEORY:
+      coreCode = solveNumberTheory(params as NumberTheoryParams);
+      break;
+    case ProblemType.LINEAR_ALGEBRA:
+      coreCode = solveLinearAlgebra(params as LinearAlgebraParams);
+      break;
+    case ProblemType.INTEGRAL:
+      coreCode = solveIntegral(params as IntegralParams);
+      break;
+    case ProblemType.DIFFERENTIAL_EQUATION:
+      coreCode = solveDifferentialEquation(params as DifferentialEquationParams);
+      break;
+    case ProblemType.SERIES:
+      coreCode = solveSeries(params as SeriesParams);
+      break;
+    case ProblemType.GROUP_THEORY:
+      coreCode = solveGroupTheory(params as GroupTheoryParams);
+      break;
+    case ProblemType.COMPLEX_ANALYSIS:
+      coreCode = solveComplexAnalysis(params as ComplexAnalysisParams);
+      break;
+    case ProblemType.ALGEBRAIC_GEOMETRY:
+      coreCode = solveAlgebraicGeometry(params as AlgebraicGeometryParams);
+      break;
+    case ProblemType.GRAPH_THEORY:
+      coreCode = solveGraphTheory(params as GraphTheoryParams);
+      break;
+    case ProblemType.TOPOLOGY:
+      // Topology problems are too abstract for deterministic solving — fall through to general
+      coreCode = solveGeneral(params as GeneralParams);
+      break;
     case ProblemType.GENERAL:
     default:
       coreCode = solveGeneral(params as GeneralParams);
@@ -1072,5 +1664,16 @@ export {
   solveProof,
   solveFunctionProperties,
   solveGeneral,
+  // University-level
+  solveModularArithmetic,
+  solveNumberTheory,
+  solveLinearAlgebra,
+  solveIntegral,
+  solveDifferentialEquation,
+  solveSeries,
+  solveGroupTheory,
+  solveComplexAnalysis,
+  solveAlgebraicGeometry,
+  solveGraphTheory,
   wrapForMC,
 };

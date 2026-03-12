@@ -181,6 +181,58 @@ function normalizeType(raw: string): ProblemType {
     'proof': ProblemType.PROOF,
     'funkcja': ProblemType.FUNCTION_PROPERTIES,
     'function': ProblemType.FUNCTION_PROPERTIES,
+    // University-level aliases
+    'modular': ProblemType.MODULAR_ARITHMETIC,
+    'kongruencja': ProblemType.MODULAR_ARITHMETIC,
+    'congruence': ProblemType.MODULAR_ARITHMETIC,
+    'finite_field': ProblemType.MODULAR_ARITHMETIC,
+    'cialo_skonczne': ProblemType.MODULAR_ARITHMETIC,
+    'teoria_liczb': ProblemType.NUMBER_THEORY,
+    'number_theory': ProblemType.NUMBER_THEORY,
+    'nwd': ProblemType.NUMBER_THEORY,
+    'gcd': ProblemType.NUMBER_THEORY,
+    'diofantyczny': ProblemType.NUMBER_THEORY,
+    'diophantine': ProblemType.NUMBER_THEORY,
+    'podzielnosc': ProblemType.NUMBER_THEORY,
+    'algebra_liniowa': ProblemType.LINEAR_ALGEBRA,
+    'linear_algebra': ProblemType.LINEAR_ALGEBRA,
+    'macierz': ProblemType.LINEAR_ALGEBRA,
+    'matrix': ProblemType.LINEAR_ALGEBRA,
+    'wyznacznik': ProblemType.LINEAR_ALGEBRA,
+    'determinant': ProblemType.LINEAR_ALGEBRA,
+    'eigenvalue': ProblemType.LINEAR_ALGEBRA,
+    'calka': ProblemType.INTEGRAL,
+    'integral': ProblemType.INTEGRAL,
+    'calkowanie': ProblemType.INTEGRAL,
+    'integration': ProblemType.INTEGRAL,
+    'rownanie_rozniczkowe': ProblemType.DIFFERENTIAL_EQUATION,
+    'differential_equation': ProblemType.DIFFERENTIAL_EQUATION,
+    'ode': ProblemType.DIFFERENTIAL_EQUATION,
+    'szereg': ProblemType.SERIES,
+    'series': ProblemType.SERIES,
+    'taylor': ProblemType.SERIES,
+    'fourier': ProblemType.SERIES,
+    'zbieznosc': ProblemType.SERIES,
+    'convergence': ProblemType.SERIES,
+    'grupa': ProblemType.GROUP_THEORY,
+    'group': ProblemType.GROUP_THEORY,
+    'group_theory': ProblemType.GROUP_THEORY,
+    'pierscien': ProblemType.GROUP_THEORY,
+    'ring': ProblemType.GROUP_THEORY,
+    'analiza_zespolona': ProblemType.COMPLEX_ANALYSIS,
+    'complex_analysis': ProblemType.COMPLEX_ANALYSIS,
+    'residuum': ProblemType.COMPLEX_ANALYSIS,
+    'residue': ProblemType.COMPLEX_ANALYSIS,
+    'geometria_algebraiczna': ProblemType.ALGEBRAIC_GEOMETRY,
+    'algebraic_geometry': ProblemType.ALGEBRAIC_GEOMETRY,
+    'variete': ProblemType.ALGEBRAIC_GEOMETRY,
+    'variety': ProblemType.ALGEBRAIC_GEOMETRY,
+    'krzywa_eliptyczna': ProblemType.ALGEBRAIC_GEOMETRY,
+    'elliptic_curve': ProblemType.ALGEBRAIC_GEOMETRY,
+    'graf': ProblemType.GRAPH_THEORY,
+    'graph_theory': ProblemType.GRAPH_THEORY,
+    'euler_path': ProblemType.GRAPH_THEORY,
+    'chromatic': ProblemType.GRAPH_THEORY,
     'ogolne': ProblemType.GENERAL,
   };
 
@@ -270,6 +322,108 @@ function extractMCOptionsFromQuestion(question: string): { A: string; B: string;
 }
 
 // ============================================================
+// Regex pre-classifier — fast keyword-based detection (no LLM)
+// Returns a hint type if keywords strongly match, null otherwise.
+// ============================================================
+
+function regexPreClassify(question: string): ProblemType | null {
+  const lower = question.toLowerCase();
+
+  // Finite fields / modular arithmetic (strongest signal)
+  if (/\bf[_\s]?\{?\s*\d+\s*(\^\s*\d+)?\s*\}?/i.test(question) ||
+      /cia[lł]o\s+sko[nń]czon/i.test(lower) ||
+      /finite\s+field/i.test(lower) ||
+      /galois\s+field/i.test(lower) ||
+      /\bgf\s*\(\s*\d+/i.test(lower) ||
+      /mod(ulo)?\s+\d+/i.test(lower) && /kongruencj|rozwi[aą]z/i.test(lower)) {
+    return ProblemType.MODULAR_ARITHMETIC;
+  }
+
+  // Algebraic geometry (varieties, curves over fields)
+  if (/variet[yi]/i.test(lower) ||
+      /intersection\s+point/i.test(lower) && /field/i.test(lower) ||
+      /krzywa\s+eliptyczn/i.test(lower) ||
+      /elliptic\s+curve/i.test(lower) ||
+      /genus/i.test(lower) && /curve/i.test(lower)) {
+    return ProblemType.ALGEBRAIC_GEOMETRY;
+  }
+
+  // Linear algebra
+  if (/macierz|matrix|matrices/i.test(lower) ||
+      /wyznacznik|determinant/i.test(lower) ||
+      /warto[sś][cć]\s+w[lł]asn|eigenvalue|eigenvector/i.test(lower) ||
+      /rz[aą]d\s+macierz|rank\s+of/i.test(lower) ||
+      /j[aą]dro|nullspace|kernel/i.test(lower)) {
+    return ProblemType.LINEAR_ALGEBRA;
+  }
+
+  // Differential equations
+  if (/r[oó]wnanie\s+r[oó][zż]niczkow/i.test(lower) ||
+      /differential\s+equation/i.test(lower) ||
+      /\bode\b|\bpde\b/i.test(lower) ||
+      /y['′]\s*[+=]|y''\s*[+=]/i.test(lower) ||
+      /warunek\s+pocz[aą]tkow|initial\s+(value|condition)/i.test(lower)) {
+    return ProblemType.DIFFERENTIAL_EQUATION;
+  }
+
+  // Integrals (university-level: double, triple, improper, line, surface)
+  if (/ca[lł]ka\s+(podw[oó]jn|potr[oó]jn|nieoznaczon|niew[lł]a[sś]ciw|krzywoliniow|powierzchniow)/i.test(lower) ||
+      /double\s+integral|triple\s+integral|improper\s+integral|line\s+integral|surface\s+integral/i.test(lower)) {
+    return ProblemType.INTEGRAL;
+  }
+  // Basic integral detection (if not caught by matura-level)
+  if (/\bca[lł]k[aąeę]/i.test(lower) && !/matur/i.test(lower) ||
+      /\bintegra(l|te)\b/i.test(lower)) {
+    return ProblemType.INTEGRAL;
+  }
+
+  // Series (power series, Taylor, Fourier, convergence)
+  if (/szereg\s+(pot[eę]gow|taylor|fourier|maclaurin)/i.test(lower) ||
+      /power\s+series|taylor\s+(series|expansion)|fourier\s+(series|transform)/i.test(lower) ||
+      /zbie[zż]no[sś][cć]\s+szereg|convergence\s+(of\s+)?(the\s+)?series/i.test(lower) ||
+      /promie[nń]\s+zbie[zż]no|radius\s+of\s+convergence/i.test(lower)) {
+    return ProblemType.SERIES;
+  }
+
+  // Group theory
+  if (/grup[aąeęy]\s+(cykliczn|symetryczn|permutacj|abelow)/i.test(lower) ||
+      /group\s+(of\s+)?(order|symmetr|permutation|cyclic|abelian)/i.test(lower) ||
+      /pier[sś]cie[nń]|ring\s+of|homomorfizm|homomorphism|izomorfizm|isomorphism/i.test(lower) ||
+      /podgrup[aąeęy]|subgroup|quotient\s+group/i.test(lower)) {
+    return ProblemType.GROUP_THEORY;
+  }
+
+  // Complex analysis
+  if (/residuum|residue\s+at/i.test(lower) ||
+      /ca[lł]ka\s+konturow|contour\s+integral/i.test(lower) ||
+      /biegun\w*\s+funkcj|pole\s+of\s+(the\s+)?function/i.test(lower) ||
+      /szereg\s+laurent|laurent\s+series/i.test(lower) ||
+      /analityczn\w+\s+funkcj|analytic\s+function/i.test(lower)) {
+    return ProblemType.COMPLEX_ANALYSIS;
+  }
+
+  // Number theory
+  if (/nwd|nww|gcd|lcm/i.test(lower) && !/geometr/i.test(lower) ||
+      /podzielno[sś][cć]|divisib/i.test(lower) ||
+      /diofant|diophantine/i.test(lower) ||
+      /symbol\s+legendre|legendre\s+symbol|jacobi\s+symbol/i.test(lower) ||
+      /twierdzenie\s+(euler|fermat|wilson)/i.test(lower) ||
+      /euler.*phi|totient/i.test(lower)) {
+    return ProblemType.NUMBER_THEORY;
+  }
+
+  // Graph theory
+  if (/graf\w*\s+(euler|hamilton|planar|dwudzieln|pe[lł]n)/i.test(lower) ||
+      /chromatic\s+number|euler\s+(path|circuit)/i.test(lower) ||
+      /drzewo\s+rozpinaj|spanning\s+tree/i.test(lower) ||
+      /liczba\s+chromatyczn/i.test(lower)) {
+    return ProblemType.GRAPH_THEORY;
+  }
+
+  return null; // no strong signal — let LLM decide
+}
+
+// ============================================================
 // Main classifier function
 // ============================================================
 
@@ -278,8 +432,16 @@ export async function classifyProblem(
   classifierPrompt: string,
   llmAgent: LLMAgent,
   ragContext?: string,
-  options?: { maxTokens?: number; temperature?: number }
+  options?: { maxTokens?: number; temperature?: number; enableUniversity?: boolean }
 ): Promise<ClassificationResult> {
+  const universityEnabled = options?.enableUniversity ?? true;
+
+  // === Stage 1: Regex pre-classification (skip university patterns when disabled) ===
+  const regexHint = universityEnabled ? regexPreClassify(question) : null;
+  if (regexHint) {
+    console.log(`🔍 [Regex Pre-Classifier] Detected: ${regexHint}`);
+  }
+
   // Build the user message with optional RAG context
   let userMessage = question;
   if (ragContext) {
@@ -304,6 +466,17 @@ export async function classifyProblem(
 
   if (!parsed) {
     console.warn('[Classifier] Failed to extract JSON from response:', cleaned.substring(0, 200));
+    // If regex detected a type, use it instead of GENERAL
+    if (regexHint) {
+      console.log(`🔍 [Regex Override] LLM failed JSON parse → using regex hint: ${regexHint}`);
+      return {
+        type: regexHint,
+        params: { description: question } as any,
+        confidence: 0.6,
+        rawQuestion: question,
+        isMultipleChoice: /\b[ABCD]\.\s/.test(question),
+      };
+    }
     return {
       type: ProblemType.GENERAL,
       params: { description: question },
@@ -313,7 +486,30 @@ export async function classifyProblem(
     };
   }
 
-  return validateClassification(parsed, question);
+  const result = validateClassification(parsed, question);
+
+  // === Stage 3: Regex override when LLM gives GENERAL but regex found specific type ===
+  if (regexHint && result.type === ProblemType.GENERAL && regexHint !== ProblemType.GENERAL) {
+    console.log(`🔍 [Regex Override] LLM → general, regex → ${regexHint}. Overriding type.`);
+    result.type = regexHint;
+    // Boost confidence slightly so it doesn't immediately fall back
+    result.confidence = Math.max(result.confidence, 0.75);
+  }
+
+  // Also override if regex detected a university-level type but LLM picked a wrong matura type
+  const universityTypes: ProblemType[] = [
+    ProblemType.MODULAR_ARITHMETIC, ProblemType.NUMBER_THEORY, ProblemType.LINEAR_ALGEBRA,
+    ProblemType.INTEGRAL, ProblemType.DIFFERENTIAL_EQUATION, ProblemType.SERIES,
+    ProblemType.GROUP_THEORY, ProblemType.TOPOLOGY, ProblemType.COMPLEX_ANALYSIS,
+    ProblemType.ALGEBRAIC_GEOMETRY, ProblemType.GRAPH_THEORY,
+  ];
+  if (regexHint && universityTypes.includes(regexHint) && !universityTypes.includes(result.type)) {
+    console.log(`🔍 [Regex Override] LLM → ${result.type} (matura), regex → ${regexHint} (university). Overriding.`);
+    result.type = regexHint;
+    result.confidence = Math.max(result.confidence, 0.75);
+  }
+
+  return result;
 }
 
 // ============================================================

@@ -1,11 +1,13 @@
 /**
  * Classifier Types — Problem type definitions for the deterministic solver pipeline.
  *
- * The 11B model classifies matura math problems into one of these types and extracts
- * structured parameters. Deterministic solvers then build SymPy code from the params.
+ * Covers matura-level AND university-level mathematics.
+ * The LLM classifies problems into one of these types and extracts structured parameters.
+ * Deterministic solvers then build SymPy code from the params.
  */
 
 export enum ProblemType {
+  // === Matura-level ===
   LIMIT = 'limit',
   DERIVATIVE = 'derivative',
   TRIG_EQUATION = 'trig_equation',
@@ -24,6 +26,21 @@ export enum ProblemType {
   PROOF = 'proof',
   FUNCTION_PROPERTIES = 'function_properties',
   SIMPLIFICATION = 'simplification',
+
+  // === University-level ===
+  MODULAR_ARITHMETIC = 'modular_arithmetic',   // congruences, F_p, F_{p^k}, CRT, Euler/Fermat
+  NUMBER_THEORY = 'number_theory',             // GCD, LCM, divisibility, primes, Diophantine
+  LINEAR_ALGEBRA = 'linear_algebra',           // matrices, determinants, eigenvalues, rank, systems
+  INTEGRAL = 'integral',                       // definite/indefinite integrals, substitution, by parts
+  DIFFERENTIAL_EQUATION = 'differential_equation', // ODE, PDE, initial value problems
+  SERIES = 'series',                           // power series, Taylor, Fourier, convergence tests
+  GROUP_THEORY = 'group_theory',               // groups, rings, fields, homomorphisms, orders
+  TOPOLOGY = 'topology',                       // metric spaces, continuity, compactness (basic)
+  COMPLEX_ANALYSIS = 'complex_analysis',       // complex numbers, residues, contour integrals
+  ALGEBRAIC_GEOMETRY = 'algebraic_geometry',   // varieties, curves over finite fields, intersection
+  GRAPH_THEORY = 'graph_theory',               // Euler paths, chromatic number, planarity
+
+  // === Fallback ===
   GENERAL = 'general',
 }
 
@@ -195,6 +212,92 @@ export interface GeneralParams {
   sympy_code?: string;     // if the model can provide direct code
 }
 
+// --- University-level parameter interfaces ---
+
+export interface ModularArithmeticParams {
+  task: 'solve_congruence' | 'count_solutions' | 'find_order' | 'euler_phi' | 'crt' | 'finite_field' | 'intersection_variety';
+  modulus?: string;           // e.g. "17" or "17**4"
+  equations?: string[];       // system of equations/congruences
+  field_size?: string;        // e.g. "17**4" for F_{17^4}
+  variables?: string[];       // e.g. ["x", "y"]
+  description: string;
+}
+
+export interface NumberTheoryParams {
+  task: 'gcd' | 'lcm' | 'factorize' | 'diophantine' | 'primes' | 'divisors' | 'euler_phi' | 'legendre_symbol';
+  numbers?: string[];         // e.g. ["120", "84"]
+  equation?: string;          // for Diophantine: "3*x + 5*y = 1"
+  variables?: string[];
+  description: string;
+}
+
+export interface LinearAlgebraParams {
+  task: 'determinant' | 'inverse' | 'eigenvalues' | 'eigenvectors' | 'rank' | 'solve_system' | 'diagonalize' | 'characteristic_polynomial' | 'nullspace' | 'rref';
+  matrix?: string;            // SymPy Matrix(...) or [[1,2],[3,4]]
+  matrices?: string[];        // for operations on multiple matrices
+  system_equations?: string[]; // for solve_system: ["2*x + y - 3", "x - y + 1"]
+  variables?: string[];
+  description: string;
+}
+
+export interface IntegralParams {
+  expression: string;         // integrand
+  variable: string;
+  task: 'indefinite' | 'definite' | 'improper' | 'double' | 'triple' | 'line' | 'surface';
+  lower_bound?: string;       // for definite/improper
+  upper_bound?: string;
+  method?: string;            // hint: 'substitution', 'by_parts', 'partial_fractions'
+}
+
+export interface DifferentialEquationParams {
+  equation: string;           // e.g. "f(x).diff(x) + f(x) - x"
+  function_name: string;      // e.g. "f"
+  variable: string;
+  order?: number;             // 1, 2, ...
+  initial_conditions?: Record<string, string>; // e.g. {"f(0)": "1", "f'(0)": "0"}
+  task: 'solve' | 'particular_solution' | 'classify';
+}
+
+export interface SeriesParams {
+  expression: string;         // general term or function
+  variable: string;
+  task: 'convergence' | 'sum' | 'taylor' | 'fourier' | 'partial_sum' | 'radius';
+  point?: string;             // expansion point for Taylor
+  n_terms?: number;           // number of terms
+  test?: string;              // convergence test: 'ratio', 'root', 'comparison', 'integral'
+}
+
+export interface GroupTheoryParams {
+  task: 'order' | 'subgroups' | 'is_cyclic' | 'generators' | 'quotient' | 'homomorphism' | 'classify';
+  group?: string;             // e.g. "SymmetricGroup(4)", "CyclicGroup(12)"
+  element?: string;           // for order of element
+  description: string;
+}
+
+export interface ComplexAnalysisParams {
+  expression: string;         // complex function
+  variable: string;           // usually "z"
+  task: 'residue' | 'contour_integral' | 'poles' | 'laurent' | 'conformal_map' | 'analytic_check';
+  point?: string;             // singularity point
+  contour?: string;           // description of contour
+}
+
+export interface AlgebraicGeometryParams {
+  equations: string[];        // defining equations of variety
+  variables: string[];        // e.g. ["x", "y"]
+  field?: string;             // e.g. "GF(17)" or "QQ" or "GF(17**4)"
+  task: 'count_points' | 'intersection' | 'genus' | 'singularities' | 'parametrize' | 'degree';
+  description: string;
+}
+
+export interface GraphTheoryParams {
+  task: 'chromatic_number' | 'euler_path' | 'hamilton' | 'planarity' | 'shortest_path' | 'spanning_tree' | 'matching';
+  vertices?: number;
+  edges?: string[];           // e.g. ["(0,1)", "(1,2)", "(2,0)"]
+  adjacency_matrix?: string;
+  description: string;
+}
+
 // --- Union of all parameter types ---
 
 export type ProblemParams =
@@ -216,6 +319,16 @@ export type ProblemParams =
   | ProofParams
   | FunctionPropertiesParams
   | SimplificationParams
+  | ModularArithmeticParams
+  | NumberTheoryParams
+  | LinearAlgebraParams
+  | IntegralParams
+  | DifferentialEquationParams
+  | SeriesParams
+  | GroupTheoryParams
+  | ComplexAnalysisParams
+  | AlgebraicGeometryParams
+  | GraphTheoryParams
   | GeneralParams;
 
 // --- Classification result ---
