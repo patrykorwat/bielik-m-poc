@@ -76,12 +76,12 @@ export class ThreeAgentOrchestrator {
   private availableTools: MCPTool[] = [];
   private leanAvailable: boolean = false;
   private ragService: RAGService;
-  private classifierMode: boolean = false;
+  private classifierMode: boolean = true;
 
   constructor(
     proverBackend: ProverBackend = 'both',
     mlxConfig: MLXConfig,
-    classifierMode: boolean = false,
+    classifierMode: boolean = true,
   ) {
     this.proverBackend = proverBackend;
     this.classifierMode = classifierMode;
@@ -2799,6 +2799,7 @@ ${result.error || ''}`;
     // ═══════════════════════════════════════════════════════════════════
     // CLASSIFIER MODE: Skip Agent 1+2, use deterministic solver instead
     // ═══════════════════════════════════════════════════════════════════
+    console.log(`🔧 CLASSIFIER CHECK: classifierMode=${this.classifierMode}, mcpClient=${!!this.mcpClient}`);
     if (this.classifierMode && this.mcpClient) {
       console.log('\n=== CLASSIFIER MODE ===');
 
@@ -3194,6 +3195,7 @@ ${result.error || ''}`;
     // ═══════════════════════════════════════════════════════════════════
     // AGENT 1: Analytical — plan the solution (legacy fallback)
     // ═══════════════════════════════════════════════════════════════════
+    console.log(`⚠️ FALLING THROUGH TO 3-AGENT PIPELINE (classifierMode=${this.classifierMode}, mcpClient=${!!this.mcpClient})`);
     console.log('\n=== AGENT 1: Analytical ===');
 
     const analyticalPrompt = ragContext
