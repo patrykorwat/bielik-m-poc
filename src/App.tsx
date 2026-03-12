@@ -52,7 +52,7 @@ const DEFAULT_REMOTE_API_URL = import.meta.env.VITE_REMOTE_API_URL || 'https://l
 
 function App() {
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
-  const [classifierMode, setClassifierMode] = useState(false);
+  const [classifierMode, setClassifierMode] = useState(true);
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('ollama');
   const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:11434');
   const [mlxModel, setMlxModel] = useState('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
