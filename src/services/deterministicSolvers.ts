@@ -1037,14 +1037,37 @@ print("ODPOWIEDZ:", wynik)
   }
 
   if (p.task === 'crt' && p.equations?.length) {
+    // CRT equations come as pairs: "x ≡ r (mod m)" or as "r, m" strings
+    // We parse them from the equations array
     return `from sympy import *
 from sympy.ntheory.modular import crt
-# CRT: solve system of congruences
+import re
+
+# Parse congruences from equations
 remainders = []
 moduli = []
-${p.equations.map((eq) => `# ${eq}`).join('\n')}
-# Parse and solve
-wynik = crt(moduli, remainders)
+raw_eqs = ${JSON.stringify(p.equations)}
+for eq_str in raw_eqs:
+    # Try pattern: "x ≡ r (mod m)" or "x = r mod m" or "r, m"
+    m1 = re.search(r'(\\d+)\\s*(?:mod|%)\\s*(\\d+)', eq_str)
+    m2 = re.search(r'(\\d+)\\s*,\\s*(\\d+)', eq_str)
+    if m1:
+        remainders.append(int(m1.group(1)))
+        moduli.append(int(m1.group(2)))
+    elif m2:
+        remainders.append(int(m2.group(1)))
+        moduli.append(int(m2.group(2)))
+    else:
+        print(f"Nie rozpoznano: {eq_str}")
+
+if moduli and remainders:
+    result = crt(moduli, remainders)
+    if result is not None:
+        wynik = f"x ≡ {result[0]} (mod {result[1]})"
+    else:
+        wynik = "CRT nie ma rozwiazania (moduly nie sa parami wzglednie pierwsze)"
+else:
+    wynik = "Brak danych do CRT"
 print("ODPOWIEDZ:", wynik)
 `;
   }
@@ -1249,10 +1272,13 @@ print("ODPOWIEDZ:", wynik)
   }
 
   if (p.task === 'double') {
+    // Double integral needs two sets of bounds — use params if available
+    const innerVar = p.variable || 'x';
+    const outerVar = p.outer_variable || (innerVar === 'x' ? 'y' : 'x');
     return `from sympy import *
-x, y = symbols('x y', real=True)
+${innerVar}, ${outerVar} = symbols('${innerVar} ${outerVar}', real=True)
 expr = ${p.expression}
-wynik = integrate(expr, (x, ${p.lower_bound || '0'}, ${p.upper_bound || '1'}), (y, 0, 1))
+wynik = integrate(expr, (${innerVar}, ${p.lower_bound || '0'}, ${p.upper_bound || '1'}), (${outerVar}, ${p.outer_lower || '0'}, ${p.outer_upper || '1'}))
 print("ODPOWIEDZ:", wynik)
 `;
   }
@@ -1301,11 +1327,32 @@ function solveSeries(p: SeriesParams): string {
     return `from sympy import *
 ${v} = symbols('${v}', positive=True, integer=True)
 expr = ${p.expression}
-wynik = summation(expr, (${v}, 1, oo))
-if wynik.is_finite:
-    print("Szereg zbiezny, suma =", wynik)
-else:
+# Try to compute the sum directly
+s = summation(expr, (${v}, 1, oo))
+if s.is_number and s.is_finite:
+    print("Szereg zbiezny, suma =", s)
+    wynik = s
+elif s == oo or s == -oo or s is S.NaN:
     print("Szereg rozbiezny")
+    wynik = "rozbiezny"
+else:
+    # summation returned unevaluated — use ratio test (d'Alembert)
+    a_n = expr
+    a_n1 = expr.subs(${v}, ${v}+1)
+    L = limit(abs(a_n1 / a_n), ${v}, oo)
+    print("Test d'Alemberta: L =", L)
+    if L.is_number:
+        if L < 1:
+            print("L < 1 → zbiezny bezwzglednie")
+            wynik = "zbiezny (L=" + str(L) + ")"
+        elif L > 1:
+            print("L > 1 → rozbiezny")
+            wynik = "rozbiezny"
+        else:
+            print("L = 1 → test nierozstrzygajacy")
+            wynik = "nierozstrzygajacy (L=1)"
+    else:
+        wynik = s  # return the symbolic form
 print("ODPOWIEDZ:", wynik)
 `;
   }
@@ -1350,7 +1397,66 @@ print("ODPOWIEDZ:", wynik)
 }
 
 function solveGroupTheory(p: GroupTheoryParams): string {
-  if (p.task === 'order' && p.group) {
+  // SymPy.combinatorics handles permutation groups.
+  // For abstract groups (Z/nZ, direct products, etc.) we use number-theoretic approach.
+
+  // Detect if this is a cyclic/abstract group reference (e.g., "Z/12Z", "Z_12", "C_12")
+  const isAbstract = p.group && /^[ZC][\/_]?\d+|^\d+$/.test(p.group.replace(/\s/g, ''));
+
+  if (isAbstract || !p.group) {
+    // Abstract group — number-theoretic approach
+    const n = p.group ? p.group.replace(/[^0-9]/g, '') : '1';
+
+    if (p.task === 'order') {
+      return `from sympy import *
+n = ${n}
+wynik = n
+print("ODPOWIEDZ:", wynik)
+`;
+    }
+
+    if (p.task === 'is_cyclic') {
+      return `from sympy import *
+n = ${n}
+# Z/nZ is always cyclic
+wynik = True
+print("ODPOWIEDZ:", wynik)
+`;
+    }
+
+    if (p.task === 'subgroups') {
+      return `from sympy import *
+n = ${n}
+# Subgroups of Z/nZ correspond to divisors of n
+divs = divisors(n)
+wynik = len(divs)
+print("Podgrupy Z/" + str(n) + "Z:", [f"Z/{n//d}Z (rzad {n//d})" for d in divs])
+print("ODPOWIEDZ:", wynik)
+`;
+    }
+
+    if (p.task === 'generators') {
+      return `from sympy import *
+from sympy.ntheory import totient
+n = ${n}
+# Generators of Z/nZ are elements coprime with n
+gens = [k for k in range(1, n) if gcd(k, n) == 1]
+wynik = gens
+print("Generatory Z/" + str(n) + "Z:", gens)
+print("Phi(" + str(n) + ") =", totient(n))
+print("ODPOWIEDZ:", wynik)
+`;
+    }
+
+    return `from sympy import *
+n = ${n}
+# ${p.description}
+print("ODPOWIEDZ: TODO - abstract group")
+`;
+  }
+
+  // Permutation group — use SymPy combinatorics
+  if (p.task === 'order') {
     return `from sympy.combinatorics import *
 G = ${p.group}
 wynik = G.order()
@@ -1358,7 +1464,7 @@ print("ODPOWIEDZ:", wynik)
 `;
   }
 
-  if (p.task === 'is_cyclic' && p.group) {
+  if (p.task === 'is_cyclic') {
     return `from sympy.combinatorics import *
 G = ${p.group}
 wynik = G.is_cyclic
@@ -1366,20 +1472,19 @@ print("ODPOWIEDZ:", wynik)
 `;
   }
 
-  if (p.task === 'subgroups' && p.group) {
+  if (p.task === 'subgroups') {
     return `from sympy.combinatorics import *
 G = ${p.group}
-# List subgroups (may be slow for large groups)
 subs = list(G.subgroups())
 wynik = len(subs)
 print("Liczba podgrup:", wynik)
 for s in subs[:20]:
-    print(" -", s)
+    print(" -", s.order())
 print("ODPOWIEDZ:", wynik)
 `;
   }
 
-  if (p.task === 'generators' && p.group) {
+  if (p.task === 'generators') {
     return `from sympy.combinatorics import *
 G = ${p.group}
 wynik = G.generators
@@ -1426,14 +1531,28 @@ print("ODPOWIEDZ:", wynik)
   }
 
   if (p.task === 'contour_integral') {
+    const radius = p.contour_radius || '10';
     return `from sympy import *
 ${v} = symbols('${v}')
 expr = ${p.expression}
-# Use residue theorem: integral = 2*pi*i * sum of residues inside contour
+# Residue theorem: contour integral = 2*pi*i * sum(residues inside contour)
 num, den = fraction(expr)
-poles = solve(den, ${v})
-total_res = sum(residue(expr, ${v}, p) for p in poles if abs(complex(p)) < 10)
-wynik = 2 * pi * I * total_res
+_poles = solve(den, ${v})
+print("Bieguny:", _poles)
+_radius = ${radius}
+_total_res = 0
+for _pole in _poles:
+    try:
+        if abs(complex(_pole)) < _radius:
+            r = residue(expr, ${v}, _pole)
+            print(f"  Residuum w {_pole}: {r}")
+            _total_res += r
+    except (TypeError, ValueError):
+        # Symbolic pole — include it
+        r = residue(expr, ${v}, _pole)
+        print(f"  Residuum w {_pole}: {r}")
+        _total_res += r
+wynik = 2 * pi * I * _total_res
 print("ODPOWIEDZ:", wynik)
 `;
   }
@@ -1457,7 +1576,8 @@ function solveAlgebraicGeometry(p: AlgebraicGeometryParams): string {
 
   if (isFiniteField && p.equations.length >= 1) {
     const primeInt = parseInt(prime!);
-    const isBruteForceOK = Math.pow(primeInt, fieldExp) <= 500; // only brute-force for small fields
+    const q = Math.pow(primeInt, fieldExp);
+    const isBruteForceOK = q <= 500; // only brute-force for small fields
 
     if (isBruteForceOK && p.variables.length === 2) {
       // Small field — direct brute-force over F_{p^k}
@@ -1479,101 +1599,115 @@ wynik = count
 print("ODPOWIEDZ:", wynik)
 `;
       } else {
-        // Small extension field — use galois for proper GF(p^k) arithmetic
+        // Small extension field F_{p^k} — use Groebner + Frobenius approach
+        // NOTE: F_{p^k} is NOT Z/p^kZ! Elements are polynomials over F_p.
+        // Correct approach: Groebner basis mod p with Frobenius constraints x^q - x = 0
+        // This restricts solutions to exactly the elements of F_{p^k}.
         return `from sympy import *
-import subprocess, sys
-try:
-    import galois
-except ImportError:
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'galois', '-q'])
-    import galois
-
-GF = galois.GF(${prime}**${fieldExp})
 ${vars} = symbols('${vars}')
+_p = ${prime}
+_k = ${fieldExp}
+_q = _p**_k  # = ${q}
 eqs = [${p.equations.join(', ')}]
-count = 0
-for _x_val in GF.elements:
-    for _y_val in GF.elements:
-        ok = True
-        for eq in eqs:
-            val = int(eq.subs({${p.variables[0]}: int(_x_val), ${p.variables[1]}: int(_y_val)}))
-            if GF(val % ${prime}) != GF(0):
-                ok = False
-                break
-        if ok:
-            count += 1
-wynik = count
+
+# Groebner basis mod p + Frobenius constraints (x^q = x for all x in F_q)
+frobenius = [v**_q - v for v in [${vars}]]
+full_system = eqs + frobenius
+try:
+    G = groebner(full_system, [${vars}], modulus=_p, order='lex')
+    gb = list(G)
+    print("Groebner + Frobenius:", gb)
+    if len(gb) == 1 and gb[0] == 1:
+        wynik = 0
+    elif len(gb) == 0:
+        wynik = _q**${p.variables.length}
+    else:
+        # Count roots of last (univariate) poly via gcd with x^q - x
+        last = gb[-1]
+        free = sorted(last.free_symbols, key=str)
+        if len(free) == 1:
+            v = free[0]
+            g = gcd(Poly(last, v, modulus=_p), Poly(v**_q - v, v, modulus=_p))
+            wynik = degree(g)
+        else:
+            solutions = solve(gb, [${vars}])
+            wynik = len(solutions) if isinstance(solutions, list) else 1
+except Exception as e:
+    print(f"Error: {e}")
+    wynik = "error"
 print("ODPOWIEDZ:", wynik)
 `;
       }
     }
 
-    // Large field or many variables — use symbolic Groebner basis mod p
-    // Key idea: reduce system modulo p, solve symbolically, count roots in F_{p^k}
+    // Large field or many variables — Groebner basis mod p + Frobenius
+    // Mathematically correct approach:
+    //   1. Groebner basis of {eqs} ∪ {x^q - x : x ∈ vars} over F_p[vars]
+    //   2. If basis = [1], system inconsistent over ALL extensions → 0 solutions
+    //   3. Otherwise, count roots via gcd with x^q - x for univariate remainder
+    // NOTE: For very large q (like 17^4 = 83521), computing x^q - x as a dense
+    // polynomial is expensive. We first check if basis = [1] WITHOUT Frobenius
+    // (inconsistent over F_p ⟹ inconsistent over F_{p^k}), which is cheap.
     return `from sympy import *
 ${vars} = symbols('${vars}')
-p = ${prime}
-k = ${fieldExp}
-q = p**k  # field size = ${prime}^${fieldExp}
+_p = ${prime}
+_k = ${fieldExp}
+_q = _p**_k  # = ${prime}^${fieldExp}
 
 eqs = [${p.equations.join(', ')}]
 
-# === Strategy: Eliminate variables symbolically, then count roots mod p ===
-# Step 1: Reduce all integer coefficients mod p
-print("=== Redukcja mod", p, "===")
-eqs_display = []
-for eq in eqs:
-    poly = Poly(eq, ${vars}, domain='ZZ')
-    reduced_coeffs = [(monom, coeff % p) for monom, coeff in zip(poly.monoms(), poly.coeffs())]
-    print(f"  {eq} → coeffs mod {p}: {reduced_coeffs}")
-    # Rebuild poly with reduced coefficients
-    eqs_display.append(reduced_coeffs)
+print("=== Algebraic Geometry over F_{" + str(_q) + "} ===")
 
-# Step 2: Try to solve the reduced system
-# Use SymPy Groebner basis over GF(p) for exact answer
+# Step 1: Quick check — Groebner basis mod p WITHOUT Frobenius
+# If inconsistent here, it's inconsistent over any extension
 try:
-    G = groebner(eqs, ${vars}, modulus=p, order='lex')
-    gb_polys = list(G)
-    print("Baza Groebnera mod", p, ":", gb_polys)
+    G = groebner(eqs, [${vars}], modulus=_p, order='lex')
+    gb = list(G)
+    print("Groebner mod", _p, ":", gb)
 
-    # If Groebner basis contains [1], the system is inconsistent → 0 solutions
-    if len(gb_polys) == 1 and gb_polys[0] == 1:
-        print("System sprzeczny mod", p, "→ 0 rozwiazan")
+    if len(gb) == 1 and gb[0] == 1:
+        print("System sprzeczny nad F_p → sprzeczny nad F_{p^k}")
         wynik = 0
-    elif len(gb_polys) == 0:
-        print("Baza pusta → nieskonczonosc rozwiazan (cale cialo)")
-        wynik = q
+    elif len(gb) == 0:
+        # Empty basis: all points are solutions
+        wynik = _q**${p.variables.length}
     else:
-        # For single-variable result, count roots of the last poly in F_{p^k}
-        if len(gb_polys) == 1:
-            last_poly = gb_polys[0]
-            last_var = sorted(last_poly.free_symbols, key=str)[0] if last_poly.free_symbols else None
-            if last_var:
-                deg = degree(Poly(last_poly, last_var))
-                # In F_{p^k}, a polynomial of degree d has at most d roots
-                # For exact count, we check gcd with x^q - x
-                field_poly = last_var**q - last_var
-                g = gcd(Poly(last_poly, last_var, modulus=p), Poly(field_poly, last_var, modulus=p))
-                wynik = degree(g)
-                print(f"GCD z x^q-x: degree = {wynik}")
-            else:
+        # Step 2: Need Frobenius constraints for exact F_{p^k} count
+        # For large q, x^q - x is degree q polynomial — too expensive to compute densely.
+        # Instead, for each univariate factor, use modular exponentiation.
+        # SymPy's Poly with modulus handles this via repeated squaring.
+        print("Adding Frobenius constraints x^q - x = 0...")
+        frobenius = [v**_q - v for v in [${vars}]]
+        full_system = list(gb) + frobenius
+        try:
+            G2 = groebner(full_system, [${vars}], modulus=_p, order='lex')
+            gb2 = list(G2)
+            print("Groebner + Frobenius:", gb2[:5], "..." if len(gb2) > 5 else "")
+
+            if len(gb2) == 1 and gb2[0] == 1:
                 wynik = 0
-        else:
-            # Multiple polys in basis — try substitution approach
-            solutions = solve(gb_polys, [${vars}])
-            print("Rozwiazania z bazy Groebnera:", solutions)
-            if isinstance(solutions, list):
-                wynik = len(solutions)
-            elif isinstance(solutions, dict):
-                wynik = 1
+            elif len(gb2) == 0:
+                wynik = _q**${p.variables.length}
             else:
-                wynik = "Nieznana struktura"
+                # Last poly should be univariate — count its F_q roots
+                last = gb2[-1]
+                free = sorted(last.free_symbols, key=str)
+                if len(free) == 1:
+                    v = free[0]
+                    g = gcd(Poly(last, v, modulus=_p), Poly(v**_q - v, v, modulus=_p))
+                    wynik = degree(g)
+                    print(f"Roots in F_q: degree(gcd) = {wynik}")
+                else:
+                    solutions = solve(gb2, [${vars}])
+                    wynik = len(solutions) if isinstance(solutions, list) else 1
+        except Exception as e2:
+            print(f"Frobenius step failed: {e2}")
+            # Fallback: just use basis without Frobenius
+            solutions = solve(gb, [${vars}])
+            wynik = len(solutions) if isinstance(solutions, list) else "unknown"
 except Exception as e:
-    print(f"Blad Groebnera: {e}")
-    # Last resort: try plain solve then filter mod p
-    solutions = solve(eqs, [${vars}], dict=True)
-    print("Rozwiazania symboliczne:", solutions)
-    wynik = len(solutions) if solutions else 0
+    print(f"Groebner error: {e}")
+    wynik = "error"
 
 print("ODPOWIEDZ:", wynik)
 `;

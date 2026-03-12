@@ -246,6 +246,9 @@ export interface IntegralParams {
   task: 'indefinite' | 'definite' | 'improper' | 'double' | 'triple' | 'line' | 'surface';
   lower_bound?: string;       // for definite/improper
   upper_bound?: string;
+  outer_variable?: string;    // for double/triple integrals
+  outer_lower?: string;       // outer integral lower bound
+  outer_upper?: string;       // outer integral upper bound
   method?: string;            // hint: 'substitution', 'by_parts', 'partial_fractions'
 }
 
@@ -280,6 +283,7 @@ export interface ComplexAnalysisParams {
   task: 'residue' | 'contour_integral' | 'poles' | 'laurent' | 'conformal_map' | 'analytic_check';
   point?: string;             // singularity point
   contour?: string;           // description of contour
+  contour_radius?: string;    // radius for circular contour (default: include all poles)
 }
 
 export interface AlgebraicGeometryParams {
