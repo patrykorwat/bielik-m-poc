@@ -1355,7 +1355,10 @@ async function handleToolCall(name: string, args: any): Promise<string> {
     switch (name) {
       case "sympy_calculate": {
         // Check if expression is multi-line code or single expression
-        let expression = args.expression.trim();
+        if (!args.expression && !args.code) {
+          return "Error: No expression or code provided to sympy_calculate";
+        }
+        let expression = (args.expression || args.code || '').trim();
 
         if (expression.includes('\n') || expression.startsWith('from ')) {
           // Multi-line script — use comprehensive sanitization + retry
