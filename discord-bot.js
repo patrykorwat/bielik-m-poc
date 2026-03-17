@@ -427,7 +427,11 @@ client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   if (message.channelId !== DISCORD_CHANNEL_ID) return;
 
-  const problem = message.content.trim();
+  // Only respond when the bot is mentioned
+  if (!message.mentions.has(client.user)) return;
+
+  // Strip the mention from the message to get the actual problem
+  const problem = message.content.replace(/<@!?\d+>/g, '').trim();
   if (!problem) return;
 
   console.log(`[discord-bot] Received: ${problem.slice(0, 100)}`);
