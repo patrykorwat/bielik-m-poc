@@ -41,6 +41,10 @@ System przetwarza zadanie przez wieloetapowy pipeline:
 ```
 Pytanie użytkownika
       │
+      ├─→ 🎯 Lean Prover (TYLKO dla zadań-dowodów, opcjonalny)
+      │   Próbuje udowodnić formalnie — jeśli się uda, kończy pipeline
+      │   Jeśli nie, spada do normalnego pipeline ↓
+      │
       ▼
  📚 RAG Service  ──────────────────────────────────────────────────┐
  (port 3003)                                                        │
@@ -65,6 +69,11 @@ Pytanie użytkownika
                 ▼
          🤖 Agent Podsumowujący
          (wyjaśnienie krok po kroku)
+                │
+                ▼
+         🎯 Lean Verifier (Agent 4, opcjonalny)
+         Formalizuje i weryfikuje dowód przez Lean 4
+         (tylko gdy backend = 'lean' lub 'both')
 ```
 
 **RAG** jest używany dwukrotnie:
