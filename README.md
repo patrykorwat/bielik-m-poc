@@ -82,6 +82,17 @@ Pytanie użytkownika
 
 Przy zadaniach kombinatorycznych wynik jest dodatkowo **weryfikowany brute-force** (przez wyliczenie wszystkich przypadków w Python) bez udziału LLM.
 
+**Lean Verifier (Agent 4)** działa dwuetapowo:
+1. **Formalizacja** — LLM tłumaczy rozwiązanie Agenta Podsumowującego na kod Lean 4 (prompt `formalizer_lean`)
+2. **Weryfikacja** — kod Lean jest wysyłany do Lean Proxy (port 3002), który sprawdza poprawność formalną przez `lean --run`
+
+Wynik weryfikacji jest dołączany do odpowiedzi:
+- `✅ Rozwiązanie zweryfikowane przez Lean Prover` — dowód kompiluje się poprawnie
+- `⚠️ Lean wykrył problemy` — kod Lean zawiera błędy logiczne lub typowe
+- `❌ Błąd weryfikacji` — Lean Proxy niedostępny lub timeout
+
+Agent 4 jest aktywowany tylko gdy: backend = `lean` lub `both`, Lean Proxy odpowiada na porcie 3002, i problem należy do typów wymagających dowodu (monotoniczność, indukcja, twierdzenia geometryczne).
+
 ### 🔧 Możliwości systemu
 
 **Obliczenia symboliczne (SymPy)**:
