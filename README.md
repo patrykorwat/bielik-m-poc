@@ -71,9 +71,9 @@ Pytanie użytkownika
          (wyjaśnienie krok po kroku)
                 │
                 ▼
-         🎯 Lean Verifier (Agent 4, opcjonalny)
+         🎯 Lean Verifier (Agent 4, wymagany)
          Formalizuje i weryfikuje dowód przez Lean 4
-         (tylko gdy backend = 'lean' lub 'both')
+         (backend = 'lean' lub 'both' — brak Lean = błąd przy starcie)
 ```
 
 **RAG** jest używany dwukrotnie:
@@ -89,12 +89,12 @@ Przy zadaniach kombinatorycznych wynik jest dodatkowo **weryfikowany brute-force
 Wynik weryfikacji jest dołączany do odpowiedzi:
 - `✅ Rozwiązanie zweryfikowane przez Lean Prover` — dowód kompiluje się poprawnie
 - `⚠️ Lean wykrył problemy` — kod Lean zawiera błędy logiczne lub typowe
-- `❌ Błąd weryfikacji` — Lean Proxy niedostępny lub timeout
 
-Agent 4 jest aktywowany gdy spełnione są wszystkie trzy warunki:
-- backend = `lean` lub `both` (domyślnie `both` — weryfikacja jest **domyślnie włączona**)
-- Lean Proxy odpowiada na porcie 3002 (tj. Lean 4 jest zainstalowany — jeśli nie, weryfikacja cicho odpada)
+Agent 4 jest aktywowany gdy:
+- backend = `lean` lub `both` (domyślnie `both`)
 - problem należy do typów wymagających dowodu (monotoniczność, indukcja, twierdzenia geometryczne)
+
+> **Uwaga:** Lean Proxy jest **wymagany** przy backendzie `lean` lub `both`. Jeśli Lean 4 nie jest zainstalowany lub proxy nie działa na porcie 3002, aplikacja zwróci błąd przy starcie (`Lean Prover niedostępny — uruchom Lean Proxy na porcie 3002`). Użyj backendu `sympy` aby pominąć weryfikację formalną.
 
 ### 🔧 Możliwości systemu
 
@@ -186,7 +186,7 @@ Otwórz [http://localhost:5173](http://localhost:5173) i zacznij rozwiązywać z
 - Python 3.8+ (dla SymPy)
 - **Dla Claude**: Klucz API Anthropic
 - **Dla MLX**: Mac z Apple Silicon (M1/M2/M3/M4)
-- **Dla Lean** (opcjonalnie): Lean 4 (dla weryfikacji formalnej)
+- **Dla Lean** (wymagane przy backendzie `lean`/`both`): Lean 4 — bez niego aplikacja nie wystartuje; użyj backendu `sympy` aby pominąć
 
 ### Instalacja
 
@@ -335,7 +335,7 @@ bielik-m-poc/
 - **Bielik 11B** - Polski model LLM
 - **SymPy** - Obliczenia symboliczne
 - **FastAPI + scikit-learn** - RAG Service (TF-IDF retrieval)
-- **Lean Prover** - Weryfikacja dowodów (opcjonalnie)
+- **Lean Prover** - Weryfikacja dowodów (wymagana przy backendzie `lean`/`both`)
 - **MCP** - Model Context Protocol
 
 ## 📚 Dokumentacja

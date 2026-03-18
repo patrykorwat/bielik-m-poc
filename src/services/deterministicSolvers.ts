@@ -1776,6 +1776,21 @@ print("ODPOWIEDZ: TODO - graph theory")
 `;
 }
 
+function extractMathExpr(description: string): string | null {
+  // Strip Polish question words and extract the math part
+  const stripped = description
+    .replace(/ile\s+(to|wynosi|jest)/gi, '')
+    .replace(/oblicz|wylicz|co\s+to\s+jest|jaki\s+jest\s+wynik/gi, '')
+    .trim();
+  // Match a standalone math expression: digits, operators, parens, dots
+  const m = stripped.match(/^[\d\s+\-*/^().]+$/);
+  if (m) {
+    const expr = m[0].trim().replace(/\^/g, '**');
+    if (/\d/.test(expr) && /[+\-*/]/.test(expr)) return expr;
+  }
+  return null;
+}
+
 function solveGeneral(p: GeneralParams): string {
   if (p.sympy_code) {
     return p.sympy_code;
@@ -1785,6 +1800,16 @@ function solveGeneral(p: GeneralParams): string {
 x = symbols('x', real=True)
 wynik = simplify(${p.expression})
 print("ODPOWIEDZ:", wynik)
+`;
+  }
+  const mathExpr = extractMathExpr(p.description || '');
+  if (mathExpr) {
+    return `from sympy import *
+try:
+    wynik = sympify("${mathExpr}")
+    print("ODPOWIEDZ:", wynik)
+except Exception as e:
+    print("ODPOWIEDZ: TODO")
 `;
   }
   return `from sympy import *
