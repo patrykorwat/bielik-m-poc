@@ -271,17 +271,10 @@ function App() {
       // Connect to Lean Prover
       if (proverBackend === 'lean' || proverBackend === 'both') {
         console.log('Connecting to Lean proxy...');
-        try {
-          await orchestratorRef.current.connectLean(LEAN_PROXY_URL);
-          const backendInfo = orchestratorRef.current.getBackendInfo();
-          setLeanConnected(backendInfo.leanConnected);
-          console.log('Lean connected successfully');
-        } catch (error) {
-          console.warn('Lean connection failed:', error);
-          if (proverBackend === 'lean') {
-            throw error;
-          }
-        }
+        await orchestratorRef.current.connectLean(LEAN_PROXY_URL);
+        const backendInfo = orchestratorRef.current.getBackendInfo();
+        setLeanConnected(backendInfo.leanConnected);
+        console.log('Lean connected successfully');
       }
 
       // Create new chat session

@@ -91,7 +91,10 @@ Wynik weryfikacji jest dołączany do odpowiedzi:
 - `⚠️ Lean wykrył problemy` — kod Lean zawiera błędy logiczne lub typowe
 - `❌ Błąd weryfikacji` — Lean Proxy niedostępny lub timeout
 
-Agent 4 jest aktywowany tylko gdy: backend = `lean` lub `both`, Lean Proxy odpowiada na porcie 3002, i problem należy do typów wymagających dowodu (monotoniczność, indukcja, twierdzenia geometryczne).
+Agent 4 jest aktywowany gdy spełnione są wszystkie trzy warunki:
+- backend = `lean` lub `both` (domyślnie `both` — weryfikacja jest **domyślnie włączona**)
+- Lean Proxy odpowiada na porcie 3002 (tj. Lean 4 jest zainstalowany — jeśli nie, weryfikacja cicho odpada)
+- problem należy do typów wymagających dowodu (monotoniczność, indukcja, twierdzenia geometryczne)
 
 ### 🔧 Możliwości systemu
 

@@ -124,7 +124,7 @@ export class ThreeAgentOrchestrator {
   }
 
   /**
-   * Connect to Lean Prover backend (optional — for verification only)
+   * Connect to Lean Prover backend (required — verification is mandatory)
    */
   async connectLean(proxyUrl: string = 'http://localhost:3002'): Promise<void> {
     if (this.proverBackend === 'sympy') {
@@ -132,23 +132,17 @@ export class ThreeAgentOrchestrator {
       return;
     }
 
-    try {
-      if (!this.leanClient) {
-        this.leanClient = new LeanProverServiceBrowser(proxyUrl);
-      }
-
-      const available = await this.leanClient.isAvailable();
-      this.leanAvailable = available;
-
-      if (available) {
-        console.log('🎯 Lean Prover available (will be used for verification)');
-      } else {
-        console.warn('⚠️ Lean Prover not available — verification disabled');
-      }
-    } catch (error) {
-      console.warn('Lean Prover not available:', error);
-      this.leanAvailable = false;
+    if (!this.leanClient) {
+      this.leanClient = new LeanProverServiceBrowser(proxyUrl);
     }
+
+    const available = await this.leanClient.isAvailable();
+    if (!available) {
+      throw new Error('Lean Prover niedostępny — uruchom Lean Proxy na porcie 3002 (./start.sh)');
+    }
+
+    this.leanAvailable = true;
+    console.log('🎯 Lean Prover available (will be used for verification)');
   }
 
   /**
