@@ -36,12 +36,42 @@ Zaawansowany asystent matematyczny oparty na polskim modelu AI Bielik, wyposażo
 
 ### 🎯 Jak działa?
 
-System wykorzystuje **cztery wyspecjalizowane komponenty**:
+System przetwarza zadanie przez wieloetapowy pipeline:
 
-- **📚 Baza Wiedzy (RAG)** - Wyszukuje relevantne metody matematyczne i podobne zadania maturalne z bazy wiedzy
-- **🧠 Agent Analityczny** - Analizuje zadanie i przedstawia szczegółowy plan rozwiązania wykorzystując kontekst z bazy wiedzy
-- **⚡ Agent Wykonawczy** - Wykonuje obliczenia SymPy z komentarzami wyjaśniającymi każdy krok lub tworzy formalne dowody
-- **🤖 Agent Podsumowujący** - Przedstawia rozwiązanie krok po kroku, wyjaśniając proces rozumowania
+```
+Pytanie użytkownika
+      │
+      ▼
+ 📚 RAG Service  ──────────────────────────────────────────────────┐
+ (port 3003)                                                        │
+ Wyszukuje metodę + podobne zadania (TF-IDF)                       │
+      │                                                             │
+      ▼                                                   kontekst RAG
+ 🔪 Dekompozycja (opcjonalna, zadania złożone)                     │
+ Rozbija problem na 2-4 pod-zadania z formułami SymPy              │
+      │                                                             │
+      ▼                                                             │
+ 🗂️ Klasyfikator ─── typ zadania (równanie/geometria/...)          │
+      │                                                             │
+      ├─→ Deterministyczny solver (bez LLM!) ◄────────────────────┘
+      │   (równania, pochodne, całki — bezpośrednio przez SymPy)
+      │
+      ├─→ Chain ekstrakcji (LLM → kod SymPy → wynik)
+      │
+      ├─→ Multi-step chain (LLM wielokrokowy)
+      │
+      └─→ Agent Analityczny + Agent Wykonawczy (fallback)
+                │
+                ▼
+         🤖 Agent Podsumowujący
+         (wyjaśnienie krok po kroku)
+```
+
+**RAG** jest używany dwukrotnie:
+1. **Przed analizą** — kontekst metody matematycznej trafia do promptu Agenta Analitycznego
+2. **Przy generowaniu kodu** — wskazówki SymPy z RAG są wstrzykiwane do promptu Agenta Wykonawczego
+
+Przy zadaniach kombinatorycznych wynik jest dodatkowo **weryfikowany brute-force** (przez wyliczenie wszystkich przypadków w Python) bez udziału LLM.
 
 ### 🔧 Możliwości systemu
 
@@ -250,42 +280,29 @@ System ma dostęp do **9 narzędzi matematycznych**:
 
 ## 🏗️ Architektura
 
-### Przepływ pracy
-
-```
-1. Wpisujesz zadanie maturalne
-   ↓
-2. RAG Service wyszukuje relevantne metody i podobne zadania
-   ↓
-3. Agent Analityczny rozbija problem na kroki (z kontekstem RAG)
-   ↓
-4. Agent Wykonawczy oblicza używając SymPy (z komentarzami)
-   ↓
-5. Agent Podsumowujący wyjaśnia rozwiązanie krok po kroku
-   ↓
-6. Widzisz pełne rozwiązanie z uzasadnieniem
-```
-
 ### Struktura projektu
 
 ```
 bielik-m-poc/
-├── src/
-│   ├── services/
-│   │   ├── threeAgentSystem.ts      # System trzech agentów
-│   │   ├── ragService.ts             # RAG Service client
-│   │   ├── mcpClientBrowser.ts      # Klient MCP
-│   │   └── mlxAgent.ts               # Agent MLX
-│   ├── components/                   # Komponenty UI
-│   └── App.tsx                       # Główna aplikacja
-├── mcp-sympy-server/                # Serwer SymPy
-├── rag_service/                      # RAG Service (baza wiedzy)
-│   ├── main.py                      # FastAPI server
-│   ├── indexer.py                   # TF-IDF indexer
-│   └── data/                        # Dane źródłowe
-├── prompts.json                      # Prompty dla agentów
-├── start.sh / start.bat             # Uruchamianie
-└── setup.sh / setup.bat             # Instalacja
+├── src/services/
+│   ├── threeAgentSystem.ts      # Orkiestrator — główna pętla pipeline'a
+│   ├── problemDecomposer.ts     # Dekompozycja złożonych zadań (Divide & Conquer)
+│   ├── classifierService.ts     # Klasyfikacja typu zadania
+│   ├── solverRouter.ts          # Router do deterministycznych solverów
+│   ├── multiStepChain.ts        # Chain ekstrakcji kodu SymPy
+│   ├── ragService.ts            # Klient RAG Service (port 3003)
+│   ├── mlxAgent.ts              # Agent LLM (MLX/Ollama/zdalne API)
+│   └── mcpClientBrowser.ts      # Klient MCP (wywołania SymPy)
+├── mcp-proxy-server.js          # Proxy: SymPy + CORS proxy dla zdalnych LLM
+├── mcp-sympy-server/            # Serwer SymPy (MCP)
+├── rag_service/                 # Baza wiedzy (FastAPI + TF-IDF)
+│   ├── main.py                  # FastAPI server
+│   ├── indexer.py               # Indeksowanie TF-IDF
+│   └── data/                    # Metody i zadania z informatora CKE
+├── datasets/                    # Zadania maturalne CKE (JSON)
+├── test-dataset.py              # Testowanie na zestawach maturalnych
+├── prompts.json                 # Prompty dla agentów
+└── start.sh                     # Uruchamianie (wspiera --api-key, --api-url, --mlx)
 ```
 
 ## 🛠️ Technologie
