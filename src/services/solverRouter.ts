@@ -100,6 +100,16 @@ export async function routeAndSolve(
       'See computation above',
       'Unsupported',
     ];
+
+    // Detect empty/meaningless answers like "ODPOWIEDZ: []", "ODPOWIEDZ: {}", "ODPOWIEDZ: None", "ODPOWIEDZ: "
+    const emptyAnswerPatterns = [
+      /ODPOWIEDZ:\s*\[\s*\]/i,
+      /ODPOWIEDZ:\s*\{\s*\}/i,
+      /ODPOWIEDZ:\s*None\s*$/im,
+      /ODPOWIEDZ:\s*EmptySet/i,
+      /ODPOWIEDZ:\s*$/im,
+    ];
+    const hasEmptyAnswer = emptyAnswerPatterns.some(p => p.test(output));
     const hasOutputGarbage = garbageOutputPatterns.some(p => output.includes(p));
 
     // Also check the generated code for signs the solver produced nonsense
@@ -111,6 +121,24 @@ export async function routeAndSolve(
       'print("ODPOWIEDZ: TODO"',
       "print('ODPOWIEDZ: TODO'",
     ];
+
+    // Detect when executor solves for a variable not present in the equation
+    // e.g. solve(Eq(x - y - 2, 0), r) where r is not in the equation
+    const solveForWrongVar = code.match(/solve\s*\(\s*(?:Eq\s*\()?([^)]+)\)\s*,\s*(\w+)/);
+    if (solveForWrongVar) {
+      const eqPart = solveForWrongVar[1];
+      const solveVar = solveForWrongVar[2];
+      // If the variable being solved for doesn't appear in the equation expression
+      if (!eqPart.includes(solveVar)) {
+        return {
+          code,
+          output,
+          solverType: classification.type,
+          success: false,
+          error: `Solver solved for '${solveVar}' which is not in the equation`,
+        };
+      }
+    }
     const hasCodeGarbage = garbageCodePatterns.some(p => code.includes(p));
 
     const isError = result.isError ||
@@ -120,7 +148,8 @@ export async function routeAndSolve(
       output.includes('NameError') ||
       output.includes('TypeError') ||
       hasOutputGarbage ||
-      hasCodeGarbage;
+      hasCodeGarbage ||
+      hasEmptyAnswer;
 
     if (isError) {
       return {
