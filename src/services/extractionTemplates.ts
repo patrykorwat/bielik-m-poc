@@ -1700,6 +1700,55 @@ ${task === 'surface_area' ? 'print("Pole powierzchni:", Sp)\nprint("ODPOWIEDZ:",
 };
 
 // ============================================================
+// Template: Trigonometric expression evaluation
+// Covers: "cos(165°) - sin(165°)", "oblicz wartość wyrażenia trygonometrycznego"
+// ============================================================
+
+const trigExpressionEval: ExtractionTemplate = {
+  id: 'trig_expression_eval',
+  name: 'Obliczanie wyrażenia trygonometrycznego',
+  description: 'Obliczanie wartości wyrażeń z cos, sin, tan dla konkretnych kątów w stopniach.',
+  extractionPrompt: `Wyodrębnij wyrażenie trygonometryczne z zadania. Odpowiedz TYLKO JSON:
+{
+  "expression": "<wyrażenie w składni SymPy z kątami w rad(), np. cos(rad(165)) - sin(rad(165))>"
+}
+UWAGA: Kąty w stopniach zamień na radiany: cos(165°) = cos(rad(165)). Użyj rad() a nie pi/180.`,
+  buildCode: (v, mcOptions) => {
+    const expr = v.expression || 'cos(rad(165)) - sin(rad(165))';
+
+    let mcBlock = '';
+    if (mcOptions && Object.keys(mcOptions).length > 0) {
+      const entries = Object.entries(mcOptions)
+        .map(([k, val]) => `    '${k}': ${val}`)
+        .join(',\n');
+      mcBlock = `
+opcje = {
+${entries}
+}
+for lit, val in opcje.items():
+    try:
+        if abs(float(N(wynik)) - float(N(val))) < 1e-9:
+            print(f"ODPOWIEDZ: {lit}")
+            break
+    except:
+        if simplify(wynik - val) == 0:
+            print(f"ODPOWIEDZ: {lit}")
+            break
+else:
+    print("ODPOWIEDZ:", wynik)
+`;
+    }
+
+    return `from sympy import *
+wynik = simplify(${expr})
+print("Wartosc:", wynik, "=", N(wynik))
+${mcBlock || 'print("ODPOWIEDZ:", wynik)'}
+`;
+  },
+  keywords: ['cos', 'sin', 'tan', 'różnica', 'roznica', 'suma', 'wartość', 'wartosc', '°', 'stopni', 'równa', 'rowna'],
+};
+
+// ============================================================
 // Registry of all templates
 // ============================================================
 
@@ -1747,6 +1796,7 @@ export const EXTRACTION_TEMPLATES: ExtractionTemplate[] = [
   systemOfEquations,
   functionDomain,
   solidVolume,
+  trigExpressionEval,
 ];
 
 // ============================================================

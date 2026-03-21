@@ -92,15 +92,26 @@ export async function routeAndSolve(
       }
     }
 
-    // Step 6: Check for errors or garbage output
-    const garbagePatterns = [
+    // Step 6: Check for errors or garbage output/code
+    const garbageOutputPatterns = [
       'Nieobslugiwane',
       'TODO',
       'undefined',
       'See computation above',
       'Unsupported',
     ];
-    const hasGarbage = garbagePatterns.some(p => output.includes(p));
+    const hasOutputGarbage = garbageOutputPatterns.some(p => output.includes(p));
+
+    // Also check the generated code for signs the solver produced nonsense
+    const garbageCodePatterns = [
+      "symbols('undefined'",
+      'symbols("undefined"',
+      "= undefined",
+      'f = undefined',
+      'print("ODPOWIEDZ: TODO"',
+      "print('ODPOWIEDZ: TODO'",
+    ];
+    const hasCodeGarbage = garbageCodePatterns.some(p => code.includes(p));
 
     const isError = result.isError ||
       output.includes('Traceback') ||
@@ -108,7 +119,8 @@ export async function routeAndSolve(
       output.includes('SyntaxError') ||
       output.includes('NameError') ||
       output.includes('TypeError') ||
-      hasGarbage;
+      hasOutputGarbage ||
+      hasCodeGarbage;
 
     if (isError) {
       return {
