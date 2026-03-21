@@ -82,8 +82,8 @@ function App() {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const [mcpConnected, setMcpConnected] = useState(false);
-  const [leanConnected, setLeanConnected] = useState(false);
+  const [, setMcpConnected] = useState(false);
+  const [, setLeanConnected] = useState(false);
 
   const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
