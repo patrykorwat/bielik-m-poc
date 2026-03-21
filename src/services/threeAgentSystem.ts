@@ -2583,6 +2583,95 @@ ${result.error || ''}`;
     throw lastError;
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // Input Guardrail — validates user input before processing
+  // ═══════════════════════════════════════════════════════════════════
+
+  private static readonly INPUT_MAX_LENGTH = 2000;
+  private static readonly INPUT_MIN_LENGTH = 3;
+
+  private static readonly PROMPT_INJECTION_PATTERNS = [
+    /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?|rules?)/i,
+    /forget\s+(all\s+)?(your\s+)?(instructions?|prompts?|rules?)/i,
+    /you\s+are\s+now\s+(a|an)\b/i,
+    /zapomnij\s+(wszystkie\s+)?(instrukcje|polecenia|zasady)/i,
+    /ignoruj\s+(wszystkie\s+)?(poprzednie\s+)?(instrukcje|polecenia|zasady)/i,
+    /jestes\s+teraz\b/i,
+    /system\s*prompt/i,
+    /\bDAN\s*mode\b/i,
+    /\bjailbreak\b/i,
+    /act\s+as\s+(a\s+)?(?!math|calculator|tutor)/i,
+    /pretend\s+(you\s+are|to\s+be)\b/i,
+  ];
+
+  private validateInputRules(message: string): { valid: boolean; reason?: string } {
+    const trimmed = message.trim();
+
+    if (trimmed.length < ThreeAgentOrchestrator.INPUT_MIN_LENGTH) {
+      return { valid: false, reason: 'Wiadomość jest zbyt krótka. Wpisz treść zadania matematycznego.' };
+    }
+
+    if (trimmed.length > ThreeAgentOrchestrator.INPUT_MAX_LENGTH) {
+      return { valid: false, reason: `Wiadomość jest zbyt długa (${trimmed.length} znaków, limit: ${ThreeAgentOrchestrator.INPUT_MAX_LENGTH}). Skróć treść zadania.` };
+    }
+
+    for (const pattern of ThreeAgentOrchestrator.PROMPT_INJECTION_PATTERNS) {
+      if (pattern.test(trimmed)) {
+        return { valid: false, reason: 'Jestem asystentem matematycznym. Mogę pomóc tylko z zadaniami z matematyki i nauk ścisłych.' };
+      }
+    }
+
+    return { valid: true };
+  }
+
+  private async validateInputLLM(message: string): Promise<{ valid: boolean; reason?: string }> {
+    const guardrailPrompt = (prompts as any).guardrail;
+    if (!guardrailPrompt) {
+      return { valid: true }; // fail-open: no guardrail prompt configured
+    }
+
+    try {
+      const agentConfig = (prompts as any).agents?.guardrail || {};
+      const response = await this.llmAgent.execute(
+        guardrailPrompt,
+        [{ role: 'user', content: message }],
+        {
+          maxTokens: agentConfig.max_tokens || 50,
+          temperature: agentConfig.temperature || 0.1,
+        }
+      );
+
+      const cleaned = response.replace(/<think>[\s\S]*?<\/think>/g, '').trim().toUpperCase();
+      if (cleaned.includes('NIE')) {
+        return { valid: false, reason: 'To nie wygląda na zadanie matematyczne. Mogę pomóc tylko z zadaniami z matematyki i nauk ścisłych.' };
+      }
+
+      return { valid: true }; // TAK or unrecognized → pass (fail-open)
+    } catch (err) {
+      console.warn('⚠️ Guardrail LLM check failed (fail-open):', err);
+      return { valid: true }; // fail-open
+    }
+  }
+
+  async validateInput(message: string): Promise<{ valid: boolean; reason?: string }> {
+    // Layer 1: Rule-based checks (fast, no LLM)
+    const rulesResult = this.validateInputRules(message);
+    if (!rulesResult.valid) {
+      console.log(`🛡️ Guardrail (rules): BLOCKED — ${rulesResult.reason}`);
+      return rulesResult;
+    }
+
+    // Layer 2: LLM-based check (lightweight)
+    const llmResult = await this.validateInputLLM(message);
+    if (!llmResult.valid) {
+      console.log(`🛡️ Guardrail (LLM): BLOCKED — ${llmResult.reason}`);
+      return llmResult;
+    }
+
+    console.log('🛡️ Guardrail: PASSED');
+    return { valid: true };
+  }
+
   /**
    * Process a user message through the full pipeline.
    *
@@ -2623,6 +2712,24 @@ ${result.error || ''}`;
     if (onMessageCallback) onMessageCallback(userMsg);
 
     const newMessages: Message[] = [userMsg];
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Input Guardrail — validate before expensive pipeline steps
+    // ═══════════════════════════════════════════════════════════════════
+    const guardrailResult = await this.validateInput(userMessage);
+    if (!guardrailResult.valid) {
+      const blockedMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: guardrailResult.reason || 'Mogę pomóc tylko z zadaniami z matematyki i nauk ścisłych.',
+        agentName: '🛡️ Guardrail',
+        timestamp: new Date(),
+      };
+      this.conversationHistory.push(blockedMsg);
+      newMessages.push(blockedMsg);
+      if (onMessageCallback) onMessageCallback(blockedMsg);
+      return newMessages;
+    }
 
     // Check if problem might benefit from Lean verification (doesn't affect solving)
     const shouldVerify = this.couldBenefitFromVerification(userMessage)
