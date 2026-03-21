@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Dataset test harness for bielik-m-poc multi-agent system.
+Dataset test harness for Formulo multi-agent system.
 Thin harness — all code sanitization, error fixing, and retry logic
 lives in the production MCP SymPy server. This script only handles:
   - LLM API calls (direct to model endpoint)
@@ -3969,7 +3969,7 @@ def test_question_hybrid(q, base_url, model, verbose=True, api_key=None):
 # ── Main ─────────────────────────────────────────────────────────────────
 
 def main():
-    parser = argparse.ArgumentParser(description="Test bielik-m-poc across matura datasets")
+    parser = argparse.ArgumentParser(description="Test Formulo across matura datasets")
     parser.add_argument("--port", type=int, default=DEFAULT_PORT)
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL)
     parser.add_argument("--year", type=str, default="2024",
@@ -4031,7 +4031,7 @@ def main():
         levels = ["rozszerzona", "podstawowa"]  # extended first
 
     print("=" * 70)
-    print("BIELIK-M-POC DATASET TESTER")
+    print("FORMULO DATASET TESTER")
     print("=" * 70)
     print(f"Server:  {base_url}")
     print(f"Model:   {args.model}")

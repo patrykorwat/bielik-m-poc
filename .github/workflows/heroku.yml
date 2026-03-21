@@ -22,5 +22,5 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          git remote add heroku https://heroku:${HEROKU_API_KEY}@git.heroku.com/bielik-matura.git
+          git remote add heroku https://heroku:${HEROKU_API_KEY}@git.heroku.com/formulo.git
           git push heroku main -f

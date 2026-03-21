@@ -1,4 +1,4 @@
-# 🎓 Bielik Matura - Asystent Matematyczny
+# 🎓 Formulo - Asystent Matematyczny
 
 **Twój pomocnik w przygotowaniach do matury z matematyki rozszerzonej**
 
@@ -8,7 +8,7 @@ Zaawansowany asystent matematyczny oparty na polskim modelu AI Bielik, wyposażo
 
 ![zadanie](zadanie.png)
 
-**Bielik Matura** to aplikacja stworzona z myślą o maturzystach przygotowujących się do egzaminu z matematyki na poziomie rozszerzonym. System został zaprojektowany w oparciu o analizę Informatora Maturalnego CKE i obejmuje wszystkie kluczowe obszary tematyczne:
+**Formulo** to aplikacja stworzona z myślą o maturzystach przygotowujących się do egzaminu z matematyki na poziomie rozszerzonym. System został zaprojektowany w oparciu o analizę Informatora Maturalnego CKE i obejmuje wszystkie kluczowe obszary tematyczne:
 
 ### 📊 Zakres tematyczny (zgodny z Informatorami CKE)
 
@@ -162,16 +162,16 @@ Na podstawie analizy egzaminów maturalnych:
 
 **Linux/macOS:**
 ```bash
-git clone https://github.com/yourusername/bielik-m-poc.git
-cd bielik-m-poc
+git clone https://github.com/yourusername/formulo.git
+cd formulo
 ./setup.sh    # Instalacja wszystkiego
 ./start.sh    # Uruchomienie aplikacji
 ```
 
 **Windows:**
 ```cmd
-git clone https://github.com/yourusername/bielik-m-poc.git
-cd bielik-m-poc
+git clone https://github.com/yourusername/formulo.git
+cd formulo
 setup.bat     # Instalacja wszystkiego
 start.bat     # Uruchomienie aplikacji
 ```
@@ -194,16 +194,16 @@ Otwórz [http://localhost:5173](http://localhost:5173) i zacznij rozwiązywać z
 
 **Linux/macOS:**
 ```bash
-git clone https://github.com/yourusername/bielik-m-poc.git
-cd bielik-m-poc
+git clone https://github.com/yourusername/formulo.git
+cd formulo
 chmod +x setup.sh
 ./setup.sh
 ```
 
 **Windows:**
 ```cmd
-git clone https://github.com/yourusername/bielik-m-poc.git
-cd bielik-m-poc
+git clone https://github.com/yourusername/formulo.git
+cd formulo
 setup.bat
 ```
 
@@ -306,7 +306,7 @@ System ma dostęp do **9 narzędzi matematycznych**:
 ### Struktura projektu
 
 ```
-bielik-m-poc/
+formulo/
 ├── src/services/
 │   ├── threeAgentSystem.ts      # Orkiestrator — główna pętla pipeline'a
 │   ├── problemDecomposer.ts     # Dekompozycja złożonych zadań (Divide & Conquer)
@@ -373,7 +373,7 @@ Zachęcamy do zgłaszania issues i pull requestów!
 - **Rodzaje**: Krótkie odpowiedzi (2-3 pkt) i rozszerzone (4-6 pkt)
 - **Dozwolone**: Kalkulator prosty, linijka, cyrkiel, tablice wzorów
 
-## 🎯 Dlaczego Bielik Matura?
+## 🎯 Dlaczego Formulo?
 
 ✅ **Pokazuje proces myślowy** - Nie tylko odpowiedź, ale i rozumowanie
 ✅ **Uczci sposób** - Pomaga zrozumieć, nie tylko przepisać

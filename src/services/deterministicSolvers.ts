@@ -144,6 +144,16 @@ function solveDerivative(p: DerivativeParams): string {
       lines.push(`print("Punkty krytyczne:", critical)`);
       lines.push(`print("ODPOWIEDZ:", critical)`);
       break;
+    default:
+      // Default: compute derivative
+      lines.push(`fp = diff(f, ${p.variable})`);
+      if (p.point) {
+        lines.push(`wynik = fp.subs(${p.variable}, ${p.point})`);
+      } else {
+        lines.push(`wynik = fp`);
+      }
+      lines.push(`print("ODPOWIEDZ:", wynik)`);
+      break;
   }
   return lines.join('\n');
 }
@@ -184,6 +194,11 @@ function solvePolynomialRoots(p: PolynomialRootsParams): string {
     case 'remainder':
       lines.push(`q, rem = div(Poly(expr, ${p.variable}), Poly(${p.variable} - (${p.eval_point}), ${p.variable}))`);
       lines.push(`print("ODPOWIEDZ:", rem.as_expr())`);
+      break;
+    default:
+      // Default: solve for roots
+      lines.push(`wynik = solve(expr, ${p.variable})`);
+      lines.push(`print("ODPOWIEDZ:", wynik)`);
       break;
   }
   return lines.join('\n');
@@ -348,6 +363,10 @@ function solveSequenceArithmetic(p: SequenceArithmeticParams): string {
     case 'find_n':
       lines.push(`wynik = _n`);
       break;
+    default:
+      // Default: compute nth term
+      lines.push(`wynik = _a1 + (_n - 1)*_d`);
+      break;
   }
 
   lines.push(`print("ODPOWIEDZ:", wynik)`);
@@ -431,6 +450,10 @@ function solveSequenceGeometric(p: SequenceGeometricParams): string {
         lines.push(`# decay_threshold requires initial_value, threshold, and q`);
         lines.push(`wynik = 0`);
       }
+      break;
+    default:
+      // Default: compute nth term
+      lines.push(`wynik = _a1 * _q**(_n - 1)`);
       break;
   }
 
@@ -577,6 +600,10 @@ function solveSimplification(p: SimplificationParams): string {
     case 'compare':
       lines.push(`wynik = expr`);
       break;
+    default:
+      // Default: simplify
+      lines.push(`wynik = simplify(expr)`);
+      break;
   }
 
   lines.push(`print("ODPOWIEDZ:", wynik)`);
@@ -648,6 +675,14 @@ function solveGeometryAnalytic(p: GeometryAnalyticParams): string {
       lines.push(`# Complex geometry — using description-driven approach`);
       if (p.description) {
         lines.push(`wynik = "See computation above"`);
+      }
+      break;
+    default:
+      // Default: try distance if 2+ points, else describe
+      if (points && points.length >= 2) {
+        lines.push(`wynik = ${points[0].name}.distance(${points[1].name})`);
+      } else {
+        lines.push(`wynik = "Nieobslugiwane zadanie geometryczne"`);
       }
       break;
   }
@@ -943,6 +978,10 @@ function solveFunctionProperties(p: FunctionPropertiesParams): string {
         lines.push(`g = ${p.composition_with}`);
         lines.push(`wynik = simplify(f.subs(${p.variable}, g))`);
       }
+      break;
+    default:
+      // Default: simplify the expression
+      lines.push(`wynik = simplify(f)`);
       break;
   }
 

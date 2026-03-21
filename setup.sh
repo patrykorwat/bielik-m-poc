@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Setup script for Bielik Matura - requires Lean Prover for formal verification
+# Setup script for Formulo - requires Lean Prover for formal verification
 # Automates installation of all dependencies including MANDATORY Lean Prover
 
 set -e  # Exit on error
 
-echo "🎓 Bielik Matura - Setup Script"
+echo "🎓 Formulo - Setup Script"
 echo "==============================="
 echo ""
 

@@ -1,4 +1,4 @@
-"""FastAPI RAG Service dla bielik-m-poc.
+"""FastAPI RAG Service dla Formulo.
 
 Serwis udostępnia wiedzę o metodach matematycznych z matury rozszerzonej
 poprzez TF-IDF retrieval na porcie 3003.
@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Bielik Matura RAG Service",
+    title="Formulo RAG Service",
     description="Lokalna baza wiedzy o metodach matematycznych z matury rozszerzonej",
     version="1.0.0",
     lifespan=lifespan,

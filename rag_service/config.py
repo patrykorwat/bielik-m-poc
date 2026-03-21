@@ -1,4 +1,4 @@
-"""Konfiguracja RAG service dla bielik-m-poc."""
+"""Konfiguracja RAG service dla Formulo."""
 import os
 from pathlib import Path
 

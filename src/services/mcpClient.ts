@@ -163,7 +163,7 @@ export class MCPClient {
       protocolVersion: '2024-11-05',
       capabilities: {},
       clientInfo: {
-        name: 'bielik-m-poc',
+        name: 'formulo',
         version: '1.0.0',
       },
     });

@@ -401,7 +401,7 @@ function App() {
 
       // Add title
       const title = document.createElement('h2');
-      title.textContent = '\u{1F393} Konwersacja - Bielik Matura';
+      title.textContent = '\u{1F393} Konwersacja - Formulo';
       title.style.marginBottom = '20px';
       title.style.color = '#333';
       exportWrapper.appendChild(title);
@@ -744,7 +744,7 @@ function App() {
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1><Icon type="graduation" /> Bielik Matura - Asystent Matematyczny</h1>
+        <h1><Icon type="graduation" /> Formulo - Asystent Matematyczny</h1>
         <div className="header-controls">
           <button onClick={() => setShowHistory(true)} className="history-button">
             <Icon type="books" /> Historia

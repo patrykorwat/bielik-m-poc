@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Discord Bot for Bielik Matura
+ * Discord Bot for Formulo
  *
  * Uses the SAME classifier + deterministic solver pipeline as the web UI.
  * Compiled TS modules are imported from dist-server/.

@@ -105,6 +105,17 @@ function solveDerivative(p) {
             lines.push(`print("Punkty krytyczne:", critical)`);
             lines.push(`print("ODPOWIEDZ:", critical)`);
             break;
+        default:
+            // Default: compute derivative
+            lines.push(`fp = diff(f, ${p.variable})`);
+            if (p.point) {
+                lines.push(`wynik = fp.subs(${p.variable}, ${p.point})`);
+            }
+            else {
+                lines.push(`wynik = fp`);
+            }
+            lines.push(`print("ODPOWIEDZ:", wynik)`);
+            break;
     }
     return lines.join('\n');
 }
@@ -142,6 +153,11 @@ function solvePolynomialRoots(p) {
         case 'remainder':
             lines.push(`q, rem = div(Poly(expr, ${p.variable}), Poly(${p.variable} - (${p.eval_point}), ${p.variable}))`);
             lines.push(`print("ODPOWIEDZ:", rem.as_expr())`);
+            break;
+        default:
+            // Default: solve for roots
+            lines.push(`wynik = solve(expr, ${p.variable})`);
+            lines.push(`print("ODPOWIEDZ:", wynik)`);
             break;
     }
     return lines.join('\n');
@@ -302,6 +318,10 @@ function solveSequenceArithmetic(p) {
         case 'find_n':
             lines.push(`wynik = _n`);
             break;
+        default:
+            // Default: compute nth term
+            lines.push(`wynik = _a1 + (_n - 1)*_d`);
+            break;
     }
     lines.push(`print("ODPOWIEDZ:", wynik)`);
     return lines.join('\n');
@@ -383,6 +403,10 @@ function solveSequenceGeometric(p) {
                 lines.push(`# decay_threshold requires initial_value, threshold, and q`);
                 lines.push(`wynik = 0`);
             }
+            break;
+        default:
+            // Default: compute nth term
+            lines.push(`wynik = _a1 * _q**(_n - 1)`);
             break;
     }
     lines.push(`print("ODPOWIEDZ:", wynik)`);
@@ -522,6 +546,10 @@ function solveSimplification(p) {
         case 'compare':
             lines.push(`wynik = expr`);
             break;
+        default:
+            // Default: simplify
+            lines.push(`wynik = simplify(expr)`);
+            break;
     }
     lines.push(`print("ODPOWIEDZ:", wynik)`);
     return lines.join('\n');
@@ -586,6 +614,15 @@ function solveGeometryAnalytic(p) {
             lines.push(`# Complex geometry — using description-driven approach`);
             if (p.description) {
                 lines.push(`wynik = "See computation above"`);
+            }
+            break;
+        default:
+            // Default: try distance if 2+ points, else describe
+            if (points && points.length >= 2) {
+                lines.push(`wynik = ${points[0].name}.distance(${points[1].name})`);
+            }
+            else {
+                lines.push(`wynik = "Nieobslugiwane zadanie geometryczne"`);
             }
             break;
     }
@@ -871,6 +908,10 @@ function solveFunctionProperties(p) {
                 lines.push(`g = ${p.composition_with}`);
                 lines.push(`wynik = simplify(f.subs(${p.variable}, g))`);
             }
+            break;
+        default:
+            // Default: simplify the expression
+            lines.push(`wynik = simplify(f)`);
             break;
     }
     lines.push(`print("ODPOWIEDZ:", wynik)`);
@@ -1630,6 +1671,21 @@ print("ODPOWIEDZ:", wynik)
 print("ODPOWIEDZ: TODO - graph theory")
 `;
 }
+function extractMathExpr(description) {
+    // Strip Polish question words and extract the math part
+    const stripped = description
+        .replace(/ile\s+(to|wynosi|jest)/gi, '')
+        .replace(/oblicz|wylicz|co\s+to\s+jest|jaki\s+jest\s+wynik/gi, '')
+        .trim();
+    // Match a standalone math expression: digits, operators, parens, dots
+    const m = stripped.match(/^[\d\s+\-*/^().]+$/);
+    if (m) {
+        const expr = m[0].trim().replace(/\^/g, '**');
+        if (/\d/.test(expr) && /[+\-*/]/.test(expr))
+            return expr;
+    }
+    return null;
+}
 function solveGeneral(p) {
     if (p.sympy_code) {
         return p.sympy_code;
@@ -1639,6 +1695,16 @@ function solveGeneral(p) {
 x = symbols('x', real=True)
 wynik = simplify(${p.expression})
 print("ODPOWIEDZ:", wynik)
+`;
+    }
+    const mathExpr = extractMathExpr(p.description || '');
+    if (mathExpr) {
+        return `from sympy import *
+try:
+    wynik = sympify("${mathExpr}")
+    print("ODPOWIEDZ:", wynik)
+except Exception as e:
+    print("ODPOWIEDZ: TODO")
 `;
     }
     return `from sympy import *

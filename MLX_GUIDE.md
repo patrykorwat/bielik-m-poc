@@ -55,7 +55,7 @@ mlx_lm.server --model mlx-community/Bielik-11B-v2.3-Instruct-4bit
 ### Modele duże (13B+) - najlepsza jakość, wymagają 16GB+ RAM
 - `mlx-community/Mixtral-8x7B-Instruct-v0.1-4bit`
 
-## Konfiguracja w Bielik-M
+## Konfiguracja w Formulo
 
 ### W interfejsie użytkownika
 
@@ -168,4 +168,4 @@ mlx_lm.server --model mlx-community/Llama-3.2-3B-Instruct-4bit
 W razie problemów:
 1. Sprawdź logi serwera MLX
 2. Upewnij się, że masz najnowszą wersję MLX
-3. Zgłoś issue na GitHub projektu bielik-m-poc
+3. Zgłoś issue na GitHub projektu formulo

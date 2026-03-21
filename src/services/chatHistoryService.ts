@@ -9,7 +9,7 @@ export interface ChatSession {
   title?: string; // First user message or custom title
 }
 
-const STORAGE_KEY = 'bielik-m-chat-history';
+const STORAGE_KEY = 'formulo-chat-history';
 
 /**
  * Chat History Service - manages conversation persistence
@@ -164,7 +164,7 @@ export class ChatHistoryService {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `bielik-m-${chatId}.json`;
+    link.download = `formulo-${chatId}.json`;
     link.click();
     URL.revokeObjectURL(url);
     console.log(`[ChatHistory] Exported session ${chatId}`);

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Start script for Bielik Matura - REQUIRES Lean Prover
+# Start script for Formulo - REQUIRES Lean Prover
 # Starts all required servers with strict error handling
 #
 # MANDATORY Components:
@@ -87,7 +87,7 @@ if [ "$START_MLX" = false ] && [ -z "$API_URL" ]; then
     API_URL="https://llmlab.plgrid.pl/api"
 fi
 
-echo "🎓 Starting Bielik Matura"
+echo "🎓 Starting Formulo"
 echo "========================="
 echo ""
 

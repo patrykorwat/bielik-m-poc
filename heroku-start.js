@@ -145,7 +145,7 @@ app.get('/health', (req, res) => {
 // ── Static SPA serving ──────────────────────────────────────────────────
 
 const distPath = join(__dirname, 'dist');
-const basePath = '/bielik-m-poc';
+const basePath = '/formulo';
 
 // Redirect root to app
 app.get('/', (req, res) => {

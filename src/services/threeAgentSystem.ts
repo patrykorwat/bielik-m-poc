@@ -2661,7 +2661,7 @@ ${result.error || ''}`;
       return rulesResult;
     }
 
-    // Layer 2: LLM-based check (lightweight)
+    // Layer 2: LLM-based check (is this a math question?)
     const llmResult = await this.validateInputLLM(message);
     if (!llmResult.valid) {
       console.log(`🛡️ Guardrail (LLM): BLOCKED — ${llmResult.reason}`);
