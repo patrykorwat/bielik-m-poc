@@ -3166,8 +3166,10 @@ ${result.error || ''}`;
     // ═══════════════════════════════════════════════════════════════════
     // ALSO TRY EXTRACTION CHAIN even when classifier mode is off
     // (for non-classifier deployments)
+    // Skip if classifier path already produced extraction results
     // ═══════════════════════════════════════════════════════════════════
-    if (this.mcpClient && matchTemplate(userMessage)) {
+    const alreadyHasExtraction = newMessages.some(m => m.agentName?.includes('Ekstrakcyjny'));
+    if (!alreadyHasExtraction && this.mcpClient && matchTemplate(userMessage)) {
       try {
         console.log('\n=== EXTRACTION CHAIN (no classifier) ===');
         const chainResult: ChainResult = await runExtractionChain(
