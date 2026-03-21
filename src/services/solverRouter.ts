@@ -92,13 +92,23 @@ export async function routeAndSolve(
       }
     }
 
-    // Step 6: Check for errors
+    // Step 6: Check for errors or garbage output
+    const garbagePatterns = [
+      'Nieobslugiwane',
+      'TODO',
+      'undefined',
+      'See computation above',
+      'Unsupported',
+    ];
+    const hasGarbage = garbagePatterns.some(p => output.includes(p));
+
     const isError = result.isError ||
       output.includes('Traceback') ||
       output.includes('Error:') ||
       output.includes('SyntaxError') ||
       output.includes('NameError') ||
-      output.includes('TypeError');
+      output.includes('TypeError') ||
+      hasGarbage;
 
     if (isError) {
       return {
