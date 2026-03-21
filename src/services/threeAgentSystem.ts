@@ -2943,32 +2943,33 @@ ${result.error || ''}`;
             }
           }
 
-          // Show solver code and result
-          const solverContent = solverResult.success
-            ? `\`\`\`python\n${solverResult.code}\n\`\`\`\n\n---\n**WYNIKI WYKONANIA:**\n${solverResult.output}`
-            : `\`\`\`python\n${solverResult.code}\n\`\`\`\n\n---\n**BŁĄD:** ${solverResult.error}`;
+          // Only show solver result to the user if it succeeded.
+          // If it failed, try the extraction chain first — don't scare the user with errors.
+          if (solverResult.success) {
+            const solverContent = `\`\`\`python\n${solverResult.code}\n\`\`\`\n\n---\n**WYNIKI WYKONANIA:**\n${solverResult.output}`;
 
-          const solverMsg: Message = {
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: solverContent,
-            agentName: 'Agent Wykonawczy (deterministyczny)',
-            timestamp: new Date(),
-            toolCalls: [{
-              id: 'classifier-exec-1',
-              name: 'sympy_calculate',
-              arguments: { expression: solverResult.code }
-            }],
-            toolResults: [{
-              toolCallId: 'classifier-exec-1',
-              toolName: 'sympy_calculate',
-              result: solverResult.output || solverResult.error || '',
-              isError: !solverResult.success,
-            }],
-          };
-          this.conversationHistory.push(solverMsg);
-          newMessages.push(solverMsg);
-          if (onMessageCallback) onMessageCallback(solverMsg);
+            const solverMsg: Message = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: solverContent,
+              agentName: 'Agent Wykonawczy (deterministyczny)',
+              timestamp: new Date(),
+              toolCalls: [{
+                id: 'classifier-exec-1',
+                name: 'sympy_calculate',
+                arguments: { expression: solverResult.code }
+              }],
+              toolResults: [{
+                toolCallId: 'classifier-exec-1',
+                toolName: 'sympy_calculate',
+                result: solverResult.output || '',
+                isError: false,
+              }],
+            };
+            this.conversationHistory.push(solverMsg);
+            newMessages.push(solverMsg);
+            if (onMessageCallback) onMessageCallback(solverMsg);
+          }
 
           // Step 4: Summary agent (same as old pipeline) — only if solver succeeded
           if (solverResult.success) {
@@ -3024,6 +3025,27 @@ ${result.error || ''}`;
                 this.conversationHistory.push(chainMsg);
                 newMessages.push(chainMsg);
                 if (onMessageCallback) onMessageCallback(chainMsg);
+
+                // Summary agent for the extraction fallback
+                console.log('\n=== AGENT 3: Summary (extraction fallback) ===');
+                const fallbackSummaryContext = this.getAgentContext();
+                const fallbackSummaryResponse = await this.executeAgentTurn(
+                  'Agent Podsumowujący',
+                  prompts.summary,
+                  fallbackSummaryContext,
+                  { maxTokens: prompts.agents.summary.max_tokens, temperature: prompts.agents.summary.temperature }
+                );
+
+                const fallbackSummaryMsg: Message = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content: this.cleanMalformedLatex(fallbackSummaryResponse),
+                  agentName: 'Agent Podsumowujący',
+                  timestamp: new Date(),
+                };
+                this.conversationHistory.push(fallbackSummaryMsg);
+                newMessages.push(fallbackSummaryMsg);
+                if (onMessageCallback) onMessageCallback(fallbackSummaryMsg);
 
                 return newMessages;
               }
