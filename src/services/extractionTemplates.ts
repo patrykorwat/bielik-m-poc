@@ -1539,6 +1539,167 @@ print("ODPOWIEDZ:", "; ".join(results))
 };
 
 // ============================================================
+// Template: System of equations
+// Covers: "rozwiąż układ równań", "układ równań"
+// ============================================================
+
+const systemOfEquations: ExtractionTemplate = {
+  id: 'system_of_equations',
+  name: 'Układ równań',
+  description: 'Rozwiązywanie układów równań (liniowych, kwadratowych, mieszanych).',
+  extractionPrompt: `Wyodrębnij równania z zadania. Odpowiedz TYLKO JSON:
+{
+  "equations": ["<rownanie 1 w skladni SymPy, np. x**2 + y**2 - 25>", "<rownanie 2, np. x + y - 7>"],
+  "variables": ["x", "y"]
+}
+UWAGA: Kazde rownanie zapisz tak, zeby prawa strona = 0. Np. x + y = 7 zapisz jako "x + y - 7".`,
+  buildCode: (v) => {
+    const equations: string[] = v.equations || ['x**2 + y**2 - 25', 'x + y - 7'];
+    const variables: string[] = v.variables || ['x', 'y'];
+
+    const symbolDefs = variables.map(s => `${s} = symbols('${s}', real=True)`).join('\n');
+    const eqDefs = equations.map((eq, i) => `eq${i + 1} = ${eq}`).join('\n');
+    const eqList = equations.map((_, i) => `eq${i + 1}`).join(', ');
+    const varList = variables.join(', ');
+
+    return `from sympy import *
+${symbolDefs}
+
+${eqDefs}
+
+rozw = solve([${eqList}], [${varList}])
+
+if isinstance(rozw, list):
+    for i, sol in enumerate(rozw):
+        if isinstance(sol, tuple):
+            parts = [f"{v} = {s}" for v, s in zip(['${variables.join("', '")}'], sol)]
+            print(f"Rozwiazanie {i+1}: {', '.join(parts)}")
+        else:
+            print(f"Rozwiazanie {i+1}: ${variables[0]} = {sol}")
+    print("ODPOWIEDZ:", rozw)
+elif isinstance(rozw, dict):
+    parts = [f"{k} = {v}" for k, v in rozw.items()]
+    print("ODPOWIEDZ:", ", ".join(parts))
+else:
+    print("ODPOWIEDZ:", rozw)
+`;
+  },
+  keywords: ['układ', 'uklad', 'równań', 'rownan', 'układu', 'ukladu', 'jednoczesn', 'simultaneous'],
+};
+
+// ============================================================
+// Template: Domain of function (dziedzina)
+// Covers: "wyznacz dziedzinę", "podaj dziedzinę"
+// ============================================================
+
+const functionDomain: ExtractionTemplate = {
+  id: 'function_domain',
+  name: 'Dziedzina funkcji',
+  description: 'Wyznaczanie dziedziny funkcji (pierwiastki, logarytmy, ułamki).',
+  extractionPrompt: `Wyodrębnij funkcję z zadania. Odpowiedz TYLKO JSON:
+{
+  "expression": "<funkcja w skladni SymPy, np. sqrt(4 - x**2)>",
+  "variable": "x"
+}`,
+  buildCode: (v) => {
+    const expr = v.expression || 'sqrt(4 - x**2)';
+    const variable = v.variable || 'x';
+
+    return `from sympy import *
+${variable} = symbols('${variable}', real=True)
+f = ${expr}
+
+# Automatyczne wyznaczanie dziedziny
+from sympy.calculus.util import continuous_domain
+from sympy import S
+
+try:
+    domain = continuous_domain(f, ${variable}, S.Reals)
+    print("Dziedzina:", domain)
+    print("ODPOWIEDZ:", domain)
+except Exception:
+    # Fallback: szukaj ograniczen recznie
+    results = []
+    # Mianownik != 0
+    denom = denom if (denom := fraction(f)[1]) != 1 else None
+    if denom:
+        excluded = solve(denom, ${variable})
+        results.append(f"Mianownik != 0: ${variable} != {excluded}")
+    # Podpierwiastkowe >= 0
+    from sympy import sqrt as _sqrt
+    for arg in preorder_traversal(f):
+        if isinstance(arg, Pow) and arg.exp == Rational(1, 2):
+            base = arg.base
+            ineq_sol = solve(base >= 0, ${variable})
+            results.append(f"Pod pierwiastkiem >= 0: {base} >= 0 => {ineq_sol}")
+    if results:
+        print("\\n".join(results))
+        print("ODPOWIEDZ:", "; ".join(results))
+    else:
+        print("ODPOWIEDZ: R (cala prosta rzeczywista)")
+`;
+  },
+  keywords: ['dziedzin', 'domain', 'określona', 'okreslona', 'zbiór wartości', 'zbior wartosci'],
+};
+
+// ============================================================
+// Template: Cone/cylinder/sphere volume (objętość bryły)
+// Covers: "objętość stożka/walca/kuli"
+// ============================================================
+
+const solidVolume: ExtractionTemplate = {
+  id: 'solid_volume',
+  name: 'Objętość bryły obrotowej',
+  description: 'Obliczanie objętości stożka, walca, kuli, ostrosłupa.',
+  extractionPrompt: `Wyodrębnij dane z zadania. Odpowiedz TYLKO JSON:
+{
+  "solid": "<typ bryly: cone/cylinder/sphere/pyramid>",
+  "radius": "<promien, jesli dotyczy, np. 5>",
+  "height": "<wysokosc, jesli dotyczy, np. 12>",
+  "side": "<bok podstawy, jesli dotyczy>",
+  "task": "<co obliczyc: volume/surface_area/both>"
+}`,
+  buildCode: (v) => {
+    const solid = v.solid || 'cone';
+    const r = v.radius || '5';
+    const h = v.height || '12';
+    const task = v.task || 'volume';
+
+    let formulaCode = '';
+    switch (solid) {
+      case 'cone':
+        formulaCode = `V = Rational(1, 3) * pi * r**2 * h
+Sc = pi * r * sqrt(r**2 + h**2)
+Sp = pi * r**2 + Sc`;
+        break;
+      case 'cylinder':
+        formulaCode = `V = pi * r**2 * h
+Sc = 2 * pi * r * h
+Sp = 2 * pi * r**2 + Sc`;
+        break;
+      case 'sphere':
+        formulaCode = `V = Rational(4, 3) * pi * r**3
+Sp = 4 * pi * r**2`;
+        break;
+      default:
+        formulaCode = `V = Rational(1, 3) * pi * r**2 * h`;
+    }
+
+    return `from sympy import *
+r = ${r}
+h = ${h}
+
+${formulaCode}
+
+${task === 'surface_area' ? 'print("Pole powierzchni:", Sp)\nprint("ODPOWIEDZ:", Sp)' :
+  task === 'both' ? 'print("Objetosc:", V)\nprint("Pole powierzchni:", Sp)\nprint("ODPOWIEDZ: V =", V, ", Sp =", Sp)' :
+  'print("Objetosc:", V)\nprint("ODPOWIEDZ:", V)'}
+`;
+  },
+  keywords: ['objętość', 'objetosc', 'stożk', 'stozk', 'walc', 'kul', 'ostrosłup', 'ostroslup', 'bryła', 'bryla'],
+};
+
+// ============================================================
 // Registry of all templates
 // ============================================================
 
@@ -1583,6 +1744,9 @@ export const EXTRACTION_TEMPLATES: ExtractionTemplate[] = [
   squareDiagonalLine,
   probabilityDrawing,
   functionAnalysis,
+  systemOfEquations,
+  functionDomain,
+  solidVolume,
 ];
 
 // ============================================================
