@@ -521,7 +521,7 @@ function App() {
             <Icon type="camera" /> Eksport
           </button>
 <button onClick={handleClearHistory} className="clear-button">
-            Wyczyść historię
+            Nowy czat
           </button>
         </div>
       </header>
