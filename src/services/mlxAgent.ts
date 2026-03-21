@@ -168,7 +168,8 @@ export class LLMAgent {
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`LLM API error (${response.status}): ${errorText}`);
+          console.error(`LLM API error (${response.status}):`, errorText);
+          throw new Error(`Błąd API LLM (HTTP ${response.status})`);
         }
 
         const data = await response.json() as LLMResponse;
@@ -190,16 +191,19 @@ export class LLMAgent {
     } catch (error) {
       console.error(`[LLMAgent:${this.provider}] Error executing:`, error);
 
-      // Provide helpful error messages
+      // Provide helpful error messages (without leaking internal URLs)
       if (error instanceof Error) {
         if (error.message.includes('ECONNREFUSED') || error.message.includes('Failed to fetch')) {
           const hint = this.useProxy
-            ? `Make sure MCP proxy is running (npm run mcp-proxy) and remote API is accessible at ${this.baseUrl}`
-            : `Make sure the server is running at ${this.baseUrl}`;
-          throw new Error(`Cannot connect to ${this.providerLabel()} server. ${hint}`);
+            ? 'Sprawdź połączenie z serwerem LLM.'
+            : 'Sprawdź, czy serwer LLM jest uruchomiony.';
+          throw new Error(`Nie można połączyć z ${this.providerLabel()}. ${hint}`);
+        }
+        if (error.message.includes('LLM API error')) {
+          throw new Error('Błąd serwera LLM. Spróbuj ponownie za chwilę.');
         }
       }
-      throw error;
+      throw new Error('Wystąpił nieoczekiwany błąd podczas komunikacji z LLM.');
     }
   }
 

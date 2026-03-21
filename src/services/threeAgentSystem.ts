@@ -2920,17 +2920,7 @@ ${result.error || ''}`;
 
         console.log(`🏷️ Classification: type=${classification.type}, confidence=${classification.confidence}, MC=${classification.isMultipleChoice}`);
 
-        // Show classification to user
-        const classifierMsg: Message = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: `Typ zadania: **${classification.type}** (pewność: ${(classification.confidence * 100).toFixed(0)}%)`,
-          agentName: '🔍 Klasyfikator',
-          timestamp: new Date(),
-        };
-        this.conversationHistory.push(classifierMsg);
-        newMessages.push(classifierMsg);
-        if (onMessageCallback) onMessageCallback(classifierMsg);
+        console.log(`🔍 Klasyfikator: typ=${classification.type}, pewność=${(classification.confidence * 100).toFixed(0)}%`);
 
         // Step 2: Check if we should use fallback (old pipeline)
         if (!shouldUseFallback(classification)) {

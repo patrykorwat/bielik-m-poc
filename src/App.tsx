@@ -49,13 +49,14 @@ const MCP_PROXY_URL = import.meta.env.VITE_MCP_PROXY_URL || 'http://localhost:30
 const LEAN_PROXY_URL = import.meta.env.VITE_LEAN_PROXY_URL || 'http://localhost:3002';
 const DEFAULT_REMOTE_MODEL = import.meta.env.VITE_REMOTE_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
 const DEFAULT_REMOTE_API_URL = import.meta.env.VITE_REMOTE_API_URL || 'https://llmlab.plgrid.pl/api';
+const PRECONFIGURED_PROVIDER = import.meta.env.VITE_LLM_PROVIDER as string | undefined;
 
 function App() {
   const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
   const [classifierMode, setClassifierMode] = useState(true);
-  const [llmProvider, setLlmProvider] = useState<LLMProvider>('ollama');
-  const [mlxBaseUrl, setMlxBaseUrl] = useState('http://localhost:11434');
-  const [mlxModel, setMlxModel] = useState('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
+  const [llmProvider, setLlmProvider] = useState<LLMProvider>(PRECONFIGURED_PROVIDER === 'remote' ? 'remote' : 'ollama');
+  const [mlxBaseUrl, setMlxBaseUrl] = useState(PRECONFIGURED_PROVIDER === 'remote' ? DEFAULT_REMOTE_API_URL : 'http://localhost:11434');
+  const [mlxModel, setMlxModel] = useState(PRECONFIGURED_PROVIDER === 'remote' ? DEFAULT_REMOTE_MODEL : 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
   const [apiKey, setApiKey] = useState('');
   const [proxyHasApiKey, setProxyHasApiKey] = useState(false);
 
@@ -74,7 +75,7 @@ function App() {
       setMlxModel(DEFAULT_REMOTE_MODEL);
     }
   };
-  const [isConfigured, setIsConfigured] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(PRECONFIGURED_PROVIDER === 'remote');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -107,9 +108,30 @@ function App() {
   }, [inputMessage]);
 
   // Auto-detect available LLM backend and skip config screen
-  // Priority: 1) Proxy with API key (remote) → 2) MLX on port 8011 → 3) Ollama on 11434 → show config
+  // Priority: 0) VITE_LLM_PROVIDER preset → 1) Proxy with API key (remote) → 2) MLX on port 8011 → 3) Ollama on 11434 → show config
   useEffect(() => {
     const autoDetect = async () => {
+      // 0. Pre-configured remote provider (e.g. Heroku deployment)
+      if (PRECONFIGURED_PROVIDER === 'remote') {
+        const mlxConfig: MLXConfig = {
+          provider: 'remote',
+          baseUrl: DEFAULT_REMOTE_API_URL,
+          model: DEFAULT_REMOTE_MODEL,
+          temperature: 0.7,
+          maxTokens: 4096,
+        };
+        orchestratorRef.current = new ThreeAgentOrchestrator('sympy', mlxConfig, false);
+        try {
+          await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
+          setMcpConnected(true);
+        } catch { /* MCP connection will be retried on first message */ }
+        setProxyHasApiKey(true);
+        const newChatId = ChatHistoryService.generateChatId();
+        setCurrentChatId(newChatId);
+        setIsConfigured(true);
+        return;
+      }
+
       // 1. Check if proxy has API key (remote provider like Cyfronet)
       try {
         const configRes = await fetch(`${MCP_PROXY_URL}/llm-proxy/config`);
@@ -283,7 +305,7 @@ function App() {
       setIsConfigured(true);
     } catch (error) {
       console.error('Configuration error:', error);
-      alert(`Błąd konfiguracji: ${error instanceof Error ? error.message : String(error)}`);
+      alert('Błąd konfiguracji. Sprawdź połączenie z serwerem.');
     }
   };
 
@@ -752,17 +774,7 @@ function App() {
           <button onClick={handleExportToPNG} className="export-button" disabled={messages.length === 0}>
             <Icon type="camera" /> Eksport PNG
           </button>
-          {mcpConnected && (
-            <span className="mcp-status">
-              <Icon type="plug" /> SymPy
-            </span>
-          )}
-          {leanConnected && (
-            <span className="mcp-status" style={{ marginLeft: '8px' }}>
-              <Icon type="target" /> Lean
-            </span>
-          )}
-          <button onClick={handleClearHistory} className="clear-button">
+<button onClick={handleClearHistory} className="clear-button">
             Wyczyść historię
           </button>
         </div>
@@ -954,9 +966,6 @@ function App() {
         </div>
 
         <div className="input-container">
-          <div style={{ fontSize: '0.75em', padding: '2px 8px', color: classifierMode ? '#28a745' : '#dc3545', fontWeight: 'bold' }}>
-            {classifierMode ? '🔍 CLASSIFIER MODE (deterministyczny)' : '⚠️ 3-AGENT MODE (LLM)'}
-          </div>
           <textarea
             ref={textareaRef}
             value={inputMessage}
