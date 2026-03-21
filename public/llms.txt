@@ -1,0 +1,32 @@
+# Formulo - Asystent Matematyczny
+> Darmowy asystent matematyczny po polsku, oparty na polskim modelu językowym Bielik.
+
+## Co to jest Formulo?
+
+Formulo to webowa aplikacja do rozwiązywania zadań matematycznych. Działa w przeglądarce, za darmo, w języku polskim. Rozwiązuje zadania krok po kroku i tłumaczy sposób rozwiązywania.
+
+## Dla kogo?
+
+- Uczniowie przygotowujący się do matury z matematyki
+- Studenci potrzebujący pomocy z analizą matematyczną i algebrą
+- Każdy, kto chce zrozumieć rozwiązanie zadania matematycznego
+
+## Możliwości
+
+- Rozwiązywanie równań, układów równań
+- Obliczanie pochodnych i całek
+- Granice funkcji
+- Upraszczanie i rozkład wyrażeń algebraicznych
+- Operacje na macierzach (wyznacznik, macierz odwrotna)
+- Formalne dowody matematyczne (Lean Prover)
+
+## Technologia
+
+- Polski model językowy Bielik (SpeakLeash/Bielik-11B-v3.0-Instruct)
+- Obliczenia symboliczne przez SymPy (dokładne, nie przybliżone)
+- Formalne dowody przez Lean 4 z biblioteką Mathlib
+- System wieloagentowy: Agent Analityczny, Agent Wykonawczy, Agent Weryfikujący
+
+## URL
+
+https://formulo.pl

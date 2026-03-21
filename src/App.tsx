@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ThreeAgentOrchestrator, Message, MLXConfig, ProverBackend, LLMProvider } from './services/threeAgentSystem';
+import { ThreeAgentOrchestrator, Message, MLXConfig, LLMProvider } from './services/threeAgentSystem';
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
@@ -46,36 +46,13 @@ const Icon = ({ type, label }: { type: string; label?: string }) => {
 };
 
 const MCP_PROXY_URL = import.meta.env.VITE_MCP_PROXY_URL || 'http://localhost:3001';
-const LEAN_PROXY_URL = import.meta.env.VITE_LEAN_PROXY_URL || 'http://localhost:3002';
 const DEFAULT_REMOTE_MODEL = import.meta.env.VITE_REMOTE_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
 const DEFAULT_REMOTE_API_URL = import.meta.env.VITE_REMOTE_API_URL || 'https://llmlab.plgrid.pl/api';
 const PRECONFIGURED_PROVIDER = import.meta.env.VITE_LLM_PROVIDER as string | undefined;
 
 function App() {
-  const [proverBackend, setProverBackend] = useState<ProverBackend>('both');
-  const [classifierMode, setClassifierMode] = useState(true);
+  const [classifierMode] = useState(true);
   const [llmProvider, setLlmProvider] = useState<LLMProvider>(PRECONFIGURED_PROVIDER === 'remote' ? 'remote' : 'ollama');
-  const [mlxBaseUrl, setMlxBaseUrl] = useState(PRECONFIGURED_PROVIDER === 'remote' ? DEFAULT_REMOTE_API_URL : 'http://localhost:11434');
-  const [mlxModel, setMlxModel] = useState(PRECONFIGURED_PROVIDER === 'remote' ? DEFAULT_REMOTE_MODEL : 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
-  const [apiKey, setApiKey] = useState('');
-  const [proxyHasApiKey, setProxyHasApiKey] = useState(false);
-
-  const handleProviderChange = (provider: LLMProvider) => {
-    setLlmProvider(provider);
-    if (provider === 'ollama') {
-      setMlxBaseUrl('http://localhost:11434');
-      setMlxModel('SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M');
-      setApiKey('');
-    } else if (provider === 'mlx') {
-      setMlxBaseUrl('http://localhost:8011');
-      setMlxModel('speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit');
-      setApiKey('');
-    } else if (provider === 'remote') {
-      setMlxBaseUrl(DEFAULT_REMOTE_API_URL);
-      setMlxModel(DEFAULT_REMOTE_MODEL);
-    }
-  };
-  const [isConfigured, setIsConfigured] = useState(PRECONFIGURED_PROVIDER === 'remote');
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -83,7 +60,6 @@ function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [, setMcpConnected] = useState(false);
-  const [, setLeanConnected] = useState(false);
 
   const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -125,10 +101,8 @@ function App() {
           await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
           setMcpConnected(true);
         } catch { /* MCP connection will be retried on first message */ }
-        setProxyHasApiKey(true);
         const newChatId = ChatHistoryService.generateChatId();
         setCurrentChatId(newChatId);
-        setIsConfigured(true);
         return;
       }
 
@@ -138,10 +112,7 @@ function App() {
         const data = await configRes.json();
         if (data.hasApiKey && data.llmUrl) {
           const remoteUrl = data.llmUrl;
-          setProxyHasApiKey(true);
           setLlmProvider('remote');
-          setMlxBaseUrl(remoteUrl);
-          setMlxModel(DEFAULT_REMOTE_MODEL);
 
           const mlxConfig: MLXConfig = {
             provider: 'remote',
@@ -155,8 +126,7 @@ function App() {
           setMcpConnected(true);
           const newChatId = ChatHistoryService.generateChatId();
           setCurrentChatId(newChatId);
-          setIsConfigured(true);
-          return; // done — remote configured
+          return;
         }
       } catch { /* proxy not ready, continue to MLX check */ }
 
@@ -168,8 +138,6 @@ function App() {
           const detectedModel = mlxData.data[0].id || 'local-model';
           console.log('Auto-detected MLX model:', detectedModel);
           setLlmProvider('mlx');
-          setMlxBaseUrl('http://localhost:8011');
-          setMlxModel(detectedModel);
 
           const mlxConfig: MLXConfig = {
             provider: 'mlx',
@@ -183,8 +151,7 @@ function App() {
           setMcpConnected(true);
           const newChatId = ChatHistoryService.generateChatId();
           setCurrentChatId(newChatId);
-          setIsConfigured(true);
-          return; // done — MLX configured
+          return;
         }
       } catch { /* MLX not running, continue to Ollama check */ }
 
@@ -193,13 +160,10 @@ function App() {
         const ollamaRes = await fetch('http://localhost:11434/api/tags', { signal: AbortSignal.timeout(2000) });
         const ollamaData = await ollamaRes.json();
         if (ollamaData?.models?.length > 0) {
-          // Find Bielik model or use first available
           const bielikModel = ollamaData.models.find((m: { name: string }) => /bielik/i.test(m.name));
           const selectedModel = bielikModel?.name || ollamaData.models[0].name;
           console.log('Auto-detected Ollama model:', selectedModel);
           setLlmProvider('ollama');
-          setMlxBaseUrl('http://localhost:11434');
-          setMlxModel(selectedModel);
 
           const mlxConfig: MLXConfig = {
             provider: 'ollama',
@@ -213,13 +177,27 @@ function App() {
           setMcpConnected(true);
           const newChatId = ChatHistoryService.generateChatId();
           setCurrentChatId(newChatId);
-          setIsConfigured(true);
-          return; // done — Ollama configured
+          return;
         }
-      } catch { /* Ollama not running, show config screen */ }
+      } catch { /* Ollama not running */ }
 
-      // No backend auto-detected — show config screen
-      console.log('No LLM backend auto-detected, showing config screen');
+      // 4. Fallback: initialize with remote defaults
+      console.log('No LLM backend auto-detected, falling back to remote');
+      setLlmProvider('remote');
+      const fallbackConfig: MLXConfig = {
+        provider: 'remote',
+        baseUrl: DEFAULT_REMOTE_API_URL,
+        model: DEFAULT_REMOTE_MODEL,
+        temperature: 0.7,
+        maxTokens: 4096,
+      };
+      orchestratorRef.current = new ThreeAgentOrchestrator('sympy', fallbackConfig, false);
+      try {
+        await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
+        setMcpConnected(true);
+      } catch { /* MCP connection will be retried */ }
+      const newChatId = ChatHistoryService.generateChatId();
+      setCurrentChatId(newChatId);
     };
     autoDetect();
   }, []);
@@ -232,7 +210,7 @@ function App() {
 
   // Save messages to history whenever they change
   useEffect(() => {
-    if (messages.length > 0 && currentChatId && isConfigured) {
+    if (messages.length > 0 && currentChatId) {
       const session: ChatSession = {
         id: currentChatId,
         provider: llmProvider,
@@ -241,10 +219,9 @@ function App() {
         updatedAt: new Date().toISOString(),
       };
       ChatHistoryService.saveSession(session);
-      // Refresh sessions list
       setChatSessions(ChatHistoryService.getAllSessions());
     }
-  }, [messages, currentChatId, isConfigured]);
+  }, [messages, currentChatId]);
 
   // Sync classifierMode toggle to orchestrator at runtime
   useEffect(() => {
@@ -252,62 +229,6 @@ function App() {
       orchestratorRef.current.setClassifierMode(classifierMode);
     }
   }, [classifierMode]);
-
-  const handleConfigure = async () => {
-    if (!mlxBaseUrl.trim()) {
-      alert('Proszę wprowadzić URL serwera LLM');
-      return;
-    }
-
-    try {
-      const mlxConfig: MLXConfig = {
-        provider: llmProvider,
-        baseUrl: mlxBaseUrl,
-        model: mlxModel,
-        temperature: 0.7,
-        maxTokens: 4096,
-        ...(apiKey ? { apiKey } : {}),
-      };
-
-      orchestratorRef.current = new ThreeAgentOrchestrator(
-        proverBackend,
-        mlxConfig,
-        classifierMode
-      );
-
-      // Connect to MCP server (SymPy)
-      if (proverBackend === 'sympy' || proverBackend === 'both') {
-        console.log('Connecting to MCP proxy...');
-        try {
-          await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
-          setMcpConnected(true);
-          console.log('MCP connected successfully');
-        } catch (error) {
-          console.warn('MCP connection failed:', error);
-          if (proverBackend === 'sympy') {
-            throw error;
-          }
-        }
-      }
-
-      // Connect to Lean Prover
-      if (proverBackend === 'lean' || proverBackend === 'both') {
-        console.log('Connecting to Lean proxy...');
-        await orchestratorRef.current.connectLean(LEAN_PROXY_URL);
-        const backendInfo = orchestratorRef.current.getBackendInfo();
-        setLeanConnected(backendInfo.leanConnected);
-        console.log('Lean connected successfully');
-      }
-
-      // Create new chat session
-      const newChatId = ChatHistoryService.generateChatId();
-      setCurrentChatId(newChatId);
-      setIsConfigured(true);
-    } catch (error) {
-      console.error('Configuration error:', error);
-      alert('Błąd konfiguracji. Sprawdź połączenie z serwerem.');
-    }
-  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !orchestratorRef.current || isProcessing) {
@@ -393,13 +314,6 @@ function App() {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      alert('Skopiowano do schowka!');
-    }).catch(err => {
-      console.error('Błąd kopiowania:', err);
-    });
-  };
 
   const handleExportToPNG = async () => {
     const messagesContainer = document.querySelector('.messages-container');
@@ -528,245 +442,23 @@ function App() {
     }
   };
 
-  if (!isConfigured) {
-    return (
-      <div className="config-container">
-        <div className="config-card">
-          <h1><Icon type="robot" /> System Matematyczny z SymPy i Lean Prover</h1>
-          <p className="subtitle">
-            SymPy dla obliczeń + Lean Prover dla formalnych dowodów = Kompletne rozwiązania matematyczne
-          </p>
-
-          <div className="config-form">
-            <label htmlFor="llmProvider">Provider LLM:</label>
-            <select
-              id="llmProvider"
-              value={llmProvider}
-              onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}
-              className="provider-select"
-            >
-              <option value="ollama">Ollama (wieloplatformowy) - Rekomendowane</option>
-              <option value="mlx">MLX (Apple Silicon - macOS)</option>
-              <option value="remote">Zdalne API (np. Cyfronet LLM Lab)</option>
-            </select>
-
-            <label htmlFor="proverBackend">Wybierz Backend Dowodzenia:</label>
-            <select
-              id="proverBackend"
-              value={proverBackend}
-              onChange={(e) => setProverBackend(e.target.value as ProverBackend)}
-              className="provider-select"
-            >
-              <option value="both">Oba (SymPy + Lean Prover) - Rekomendowane</option>
-              <option value="sympy">Tylko SymPy (obliczenia numeryczne/symboliczne)</option>
-              <option value="lean">Tylko Lean Prover (formalne dowody)</option>
-            </select>
-
-            <div style={{ marginTop: '10px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={classifierMode}
-                  onChange={(e) => setClassifierMode(e.target.checked)}
-                />
-                <span>🔍 Tryb Klasyfikatora (deterministyczny solver)</span>
-              </label>
-              {classifierMode && (
-                <div className="info-box" style={{ marginTop: '5px', padding: '8px', backgroundColor: '#d4edda', border: '1px solid #28a745', borderRadius: '4px', fontSize: '0.85em' }}>
-                  Model klasyfikuje typ zadania → deterministyczny kod SymPy → MCP. Mniej tokenów, stabilniejsze wyniki.
-                </div>
-              )}
-            </div>
-
-            {proverBackend === 'lean' && (
-              <div className="info-box" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#fff3cd', border: '1px solid #ffc107', borderRadius: '4px' }}>
-                <strong>⚠️ Wymagane:</strong> Upewnij się, że serwer Lean Proxy działa:<br/>
-                <code style={{ backgroundColor: '#f8f9fa', padding: '2px 6px', borderRadius: '3px', fontSize: '0.9em' }}>npm run lean-proxy</code>
-              </div>
-            )}
-
-            {(proverBackend === 'lean' || proverBackend === 'both') && (
-              <div className="info-box" style={{ marginTop: '10px', padding: '10px', backgroundColor: '#d1ecf1', border: '1px solid #0c5460', borderRadius: '4px', fontSize: '0.9em' }}>
-                <strong>ℹ️ Lean Prover:</strong> Działa bez instalacji Lean (tylko weryfikacja agenta). Dla pełnej weryfikacji zainstaluj Lean:<br/>
-                <code style={{ backgroundColor: '#f8f9fa', padding: '2px 6px', borderRadius: '3px' }}>brew install elan-init && elan default leanprover/lean4:stable</code>
-              </div>
-            )}
-
-            <label htmlFor="mlxBaseUrl">URL serwera {llmProvider === 'ollama' ? 'Ollama' : llmProvider === 'remote' ? 'API' : 'MLX'}:</label>
-            <input
-              id="mlxBaseUrl"
-              type="text"
-              value={mlxBaseUrl}
-              onChange={(e) => setMlxBaseUrl(e.target.value)}
-              placeholder={llmProvider === 'ollama' ? 'http://localhost:11434' : llmProvider === 'remote' ? DEFAULT_REMOTE_API_URL : 'http://localhost:8011'}
-              className="api-input"
-            />
-
-            {llmProvider === 'remote' && !proxyHasApiKey && (
-              <>
-                <label htmlFor="apiKey">Klucz API (Bearer token):</label>
-                <input
-                  id="apiKey"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="np. plg-xxx..."
-                  className="api-input"
-                />
-              </>
-            )}
-            {llmProvider === 'remote' && proxyHasApiKey && (
-              <p style={{ color: '#4caf50', fontSize: '0.9em', margin: '4px 0' }}>
-                Klucz API skonfigurowany na serwerze proxy (--api-key)
-              </p>
-            )}
-
-            <label htmlFor="mlxModel">Model {llmProvider === 'ollama' ? 'Ollama' : llmProvider === 'remote' ? 'API' : 'MLX'}:</label>
-            <input
-              id="mlxModel"
-              type="text"
-              value={mlxModel}
-              onChange={(e) => setMlxModel(e.target.value)}
-              placeholder={llmProvider === 'ollama' ? 'SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M' : llmProvider === 'remote' ? 'speakleash/Bielik-11B-v3.0-Instruct' : 'speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit'}
-              className="api-input"
-            />
-
-            <button onClick={handleConfigure} className="config-button">
-              Rozpocznij
-            </button>
-          </div>
-
-          <div className="info-box">
-            <h3>Jak to działa?</h3>
-            <ul>
-              <li><strong>SymPy Backend</strong> - wykonuje obliczenia symboliczne i numeryczne</li>
-              <li><strong>Lean Prover Backend</strong> - tworzy i weryfikuje formalne dowody matematyczne</li>
-              <li><strong>Automatyczny wybór</strong> - system wykrywa czy zadanie wymaga dowodu czy obliczeń</li>
-              <li><strong>LLM Agent</strong> - analizuje problem i generuje kod/dowód</li>
-              <li>Precyzyjne obliczenia + formalna weryfikacja dowodów w jednym systemie</li>
-            </ul>
-
-            <h3><Icon type="target" /> Lean Prover:</h3>
-            <ul style={{ fontSize: '0.9em', lineHeight: '1.4' }}>
-              <li>Profesjonalny system dowodzenia twierdzeń matematycznych</li>
-              <li>Weryfikuje poprawność dowodów formalnych</li>
-              <li>Używany w badaniach matematycznych i weryfikacji oprogramowania</li>
-              <li>Wspiera zadania typu: "udowodnij", "wykaż", twierdzenia, lematy</li>
-              <li>
-                <strong>Instalacja macOS:</strong> <code>brew install elan-init && elan default leanprover/lean4:stable</code>
-              </li>
-              <li>
-                <strong>Instalacja Linux:</strong> <code>curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh</code>
-              </li>
-              <li>
-                <strong>Uruchom serwer:</strong> <code>npm run lean-proxy</code>
-              </li>
-            </ul>
-
-            {proverBackend !== 'lean' && (
-              <>
-                <h3>Dostępne narzędzia SymPy:</h3>
-                <ul style={{ fontSize: '0.9em', lineHeight: '1.4' }}>
-                  <li><code>sympy_differentiate</code> - obliczanie pochodnych</li>
-                  <li><code>sympy_integrate</code> - całkowanie (oznaczone i nieoznaczone)</li>
-                  <li><code>sympy_solve</code> - rozwiązywanie równań</li>
-                  <li><code>sympy_simplify</code> - upraszczanie wyrażeń</li>
-                  <li><code>sympy_expand</code> - rozwijanie wyrażeń</li>
-                  <li><code>sympy_factor</code> - faktoryzacja</li>
-                  <li><code>sympy_limit</code> - granice funkcji</li>
-                  <li><code>sympy_matrix</code> - operacje na macierzach</li>
-                  <li><code>sympy_calculate</code> - dowolne obliczenia SymPy</li>
-                </ul>
-              </>
-            )}
-            {llmProvider === 'remote' ? (
-              <div className="mlx-info">
-                <h3>ℹ️ Zdalne API (OpenAI-compatible):</h3>
-                <ul>
-                  <li>Obsługuje dowolne API zgodne z formatem OpenAI (np. Cyfronet LLM Lab, vLLM, TGI)</li>
-                  <li>Wymaga klucza API (Bearer token) do uwierzytelnienia</li>
-                  <li>URL powinien wskazywać na bazę API (przed <code>/v1/...</code>)</li>
-                  <li><strong>Wymaga uruchomienia MCP proxy</strong> (obsługa CORS): <code>npm run mcp-proxy</code></li>
-                </ul>
-                <div className="mlx-command">
-                  <h4>Cyfronet LLM Lab:</h4>
-                  <div className="command-box">
-                    <code>URL: {DEFAULT_REMOTE_API_URL}</code>
-                    <button
-                      onClick={() => copyToClipboard(DEFAULT_REMOTE_API_URL)}
-                      className="copy-button"
-                      title="Skopiuj do schowka"
-                    >
-                      📋 Kopiuj
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : llmProvider === 'ollama' ? (
-              <div className="mlx-info">
-                <h3>ℹ️ Wymagania Ollama:</h3>
-                <ul>
-                  <li>Działa na macOS, Linux i Windows</li>
-                  <li>Darmowy, lokalny inference</li>
-                  <li>Model GGUF 4-bit: <a href="https://huggingface.co/speakleash/Bielik-11B-v3.0-Instruct-GGUF" target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2' }}>speakleash/Bielik-11B-v3.0-Instruct-GGUF</a></li>
-                </ul>
-                <div className="mlx-command">
-                  <h4>1. Pobierz model Bielik:</h4>
-                  <div className="command-box">
-                    <code>ollama pull SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M</code>
-                    <button
-                      onClick={() => copyToClipboard('ollama pull SpeakLeash/bielik-11b-v3.0-instruct:Q4_K_M')}
-                      className="copy-button"
-                      title="Skopiuj do schowka"
-                    >
-                      📋 Kopiuj
-                    </button>
-                  </div>
-                  <h4>2. Uruchom serwer Ollama:</h4>
-                  <div className="command-box">
-                    <code>ollama serve</code>
-                    <button
-                      onClick={() => copyToClipboard('ollama serve')}
-                      className="copy-button"
-                      title="Skopiuj do schowka"
-                    >
-                      📋 Kopiuj
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="mlx-info">
-                <h3>ℹ️ Wymagania MLX:</h3>
-                <ul>
-                  <li>Mac z Apple Silicon (M1/M2/M3/M4)</li>
-                  <li>Darmowy, lokalny inference z akceleracją sprzętową</li>
-                </ul>
-                <div className="mlx-command">
-                  <h4>Uruchom serwer MLX w nowym terminalu:</h4>
-                  <div className="command-box">
-                    <code>mlx_lm.server --model speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit --port 8011</code>
-                    <button
-                      onClick={() => copyToClipboard('mlx_lm.server --model speakleash/Bielik-11B-v3.0-Instruct-MLX-4bit --port 8011')}
-                      className="copy-button"
-                      title="Skopiuj do schowka"
-                    >
-                      📋 Kopiuj
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="app-container">
       <header className="app-header">
-        <h1><Icon type="graduation" /> Formulo - Asystent Matematyczny</h1>
+        <h1>
+          <svg viewBox="0 0 32 32" width="28" height="28" style={{ flexShrink: 0 }}>
+            <defs>
+              <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#667eea' }} />
+                <stop offset="100%" style={{ stopColor: '#764ba2' }} />
+              </linearGradient>
+            </defs>
+            <rect width="32" height="32" rx="7" fill="url(#logoGrad)" />
+            <text x="5" y="27" fontFamily="Georgia, serif" fontSize="28" fontWeight="bold" fill="white" opacity="0.95">∫</text>
+            <text x="17" y="22" fontFamily="Georgia, serif" fontSize="14" fontStyle="italic" fontWeight="bold" fill="rgba(255,255,255,0.7)">f</text>
+          </svg>
+          Formulo
+        </h1>
         <div className="header-controls">
           <button onClick={() => setShowHistory(true)} className="history-button">
             <Icon type="books" /> Historia
@@ -785,13 +477,13 @@ function App() {
           {messages.length === 0 ? (
             <div className="empty-state">
               <p><Icon type="wave" /> Witaj! Zadaj pytanie matematyczne - system agentów będzie współpracować nad rozwiązaniem.</p>
-              <p style={{ marginTop: '10px', fontSize: '0.95em', color: '#666' }}>
+              <p style={{ marginTop: '10px', fontSize: '0.95em', color: 'rgba(255,255,255,0.55)' }}>
                 <Icon type="brain" /> <strong>Agent Analityczny</strong> rozbije problem na kroki<br/>
                 <Icon type="bolt" /> <strong>Agent Wykonawczy</strong> wykona obliczenia lub przygotuje dowód<br/>
                 <Icon type="target" /> <strong>Agent Weryfikujący</strong> sprawdzi poprawność dowodu (Lean Prover)<br/>
                 <Icon type="microscope" /> <strong>Agent Formalizujący</strong> (opcjonalny) - pełna formalna weryfikacja z Mathlib
               </p>
-              <p style={{ marginTop: '8px', fontSize: '0.85em', color: '#888', fontStyle: 'italic' }}>
+              <p style={{ marginTop: '8px', fontSize: '0.85em', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
                 <Icon type="bulb" /> Dla zadań z dowodami, Agent Formalizujący automatycznie przetłumaczy dowód na pełny formalny kod Lean 4 z biblioteką Mathlib, gotowy do kompilacji i weryfikacji.
               </p>
               <div className="examples">
@@ -855,19 +547,20 @@ function App() {
                             </summary>
                             {tc.name === 'sympy_calculate' && (
                               <div style={{
-                                backgroundColor: '#e3f2fd',
+                                backgroundColor: 'rgba(102,126,234,0.1)',
                                 padding: '8px 12px',
                                 borderRadius: '4px',
                                 marginTop: '8px',
                                 fontSize: '0.9em',
-                                borderLeft: '3px solid #2196f3'
+                                borderLeft: '3px solid rgba(102,126,234,0.5)',
+                                color: '#c4b5fd'
                               }}>
                                 <Icon type="bulb" /> <strong>Chcesz nauczyć się Pythona?</strong> Zobacz darmowy {' '}
                                 <a
                                   href="https://discovery.navoica.pl/course-v1:Uniwersytet_Gdanski+UG_2_Py_1+2024_01/about"
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  style={{ color: '#1976d2', textDecoration: 'underline' }}
+                                  style={{ color: '#a5b4fc', textDecoration: 'underline' }}
                                 >
                                   Kurs Pythona - Uniwersytet Gdański
                                 </a>
