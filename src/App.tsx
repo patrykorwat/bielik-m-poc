@@ -45,6 +45,21 @@ const Icon = ({ type, label }: { type: string; label?: string }) => {
   );
 };
 
+// Theme management
+type Theme = 'light' | 'dark';
+
+function getInitialTheme(): Theme {
+  const stored = localStorage.getItem('formulo-theme');
+  if (stored === 'light' || stored === 'dark') return stored;
+  if (window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+  return 'dark';
+}
+
+function applyTheme(theme: Theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('formulo-theme', theme);
+}
+
 const MCP_PROXY_URL = import.meta.env.VITE_MCP_PROXY_URL || 'http://localhost:3001';
 const DEFAULT_REMOTE_MODEL = import.meta.env.VITE_REMOTE_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
 const DEFAULT_REMOTE_API_URL = import.meta.env.VITE_REMOTE_API_URL || 'https://llmlab.plgrid.pl/api';
@@ -60,6 +75,26 @@ function App() {
   const [showHistory, setShowHistory] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [, setMcpConnected] = useState(false);
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+
+  // Apply theme on mount and when it changes
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  // Listen for system preference changes
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem('formulo-theme')) {
+        setTheme(e.matches ? 'dark' : 'light');
+      }
+    };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -460,6 +495,25 @@ function App() {
           Formulo
         </h1>
         <div className="header-controls">
+          <button onClick={toggleTheme} className="theme-toggle" title={theme === 'dark' ? 'Tryb jasny' : 'Tryb ciemny'}>
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="5"/>
+                <line x1="12" y1="1" x2="12" y2="3"/>
+                <line x1="12" y1="21" x2="12" y2="23"/>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                <line x1="1" y1="12" x2="3" y2="12"/>
+                <line x1="21" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+              </svg>
+            )}
+          </button>
           <button onClick={() => setShowHistory(true)} className="history-button">
             <Icon type="books" /> Historia
           </button>
@@ -477,13 +531,13 @@ function App() {
           {messages.length === 0 ? (
             <div className="empty-state">
               <p><Icon type="wave" /> Witaj! Zadaj pytanie matematyczne - system agentów będzie współpracować nad rozwiązaniem.</p>
-              <p style={{ marginTop: '10px', fontSize: '0.95em', color: 'rgba(255,255,255,0.55)' }}>
+              <p style={{ marginTop: '10px', fontSize: '0.95em', color: 'var(--text-secondary)' }}>
                 <Icon type="brain" /> <strong>Agent Analityczny</strong> rozbije problem na kroki<br/>
                 <Icon type="bolt" /> <strong>Agent Wykonawczy</strong> wykona obliczenia lub przygotuje dowód<br/>
                 <Icon type="target" /> <strong>Agent Weryfikujący</strong> sprawdzi poprawność dowodu (Lean Prover)<br/>
                 <Icon type="microscope" /> <strong>Agent Formalizujący</strong> (opcjonalny) - pełna formalna weryfikacja z Mathlib
               </p>
-              <p style={{ marginTop: '8px', fontSize: '0.85em', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
+              <p style={{ marginTop: '8px', fontSize: '0.85em', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                 <Icon type="bulb" /> Dla zadań z dowodami, Agent Formalizujący automatycznie przetłumaczy dowód na pełny formalny kod Lean 4 z biblioteką Mathlib, gotowy do kompilacji i weryfikacji.
               </p>
               <div className="examples">
@@ -553,14 +607,14 @@ function App() {
                                 marginTop: '8px',
                                 fontSize: '0.9em',
                                 borderLeft: '3px solid rgba(102,126,234,0.5)',
-                                color: '#c4b5fd'
+                                color: 'var(--tool-badge-color)'
                               }}>
                                 <Icon type="bulb" /> <strong>Chcesz nauczyć się Pythona?</strong> Zobacz darmowy {' '}
                                 <a
                                   href="https://discovery.navoica.pl/course-v1:Uniwersytet_Gdanski+UG_2_Py_1+2024_01/about"
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  style={{ color: '#a5b4fc', textDecoration: 'underline' }}
+                                  style={{ color: 'var(--primary)', textDecoration: 'underline' }}
                                 >
                                   Kurs Pythona - Uniwersytet Gdański
                                 </a>
