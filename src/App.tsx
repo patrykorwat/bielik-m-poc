@@ -541,21 +541,21 @@ function App() {
                 <Icon type="bulb" /> Dla zadań z dowodami, Agent Formalizujący automatycznie przetłumaczy dowód na pełny formalny kod Lean 4 z biblioteką Mathlib, gotowy do kompilacji i weryfikacji.
               </p>
               <div className="examples">
-                <p><strong>Przykłady obliczeń (SymPy):</strong></p>
+                <p><strong>Zadania maturalne (poziom podstawowy):</strong></p>
                 <ul>
-                  <li>Oblicz pochodną funkcji f(x) = x³ + 2x² - 5x + 1</li>
-                  <li>Całkuj x² od 0 do 2</li>
-                  <li>Rozwiąż równanie x² - 5x + 6 = 0</li>
-                  <li>Uprość wyrażenie sin(x)² + cos(x)²</li>
-                  <li>Oblicz granicę sin(x)/x gdy x dąży do 0</li>
-                  <li>Znajdź wyznacznik macierzy [[1, 2], [3, 4]]</li>
+                  <li>Rozwiąż nierówność 2x + 3 &gt; 5x - 9</li>
+                  <li>Oblicz pole trójkąta o bokach 5, 12 i 13</li>
+                  <li>Wyznacz dziedzinę funkcji f(x) = sqrt(4 - x²)</li>
+                  <li>Ciąg arytmetyczny ma a₁ = 3 i r = 4. Oblicz sumę 20 pierwszych wyrazów</li>
+                  <li>Jaka jest objętość stożka o promieniu 5 i wysokości 12?</li>
                 </ul>
-                <p style={{ marginTop: '12px' }}><strong>Przykłady dowodów (Lean):</strong></p>
+                <p style={{ marginTop: '12px' }}><strong>Zadania maturalne (poziom rozszerzony):</strong></p>
                 <ul>
-                  <li>Udowodnij, że suma kątów w trójkącie wynosi 180 stopni</li>
-                  <li>Wykaż, że dla każdego n, n + 0 = n</li>
-                  <li>Dowód przez indukcję: suma pierwszych n liczb = n(n+1)/2</li>
-                  <li>Udowodnij własność przemienności dodawania</li>
+                  <li>Dla jakich wartości parametru m równanie x² + mx + 4 = 0 ma dwa różne pierwiastki rzeczywiste?</li>
+                  <li>Zbadaj przebieg zmienności funkcji f(x) = (x² - 1) / (x + 2)</li>
+                  <li>Wyznacz równanie stycznej do paraboli y = x² w punkcie (2, 4)</li>
+                  <li>Rozwiąż układ równań: x² + y² = 25 i x + y = 7</li>
+                  <li>Udowodnij, że suma kwadratów dwóch kolejnych liczb nieparzystych daje resztę 2 z dzielenia przez 4</li>
                 </ul>
               </div>
             </div>
