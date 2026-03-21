@@ -145,18 +145,12 @@ app.get('/health', (req, res) => {
 // ── Static SPA serving ──────────────────────────────────────────────────
 
 const distPath = join(__dirname, 'dist');
-const basePath = '/formulo';
 
-// Redirect root to app
-app.get('/', (req, res) => {
-  res.redirect(basePath + '/');
-});
+// Serve static assets at root
+app.use(express.static(distPath));
 
-// Serve static assets
-app.use(basePath, express.static(distPath));
-
-// SPA fallback — all non-file routes under basePath serve index.html
-app.get(`${basePath}/*`, (req, res) => {
+// SPA fallback — all non-file routes serve index.html
+app.get('*', (req, res) => {
   res.sendFile(join(distPath, 'index.html'));
 });
 
@@ -164,7 +158,7 @@ app.get(`${basePath}/*`, (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`\n🚀 Heroku wrapper listening on port ${PORT}`);
-  console.log(`   SPA:  http://localhost:${PORT}${basePath}/`);
+  console.log(`   SPA:  http://localhost:${PORT}/`);
   console.log(`   MCP:  http://localhost:${PORT}/api/mcp/health`);
   console.log(`   RAG:  http://localhost:${PORT}/api/rag/health`);
   console.log(`   BOT:  active: ${bot_active}`);
