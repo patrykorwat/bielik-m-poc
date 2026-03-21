@@ -1635,17 +1635,25 @@ ${result.error || ''}`;
       if (!codeStr.match(/^try\s*:/m)) {
         const indentedLines = lines.map(line => line === '' ? '' : '    ' + line);
         const wrappedCode = [
+          '_odpowiedz_printed = False',
+          '_orig_print = print',
+          'def _tracking_print(*args, **kwargs):',
+          '    global _odpowiedz_printed',
+          '    _orig_print(*args, **kwargs)',
+          '    if args and str(args[0]).startswith("ODPOWIEDZ:"):',
+          '        _odpowiedz_printed = True',
+          'print = _tracking_print',
           'try:',
           ...indentedLines,
           'except Exception as _e:',
           '    print(f"Error: {str(_e)[:200]}")',
           'finally:',
-          '    import sys as _sys',
-          '    _local_vars = dict(locals())',
-          '    for _v in ["wynik", "result", "odpowiedz", "answer", "rozwiazanie", "pole", "objetosc", "obwod"]:',
-          '        if _v in _local_vars and _local_vars[_v] is not None:',
-          '            print(f"ODPOWIEDZ: {_local_vars[_v]}")',
-          '            break',
+          '    if not _odpowiedz_printed:',
+          '        _local_vars = dict(locals())',
+          '        for _v in ["wynik", "result", "odpowiedz", "answer", "rozwiazanie", "pole", "objetosc", "obwod"]:',
+          '            if _v in _local_vars and _local_vars[_v] is not None:',
+          '                _orig_print(f"ODPOWIEDZ: {_local_vars[_v]}")',
+          '                break',
         ];
         lines = wrappedCode;
       }
