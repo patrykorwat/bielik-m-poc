@@ -1749,6 +1749,194 @@ ${mcBlock || 'print("ODPOWIEDZ:", wynik)'}
 };
 
 // ============================================================
+// Template: Circle on diameter AB + point C with angle condition
+// Covers: "prosta przecina parabolę w A i B, AB jest średnicą okręgu,
+//          punkt C na okręgu, kąt BAC = alpha, tg alpha = ..."
+// ============================================================
+
+const circleDiameterAngle: ExtractionTemplate = {
+  id: 'circle_diameter_angle',
+  name: 'Okrąg na średnicy/cięciwie + punkt z warunkiem kątowym lub odległościowym',
+  description: 'Dwie krzywe (prosta/parabola/okrąg/funkcja) przecinają się w A,B. AB jest średnicą/cięciwą okręgu. Punkt C na okręgu z warunkiem (kąt, tangens, odległość). Ogólny template geometrii analitycznej z okręgiem.',
+  extractionPrompt: `Wyodrębnij dane z zadania o geometrii analitycznej z okręgiem. Odpowiedz TYLKO JSON:
+{
+  "curve1_type": "<line|circle|parabola|function>",
+  "curve1_eq": "<równanie krzywej 1 w postaci SymPy: np. 'x - y - 2' dla x-y-2=0, lub 'x**2 + y**2 - 25' dla okręgu>",
+  "curve2_type": "<line|circle|parabola|function>",
+  "curve2_eq": "<równanie krzywej 2: np. '4*x**2 - 7*x + 1 - y' dla y=4x^2-7x+1>",
+  "chord_role": "<diameter|chord>",
+  "angle_type": "<tan|sin|cos|value|none>",
+  "angle_value": "<wartość liczbowa jako string, np. '1/3' lub '45' dla stopni>",
+  "angle_name": "<nazwa kąta, np. 'BAC' - środkowa litera to wierzchołek>",
+  "point_constraint": "<nad_prosta_1|pod_prosta_1|none - ograniczenie położenia szukanego punktu>",
+  "extra_conditions": "<dodatkowe warunki tekstem, np. 'kąt ostry', lub null>"
+}
+
+ZASADY:
+- Każde równanie krzywej zapisz tak, aby po przeniesieniu na jedną stronę dawało 0.
+  Prosta x-y-2=0 -> "x - y - 2"
+  Parabola y=4x^2-7x+1 -> "4*x**2 - 7*x + 1 - y"
+  Okrąg (x-1)^2+(y+2)^2=9 -> "(x-1)**2 + (y+2)**2 - 9"
+- Dla tan: podaj wartość tangensa (np. "1/3")
+- Dla value: podaj kąt w stopniach (np. "60")
+- "nad_prosta_1" oznacza powyżej krzywej 1 (y większy niż krzywa 1 dla tego x)
+
+Przykład: prosta x-y-2=0 przecina parabolę y=4x^2-7x+1, AB średnica, tg BAC=1/3, C nad prostą:
+{"curve1_type":"line","curve1_eq":"x - y - 2","curve2_type":"parabola","curve2_eq":"4*x**2 - 7*x + 1 - y","chord_role":"diameter","angle_type":"tan","angle_value":"1/3","angle_name":"BAC","point_constraint":"nad_prosta_1","extra_conditions":"kąt ostry"}`,
+  buildCode: (v) => {
+    const c1eq = v.curve1_eq || 'x - y - 2';
+    const c2eq = v.curve2_eq || '4*x**2 - 7*x + 1 - y';
+    const chordRole = v.chord_role || 'diameter';
+    const angleType = v.angle_type || 'tan';
+    const angleValueRaw = v.angle_value || '1/3';
+    const angleName = v.angle_name || 'BAC';
+    const constraint = v.point_constraint || 'nad_prosta_1';
+
+    // Parse angle value: "1/3" -> "1, 3", "60" -> "60"
+    const angleValParts = String(angleValueRaw).includes('/')
+      ? String(angleValueRaw).split('/').map((s: string) => s.trim()).join(', ')
+      : angleValueRaw;
+
+    // Determine angle vertex from name like "BAC" -> vertex is middle letter 'A'
+    // Points in the name: first=B, middle(vertex)=A, last=C
+    const vertexIdx = angleName.length >= 3 ? 1 : 0;
+    const vertexLetter = angleName[vertexIdx] || 'A';
+    // The "other known point" is the first letter, the "unknown point" is the last letter
+    const otherLetter = angleName[0] || 'B';
+    const unknownLetter = angleName[angleName.length - 1] || 'C';
+
+    // Build tan_val expression depending on angle_type
+    let tanValExpr: string;
+    if (angleType === 'tan') {
+      tanValExpr = `Rational(${angleValParts})`;
+    } else if (angleType === 'sin') {
+      tanValExpr = `Rational(${angleValParts}) / sqrt(1 - Rational(${angleValParts})**2)`;
+    } else if (angleType === 'cos') {
+      tanValExpr = `sqrt(1 - Rational(${angleValParts})**2) / Rational(${angleValParts})`;
+    } else {
+      // angle in degrees
+      tanValExpr = `tan(rad(${angleValueRaw}))`;
+    }
+
+    // Build constraint check
+    let constraintCode: string;
+    if (constraint === 'nad_prosta_1') {
+      constraintCode = `
+            # Point must be above curve1 (y > curve1 value at that x)
+            # For f(x,y)=0: if df/dy < 0, above means f < 0; if df/dy > 0, above means f > 0
+            # Equivalently: f(C) and df/dy have the same sign when C is above
+            c1_at_C = float(c1_implicit.subs([(x, Cx), (y, Cy)]))
+            y_coeff = float(diff(c1_implicit, y))
+            if y_coeff != 0:
+                if c1_at_C * y_coeff <= 0:
+                    continue
+            else:
+                if c1_at_C >= 0:
+                    continue`;
+    } else if (constraint === 'pod_prosta_1') {
+      constraintCode = `
+            # Point must be below curve1
+            c1_at_C = float(c1_implicit.subs([(x, Cx), (y, Cy)]))
+            y_coeff = float(diff(c1_implicit, y))
+            if y_coeff != 0:
+                if c1_at_C * y_coeff >= 0:
+                    continue
+            else:
+                if c1_at_C <= 0:
+                    continue`;
+    } else {
+      constraintCode = `
+            pass  # no position constraint`;
+    }
+
+    return `from sympy import *
+
+x, y = symbols('x y', real=True)
+
+# Curve equations (implicit form = 0)
+c1_implicit = ${c1eq}
+c2_implicit = ${c2eq}
+
+# Solve intersection: both curves = 0 simultaneously
+intersection = solve([c1_implicit, c2_implicit], [x, y])
+print("Intersections:", intersection)
+
+# Filter real solutions and sort by x
+pts = [(simplify(s[0]), simplify(s[1])) for s in intersection if im(s[0]) == 0 and im(s[1]) == 0]
+pts = sorted(pts, key=lambda p: float(p[0]))
+print("Points:", pts)
+
+if len(pts) < 2:
+    print("ODPOWIEDZ: Brak dwoch punktow przeciecia")
+else:
+    # Center O = midpoint of chord/diameter
+    Ox_val = (pts[0][0] + pts[1][0]) / 2
+    Oy_val = (pts[0][1] + pts[1][1]) / 2
+    r2 = simplify((pts[0][0] - Ox_val)**2 + (pts[0][1] - Oy_val)**2)
+    AB2 = simplify((pts[1][0] - pts[0][0])**2 + (pts[1][1] - pts[0][1])**2)
+    print("O =", (Ox_val, Oy_val), "r^2 =", r2, "|AB|^2 =", AB2)
+
+    tan_val = ${tanValExpr}
+    print("tan(alpha) =", tan_val)
+
+    # Thales: AB is ${chordRole} => angle A${unknownLetter}B = 90
+    # In right triangle: tan(${angleName}) = ${unknownLetter}${otherLetter} / ${unknownLetter}${vertexLetter}...
+    # Actually for vertex ${vertexLetter}: tan = opposite/adjacent in right triangle at ${unknownLetter}
+    cos_a = 1 / sqrt(1 + tan_val**2)
+    sin_a = tan_val / sqrt(1 + tan_val**2)
+
+    results = []
+    # Try both assignments of which intersection is ${vertexLetter} and which is ${otherLetter}
+    for vi, oi in [(0,1), (1,0)]:
+        Vx, Vy = pts[vi]  # vertex of the angle
+        Ox2, Oy2 = pts[oi]  # other point
+        AB_len = sqrt(AB2)
+        # In right triangle with right angle at ${unknownLetter}:
+        # V${unknownLetter} = AB * cos(alpha), O${unknownLetter} = AB * sin(alpha)  (Thales)
+        VC_len = AB_len * cos_a
+        ux, uy = (Ox2 - Vx) / AB_len, (Oy2 - Vy) / AB_len
+
+        for px, py in [(-uy, ux), (uy, -ux)]:
+            for sgn in [1, -1]:
+                s = sgn * sin_a
+                Cx = simplify(Vx + VC_len * (cos_a * ux + s * px))
+                Cy = simplify(Vy + VC_len * (cos_a * uy + s * py))
+
+                # Must be on circle
+                if simplify((Cx - Ox_val)**2 + (Cy - Oy_val)**2 - r2) != 0:
+                    continue
+${constraintCode}
+
+                # Verify tan(angle at vertex) = tan_val
+                vVO = (Ox2 - Vx, Oy2 - Vy)
+                vVC = (Cx - Vx, Cy - Vy)
+                cross_val = abs(vVO[0] * vVC[1] - vVO[1] * vVC[0])
+                dot_val = vVO[0] * vVC[0] + vVO[1] * vVC[1]
+                if dot_val <= 0:
+                    continue
+                if simplify(cross_val / dot_val - tan_val) == 0:
+                    results.append((Cx, Cy))
+
+    # Deduplicate
+    unique = []
+    for c in results:
+        if not any(simplify(c[0] - u[0]) == 0 and simplify(c[1] - u[1]) == 0 for u in unique):
+            unique.append(c)
+
+    print("Znalezione punkty ${unknownLetter}:", unique)
+    if len(unique) == 1:
+        print(f"ODPOWIEDZ: ${unknownLetter} = ({unique[0][0]}, {unique[0][1]})")
+    elif len(unique) >= 2:
+        parts = [f"({c[0]}, {c[1]})" for c in unique]
+        print(f"ODPOWIEDZ: ${unknownLetter} = " + " lub ${unknownLetter} = ".join(parts))
+    else:
+        print("ODPOWIEDZ: Brak punktu ${unknownLetter} spelniajacego warunki")
+`;
+  },
+  keywords: ['średnic', 'srednic', 'okręg', 'okreg', 'kąt', 'kat', 'przecina', 'punkt', 'leży', 'lezy', 'tg', 'alpha', 'alfa', 'cięciw', 'cieciw', 'wpisany', 'Talesa', 'thales'],
+};
+
+// ============================================================
 // Registry of all templates
 // ============================================================
 
@@ -1797,6 +1985,7 @@ export const EXTRACTION_TEMPLATES: ExtractionTemplate[] = [
   functionDomain,
   solidVolume,
   trigExpressionEval,
+  circleDiameterAngle,
 ];
 
 // ============================================================

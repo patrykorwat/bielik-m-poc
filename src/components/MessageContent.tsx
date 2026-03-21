@@ -546,39 +546,46 @@ export function MessageContent({ content }: MessageContentProps) {
               parts.push(<br key={key++} />);
             }
           });
-        } else if (segment.type === 'inline-math') {
-          try {
-            const html = katex.renderToString(segment.content, {
-              displayMode: false,
-              throwOnError: false,
-              strict: false,
-            });
-            parts.push(
-              <span
-                key={key++}
-                dangerouslySetInnerHTML={{ __html: html }}
-                style={{ display: 'inline-block', margin: '0 2px' }}
-              />
-            );
-          } catch (error) {
-            parts.push(<span key={key++} style={{ color: 'red' }}>Error: ${segment.content}$</span>);
+        } else if (segment.type === 'inline-math' || segment.type === 'display-math') {
+          // Normalize double-escaped backslashes from copy-pasted LaTeX
+          // e.g. \\frac{1}{3} → \frac{1}{3}, \\mathcal{O} → \mathcal{O}
+          let mathContent = segment.content;
+          mathContent = mathContent.replace(/\\\\(?=[a-zA-Z])/g, '\\');
+          // Also handle literal \n that should be newlines in display math
+          if (segment.type === 'display-math') {
+            mathContent = mathContent.replace(/\\n/g, '\n');
           }
-        } else if (segment.type === 'display-math') {
+
+          const isDisplay = segment.type === 'display-math';
           try {
-            const html = katex.renderToString(segment.content, {
-              displayMode: true,
+            const html = katex.renderToString(mathContent, {
+              displayMode: isDisplay,
               throwOnError: false,
               strict: false,
             });
-            parts.push(
-              <div
-                key={key++}
-                dangerouslySetInnerHTML={{ __html: html }}
-                style={{ margin: '1em 0', textAlign: 'center' }}
-              />
-            );
+            if (isDisplay) {
+              parts.push(
+                <div
+                  key={key++}
+                  dangerouslySetInnerHTML={{ __html: html }}
+                  style={{ margin: '1em 0', textAlign: 'center' }}
+                />
+              );
+            } else {
+              parts.push(
+                <span
+                  key={key++}
+                  dangerouslySetInnerHTML={{ __html: html }}
+                  style={{ display: 'inline-block', margin: '0 2px' }}
+                />
+              );
+            }
           } catch (error) {
-            parts.push(<div key={key++} style={{ color: 'red' }}>Error rendering: $${segment.content}$$</div>);
+            if (isDisplay) {
+              parts.push(<div key={key++} style={{ color: 'red' }}>Error rendering: $${segment.content}$$</div>);
+            } else {
+              parts.push(<span key={key++} style={{ color: 'red' }}>Error: ${segment.content}$</span>);
+            }
           }
         }
       }
