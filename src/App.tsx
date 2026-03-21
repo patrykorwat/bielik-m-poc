@@ -518,7 +518,7 @@ function App() {
             <Icon type="books" /> Historia
           </button>
           <button onClick={handleExportToPNG} className="export-button" disabled={messages.length === 0}>
-            <Icon type="camera" /> Eksport PNG
+            <Icon type="camera" /> Eksport
           </button>
 <button onClick={handleClearHistory} className="clear-button">
             Wyczyść historię
