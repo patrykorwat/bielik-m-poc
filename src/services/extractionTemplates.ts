@@ -1454,6 +1454,91 @@ print("ODPOWIEDZ:", prob)
 };
 
 // ============================================================
+// Template: Function analysis (przebieg zmienności)
+// Covers: "zbadaj przebieg zmienności", "wyznacz ekstrema", "asymptoty"
+// ============================================================
+
+const functionAnalysis: ExtractionTemplate = {
+  id: 'function_analysis',
+  name: 'Przebieg zmienności funkcji',
+  description: 'Pełna analiza funkcji: dziedzina, asymptoty, miejsca zerowe, pochodna, ekstrema, monotoniczność, przebieg zmienności.',
+  extractionPrompt: `Wyodrębnij wartości z zadania. Odpowiedz TYLKO JSON:
+{
+  "numerator": "<licznik funkcji w składni SymPy, np. x**2 - 1>",
+  "denominator": "<mianownik funkcji w składni SymPy, np. x + 2; wpisz '1' jeśli nie ma ułamka>",
+  "variable": "<zmienna, np. x>"
+}`,
+  buildCode: (v) => {
+    const num = v.numerator || 'x**2 - 1';
+    const den = v.denominator || '1';
+    const variable = v.variable || 'x';
+    const hasFraction = den !== '1' && den !== 1;
+
+    return `from sympy import *
+${variable} = symbols('${variable}', real=True)
+numerator_expr = ${num}
+denominator_expr = ${den}
+${hasFraction ? `f = numerator_expr / denominator_expr` : `f = numerator_expr`}
+
+results = []
+
+# 1. Dziedzina
+${hasFraction ? `domain_exclusions = solve(denominator_expr, ${variable})
+results.append(f"Dziedzina: R \\\\ {set(domain_exclusions)}")` : `results.append("Dziedzina: R (cala prosta rzeczywista)")`}
+
+# 2. Miejsca zerowe
+zeros = solve(numerator_expr, ${variable})
+${hasFraction ? `zeros = [z for z in zeros if denominator_expr.subs(${variable}, z) != 0]` : ``}
+results.append(f"Miejsca zerowe: ${variable} = {zeros}")
+
+# 3. Asymptoty
+${hasFraction ? `# Asymptoty pionowe
+for xc in domain_exclusions:
+    lim_plus = limit(f, ${variable}, xc, '+')
+    lim_minus = limit(f, ${variable}, xc, '-')
+    results.append(f"Asymptota pionowa: ${variable} = {xc} (lim+={lim_plus}, lim-={lim_minus})")
+# Asymptota ukosna/pozioma
+a_coeff = limit(f / ${variable}, ${variable}, oo)
+b_coeff = limit(f - a_coeff * ${variable}, ${variable}, oo)
+if a_coeff == 0:
+    results.append(f"Asymptota pozioma: y = {b_coeff}")
+elif a_coeff.is_finite:
+    results.append(f"Asymptota ukosna: y = {a_coeff}*${variable} + {b_coeff}")
+else:
+    results.append("Brak asymptot ukosnych/poziomych")` : `results.append("Brak asymptot (wielomian)")`}
+
+# 4. Pochodna i ekstrema
+fp = diff(f, ${variable})
+fp_simplified = simplify(fp)
+results.append(f"f'(${variable}) = {fp_simplified}")
+
+critical_points = solve(fp, ${variable})
+${hasFraction ? `critical_points = [cp for cp in critical_points if denominator_expr.subs(${variable}, cp) != 0]` : ``}
+results.append(f"Punkty krytyczne: ${variable} = {critical_points}")
+
+# Klasyfikacja ekstremow (druga pochodna)
+fpp = diff(fp, ${variable})
+for cp in critical_points:
+    val = fpp.subs(${variable}, cp)
+    f_val = f.subs(${variable}, cp)
+    if val > 0:
+        results.append(f"Minimum lokalne: f({cp}) = {simplify(f_val)}")
+    elif val < 0:
+        results.append(f"Maksimum lokalne: f({cp}) = {simplify(f_val)}")
+    else:
+        results.append(f"Punkt przegięcia lub siodłowy w ${variable} = {cp}, f({cp}) = {simplify(f_val)}")
+
+# 5. Monotoniczność
+results.append(f"Znak f'(${variable}): analizuj {fp_simplified} wzgledem punktow krytycznych {critical_points}")
+
+print("\\n".join(results))
+print("ODPOWIEDZ:", "; ".join(results))
+`;
+  },
+  keywords: ['przebieg', 'zmienności', 'zmiennosci', 'zbadaj', 'monotoniczność', 'monotonicznos', 'ekstrema', 'asymptot', 'rosnąca', 'malejąca', 'przedziały monotonicznośc'],
+};
+
+// ============================================================
 // Registry of all templates
 // ============================================================
 
@@ -1497,6 +1582,7 @@ export const EXTRACTION_TEMPLATES: ExtractionTemplate[] = [
   quadraticInequalitySolve,
   squareDiagonalLine,
   probabilityDrawing,
+  functionAnalysis,
 ];
 
 // ============================================================
