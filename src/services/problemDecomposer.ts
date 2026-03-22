@@ -132,7 +132,7 @@ export class ProblemDecomposer {
     ragContext?: string,
     onStepComplete?: (step: number, total: number, result: SubTaskResult) => void,
   ): Promise<DecompositionResult> {
-    console.log('🔪 ProblemDecomposer: Starting decomposition...');
+    console.log('✂️ ProblemDecomposer: Starting decomposition...');
 
     // Step 1: LLM decomposes the problem
     const subTasks = await this.decomposeProblem(problem, ragContext);
@@ -383,8 +383,24 @@ export class ProblemDecomposer {
     formula: string,
   ): Promise<{ answer: string; code: string; output: string } | null> {
     try {
-      // Build minimal SymPy code from the formula
-      const code = `from sympy import *\nwynik = ${formula}\nprint("ODPOWIEDZ:", wynik)`;
+      // Detect if formula contains solve/solveset (needs different handling)
+      const hasSolve = /\b(solve|solveset|nsolve)\s*\(/.test(formula);
+      const hasMultiLine = formula.includes('\n') || formula.includes(';');
+
+      let code: string;
+      if (hasMultiLine) {
+        // Multi-line formula: execute as-is with imports
+        code = formula.startsWith('from sympy') ? formula : `from sympy import *\n${formula}`;
+        if (!code.includes('print(')) {
+          code += `\nprint("ODPOWIEDZ:", wynik)`;
+        }
+      } else if (hasSolve) {
+        // solve() returns a list; extract first element
+        code = `from sympy import *\n_result = ${formula}\nwynik = _result[0] if isinstance(_result, list) and len(_result) > 0 else _result\nprint("ODPOWIEDZ:", wynik)`;
+      } else {
+        // Simple expression evaluation
+        code = `from sympy import *\nwynik = ${formula}\nprint("ODPOWIEDZ:", wynik)`;
+      }
       const sanitized = this.sanitizeCode(code);
 
       console.log(`  🧮 Executing formula: ${formula.substring(0, 60)}`);

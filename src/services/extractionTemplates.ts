@@ -83,6 +83,60 @@ print("ODPOWIEDZ:", wynik_t)
 };
 
 // ============================================================
+// Template: Exponential Model with Unknown Base (Newton Cooling etc.)
+// Covers: T(t) = A*k^(-t) + C, given data point → find k → evaluate at new t
+// ============================================================
+
+const exponentialModelUnknownBase: ExtractionTemplate = {
+  id: 'exponential_model_unknown_base',
+  name: 'Model wykładniczy z nieznaną podstawą',
+  description: 'Funkcja wykładnicza z nieznanym parametrem k. Dana jest wartość w jednym punkcie, trzeba wyznaczyć k i obliczyć wartość w innym punkcie.',
+  extractionPrompt: `Zadanie opisuje model wykładniczy typu T(t) = A * k^(-t) + C lub T(t) = A * k^t + C.
+Wyodrębnij wartości. Odpowiedz TYLKO JSON:
+{
+  "A": "<amplituda, np. różnica temp. początkowej i otoczenia>",
+  "C": "<wartość asymptotyczna/stała, np. temperatura otoczenia>",
+  "sign_exp": "<minus jeśli k^(-t), plus jeśli k^t>",
+  "known_t": "<znany czas/punkt, np. 10>",
+  "known_value": "<znana wartość funkcji w known_t, np. 65>",
+  "target_t": "<czas/punkt do obliczenia, np. 15>",
+  "rounding": "<null lub liczba miejsc dziesiętnych lub 'integer'>"
+}`,
+  buildCode: (v, _mc) => {
+    const A = v.A || 60;
+    const C = v.C || 0;
+    const signExp = v.sign_exp || 'minus';
+    const knownT = v.known_t || 10;
+    const knownValue = v.known_value || 65;
+    const targetT = v.target_t || 15;
+    const rounding = v.rounding;
+
+    const expSign = signExp === 'minus' ? '-' : '';
+
+    return `from sympy import *
+k = symbols('k', positive=True)
+A = Rational(${A})
+C = Rational(${C})
+
+# Model: f(t) = A * k^(${expSign}t) + C
+# Dane: f(${knownT}) = ${knownValue}
+rownanie = Eq(A * k**(${expSign}${knownT}) + C, ${knownValue})
+rozwiazania = solve(rownanie, k)
+
+# Bierzemy dodatnie rozwiązanie
+k_val = [s for s in rozwiazania if s.is_real and s > 0][0]
+
+# Oblicz f(${targetT})
+wynik = A * k_val**(${expSign}${targetT}) + C
+wynik_num = float(wynik)
+${rounding === 'integer' ? 'wynik_final = round(wynik_num)' : rounding ? `wynik_final = round(wynik_num, ${rounding})` : 'wynik_final = wynik_num'}
+print("ODPOWIEDZ:", wynik_final)
+`;
+  },
+  keywords: ['temperatura', 'ostygł', 'stygnie', 'ochłodz', 'ogrzew', 'otoczeni', 'k^', 'stała charakterystyczn', 'wykładnicz', 'minutach', 'T(t)', 'k^{-t}'],
+};
+
+// ============================================================
 // Template: Bernoulli Probability (at least k successes in n trials)
 // ============================================================
 
@@ -2000,6 +2054,7 @@ else:
 
 export const EXTRACTION_TEMPLATES: ExtractionTemplate[] = [
   optimizationWordProblem,
+  exponentialModelUnknownBase,
   exponentialDecay,
   bernoulliProbability,
   tangentLineComplete,

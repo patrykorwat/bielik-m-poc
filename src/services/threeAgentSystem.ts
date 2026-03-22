@@ -3291,8 +3291,8 @@ ${result.error || ''}`;
         const decompStartMsg: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: '🔪 Rozbijam zadanie na prostsze pod-zadania...',
-          agentName: '🔪 Dekompozycja',
+          content: '✂️ Rozbijam zadanie na prostsze pod-zadania...',
+          agentName: '✂️ Dekompozycja',
           timestamp: new Date(),
         };
         this.conversationHistory.push(decompStartMsg);
@@ -3309,7 +3309,7 @@ ${result.error || ''}`;
               id: crypto.randomUUID(),
               role: 'assistant',
               content: `${stepStatus} Krok ${step}/${total}: ${result.answer || result.error || 'brak wyniku'} [${result.pipeline || '?'}]`,
-              agentName: '🔪 Dekompozycja',
+              agentName: '✂️ Dekompozycja',
               timestamp: new Date(),
             };
             this.conversationHistory.push(stepMsg);
