@@ -83,70 +83,70 @@ print("ODPOWIEDZ:", wynik_t)
 };
 
 // ============================================================
-// Template: Exponential Model with Unknown Base (Newton Cooling etc.)
-// Covers: T(t) = A*k^(-t) + C, given data point → find k → evaluate at new t
+// Template: Exponential Model with Unknown Base
+// Covers: f(t) = A*k^(-t) + C or f(t) = A*q^t + C
+// Given one data point → find k/q → evaluate at new t
+// Works for: Newton cooling, population models, compound interest, radioactive decay
 // ============================================================
 
 const exponentialModelUnknownBase: ExtractionTemplate = {
   id: 'exponential_model_unknown_base',
   name: 'Model wykładniczy z nieznaną podstawą',
-  description: 'Funkcja wykładnicza z nieznanym parametrem k. Dana jest wartość w jednym punkcie, trzeba wyznaczyć k i obliczyć wartość w innym punkcie.',
-  extractionPrompt: `Zadanie opisuje model wykładniczy typu T(t) = A * k^(-t) + C (stygnięcie/ogrzewanie).
+  description: 'Funkcja wykładnicza z nieznanym parametrem (k, q, r). Dane: wartość w jednym punkcie, szukamy wartości w innym.',
+  extractionPrompt: `Zadanie opisuje model wykładniczy typu f(t) = A * k^(-t) + C lub f(t) = A * q^t + C.
+Parametr k (lub q) NIE jest podany wprost, trzeba go wyznaczyć z danych.
+
 Wyodrębnij wartości. Odpowiedz TYLKO JSON:
 {
-  "A": "<amplituda, np. Tp - Tz, czyli roznica temp poczatkowej i otoczenia>",
-  "C": "<wartosc asymptotyczna, np. temperatura otoczenia Tz>",
-  "known_t": "<znany czas, np. 10>",
-  "known_value": "<znana wartosc funkcji w known_t, np. 65>",
-  "target_t": "<czas do obliczenia, np. 15>",
-  "rounding": "<null lub 'integer'>"
+  "A": "<amplituda/współczynnik przy części wykładniczej, np. Tp - Tz = 60>",
+  "C": "<wartość asymptotyczna/stała dodawana, np. Tz = 20. Wpisz 0 jeśli brak>",
+  "known_t": "<znany czas/punkt, np. 10>",
+  "known_value": "<znana wartość funkcji w known_t, np. 65>",
+  "target_t": "<czas/punkt do obliczenia, np. 15>",
+  "initial_value": "<wartość początkowa f(0), np. 80. Wpisz null jeśli nie podana>",
+  "rounding": "<null lub 'integer' lub liczba miejsc dziesiętnych>"
 }`,
   buildCode: (v, _mc) => {
     const A = v.A || 60;
-    const C = v.C || 0;
+    const C = v.C ?? 0;
     const knownT = v.known_t || 10;
     const knownValue = v.known_value || 65;
     const targetT = v.target_t || 15;
     const rounding = v.rounding;
 
-    // Always try both k^(-t) and k^t, pick the physically meaningful solution
-    return `from sympy import *
-k = symbols('k', positive=True)
+    // Pure arithmetic: no SymPy solve needed, compute k directly
+    // For f(t) = A * k^(-t) + C: k^(-t) = (val - C)/A, so k = ((val - C)/A)^(-1/t)
+    // For f(t) = A * q^t + C: q^t = (val - C)/A, so q = ((val - C)/A)^(1/t)
+    return `from sympy import Rational, N
 A = Rational(${A})
 C = Rational(${C})
 known_t = ${knownT}
-known_val = ${knownValue}
+known_val = Rational(${knownValue})
 target_t = ${targetT}
 
-# Try k^(-t) model: f(t) = A * k^(-t) + C
-eq_neg = Eq(A * k**(-known_t) + C, known_val)
-sol_neg = [s for s in solve(eq_neg, k) if s.is_real and s > 0]
+# ratio = (known_val - C) / A
+ratio = (known_val - C) / A
 
-# Try k^(t) model: f(t) = A * k^(t) + C
-eq_pos = Eq(A * k**(known_t) + C, known_val)
-sol_pos = [s for s in solve(eq_pos, k) if s.is_real and s > 0]
+# Model k^(-t): k = ratio^(-1/known_t) = (A/(known_val - C))^(1/known_t)
+# Model q^(t): q = ratio^(1/known_t)
+# Both give the same final answer since k^(-t) = q^t when q = 1/k
 
-# For cooling: k > 1 with negative exponent, or 0 < k < 1 with positive exponent
-# Pick whichever model gives a valid k
-if sol_neg and float(sol_neg[0]) > 1:
-    k_val = sol_neg[0]
-    wynik = A * k_val**(-target_t) + C
-elif sol_pos and float(sol_pos[0]) < 1:
-    k_val = sol_pos[0]
-    wynik = A * k_val**(target_t) + C
-elif sol_neg:
-    k_val = sol_neg[0]
-    wynik = A * k_val**(-target_t) + C
-else:
-    k_val = sol_pos[0]
-    wynik = A * k_val**(target_t) + C
-
+# Compute f(target_t) directly using the ratio
+# f(target_t) = A * ratio^(target_t/known_t) + C
+wynik = A * ratio**(Rational(target_t, known_t)) + C
 wynik_num = float(N(wynik))
 ${rounding === 'integer' ? 'wynik_final = round(wynik_num)' : rounding ? `wynik_final = round(wynik_num, ${rounding})` : 'wynik_final = wynik_num'}
 print("ODPOWIEDZ:", wynik_final)
 `;
   },
-  keywords: ['temperatura', 'ostygł', 'stygnie', 'ochłodz', 'ogrzew', 'otoczeni', 'k^', 'stała charakterystyczn', 'wykładnicz', 'minutach', 'T(t)', 'k^{-t}'],
+  keywords: [
+    'temperatura', 'ostygł', 'stygnie', 'ochłodz', 'ogrzew', 'otoczeni',
+    'k^', 'stała charakterystyczn', 'wykładnicz', 'minutach', 'T(t)', 'k^{-t}',
+    'populacj', 'wzrost wykładnicz', 'spadek wykładnicz',
+    'oprocentowan', 'kapitalizacj', 'lokata', 'procent składan',
+    'stężeni', 'rozkład', 'okres półtrwani',
+    'model wykładnicz', 'funkcj wykładnicz',
+  ],
 };
 
 // ============================================================

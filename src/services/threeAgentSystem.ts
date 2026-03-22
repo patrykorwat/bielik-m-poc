@@ -1921,6 +1921,19 @@ ${result.error || ''}`;
           contentStr = typeof msg.content === 'string' ? msg.content : String(msg.content);
         }
 
+        // Include tool results in context so summary agent can see SymPy output
+        if (msg.toolResults && msg.toolResults.length > 0) {
+          const toolOutput = msg.toolResults
+            .map(tr => typeof tr.result === 'string' ? tr.result : JSON.stringify(tr.result))
+            .filter(Boolean)
+            .join('\n');
+          if (toolOutput) {
+            contentStr = contentStr
+              ? `${contentStr}\n\nWynik narzędzia:\n${toolOutput}`
+              : `Wynik narzędzia:\n${toolOutput}`;
+          }
+        }
+
         if (msg.role === 'assistant' && msg.agentName) {
           contentStr = `[${msg.agentName}]: ${contentStr}`;
         }
