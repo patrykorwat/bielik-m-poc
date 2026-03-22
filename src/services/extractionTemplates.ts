@@ -91,44 +91,57 @@ const exponentialModelUnknownBase: ExtractionTemplate = {
   id: 'exponential_model_unknown_base',
   name: 'Model wykładniczy z nieznaną podstawą',
   description: 'Funkcja wykładnicza z nieznanym parametrem k. Dana jest wartość w jednym punkcie, trzeba wyznaczyć k i obliczyć wartość w innym punkcie.',
-  extractionPrompt: `Zadanie opisuje model wykładniczy typu T(t) = A * k^(-t) + C lub T(t) = A * k^t + C.
+  extractionPrompt: `Zadanie opisuje model wykładniczy typu T(t) = A * k^(-t) + C (stygnięcie/ogrzewanie).
 Wyodrębnij wartości. Odpowiedz TYLKO JSON:
 {
-  "A": "<amplituda, np. różnica temp. początkowej i otoczenia>",
-  "C": "<wartość asymptotyczna/stała, np. temperatura otoczenia>",
-  "sign_exp": "<minus jeśli k^(-t), plus jeśli k^t>",
-  "known_t": "<znany czas/punkt, np. 10>",
-  "known_value": "<znana wartość funkcji w known_t, np. 65>",
-  "target_t": "<czas/punkt do obliczenia, np. 15>",
-  "rounding": "<null lub liczba miejsc dziesiętnych lub 'integer'>"
+  "A": "<amplituda, np. Tp - Tz, czyli roznica temp poczatkowej i otoczenia>",
+  "C": "<wartosc asymptotyczna, np. temperatura otoczenia Tz>",
+  "known_t": "<znany czas, np. 10>",
+  "known_value": "<znana wartosc funkcji w known_t, np. 65>",
+  "target_t": "<czas do obliczenia, np. 15>",
+  "rounding": "<null lub 'integer'>"
 }`,
   buildCode: (v, _mc) => {
     const A = v.A || 60;
     const C = v.C || 0;
-    const signExp = v.sign_exp || 'minus';
     const knownT = v.known_t || 10;
     const knownValue = v.known_value || 65;
     const targetT = v.target_t || 15;
     const rounding = v.rounding;
 
-    const expSign = signExp === 'minus' ? '-' : '';
-
+    // Always try both k^(-t) and k^t, pick the physically meaningful solution
     return `from sympy import *
 k = symbols('k', positive=True)
 A = Rational(${A})
 C = Rational(${C})
+known_t = ${knownT}
+known_val = ${knownValue}
+target_t = ${targetT}
 
-# Model: f(t) = A * k^(${expSign}t) + C
-# Dane: f(${knownT}) = ${knownValue}
-rownanie = Eq(A * k**(${expSign}${knownT}) + C, ${knownValue})
-rozwiazania = solve(rownanie, k)
+# Try k^(-t) model: f(t) = A * k^(-t) + C
+eq_neg = Eq(A * k**(-known_t) + C, known_val)
+sol_neg = [s for s in solve(eq_neg, k) if s.is_real and s > 0]
 
-# Bierzemy dodatnie rozwiązanie
-k_val = [s for s in rozwiazania if s.is_real and s > 0][0]
+# Try k^(t) model: f(t) = A * k^(t) + C
+eq_pos = Eq(A * k**(known_t) + C, known_val)
+sol_pos = [s for s in solve(eq_pos, k) if s.is_real and s > 0]
 
-# Oblicz f(${targetT})
-wynik = A * k_val**(${expSign}${targetT}) + C
-wynik_num = float(wynik)
+# For cooling: k > 1 with negative exponent, or 0 < k < 1 with positive exponent
+# Pick whichever model gives a valid k
+if sol_neg and float(sol_neg[0]) > 1:
+    k_val = sol_neg[0]
+    wynik = A * k_val**(-target_t) + C
+elif sol_pos and float(sol_pos[0]) < 1:
+    k_val = sol_pos[0]
+    wynik = A * k_val**(target_t) + C
+elif sol_neg:
+    k_val = sol_neg[0]
+    wynik = A * k_val**(-target_t) + C
+else:
+    k_val = sol_pos[0]
+    wynik = A * k_val**(target_t) + C
+
+wynik_num = float(N(wynik))
 ${rounding === 'integer' ? 'wynik_final = round(wynik_num)' : rounding ? `wynik_final = round(wynik_num, ${rounding})` : 'wynik_final = wynik_num'}
 print("ODPOWIEDZ:", wynik_final)
 `;
