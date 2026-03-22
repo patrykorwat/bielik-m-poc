@@ -3,6 +3,8 @@
  * aby wyszukać relevantne metody matematyczne dla zadania
  */
 
+import { logDebug, logWarn, logError } from './logger';
+
 const RAG_URL = import.meta.env.VITE_RAG_URL || 'http://localhost:3003';
 
 export interface RAGResult {
@@ -48,7 +50,7 @@ export class RAGClient {
         return this.isAvailable;
       }
     } catch (error) {
-      console.warn('RAG Service not available:', error);
+      logWarn('RAG Service not available:', error);
       this.isAvailable = false;
     }
 
@@ -62,7 +64,7 @@ export class RAGClient {
     if (!this.isAvailable) {
       const available = await this.checkHealth();
       if (!available) {
-        console.warn('RAG Service unavailable - skipping knowledge retrieval');
+        logWarn('RAG Service unavailable - skipping knowledge retrieval');
         return [];
       }
     }
@@ -82,11 +84,11 @@ export class RAGClient {
       }
 
       const data: RAGQueryResponse = await response.json();
-      console.log(`✅ RAG retrieved ${data.results.length} methods in ${data.retrieval_ms}ms`);
+      logDebug(`✅ RAG retrieved ${data.results.length} methods in ${data.retrieval_ms}ms`);
 
       return data.results;
     } catch (error) {
-      console.error('RAG query error:', error);
+      logError('RAG query error:', error);
       return [];
     }
   }

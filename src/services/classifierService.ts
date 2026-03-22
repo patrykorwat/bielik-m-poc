@@ -11,6 +11,7 @@ import {
   ClassificationResult,
   CLASSIFIER_CONFIDENCE_THRESHOLD,
 } from './classifierTypes.js';
+import { logDebug, logWarn } from './logger';
 
 // ============================================================
 // JSON Extraction from LLM output
@@ -439,7 +440,7 @@ export async function classifyProblem(
   // === Stage 1: Regex pre-classification (skip university patterns when disabled) ===
   const regexHint = universityEnabled ? regexPreClassify(question) : null;
   if (regexHint) {
-    console.log(`🔍 [Regex Pre-Classifier] Detected: ${regexHint}`);
+    logDebug(`🔍 [Regex Pre-Classifier] Detected: ${regexHint}`);
   }
 
   // Build the user message with optional RAG context
@@ -465,10 +466,10 @@ export async function classifyProblem(
   const parsed = extractJSON(cleaned);
 
   if (!parsed) {
-    console.warn('[Classifier] Failed to extract JSON from response:', cleaned.substring(0, 200));
+    logWarn('[Classifier] Failed to extract JSON from response:', cleaned.substring(0, 200));
     // If regex detected a type, use it instead of GENERAL
     if (regexHint) {
-      console.log(`🔍 [Regex Override] LLM failed JSON parse → using regex hint: ${regexHint}`);
+      logDebug(`🔍 [Regex Override] LLM failed JSON parse → using regex hint: ${regexHint}`);
       return {
         type: regexHint,
         params: { description: question } as any,
@@ -490,7 +491,7 @@ export async function classifyProblem(
 
   // === Stage 3: Regex override when LLM gives GENERAL but regex found specific type ===
   if (regexHint && result.type === ProblemType.GENERAL && regexHint !== ProblemType.GENERAL) {
-    console.log(`🔍 [Regex Override] LLM → general, regex → ${regexHint}. Overriding type.`);
+    logDebug(`🔍 [Regex Override] LLM → general, regex → ${regexHint}. Overriding type.`);
     result.type = regexHint;
     // Boost confidence slightly so it doesn't immediately fall back
     result.confidence = Math.max(result.confidence, 0.75);
@@ -504,7 +505,7 @@ export async function classifyProblem(
     ProblemType.ALGEBRAIC_GEOMETRY, ProblemType.GRAPH_THEORY,
   ];
   if (regexHint && universityTypes.includes(regexHint) && !universityTypes.includes(result.type)) {
-    console.log(`🔍 [Regex Override] LLM → ${result.type} (matura), regex → ${regexHint} (university). Overriding.`);
+    logDebug(`🔍 [Regex Override] LLM → ${result.type} (matura), regex → ${regexHint} (university). Overriding.`);
     result.type = regexHint;
     result.confidence = Math.max(result.confidence, 0.75);
   }
@@ -514,7 +515,7 @@ export async function classifyProblem(
 
   // Tangent line problems: "styczna", "równanie stycznej", "tangent line"
   if (/styczn|tangent\s*line/i.test(lowerQ) && result.type !== ProblemType.DERIVATIVE) {
-    console.log(`🔍 [Keyword Override] Detected tangent line problem, LLM said ${result.type} → derivative`);
+    logDebug(`🔍 [Keyword Override] Detected tangent line problem, LLM said ${result.type} → derivative`);
     result.type = ProblemType.DERIVATIVE;
     result.confidence = Math.max(result.confidence, 0.9);
     const p = (result.params || {}) as unknown as Record<string, unknown>;
@@ -544,7 +545,7 @@ export async function classifyProblem(
   // Optimization problems: "największa/najmniejsza wartość", "minimalizuj", "maksymalizuj"
   if (/najwększ|najmniejsz|minimali|maksymali|optymali|minimum\s+funkcji|maksimum\s+funkcji/i.test(lowerQ) &&
       result.type !== ProblemType.OPTIMIZATION && result.type !== ProblemType.DERIVATIVE) {
-    console.log(`🔍 [Keyword Override] Detected optimization problem, LLM said ${result.type} → optimization`);
+    logDebug(`🔍 [Keyword Override] Detected optimization problem, LLM said ${result.type} → optimization`);
     result.type = ProblemType.OPTIMIZATION;
     result.confidence = Math.max(result.confidence, 0.85);
   }

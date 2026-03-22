@@ -10,6 +10,8 @@
  *   3. How to format the answer (especially for open-ended vs MC)
  */
 
+import { logDebug } from './logger';
+
 // ============================================================
 // Template Definitions
 // ============================================================
@@ -2175,7 +2177,7 @@ export function matchTemplate(question: string, classifiedType?: string): Extrac
     }
   }
 
-  console.log(`[matchTemplate] classifiedType=${classifiedType}, bestScore=${bestScore}, scores:`, JSON.stringify(scores.filter(s => s.score >= 1).slice(0, 5)));
+  logDebug(`[matchTemplate] classifiedType=${classifiedType}, bestScore=${bestScore}, scores:`, JSON.stringify(scores.filter(s => s.score >= 1).slice(0, 5)));
 
   // Only return if we matched at least 2 keywords
   return bestScore >= 2 ? bestMatch : null;

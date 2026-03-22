@@ -20,6 +20,7 @@ import { classifyProblem, shouldUseFallback } from './classifierService';
 import { routeAndSolveWithRetry } from './solverRouter';
 import { runExtractionChain, runMultiStepChain, ChainResult } from './multiStepChain';
 import { ClassificationResult } from './classifierTypes';
+import { logDebug, logVerbose, logWarn, logError } from './logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -132,7 +133,7 @@ export class ProblemDecomposer {
     ragContext?: string,
     onStepComplete?: (step: number, total: number, result: SubTaskResult) => void,
   ): Promise<DecompositionResult> {
-    console.log('✂️ ProblemDecomposer: Starting decomposition...');
+    logDebug('✂️ ProblemDecomposer: Starting decomposition...');
 
     // Step 0: Academic problem pre-router
     // Some problems should NOT be decomposed into sub-tasks because decomposition
@@ -145,7 +146,7 @@ export class ProblemDecomposer {
     // - Tricky problems with non-obvious structure
     const directAnswer = await this.solveDirectIfApplicable(problem, ragContext);
     if (directAnswer !== null) {
-      console.log(`🎯 Direct solver resolved: ${directAnswer.substring(0, 80)}`);
+      logDebug(`🎯 Direct solver resolved: ${directAnswer.substring(0, 80)}`);
       return {
         success: true,
         subTasks: [{ id: 1, description: problem, operation: 'direct_academic', depends_on: [], expected_output: 'string' }],
@@ -170,7 +171,7 @@ export class ProblemDecomposer {
       };
     }
 
-    console.log(`📋 Decomposed into ${subTasks.length} sub-tasks`);
+    logDebug(`📋 Decomposed into ${subTasks.length} sub-tasks`);
 
     // Step 2: Solve each sub-task in dependency order
     const subResults: SubTaskResult[] = [];
@@ -187,7 +188,7 @@ export class ProblemDecomposer {
           taskDescription = taskDescription.replace(pattern, depResult);
           taskFormula = taskFormula.replace(pattern, depResult);
         } else {
-          console.warn(`⚠️ Dependency ${depId} not resolved for task ${task.id}`);
+          logWarn(`⚠️ Dependency ${depId} not resolved for task ${task.id}`);
         }
       }
 
@@ -198,7 +199,7 @@ export class ProblemDecomposer {
         sympy_formula: taskFormula || undefined,
       };
 
-      console.log(`🔧 Solving sub-task ${task.id}/${subTasks.length}: ${taskFormula || taskDescription.substring(0, 80)}...`);
+      logVerbose(`🔧 Solving sub-task ${task.id}/${subTasks.length}: ${taskFormula || taskDescription.substring(0, 80)}...`);
 
       // Route through pipeline
       const result = await this.solveSubTask(taskDescription, resolvedTask);
@@ -206,9 +207,9 @@ export class ProblemDecomposer {
 
       if (result.success && result.answer) {
         resultMap.set(task.id, result.answer);
-        console.log(`✅ Sub-task ${task.id} solved: ${result.answer}`);
+        logDebug(`✅ Sub-task ${task.id} solved: ${result.answer}`);
       } else {
-        console.log(`❌ Sub-task ${task.id} failed: ${result.error || 'no answer'}`);
+        logDebug(`❌ Sub-task ${task.id} failed: ${result.error || 'no answer'}`);
         // Don't abort — try to continue with what we have
       }
 
@@ -228,19 +229,19 @@ export class ProblemDecomposer {
       const deterministicAnswer = await this.deterministicBruteForce(problem);
       if (deterministicAnswer) {
         if (deterministicAnswer !== finalAnswer) {
-          console.log(`🔍 Deterministic brute-force: formuła=${finalAnswer}, brute-force=${deterministicAnswer} → używam brute-force`);
+          logDebug(`🔍 Deterministic brute-force: formuła=${finalAnswer}, brute-force=${deterministicAnswer} → używam brute-force`);
           finalAnswer = deterministicAnswer;
         } else {
-          console.log(`✅ Deterministic brute-force potwierdza: ${finalAnswer}`);
+          logDebug(`✅ Deterministic brute-force potwierdza: ${finalAnswer}`);
         }
       } else {
         // Fallback: LLM-generated brute-force
         const verifiedAnswer = await this.verifyWithBruteForce(problem, finalAnswer, ragContext);
         if (verifiedAnswer && verifiedAnswer !== finalAnswer) {
-          console.log(`🔍 LLM brute-force: formuła=${finalAnswer}, brute-force=${verifiedAnswer} → używam brute-force`);
+          logDebug(`🔍 LLM brute-force: formuła=${finalAnswer}, brute-force=${verifiedAnswer} → używam brute-force`);
           finalAnswer = verifiedAnswer;
         } else if (verifiedAnswer) {
-          console.log(`✅ LLM brute-force potwierdza: ${finalAnswer}`);
+          logDebug(`✅ LLM brute-force potwierdza: ${finalAnswer}`);
         }
       }
     }
@@ -250,7 +251,7 @@ export class ProblemDecomposer {
     if (finalAnswer) {
       const substitutionOk = await this.verifyBySubstitution(problem, finalAnswer, subTasks);
       if (substitutionOk === false) {
-        console.log(`❌ Substitution verification FAILED for answer: ${finalAnswer}`);
+        logDebug(`❌ Substitution verification FAILED for answer: ${finalAnswer}`);
         finalAnswer = undefined;
       }
     }
@@ -282,7 +283,7 @@ export class ProblemDecomposer {
       // Parse JSON from response
       const parsed = this.parseDecompositionJSON(response);
       if (!parsed || !parsed.subtasks || parsed.subtasks.length === 0) {
-        console.warn('⚠️ Failed to parse decomposition response');
+        logWarn('⚠️ Failed to parse decomposition response');
         return [];
       }
 
@@ -301,7 +302,7 @@ export class ProblemDecomposer {
       // Topological sort to respect dependencies
       return this.topologicalSort(subTasks);
     } catch (error) {
-      console.error('❌ Decomposition failed:', error);
+      logError('❌ Decomposition failed:', error);
       return [];
     }
   }
@@ -329,14 +330,14 @@ export class ProblemDecomposer {
             pipeline: 'direct_formula',
           };
         }
-        console.log(`  ⚠️ Direct formula failed, trying classifier...`);
+        logVerbose(`  ⚠️ Direct formula failed, trying classifier...`);
       }
 
       // ═══ ATTEMPT 1: Classify and route through deterministic solver ═══
       const classification = await this.classifySubTask(description);
 
       if (classification && !shouldUseFallback(classification)) {
-        console.log(`  📊 Classified as: ${classification.type} (${(classification.confidence * 100).toFixed(0)}%)`);
+        logDebug(`  📊 Classified as: ${classification.type} (${(classification.confidence * 100).toFixed(0)}%)`);
 
         const solverResult = await routeAndSolveWithRetry(
           classification,
@@ -435,7 +436,7 @@ export class ProblemDecomposer {
       }
       const sanitized = this.sanitizeCode(code);
 
-      console.log(`  🧮 Executing formula: ${formula.substring(0, 60)}`);
+      logVerbose(`  🧮 Executing formula: ${formula.substring(0, 60)}`);
 
       const result = await this.mcpClient.callTool('sympy_calculate', {
         expression: sanitized,
@@ -448,7 +449,7 @@ export class ProblemDecomposer {
 
       // Check for errors
       if (/Error:|Traceback|SyntaxError|NameError/i.test(output)) {
-        console.log(`  ⚠️ Formula execution error: ${output.substring(0, 80)}`);
+        logVerbose(`  ⚠️ Formula execution error: ${output.substring(0, 80)}`);
         return null;
       }
 
@@ -661,7 +662,7 @@ Pod-zadanie: ${description}`;
     const totalDigits = nOdd + nEven;
     if (totalDigits < 1 || totalDigits > 9) return null;
 
-    console.log(`🎯 Detected digit-counting problem: ${totalDigits} digits, ${nOdd} odd, ${nEven} even, noRepeats=${noRepeats}`);
+    logDebug(`🎯 Detected digit-counting problem: ${totalDigits} digits, ${nOdd} odd, ${nEven} even, noRepeats=${noRepeats}`);
 
     // Generate Python enumeration code
     const code = `from itertools import permutations, combinations
@@ -682,7 +683,7 @@ print("WERYFIKACJA:", count)`;
 
   private async runVerificationCode(code: string): Promise<string | null> {
     try {
-      console.log(`🔍 Running deterministic brute-force verification...`);
+      logVerbose(`🔍 Running deterministic brute-force verification...`);
 
       const result = await this.mcpClient.callTool('sympy_calculate', {
         expression: code,
@@ -694,7 +695,7 @@ print("WERYFIKACJA:", count)`;
         .join('\n');
 
       if (/Error:|Traceback|SyntaxError|NameError/i.test(output)) {
-        console.log(`  ⚠️ Deterministic verification error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Deterministic verification error: ${output.substring(0, 100)}`);
         return null;
       }
 
@@ -704,10 +705,10 @@ print("WERYFIKACJA:", count)`;
       const num = parseInt(match[1]);
       if (isNaN(num)) return null;
 
-      console.log(`  ✅ Deterministic result: ${num}`);
+      logVerbose(`  ✅ Deterministic result: ${num}`);
       return String(num);
     } catch (error) {
-      console.log(`  ⚠️ Deterministic verification error: ${error}`);
+      logVerbose(`  ⚠️ Deterministic verification error: ${error}`);
       return null;
     }
   }
@@ -723,7 +724,7 @@ print("WERYFIKACJA:", count)`;
       // Only verify pure integer answers (counting/combinatorics problems)
       // NEVER verify symbolic answers (sqrt, pi, fractions) — brute-force makes no sense for continuous math
       if (/sqrt|pi|[*\/^]|[a-zA-Z]{2,}/.test(formulaAnswer)) {
-        console.log(`  ⏭️ Skipping brute-force verification for symbolic answer: ${formulaAnswer}`);
+        logVerbose(`  ⏭️ Skipping brute-force verification for symbolic answer: ${formulaAnswer}`);
         return null;
       }
       const numericAnswer = parseFloat(formulaAnswer);
@@ -732,7 +733,7 @@ print("WERYFIKACJA:", count)`;
       }
       // Must be an integer — brute-force counting only makes sense for whole numbers
       if (!Number.isInteger(numericAnswer)) {
-        console.log(`  ⏭️ Skipping brute-force verification for non-integer: ${formulaAnswer}`);
+        logVerbose(`  ⏭️ Skipping brute-force verification for non-integer: ${formulaAnswer}`);
         return null;
       }
 
@@ -775,7 +776,7 @@ Odpowiedź z formuły: ${formulaAnswer} — sprawdź czy to poprawne przez wylic
         }
       }
 
-      console.log(`🔍 Running brute-force verification...`);
+      logVerbose(`🔍 Running brute-force verification...`);
 
       const result = await this.mcpClient.callTool('sympy_calculate', {
         expression: code,
@@ -788,7 +789,7 @@ Odpowiedź z formuły: ${formulaAnswer} — sprawdź czy to poprawne przez wylic
 
       // Check for errors
       if (/Error:|Traceback|SyntaxError|NameError|MemoryError|Timeout/i.test(output)) {
-        console.log(`  ⚠️ Brute-force verification failed: ${output.substring(0, 80)}`);
+        logVerbose(`  ⚠️ Brute-force verification failed: ${output.substring(0, 80)}`);
         return null;
       }
 
@@ -801,7 +802,7 @@ Odpowiedź z formuły: ${formulaAnswer} — sprawdź czy to poprawne przez wylic
 
       return String(verifiedNum);
     } catch (error) {
-      console.log(`  ⚠️ Brute-force verification error: ${error}`);
+      logVerbose(`  ⚠️ Brute-force verification error: ${error}`);
       return null;
     }
   }
@@ -836,7 +837,7 @@ Odpowiedź z formuły: ${formulaAnswer} — sprawdź czy to poprawne przez wylic
     const category = this.classifyAcademicProblem(textLower);
     if (!category) return null;
 
-    console.log(`🎓 Academic pre-router: detected category "${category}"`);
+    logDebug(`🎓 Academic pre-router: detected category "${category}"`);
 
     switch (category) {
       case 'existence':
@@ -909,7 +910,7 @@ Odpowiedź z formuły: ${formulaAnswer} — sprawdź czy to poprawne przez wylic
     ragContext?: string,
   ): Promise<string | null> {
     try {
-      console.log('📝 Proof solver: attempting symbolic + numeric verification...');
+      logDebug('📝 Proof solver: attempting symbolic + numeric verification...');
 
       // Phase 1: SymPy symbolic verification
       const symbolicResult = await this.proofSymbolic(problem);
@@ -924,7 +925,7 @@ Odpowiedź z formuły: ${formulaAnswer} — sprawdź czy to poprawne przez wylic
 
       return null;
     } catch (error) {
-      console.log(`  ⚠️ Proof solver error: ${error}`);
+      logVerbose(`  ⚠️ Proof solver error: ${error}`);
       return null;
     }
   }
@@ -965,7 +966,7 @@ ZASADY:
         .join('\n');
 
       if (/Error:|Traceback/i.test(output)) {
-        console.log(`  ⚠️ Symbolic proof error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Symbolic proof error: ${output.substring(0, 100)}`);
         return null;
       }
 
@@ -973,12 +974,12 @@ ZASADY:
       if (resultMatch) {
         const verdict = resultMatch[1].toUpperCase();
         if (verdict === 'PRAWDA') {
-          console.log('  ✅ Symbolic proof: confirmed');
+          logDebug('  ✅ Symbolic proof: confirmed');
           // Extract any simplification details from output
           const details = output.replace(/WYNIK:.*/, '').trim();
           return `Dowód (weryfikacja symboliczna): Teza jest prawdziwa.${details ? ' ' + details : ''}`;
         } else if (verdict === 'FALSZ') {
-          console.log('  ❌ Symbolic proof: disproved');
+          logDebug('  ❌ Symbolic proof: disproved');
           return `Teza jest FAŁSZYWA. Weryfikacja symboliczna wykazała sprzeczność.`;
         }
       }
@@ -1025,13 +1026,13 @@ ZASADY:
 
       const falszMatch = /NUMERYCZNIE:\s*FALSZ.*kontrprzyk[łl]ad:\s*(.+)/i.exec(output);
       if (falszMatch) {
-        console.log(`  ❌ Numerical check found counterexample: ${falszMatch[1]}`);
+        logDebug(`  ❌ Numerical check found counterexample: ${falszMatch[1]}`);
         return `Teza jest FAŁSZYWA. Kontrprzykład: ${falszMatch[1].trim()}`;
       }
 
       const prawdaMatch = /NUMERYCZNIE:\s*PRAWDA/i.exec(output);
       if (prawdaMatch) {
-        console.log('  ✅ Numerical check: all cases passed');
+        logDebug('  ✅ Numerical check: all cases passed');
         return output.trim(); // Return as context for LLM proof sketch
       }
 
@@ -1071,7 +1072,7 @@ ZASADY:
       let cleaned = response.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
       if (/^(Dowód|Teza jest fa[łl]szywa)/i.test(cleaned)) {
-        console.log(`  📝 LLM proof sketch generated`);
+        logDebug(`  📝 LLM proof sketch generated`);
         return cleaned;
       }
 
@@ -1100,7 +1101,7 @@ ZASADY:
     _ragContext?: string,
   ): Promise<string | null> {
     try {
-      console.log('📈 Optimization solver...');
+      logDebug('📈 Optimization solver...');
 
       const response = await this.llmAgent.execute(
         `Napisz kod SymPy (max 25 linii) który znajduje MINIMUM lub MAKSIMUM wyrażenia matematycznego z podanego zadania.
@@ -1141,7 +1142,7 @@ ZASADY:
         .join('\n');
 
       if (/Error:|Traceback/i.test(output)) {
-        console.log(`  ⚠️ Optimization error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Optimization error: ${output.substring(0, 100)}`);
         // Try numerical fallback
         return this.optimizationNumericalFallback(problem);
       }
@@ -1154,13 +1155,13 @@ ZASADY:
         if (forMatch) {
           answer += `, dla ${forMatch[1].trim()}`;
         }
-        console.log(`  ✅ Optimization result: ${answer}`);
+        logDebug(`  ✅ Optimization result: ${answer}`);
         return answer;
       }
 
       return null;
     } catch (error) {
-      console.log(`  ⚠️ Optimization solver error: ${error}`);
+      logVerbose(`  ⚠️ Optimization solver error: ${error}`);
       return null;
     }
   }
@@ -1222,7 +1223,7 @@ ZASADY:
     _ragContext?: string,
   ): Promise<string | null> {
     try {
-      console.log('🔍 Counterexample solver...');
+      logDebug('🔍 Counterexample solver...');
 
       const response = await this.llmAgent.execute(
         `Napisz kod Python (max 20 linii) który szuka KONTRPRZYKŁADU obalającego podaną tezę.
@@ -1259,25 +1260,25 @@ ZASADY:
         .join('\n');
 
       if (/Error:|Traceback/i.test(output)) {
-        console.log(`  ⚠️ Counterexample search error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Counterexample search error: ${output.substring(0, 100)}`);
         return null;
       }
 
       const counterMatch = /KONTRPRZYK[ŁL]AD:\s*(.+)/i.exec(output);
       if (counterMatch) {
-        console.log(`  ✅ Counterexample found: ${counterMatch[1]}`);
+        logDebug(`  ✅ Counterexample found: ${counterMatch[1]}`);
         return `Kontrprzykład: ${counterMatch[1].trim()}`;
       }
 
       const notFoundMatch = /NIE_ZNALEZIONO/i.exec(output);
       if (notFoundMatch) {
-        console.log('  ℹ️ No counterexample found');
+        logDebug('  ℹ️ No counterexample found');
         return 'Nie znaleziono kontrprzykładu. Teza wydaje się prawdziwa (sprawdzono numerycznie).';
       }
 
       return null;
     } catch (error) {
-      console.log(`  ⚠️ Counterexample solver error: ${error}`);
+      logVerbose(`  ⚠️ Counterexample solver error: ${error}`);
       return null;
     }
   }
@@ -1293,7 +1294,7 @@ ZASADY:
     _ragContext?: string,
   ): Promise<string | null> {
     try {
-      console.log('🔢 Diophantine solver...');
+      logDebug('🔢 Diophantine solver...');
 
       const response = await this.llmAgent.execute(
         `Napisz kod SymPy (max 25 linii) który rozwiązuje RÓWNANIE DIOFANTYCZNE (szuka rozwiązań w liczbach całkowitych).
@@ -1333,19 +1334,19 @@ ZASADY:
         .join('\n');
 
       if (/Error:|Traceback/i.test(output)) {
-        console.log(`  ⚠️ Diophantine solver error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Diophantine solver error: ${output.substring(0, 100)}`);
         return null;
       }
 
       const solMatch = /ROZWIAZANIA:\s*(.+)/i.exec(output);
       if (solMatch) {
-        console.log(`  ✅ Diophantine solutions: ${solMatch[1].substring(0, 80)}`);
+        logDebug(`  ✅ Diophantine solutions: ${solMatch[1].substring(0, 80)}`);
         return `Rozwiązania: ${solMatch[1].trim()}`;
       }
 
       const noSolMatch = /BRAK_ROZWIAZAN:\s*(.+)/i.exec(output);
       if (noSolMatch) {
-        console.log(`  ❌ No Diophantine solutions: ${noSolMatch[1].substring(0, 80)}`);
+        logDebug(`  ❌ No Diophantine solutions: ${noSolMatch[1].substring(0, 80)}`);
         return `Brak rozwiązań w liczbach całkowitych. ${noSolMatch[1].trim()}`;
       }
 
@@ -1356,7 +1357,7 @@ ZASADY:
 
       return null;
     } catch (error) {
-      console.log(`  ⚠️ Diophantine solver error: ${error}`);
+      logVerbose(`  ⚠️ Diophantine solver error: ${error}`);
       return null;
     }
   }
@@ -1388,7 +1389,7 @@ ZASADY:
 
     if (!isExistence) return null;
 
-    console.log('🔍 Detected existence/feasibility problem, using specialized solver...');
+    logDebug('🔍 Detected existence/feasibility problem, using specialized solver...');
 
     // Phase 1: Generate brute-force search code via LLM
     const bruteForceAnswer = await this.existenceBruteForce(problem);
@@ -1403,7 +1404,7 @@ ZASADY:
     }
 
     // Could not determine, fall back to standard decomposition
-    console.log('  ⚠️ Existence solver inconclusive, falling back to decomposition');
+    logDebug('  ⚠️ Existence solver inconclusive, falling back to decomposition');
     return null;
   }
 
@@ -1446,7 +1447,7 @@ ZASADY:
     // Check if problem asks about positive integers
     const requiresIntegers = /całkowit|naturaln|integer|dodatni/i.test(problem);
 
-    console.log(`🍎 Detected Nesbitt-type equation: a/(b+c) + b/(a+c) + c/(a+b) = ${N} (integers=${requiresIntegers})`);
+    logDebug(`🍎 Detected Nesbitt-type equation: a/(b+c) + b/(a+c) + c/(a+b) = ${N} (integers=${requiresIntegers})`);
 
     // Nesbitt's inequality: minimum is 3/2 for positive reals
     if (N < 2) {
@@ -1464,25 +1465,27 @@ ZASADY:
       return bruteResult;
     }
 
-    // Phase 2: For integer N >= 2, solutions exist but may require very large numbers
-    // This is a known result from the theory of elliptic curves
-    console.log(`  📐 No small solution found for N=${N}, applying theoretical analysis...`);
+    // Phase 2: Known mathematical result for integer N >= 2
+    // The equation defines an elliptic curve; for integer N >= 2 rational points
+    // always exist, giving integer solutions after scaling (possibly with hundreds of digits).
+    // Do NOT delegate to LLM here because Bielik can produce incorrect conclusions.
+    if (N >= 2 && Number.isInteger(N)) {
+      logDebug(`  📐 No small solution for N=${N}, using known theoretical result`);
+      const isExistenceQ = /da si[eę]|czy/.test(textLower);
+      if (isExistenceQ) {
+        return `Tak. Rozwiązanie istnieje, ale wymaga bardzo dużych liczb (setki cyfr). Równanie a/(b+c) + b/(a+c) + c/(a+b) = ${N} definiuje krzywą eliptyczną, na której dla całkowitych N >= 2 zawsze istnieją punkty wymierne dające rozwiązanie całkowite po przeskalowaniu.`;
+      }
+      return `Rozwiązanie istnieje, ale wymaga bardzo dużych liczb. Równanie definiuje krzywą eliptyczną z punktami wymiernymi dla N >= 2.`;
+    }
 
-    // Generate SymPy code that transforms to elliptic curve form and analyzes
+    // Phase 3: For non-integer or N < 2, try elliptic curve analysis via LLM
+    logDebug(`  📐 Non-standard N=${N}, attempting elliptic analysis...`);
     const ellipticResult = await this.nesbittEllipticAnalysis(N);
     if (ellipticResult) {
       return ellipticResult;
     }
 
-    // Fallback: known mathematical result
-    const isExistenceQ = /da si[eę]|czy/.test(textLower);
-    if (isExistenceQ) {
-      if (N >= 2 && Number.isInteger(N)) {
-        return `Tak, dla N=${N} rozwiązanie w dodatnich liczbach całkowitych istnieje, ale wymaga bardzo dużych liczb (setki cyfr). Wynika to z teorii krzywych eliptycznych: równanie a/(b+c) + b/(a+c) + c/(a+b) = ${N} definiuje krzywą eliptyczną, a dla całkowitych N >= 2 zawsze istnieją punkty wymierne, które po przeskalowaniu dają rozwiązanie całkowite.`;
-      }
-    }
-
-    return `Dla N=${N}: równanie a/(b+c) + b/(a+c) + c/(a+b) = ${N} definiuje krzywą eliptyczną. Rozwiązanie w dodatnich liczbach całkowitych istnieje, ale wymaga bardzo dużych liczb.`;
+    return null;
   }
 
   /**
@@ -1524,7 +1527,7 @@ for c in range(1, ${maxRange}):
 if not found:
     print("NIE_ZNALEZIONO")`;
 
-      console.log(`  🔍 Nesbitt brute-force search (range 1..${maxRange}, N=${N})...`);
+      logVerbose(`  🔍 Nesbitt brute-force search (range 1..${maxRange}, N=${N})...`);
 
       const result = await this.mcpClient.callTool('sympy_calculate', {
         expression: code,
@@ -1536,7 +1539,7 @@ if not found:
         .join('\n');
 
       if (/Error:|Traceback|Timeout/i.test(output)) {
-        console.log(`  ⚠️ Brute-force error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Brute-force error: ${output.substring(0, 100)}`);
         return null;
       }
 
@@ -1544,16 +1547,16 @@ if not found:
       if (foundMatch) {
         const solution = foundMatch[1].trim();
         const verifyLine = /WERYFIKACJA:\s*(.+)/i.exec(output);
-        console.log(`  ✅ Found Nesbitt solution: ${solution}`);
+        logDebug(`  ✅ Found Nesbitt solution: ${solution}`);
         return `Tak. ${verifyLine ? verifyLine[1] : solution}`;
       }
 
       if (/NIE_ZNALEZIONO/i.test(output)) {
-        console.log(`  ℹ️ No Nesbitt solution in range 1..${maxRange}`);
+        logDebug(`  ℹ️ No Nesbitt solution in range 1..${maxRange}`);
       }
       return null;
     } catch (error) {
-      console.log(`  ⚠️ Nesbitt brute-force error: ${error}`);
+      logVerbose(`  ⚠️ Nesbitt brute-force error: ${error}`);
       return null;
     }
   }
@@ -1645,7 +1648,7 @@ else:
     print("TEORIA: Dla N=${N} (calkowite >= 2), rozwiazanie istnieje (krzywa eliptyczna ma punkty wymierne)")
     print("ODPOWIEDZ: Tak, rozwiazanie istnieje ale wymaga bardzo duzych liczb")`;
 
-      console.log(`  🔬 Running elliptic curve analysis for N=${N}...`);
+      logVerbose(`  🔬 Running elliptic curve analysis for N=${N}...`);
 
       const result = await this.mcpClient.callTool('sympy_calculate', {
         expression: code,
@@ -1657,7 +1660,7 @@ else:
         .join('\n');
 
       if (/Error:|Traceback|Timeout/i.test(output)) {
-        console.log(`  ⚠️ Elliptic analysis error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Elliptic analysis error: ${output.substring(0, 100)}`);
         return null;
       }
 
@@ -1667,7 +1670,7 @@ else:
         const verifyMatch = /WERYFIKACJA:\s*(.+)/i.exec(output);
         const digitsMatch = /Liczba cyfr:\s*(.+)/i.exec(output);
         const solution = solMatch[1].trim();
-        console.log(`  ✅ Elliptic curve solution: ${solution}`);
+        logDebug(`  ✅ Elliptic curve solution: ${solution}`);
         let answer = `Tak. Rozwiązanie: ${solution}`;
         if (verifyMatch) {
           answer += `. Weryfikacja: suma = ${verifyMatch[1].trim()}`;
@@ -1680,13 +1683,13 @@ else:
 
       // Theoretical result
       if (/TEORIA:/i.test(output)) {
-        console.log(`  📐 Theoretical result for N=${N}`);
+        logDebug(`  📐 Theoretical result for N=${N}`);
         return null; // Let the fallback in detectAndSolveNesbitt handle it
       }
 
       return null;
     } catch (error) {
-      console.log(`  ⚠️ Elliptic analysis error: ${error}`);
+      logVerbose(`  ⚠️ Elliptic analysis error: ${error}`);
       return null;
     }
   }
@@ -1723,7 +1726,7 @@ Zadanie: ${problem}`;
       let code = codeMatch[1].trim();
       code = this.sanitizeCode(code);
 
-      console.log('  🔍 Running existence brute-force search...');
+      logVerbose('  🔍 Running existence brute-force search...');
 
       const result = await this.mcpClient.callTool('sympy_calculate', {
         expression: code,
@@ -1735,7 +1738,7 @@ Zadanie: ${problem}`;
         .join('\n');
 
       if (/Error:|Traceback|SyntaxError|NameError|Timeout/i.test(output)) {
-        console.log(`  ⚠️ Brute-force search error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Brute-force search error: ${output.substring(0, 100)}`);
         return null;
       }
 
@@ -1743,19 +1746,19 @@ Zadanie: ${problem}`;
       const foundMatch = /ZNALEZIONO:\s*(.+)/i.exec(output);
       if (foundMatch) {
         const solution = foundMatch[1].trim();
-        console.log(`  ✅ Found solution: ${solution}`);
+        logDebug(`  ✅ Found solution: ${solution}`);
         return `Tak. Przykładowe rozwiązanie: ${solution}`;
       }
 
       // Not found in small range, proceed to algebraic analysis
       if (/NIE_ZNALEZIONO/i.test(output)) {
-        console.log('  ℹ️ No solution in small range, trying algebraic analysis...');
+        logDebug('  ℹ️ No solution in small range, trying algebraic analysis...');
         return null;
       }
 
       return null;
     } catch (error) {
-      console.log(`  ⚠️ Brute-force search error: ${error}`);
+      logVerbose(`  ⚠️ Brute-force search error: ${error}`);
       return null;
     }
   }
@@ -1806,7 +1809,7 @@ ${ragContext ? `Kontekst: ${ragContext}` : ''}`;
       let code = codeMatch[1].trim();
       code = this.sanitizeCode(code);
 
-      console.log('  🔬 Running algebraic existence analysis...');
+      logVerbose('  🔬 Running algebraic existence analysis...');
 
       const result = await this.mcpClient.callTool('sympy_calculate', {
         expression: code,
@@ -1818,19 +1821,19 @@ ${ragContext ? `Kontekst: ${ragContext}` : ''}`;
         .join('\n');
 
       if (/Error:|Traceback|SyntaxError|NameError|Timeout/i.test(output)) {
-        console.log(`  ⚠️ Algebraic analysis error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Algebraic analysis error: ${output.substring(0, 100)}`);
         // Try a simplified fallback: pure LLM reasoning without code execution
         return this.existenceLLMReasoning(problem);
       }
 
       const answerMatch = /ODPOWIED[ZŹ]:\s*(Tak|Nie|Nie wiadomo)/i.exec(output);
       if (!answerMatch) {
-        console.log(`  ⚠️ Could not parse algebraic result: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Could not parse algebraic result: ${output.substring(0, 100)}`);
         return this.existenceLLMReasoning(problem);
       }
 
       const answer = answerMatch[1];
-      console.log(`  📐 Algebraic analysis result: ${answer}`);
+      logDebug(`  📐 Algebraic analysis result: ${answer}`);
 
       if (/tak/i.test(answer)) {
         return 'Tak, takie liczby istnieją, ale mogą wymagać bardzo dużych wartości (zbyt dużych, by znaleźć je prostym przeszukiwaniem).';
@@ -1840,7 +1843,7 @@ ${ragContext ? `Kontekst: ${ragContext}` : ''}`;
         return 'Nie, takie liczby nie istnieją.';
       }
     } catch (error) {
-      console.log(`  ⚠️ Algebraic analysis error: ${error}`);
+      logVerbose(`  ⚠️ Algebraic analysis error: ${error}`);
       return null;
     }
   }
@@ -1871,7 +1874,7 @@ Pytanie: ${problem}`;
 
       // Must start with Tak or Nie
       if (/^(Tak|Nie)\b/i.test(cleaned)) {
-        console.log(`  🧠 LLM reasoning result: ${cleaned.substring(0, 80)}`);
+        logDebug(`  🧠 LLM reasoning result: ${cleaned.substring(0, 80)}`);
         return cleaned;
       }
 
@@ -1916,7 +1919,7 @@ Pytanie: ${problem}`;
         return null;
       }
 
-      console.log(`🔬 Running substitution verification for: ${finalAnswer.substring(0, 60)}`);
+      logVerbose(`🔬 Running substitution verification for: ${finalAnswer.substring(0, 60)}`);
 
       const verifyPrompt = `Mam zadanie i proponowaną odpowiedź. Napisz KRÓTKI kod SymPy (max 12 linii) który SPRAWDZI czy odpowiedź jest poprawna przez podstawienie do oryginalnego równania.
 
@@ -1945,7 +1948,7 @@ Sprawdź czy ta odpowiedź faktycznie spełnia warunki zadania.`;
         || /```\s*\n([\s\S]*?)\n```/.exec(response);
 
       if (!codeMatch) {
-        console.log(`  ⚠️ Could not extract verification code`);
+        logVerbose(`  ⚠️ Could not extract verification code`);
         return null;
       }
 
@@ -1968,21 +1971,21 @@ Sprawdź czy ta odpowiedź faktycznie spełnia warunki zadania.`;
 
       // Check for execution errors
       if (/Error:|Traceback|SyntaxError|NameError/i.test(output)) {
-        console.log(`  ⚠️ Substitution verification error: ${output.substring(0, 100)}`);
+        logVerbose(`  ⚠️ Substitution verification error: ${output.substring(0, 100)}`);
         return null; // Cannot verify, don't reject the answer
       }
 
       const verifyMatch = /WERYFIKACJA:\s*(TAK|NIE)/i.exec(output);
       if (!verifyMatch) {
-        console.log(`  ⚠️ Could not parse verification result from: ${output.substring(0, 80)}`);
+        logVerbose(`  ⚠️ Could not parse verification result from: ${output.substring(0, 80)}`);
         return null;
       }
 
       const passed = verifyMatch[1].toUpperCase() === 'TAK';
-      console.log(`  ${passed ? '✅' : '❌'} Substitution verification: ${verifyMatch[1]}`);
+      logDebug(`  ${passed ? '✅' : '❌'} Substitution verification: ${verifyMatch[1]}`);
       return passed;
     } catch (error) {
-      console.log(`  ⚠️ Substitution verification error: ${error}`);
+      logVerbose(`  ⚠️ Substitution verification error: ${error}`);
       return null; // On error, don't reject the answer
     }
   }

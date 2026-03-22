@@ -3,6 +3,8 @@
  * Communicates with Lean Proxy Server via HTTP
  */
 
+import { logError } from './logger';
+
 export interface LeanProverResult {
   success: boolean;
   output: string;
@@ -36,7 +38,7 @@ export class LeanProverServiceBrowser {
       const data = await response.json();
       return data.leanInstalled === true;
     } catch (error) {
-      console.error('Lean health check failed:', error);
+      logError('Lean health check failed:', error);
       return false;
     }
   }

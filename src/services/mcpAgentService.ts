@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { MLXAgent } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
+import { logDebug, logVerbose, logError } from './logger';
 
 export type LLMProvider = 'claude' | 'mlx';
 
@@ -72,9 +73,9 @@ export class MCPAgentOrchestrator {
       this.mcpClient = new MCPClient(proxyUrl);
       await this.mcpClient.connect();
       this.availableTools = await this.mcpClient.listTools();
-      console.log('🔌 Connected to MCP server. Available tools:', this.availableTools.map(t => t.name));
+      logDebug('🔌 Connected to MCP server. Available tools:', this.availableTools.map(t => t.name));
     } catch (error) {
-      console.error('Failed to connect to MCP server:', error);
+      logError('Failed to connect to MCP server:', error);
       throw error;
     }
   }
@@ -156,7 +157,7 @@ export class MCPAgentOrchestrator {
             };
           }
         } catch (error) {
-          console.error('Failed to parse tool_call:', error, jsonStr);
+          logError('Failed to parse tool_call:', error, jsonStr);
         }
       }
 
@@ -221,7 +222,7 @@ export class MCPAgentOrchestrator {
 
     for (const toolCall of toolCalls) {
       try {
-        console.log(`🔧 Executing tool: ${toolCall.name}`, toolCall.arguments);
+        logDebug(`🔧 Executing tool: ${toolCall.name}`, toolCall.arguments);
         const result = await this.mcpClient.callTool(toolCall.name, toolCall.arguments);
 
         const textContent = result.content
@@ -236,9 +237,9 @@ export class MCPAgentOrchestrator {
           isError: result.isError,
         });
 
-        console.log(`✅ Tool result:`, textContent);
+        logDebug(`✅ Tool result:`, textContent);
       } catch (error) {
-        console.error(`❌ Tool execution failed:`, error);
+        logError(`❌ Tool execution failed:`, error);
         results.push({
           toolCallId: toolCall.id,
           toolName: toolCall.name,
@@ -258,7 +259,7 @@ export class MCPAgentOrchestrator {
     userMessage: string,
     onMessageCallback?: (message: Message) => void
   ): Promise<Message[]> {
-    console.log('🎯 Processing user message:', userMessage);
+    logDebug('🎯 Processing user message:', userMessage);
 
     // Add user message
     const userMsg: Message = {
@@ -278,7 +279,7 @@ export class MCPAgentOrchestrator {
 
     while (iteration < maxIterations) {
       iteration++;
-      console.log(`\n🔄 Iteration ${iteration}/${maxIterations}`);
+      logDebug(`\n🔄 Iteration ${iteration}/${maxIterations}`);
 
       let assistantContent = '';
       let toolCalls: ToolCall[] = [];
@@ -349,46 +350,46 @@ Odpowiadaj po polsku. NIGDY nie pokazuj ręcznych obliczeń - TYLKO wyniki z nar
           requestParams.tools = claudeTools;
         }
 
-        console.log('🤖 Calling Claude API with tools:', claudeTools.map(t => t.name));
-        console.log('📤 Request messages:', JSON.stringify(messages, null, 2));
+        logDebug('🤖 Calling Claude API with tools:', claudeTools.map(t => t.name));
+        logVerbose('📤 Request messages:', JSON.stringify(messages, null, 2));
 
         let response;
         try {
           response = await this.client.messages.create(requestParams);
         } catch (error) {
-          console.error('❌ Claude API error:', error);
+          logError('❌ Claude API error:', error);
           if (error instanceof Error) {
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
+            logError('Error message:', error.message);
+            logVerbose('Error stack:', error.stack);
           }
           throw error;
         }
 
-        console.log('✅ Claude response:', response);
-        console.log('📊 Stop reason:', response.stop_reason);
-        console.log('📝 Content blocks:', response.content);
+        logVerbose('✅ Claude response:', response);
+        logDebug('📊 Stop reason:', response.stop_reason);
+        logVerbose('📝 Content blocks:', response.content);
 
         // Process response content
         for (const block of response.content) {
           if (block.type === 'text') {
             assistantContent += block.text;
-            console.log('📄 Found text block:', block.text);
+            logVerbose('📄 Found text block:', block.text);
           } else if (block.type === 'tool_use') {
             toolCalls.push({
               id: block.id,
               name: block.name,
               arguments: block.input as Record<string, any>,
             });
-            console.log('🔧 Found tool_use block:', block.name);
+            logDebug('🔧 Found tool_use block:', block.name);
           }
         }
 
-        console.log('📊 Extracted - assistantContent:', assistantContent);
-        console.log('🔧 Extracted - toolCalls:', toolCalls);
+        logVerbose('📊 Extracted - assistantContent:', assistantContent);
+        logVerbose('🔧 Extracted - toolCalls:', toolCalls);
 
         // If no content and no tool calls, stop
         if (!assistantContent && toolCalls.length === 0) {
-          console.log('⚠️ No content and no tool calls, breaking loop');
+          logDebug('⚠️ No content and no tool calls, breaking loop');
           break;
         }
 
@@ -519,7 +520,7 @@ ${this.generateToolDescriptionsForMLX()}`;
             };
           });
 
-        console.log('🤖 Calling MLX with tool descriptions');
+        logDebug('🤖 Calling MLX with tool descriptions');
         assistantContent = await this.mlxAgent.execute(systemPrompt, messages);
 
         // Remove <think> blocks from response (Bielik shows reasoning)
@@ -587,7 +588,7 @@ ${this.generateToolDescriptionsForMLX()}`;
       }
     }
 
-    console.log('✅ Processing complete. Messages:', newMessages.length);
+    logDebug('✅ Processing complete. Messages:', newMessages.length);
     return newMessages;
   }
 

@@ -5,6 +5,8 @@
  * pasujące do zapytania użytkownika, formatuje kontekst dla Agent 1 (Analityczny).
  */
 
+import { logDebug, logWarn } from './logger';
+
 export interface RAGResult {
   id: string;
   score: number;
@@ -84,7 +86,7 @@ export class RAGService {
       clearTimeout(timeout);
 
       if (!res.ok) {
-        console.warn(`⚠️ RAG query failed: ${res.status}`);
+        logWarn(`⚠️ RAG query failed: ${res.status}`);
         return [];
       }
 
@@ -93,10 +95,10 @@ export class RAGService {
       // Cache wyników
       this.cache.set(cacheKey, { results: data.results, timestamp: Date.now() });
 
-      console.log(`📚 RAG: ${data.results.length} wyników w ${data.retrieval_ms}ms`);
+      logDebug(`📚 RAG: ${data.results.length} wyników w ${data.retrieval_ms}ms`);
       return data.results;
     } catch (err) {
-      console.warn('⚠️ RAG query error (non-blocking):', err);
+      logWarn('⚠️ RAG query error (non-blocking):', err);
       return [];
     }
   }

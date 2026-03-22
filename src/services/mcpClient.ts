@@ -1,4 +1,5 @@
 import { spawn, ChildProcess } from 'child_process';
+import { logDebug, logError } from './logger';
 
 export interface MCPTool {
   name: string;
@@ -56,18 +57,18 @@ export class MCPClient {
 
         // Handle stderr (server logs)
         this.serverProcess.stderr?.on('data', (data: Buffer) => {
-          console.log('[MCP Server]', data.toString());
+          logDebug('[MCP Server]', data.toString());
         });
 
         // Handle process errors
         this.serverProcess.on('error', (error) => {
-          console.error('MCP server error:', error);
+          logError('MCP server error:', error);
           reject(error);
         });
 
         // Handle process exit
         this.serverProcess.on('exit', (code) => {
-          console.log('MCP server exited with code:', code);
+          logDebug('MCP server exited with code:', code);
         });
 
         // Wait a bit for server to start, then initialize
@@ -113,7 +114,7 @@ export class MCPClient {
           }
         }
       } catch (error) {
-        console.error('Failed to parse MCP message:', line, error);
+        logError('Failed to parse MCP message:', line, error);
       }
     }
   }
@@ -169,7 +170,7 @@ export class MCPClient {
     });
 
     this.initialized = true;
-    console.log('MCP initialized:', result);
+    logDebug('MCP initialized:', result);
   }
 
   /**

@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { logDebug, logError } from './logger';
 
 /**
  * Service for integrating with Lean Prover
@@ -224,9 +225,9 @@ theorem auto_generated_theorem : True := by
    */
   async cleanup(): Promise<void> {
     try {
-      console.log('Cleaning up Lean workspace:', this.workDir);
+      logDebug('Cleaning up Lean workspace:', this.workDir);
     } catch (error) {
-      console.error('Cleanup error:', error);
+      logError('Cleanup error:', error);
     }
   }
 

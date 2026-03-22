@@ -1,3 +1,5 @@
+import { logDebug, logVerbose, logError } from './logger';
+
 export type LLMProviderType = 'mlx' | 'ollama' | 'remote';
 
 export interface LLMConfig {
@@ -69,7 +71,7 @@ export class LLMAgent {
       });
       return response.ok;
     } catch (error) {
-      console.error(`[LLMAgent:${this.provider}] Server not available:`, error);
+      logError(`[LLMAgent:${this.provider}] Server not available:`, error);
       return false;
     }
   }
@@ -98,7 +100,7 @@ export class LLMAgent {
 
       return data.data?.map((m) => m.id) || [];
     } catch (error) {
-      console.error(`[LLMAgent:${this.provider}] Error listing models:`, error);
+      logError(`[LLMAgent:${this.provider}] Error listing models:`, error);
       return [];
     }
   }
@@ -126,7 +128,7 @@ export class LLMAgent {
         max_tokens: overrides?.maxTokens ?? this.maxTokens,
       };
 
-      console.log(`[LLMAgent:${this.provider}] Sending request:`, {
+      logDebug(`[LLMAgent:${this.provider}] Sending request:`, {
         baseUrl: this.baseUrl,
         model: this.model,
         messagesCount: messagesWithSystem.length,
@@ -168,14 +170,14 @@ export class LLMAgent {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`LLM API error (${response.status}):`, errorText);
+          logError(`LLM API error (${response.status}):`, errorText);
           throw new Error(`Błąd API LLM (HTTP ${response.status})`);
         }
 
         const data = await response.json() as LLMResponse;
         const content = data.choices?.[0]?.message?.content || '';
 
-        console.log(`[LLMAgent:${this.provider}] Response received:`, {
+        logVerbose(`[LLMAgent:${this.provider}] Response received:`, {
           contentLength: content.length,
           finishReason: data.choices?.[0]?.finish_reason,
         });
@@ -189,7 +191,7 @@ export class LLMAgent {
         throw fetchError;
       }
     } catch (error) {
-      console.error(`[LLMAgent:${this.provider}] Error executing:`, error);
+      logError(`[LLMAgent:${this.provider}] Error executing:`, error);
 
       // Provide helpful error messages (without leaking internal URLs)
       if (error instanceof Error) {
@@ -218,7 +220,7 @@ export class LLMAgent {
    * Set the model to use
    */
   setModel(model: string): void {
-    console.log(`[LLMAgent:${this.provider}] Changing model from ${this.model} to ${model}`);
+    logDebug(`[LLMAgent:${this.provider}] Changing model from ${this.model} to ${model}`);
     this.model = model;
   }
 

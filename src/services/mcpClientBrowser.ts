@@ -3,6 +3,8 @@
  * Communicates with MCP proxy server via HTTP
  */
 
+import { logDebug, logError } from './logger';
+
 export interface MCPTool {
   name: string;
   description: string;
@@ -56,9 +58,9 @@ export class MCPClientBrowser {
       this.tools = toolsData.tools || [];
       this.connected = true;
 
-      console.log('MCP client connected. Available tools:', this.tools.map(t => t.name));
+      logDebug('MCP client connected. Available tools:', this.tools.map(t => t.name));
     } catch (error) {
-      console.error('Failed to connect to MCP:', error);
+      logError('Failed to connect to MCP:', error);
       throw error;
     }
   }
@@ -108,7 +110,7 @@ export class MCPClientBrowser {
       const result = await response.json();
       return result;
     } catch (error) {
-      console.error('Tool call failed:', error);
+      logError('Tool call failed:', error);
       throw error;
     }
   }

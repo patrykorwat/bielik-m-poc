@@ -10,6 +10,10 @@ import { ClassificationResult, SolverResult } from './classifierTypes';
 import { runExtractionChain, runMultiStepChain, ChainResult } from './multiStepChain';
 import { matchTemplate } from './extractionTemplates';
 import prompts from '../../prompts.json';
+import { logInfo, logDebug, logVerbose, logWarn, logError, setLogLevel, LogLevel } from './logger';
+
+// Initialize log level from config
+setLogLevel(((prompts as any).features?.log_level ?? 1) as LogLevel);
 
 export type LLMProvider = LLMProviderType;
 export type ProverBackend = 'sympy' | 'lean' | 'both';
@@ -105,7 +109,7 @@ export class ThreeAgentOrchestrator {
    */
   setClassifierMode(enabled: boolean): void {
     this.classifierMode = enabled;
-    console.log(`🔧 classifierMode set to ${enabled}`);
+    logDebug(`🔧 classifierMode set to ${enabled}`);
   }
 
   /**
@@ -116,9 +120,9 @@ export class ThreeAgentOrchestrator {
       this.mcpClient = new MCPClient(proxyUrl);
       await this.mcpClient.connect();
       this.availableTools = await this.mcpClient.listTools();
-      console.log('🔌 Connected to MCP server. Available tools:', this.availableTools.map(t => t.name));
+      logDebug('🔌 Connected to MCP server. Available tools:', this.availableTools.map(t => t.name));
     } catch (error) {
-      console.error('Failed to connect to MCP server:', error);
+      logError('Failed to connect to MCP server:', error);
       throw error;
     }
   }
@@ -128,7 +132,7 @@ export class ThreeAgentOrchestrator {
    */
   async connectLean(proxyUrl: string = 'http://localhost:3002'): Promise<void> {
     if (this.proverBackend === 'sympy') {
-      console.log('⏩ Skipping Lean connection (SymPy-only mode)');
+      logDebug('⏩ Skipping Lean connection (SymPy-only mode)');
       return;
     }
 
@@ -142,7 +146,7 @@ export class ThreeAgentOrchestrator {
     }
 
     this.leanAvailable = true;
-    console.log('🎯 Lean Prover available (will be used for verification)');
+    logDebug('🎯 Lean Prover available (will be used for verification)');
   }
 
   /**
@@ -170,7 +174,7 @@ export class ThreeAgentOrchestrator {
     const maxTokens = options?.maxTokens || 2048;
     const temperature = options?.temperature ?? 0.3;
 
-    console.log(`🤖 [${agentName}] Calling LLM (maxTokens=${maxTokens}, temp=${temperature})...`);
+    logDebug(`🤖 [${agentName}] Calling LLM (maxTokens=${maxTokens}, temp=${temperature})...`);
 
     const content = await this.llmAgent.execute(systemPrompt, contextMessages, {
       maxTokens,
@@ -182,7 +186,7 @@ export class ThreeAgentOrchestrator {
     cleanContent = cleanContent.replace(/<think>[\s\S]*/g, '').trim();
     cleanContent = cleanContent.replace(/<\/?think>/g, '').trim();
 
-    console.log(`✅ [${agentName}] Response received`);
+    logDebug(`✅ [${agentName}] Response received`);
     return cleanContent;
   }
 
@@ -211,7 +215,7 @@ export class ThreeAgentOrchestrator {
       throw new Error('MCP client not connected');
     }
 
-    console.log('🔧 Executing SymPy calculation...');
+    logDebug('🔧 Executing SymPy calculation...');
 
     try {
       const result = await this.mcpClient.callTool('sympy_calculate', {
@@ -223,10 +227,10 @@ export class ThreeAgentOrchestrator {
         .map(c => c.text)
         .join('\n');
 
-      console.log('✅ SymPy result:', textContent);
+      logDebug('✅ SymPy result:', textContent);
       return textContent;
     } catch (error) {
-      console.error('❌ SymPy execution failed:', error);
+      logError('❌ SymPy execution failed:', error);
       throw error;
     }
   }
@@ -254,37 +258,37 @@ export class ThreeAgentOrchestrator {
     }
 
     // Pattern 2: Triangle optimization/computation (Heron-based, multiple sub-patterns)
-    console.log('🔍 Template: checking triangle optimization...');
+    logDebug('🔍 Template: checking triangle optimization...');
     const triParams = this.detectTriangleOptimizationParams(problemText);
-    console.log('🔍 Template: triParams =', triParams ? JSON.stringify(triParams) : 'null');
+    logDebug('🔍 Template: triParams =', triParams ? JSON.stringify(triParams) : 'null');
     if (triParams) {
       const code = this.buildTriangleOptimizationCode(triParams);
-      console.log('🔍 Template: code generated =', code ? `${code.length} chars` : 'null');
+      logDebug('🔍 Template: code generated =', code ? `${code.length} chars` : 'null');
       if (code) {
         return this.executeTemplateSolverCode(code, `triangle_${triParams.subtype}`);
       }
     }
 
     // Pattern 3: Parametric quadratic equation with root relationship
-    console.log('🔍 Template: checking parametric quadratic...');
+    logDebug('🔍 Template: checking parametric quadratic...');
     const quadParams = this.detectParametricQuadraticParams(problemText);
-    console.log('🔍 Template: quadParams =', quadParams ? JSON.stringify(quadParams) : 'null');
+    logDebug('🔍 Template: quadParams =', quadParams ? JSON.stringify(quadParams) : 'null');
     if (quadParams) {
       const code = this.buildParametricQuadraticCode(quadParams);
       if (code) {
-        console.log('🔍 Template: parametric quadratic code generated =', code.length, 'chars');
+        logDebug('🔍 Template: parametric quadratic code generated =', code.length, 'chars');
         return this.executeTemplateSolverCode(code, `parametric_quadratic`);
       }
     }
 
     // Pattern 4: Regular tetrahedron + inscribed sphere + cross-section
-    console.log('🔍 Template: checking tetrahedron sphere...');
+    logDebug('🔍 Template: checking tetrahedron sphere...');
     const tetraParams = this.detectTetrahedronSphereParams(problemText);
-    console.log('🔍 Template: tetraParams =', tetraParams ? JSON.stringify(tetraParams) : 'null');
+    logDebug('🔍 Template: tetraParams =', tetraParams ? JSON.stringify(tetraParams) : 'null');
     if (tetraParams) {
       const code = this.buildTetrahedronSphereCode(tetraParams);
       if (code) {
-        console.log('🔍 Template: tetrahedron sphere code generated =', code.length, 'chars');
+        logDebug('🔍 Template: tetrahedron sphere code generated =', code.length, 'chars');
         return this.executeTemplateSolverCode(code, `tetrahedron_sphere`);
       }
     }
@@ -312,10 +316,10 @@ export class ThreeAgentOrchestrator {
         };
       }
     } catch (e) {
-      console.error(`❌ Template solver (${template}) execution error:`, e);
-      console.error(`❌ Error details:`, e instanceof Error ? e.message : String(e));
+      logError(`❌ Template solver (${template}) execution error:`, e);
+      logError(`❌ Error details:`, e instanceof Error ? e.message : String(e));
     }
-    console.log(`🔍 Template solver (${template}): returning null (no ODPOWIEDZ found or error)`);
+    logInfo(`🔍 Template solver (${template}): returning null (no ODPOWIEDZ found or error)`);
     return null;
   }
 
@@ -898,7 +902,7 @@ else:
       if (!/wysoko|obj[eę]to|pol[eua]|przek[aą]tn|promie/.test(lower)) return null;
     }
 
-    console.log(`🔍 Tetrahedron: edge=${edge}, vol=${volNum}/${volDen}, plane=${hasPlane}, find=${findWhat}`);
+    logDebug(`🔍 Tetrahedron: edge=${edge}, vol=${volNum}/${volDen}, plane=${hasPlane}, find=${findWhat}`);
 
     return { edgeLength: edge, volNum, volDen, hasPlane, findWhat };
   }
@@ -1056,7 +1060,7 @@ print("ODPOWIEDZ:", radsimp(simplify(answer)))
       throw new Error('Lean Prover not available');
     }
 
-    console.log('🎯 Verifying solution with Lean Prover...');
+    logInfo('🎯 Verifying solution with Lean Prover...');
 
     try {
       const result = await this.leanClient.proveFromProblem(problem, solution);
@@ -1076,7 +1080,7 @@ ${result.output || ''}
 ${result.error || ''}`;
       }
     } catch (error) {
-      console.error('❌ Lean verification failed:', error);
+      logError('❌ Lean verification failed:', error);
       return `❌ **Błąd weryfikacji Lean:** ${error instanceof Error ? error.message : String(error)}`;
     }
   }
@@ -2605,10 +2609,10 @@ ${result.error || ''}`;
         // Check if output looks like an error (code ran but produced error text)
         const suspicion = this.isOutputSuspicious(result);
         if (suspicion && attempt < maxRetries) {
-          console.warn(`⚠️ Attempt ${attempt + 1}: ${suspicion}`);
+          logWarn(`⚠️ Attempt ${attempt + 1}: ${suspicion}`);
           const fixedCode = this.tryFixCode(currentCode, result);
           if (fixedCode !== currentCode) {
-            console.log('📤 Retrying with fix for suspicious output...');
+            logVerbose('📤 Retrying with fix for suspicious output...');
             currentCode = fixedCode;
             continue;
           }
@@ -2620,17 +2624,17 @@ ${result.error || ''}`;
       } catch (error) {
         lastError = error;
         const errorMsg = error instanceof Error ? error.message : String(error);
-        console.warn(`⚠️ Attempt ${attempt + 1} failed:`, errorMsg.substring(0, 120));
+        logWarn(`⚠️ Attempt ${attempt + 1} failed:`, errorMsg.substring(0, 120));
 
         if (attempt >= maxRetries) break;
 
         const fixedCode = this.tryFixCode(currentCode, errorMsg);
         if (fixedCode === currentCode) {
-          console.warn('⚠️ No fix found, giving up retries.');
+          logWarn('⚠️ No fix found, giving up retries.');
           break;
         }
 
-        console.log('📤 Retrying with fixed code...');
+        logVerbose('📤 Retrying with fixed code...');
         currentCode = fixedCode;
       }
     }
@@ -2703,7 +2707,7 @@ ${result.error || ''}`;
 
       return { valid: true }; // TAK or unrecognized → pass (fail-open)
     } catch (err) {
-      console.warn('⚠️ Guardrail LLM check failed (fail-open):', err);
+      logWarn('⚠️ Guardrail LLM check failed (fail-open):', err);
       return { valid: true }; // fail-open
     }
   }
@@ -2712,18 +2716,18 @@ ${result.error || ''}`;
     // Layer 1: Rule-based checks (fast, no LLM)
     const rulesResult = this.validateInputRules(message);
     if (!rulesResult.valid) {
-      console.log(`🛡️ Guardrail (rules): BLOCKED — ${rulesResult.reason}`);
+      logDebug(`🛡️ Guardrail (rules): BLOCKED — ${rulesResult.reason}`);
       return rulesResult;
     }
 
     // Layer 2: LLM-based check (is this a math question?)
     const llmResult = await this.validateInputLLM(message);
     if (!llmResult.valid) {
-      console.log(`🛡️ Guardrail (LLM): BLOCKED — ${llmResult.reason}`);
+      logDebug(`🛡️ Guardrail (LLM): BLOCKED — ${llmResult.reason}`);
       return llmResult;
     }
 
-    console.log('🛡️ Guardrail: PASSED');
+    logDebug('🛡️ Guardrail: PASSED');
     return { valid: true };
   }
 
@@ -2745,7 +2749,7 @@ ${result.error || ''}`;
     if (options?.classifierMode !== undefined) {
       this.classifierMode = options.classifierMode;
     }
-    console.log(`🎯 Processing with multi-agent system (classifierMode=${this.classifierMode}):`, userMessage);
+    logInfo(`🎯 Processing with multi-agent system (classifierMode=${this.classifierMode}):`, userMessage);
 
     // === Parse #UNI=ON/OFF toggle ===
     const uniMatch = userMessage.match(/^#UNI\s*=\s*(ON|OFF)\b/im);
@@ -2753,7 +2757,7 @@ ${result.error || ''}`;
     // Strip the #UNI tag from the message so LLM doesn't see it
     if (uniMatch) {
       userMessage = userMessage.replace(/^#UNI\s*=\s*(ON|OFF)\s*/im, '').trim();
-      console.log(`🎓 University mode: ${universityEnabled ? 'ON' : 'OFF'} (from #UNI tag)`);
+      logDebug(`🎓 University mode: ${universityEnabled ? 'ON' : 'OFF'} (from #UNI tag)`);
     }
 
     // Add user message
@@ -2794,10 +2798,10 @@ ${result.error || ''}`;
     // Detect MC questions
     const isMultipleChoice = /Opcje:|[A-D]\)/.test(userMessage);
 
-    console.log(`📋 Problem analysis:`);
-    console.log(`   MC question: ${isMultipleChoice}`);
-    console.log(`   Lean verification: ${shouldVerify ? 'yes' : 'no'}`);
-    console.log(`   Executor: always SymPy`);
+    logDebug(`📋 Problem analysis:`);
+    logDebug(`   MC question: ${isMultipleChoice}`);
+    logDebug(`   Lean verification: ${shouldVerify ? 'yes' : 'no'}`);
+    logDebug(`   Executor: always SymPy`);
 
     // ═══════════════════════════════════════════════════════════════════
     // RAG: Wzbogacenie kontekstem z bazy wiedzy
@@ -2806,13 +2810,13 @@ ${result.error || ''}`;
     let ragResults: any[] = [];
     const problemCategories = this.ragService.detectCategories(userMessage);
     if (problemCategories.length > 0) {
-      console.log(`🏷️ Detected problem categories: ${problemCategories.join(' + ')}`);
+      logDebug(`🏷️ Detected problem categories: ${problemCategories.join(' + ')}`);
     }
     try {
       ragResults = await this.ragService.query(userMessage, 5);
       if (ragResults.length > 0) {
         ragContext = this.ragService.formatContextForAgent(ragResults, problemCategories.length > 0 ? problemCategories : null);
-        console.log(`📚 RAG: ${ragResults.length} wyników znalezionych`);
+        logDebug(`📚 RAG: ${ragResults.length} wyników znalezionych`);
 
         // Dodaj wiadomość RAG do konwersacji (wyświetlana użytkownikowi)
         const ragDisplayMsg = this.formatRAGForDisplay(ragResults);
@@ -2830,14 +2834,14 @@ ${result.error || ''}`;
         }
       }
     } catch (err) {
-      console.warn('⚠️ RAG unavailable (continuing without):', err);
+      logWarn('⚠️ RAG unavailable (continuing without):', err);
     }
 
     // If RAG returned nothing but we detected categories, still inject strategies
     if (!ragContext && problemCategories.length > 0) {
       ragContext = this.ragService.formatContextForAgent([], problemCategories);
       if (ragContext) {
-        console.log(`📚 Injecting category strategies (no RAG results) for: ${problemCategories.join(' + ')}`);
+        logDebug(`📚 Injecting category strategies (no RAG results) for: ${problemCategories.join(' + ')}`);
       }
     }
 
@@ -2845,12 +2849,12 @@ ${result.error || ''}`;
     // TEMPLATE SOLVER: Deterministic, no LLM needed (highest priority)
     // ═══════════════════════════════════════════════════════════════════
     if (this.mcpClient) {
-      console.log('🔍 Checking template solver...');
+      logDebug('🔍 Checking template solver...');
       try {
         const templateResult = await this.tryTemplateSolver(userMessage);
-        console.log('🔍 Template solver result:', templateResult ? `matched=${templateResult.template}, success=${templateResult.success}` : 'no match');
+        logDebug('🔍 Template solver result:', templateResult ? `matched=${templateResult.template}, success=${templateResult.success}` : 'no match');
         if (templateResult && templateResult.success) {
-          console.log(`✅ Template solver matched: ${templateResult.template}, answer: ${templateResult.answer}`);
+          logInfo(`✅ Template solver matched: ${templateResult.template}, answer: ${templateResult.answer}`);
 
         // Show template solver code & output (code only in toolCalls, not in content)
         const templateMsg: Message = {
@@ -2896,13 +2900,13 @@ ${result.error || ''}`;
           newMessages.push(summaryMsg);
           if (onMessageCallback) onMessageCallback(summaryMsg);
         } catch (err) {
-          console.warn('⚠️ Summary generation failed:', err);
+          logWarn('⚠️ Summary generation failed:', err);
         }
 
         return newMessages;
       }
       } catch (templateErr) {
-        console.error('❌ Template solver top-level error:', templateErr);
+        logError('❌ Template solver top-level error:', templateErr);
       }
     }
 
@@ -2911,14 +2915,14 @@ ${result.error || ''}`;
     // ═══════════════════════════════════════════════════════════════════
     const isProofProblem = this.couldBenefitFromVerification(userMessage);
     if (isProofProblem && this.leanAvailable && this.leanClient) {
-      console.log('🎯 Proof problem detected — trying Lean primary solver...');
+      logInfo('🎯 Proof problem detected — trying Lean primary solver...');
 
       try {
         const solver = new LeanProofSolver(this.leanClient, this.llmAgent);
         const proofResult = await solver.solveProof(userMessage, ragContext || undefined);
 
         if (proofResult.success) {
-          console.log('✅ Lean proof successful!');
+          logInfo('✅ Lean proof successful!');
 
           const leanMsg: Message = {
             id: crypto.randomUUID(),
@@ -2945,19 +2949,19 @@ ${result.error || ''}`;
 
           return newMessages;
         } else {
-          console.log('⚠️ Lean proof failed, falling through to three-agent pipeline...');
+          logDebug('⚠️ Lean proof failed, falling through to three-agent pipeline...');
         }
       } catch (leanError) {
-        console.warn('⚠️ Lean solver error (continuing to three-agent):', leanError);
+        logWarn('⚠️ Lean solver error (continuing to three-agent):', leanError);
       }
     }
 
     // ═══════════════════════════════════════════════════════════════════
     // CLASSIFIER MODE: Skip Agent 1+2, use deterministic solver instead
     // ═══════════════════════════════════════════════════════════════════
-    console.log(`🔧 CLASSIFIER CHECK: classifierMode=${this.classifierMode}, mcpClient=${!!this.mcpClient}`);
+    logDebug(`🔧 CLASSIFIER CHECK: classifierMode=${this.classifierMode}, mcpClient=${!!this.mcpClient}`);
     if (this.classifierMode && this.mcpClient) {
-      console.log('\n=== CLASSIFIER MODE ===');
+      logDebug('\n=== CLASSIFIER MODE ===');
 
       try {
         // Step 1: Classify the problem
@@ -2973,9 +2977,9 @@ ${result.error || ''}`;
           { maxTokens: (prompts.agents as any).classifier?.max_tokens || 500, temperature: (prompts.agents as any).classifier?.temperature || 0.1, enableUniversity: universityEnabled }
         );
 
-        console.log(`🏷️ Classification: type=${classification.type}, confidence=${classification.confidence}, MC=${classification.isMultipleChoice}`);
+        logDebug(`🏷️ Classification: type=${classification.type}, confidence=${classification.confidence}, MC=${classification.isMultipleChoice}`);
 
-        console.log(`🔍 Klasyfikator: typ=${classification.type}, pewność=${(classification.confidence * 100).toFixed(0)}%`);
+        logDebug(`🔍 Klasyfikator: typ=${classification.type}, pewność=${(classification.confidence * 100).toFixed(0)}%`);
 
         // Step 2: Check if we should use fallback (old pipeline)
         if (!shouldUseFallback(classification)) {
@@ -2987,7 +2991,7 @@ ${result.error || ''}`;
             2
           );
 
-          console.log(`📊 Solver result: success=${solverResult.success}, answer=${solverResult.answer}`);
+          logDebug(`📊 Solver result: success=${solverResult.success}, answer=${solverResult.answer}`);
 
           // ═══ VERIFY numeric answer with deterministic brute-force ═══
           if (solverResult.success && solverResult.answer) {
@@ -3029,7 +3033,7 @@ ${result.error || ''}`;
 
           // Step 4: Summary agent (same as old pipeline) — only if solver succeeded
           if (solverResult.success) {
-            console.log('\n=== AGENT 3: Summary (classifier mode) ===');
+            logDebug('\n=== AGENT 3: Summary (classifier mode) ===');
             const summaryContext = this.getAgentContext();
             const summaryResponse = await this.executeAgentTurn(
               'Agent Podsumowujący',
@@ -3054,7 +3058,7 @@ ${result.error || ''}`;
           }
 
           // Deterministic solver FAILED — try extraction chain before old pipeline
-          console.log('⚠️ Deterministic solver failed, trying extraction chain...');
+          logDebug('⚠️ Deterministic solver failed, trying extraction chain...');
           if (this.mcpClient) {
             try {
               const chainResult: ChainResult = await runExtractionChain(
@@ -3092,7 +3096,7 @@ ${result.error || ''}`;
                 if (onMessageCallback) onMessageCallback(chainMsg);
 
                 // Summary agent for the extraction fallback
-                console.log('\n=== AGENT 3: Summary (extraction fallback) ===');
+                logDebug('\n=== AGENT 3: Summary (extraction fallback) ===');
                 const fallbackSummaryContext = this.getAgentContext();
                 const fallbackSummaryResponse = await this.executeAgentTurn(
                   'Agent Podsumowujący',
@@ -3118,9 +3122,9 @@ ${result.error || ''}`;
           }
 
           // Both failed — fall through to old pipeline
-          console.log('⚠️ Both classifier solver and extraction chain failed, using old pipeline');
+          logDebug('⚠️ Both classifier solver and extraction chain failed, using old pipeline');
         } else {
-          console.log(`⚠️ Classifier confidence too low (${classification.confidence}) or proof type — falling back to extraction chain`);
+          logDebug(`⚠️ Classifier confidence too low (${classification.confidence}) or proof type — falling back to extraction chain`);
 
           // ═══════════════════════════════════════════════════════════════
           // LEVEL 2+3: EXTRACTION CHAIN — try before old pipeline
@@ -3128,11 +3132,11 @@ ${result.error || ''}`;
           // ═══════════════════════════════════════════════════════════════
           if (this.mcpClient) {
             try {
-              console.log('\n=== EXTRACTION CHAIN (Level 2+3) ===');
+              logDebug('\n=== EXTRACTION CHAIN (Level 2+3) ===');
               const hasTemplate = matchTemplate(userMessage, classification.type);
 
               if (hasTemplate) {
-                console.log(`📋 Template matched: ${hasTemplate.id}`);
+                logDebug(`📋 Template matched: ${hasTemplate.id}`);
               }
 
               const chainResult: ChainResult = hasTemplate
@@ -3158,7 +3162,7 @@ ${result.error || ''}`;
                     }
                   );
 
-              console.log(`📊 Extraction chain: success=${chainResult.success}, template=${chainResult.templateUsed || 'multi-step'}, answer=${chainResult.answer}`);
+              logDebug(`📊 Extraction chain: success=${chainResult.success}, template=${chainResult.templateUsed || 'multi-step'}, answer=${chainResult.answer}`);
 
               if (chainResult.success && chainResult.answer) {
                 // ═══ VERIFY numeric answer ═══
@@ -3192,7 +3196,7 @@ ${result.error || ''}`;
                 if (onMessageCallback) onMessageCallback(chainMsg);
 
                 // Summary agent
-                console.log('\n=== AGENT 3: Summary (extraction chain) ===');
+                logDebug('\n=== AGENT 3: Summary (extraction chain) ===');
                 const summaryContext = this.getAgentContext();
                 const summaryResponse = await this.executeAgentTurn(
                   'Agent Podsumowujący',
@@ -3214,15 +3218,15 @@ ${result.error || ''}`;
 
                 return newMessages;
               } else {
-                console.log('⚠️ Extraction chain failed, falling back to old pipeline');
+                logDebug('⚠️ Extraction chain failed, falling back to old pipeline');
               }
             } catch (chainError) {
-              console.warn('⚠️ Extraction chain error, falling back to old pipeline:', chainError);
+              logWarn('⚠️ Extraction chain error, falling back to old pipeline:', chainError);
             }
           }
         }
       } catch (classifierError) {
-        console.warn('⚠️ Classifier failed, falling back to old pipeline:', classifierError);
+        logWarn('⚠️ Classifier failed, falling back to old pipeline:', classifierError);
       }
     }
 
@@ -3234,7 +3238,7 @@ ${result.error || ''}`;
     const alreadyHasExtraction = newMessages.some(m => m.agentName?.includes('Ekstrakcyjny'));
     if (!alreadyHasExtraction && this.mcpClient && matchTemplate(userMessage)) {
       try {
-        console.log('\n=== EXTRACTION CHAIN (no classifier) ===');
+        logDebug('\n=== EXTRACTION CHAIN (no classifier) ===');
         const chainResult: ChainResult = await runExtractionChain(
           userMessage,
           this.llmAgent,
@@ -3301,7 +3305,7 @@ ${result.error || ''}`;
     // DECOMPOSITION: Divide & Conquer — break complex problem into solvable parts
     // ═══════════════════════════════════════════════════════════════════
     if (this.mcpClient) {
-      console.log('\n=== DIVIDE & CONQUER: Decomposing problem ===');
+      logDebug('\n=== DIVIDE & CONQUER: Decomposing problem ===');
 
       try {
         const classifierPromptRaw2 = (prompts as any).classifier || '';
@@ -3347,7 +3351,7 @@ ${result.error || ''}`;
         );
 
         if (decompResult.success && decompResult.finalAnswer) {
-          console.log(`✅ Decomposition succeeded: ${decompResult.stepsCompleted}/${decompResult.totalSteps} steps, answer: ${decompResult.finalAnswer}`);
+          logInfo(`✅ Decomposition succeeded: ${decompResult.stepsCompleted}/${decompResult.totalSteps} steps, answer: ${decompResult.finalAnswer}`);
 
           // Show final decomposition result
           const stepsDetail = decompResult.subResults
@@ -3371,18 +3375,18 @@ ${result.error || ''}`;
 
           return newMessages;
         } else {
-          console.log(`⚠️ Decomposition failed (${decompResult.stepsCompleted}/${decompResult.totalSteps}), falling through to Agent pipeline...`);
+          logDebug(`⚠️ Decomposition failed (${decompResult.stepsCompleted}/${decompResult.totalSteps}), falling through to Agent pipeline...`);
         }
       } catch (decompError) {
-        console.warn('⚠️ Decomposition error, falling through to Agent pipeline:', decompError);
+        logWarn('⚠️ Decomposition error, falling through to Agent pipeline:', decompError);
       }
     }
 
     // ═══════════════════════════════════════════════════════════════════
     // AGENT 1: Analytical — plan the solution (legacy fallback)
     // ═══════════════════════════════════════════════════════════════════
-    console.log(`⚠️ FALLING THROUGH TO 3-AGENT PIPELINE (classifierMode=${this.classifierMode}, mcpClient=${!!this.mcpClient})`);
-    console.log('\n=== AGENT 1: Analytical ===');
+    logDebug(`⚠️ FALLING THROUGH TO 3-AGENT PIPELINE (classifierMode=${this.classifierMode}, mcpClient=${!!this.mcpClient})`);
+    logDebug('\n=== AGENT 1: Analytical ===');
 
     const analyticalPrompt = ragContext
       ? `${prompts.analytical}\n${ragContext}`
@@ -3410,7 +3414,7 @@ ${result.error || ''}`;
     // ═══════════════════════════════════════════════════════════════════
     // AGENT 2: Executor — always SymPy
     // ═══════════════════════════════════════════════════════════════════
-    console.log('\n=== AGENT 2: Executor (SymPy) ===');
+    logDebug('\n=== AGENT 2: Executor (SymPy) ===');
 
     // Choose MC or standard executor prompt
     let executorPrompt = isMultipleChoice && (prompts as any).executor_sympy_mc
@@ -3425,12 +3429,12 @@ ${result.error || ''}`;
       const sympyHints = this.ragService.formatSymPyHints(ragResults, problemCategories.length > 0 ? problemCategories : null);
       if (sympyHints) {
         executorPrompt = `${executorPrompt}\n${sympyHints}`;
-        console.log('📚 RAG SymPy hints injected into executor prompt');
+        logDebug('📚 RAG SymPy hints injected into executor prompt');
       }
     }
 
     if (isMultipleChoice) {
-      console.log('📋 MC question — using MC executor prompt');
+      logDebug('📋 MC question — using MC executor prompt');
     }
 
     const executorContext = this.getAgentContext();
@@ -3449,11 +3453,11 @@ ${result.error || ''}`;
     const executionResults: string[] = [];
     let codeBlocks = this.extractCode(executorResponse);
 
-    console.log(`📝 Found ${codeBlocks.length} code blocks to execute`);
+    logDebug(`📝 Found ${codeBlocks.length} code blocks to execute`);
 
     // ── No-code retry: if executor produced no code, re-prompt with stricter instruction ──
     if (codeBlocks.length === 0 && this.mcpClient) {
-      console.warn('⚠️ No code in executor response — retrying with stricter prompt...');
+      logWarn('⚠️ No code in executor response — retrying with stricter prompt...');
 
       const retryCodePrompt = `ODPOWIEDZ TYLKO KODEM PYTHON. Zadanie:\n${userMessage}\n\nPlan:\n${analyticalResponse}\n\n\`\`\`python\nfrom sympy import *\n`;
 
@@ -3468,27 +3472,27 @@ ${result.error || ''}`;
         const retryBlocks = this.extractCode(retryExecResponse);
         if (retryBlocks.length > 0) {
           codeBlocks = retryBlocks;
-          console.log('✅ Code retry succeeded — got code on 2nd attempt');
+          logVerbose('✅ Code retry succeeded — got code on 2nd attempt');
           const retryTruncated = this.truncateAfterFirstCodeBlock(retryExecResponse);
           finalExecutorContent = this.cleanMalformedLatex(retryTruncated);
         } else {
-          console.warn('⚠️ Code retry also produced no code — trying fallback generation...');
+          logWarn('⚠️ Code retry also produced no code — trying fallback generation...');
 
           // Last resort: generate simple code from analytical response + question
           const fallbackCode = this.generateFallbackCode(analyticalResponse, executorResponse, userMessage);
           if (fallbackCode) {
             codeBlocks = [fallbackCode];
-            console.log('🔧 Fallback code generated from analytical response');
+            logVerbose('🔧 Fallback code generated from analytical response');
           }
         }
       } catch (retryErr) {
-        console.warn('⚠️ Code retry failed:', retryErr);
+        logWarn('⚠️ Code retry failed:', retryErr);
 
         // Still try fallback
         const fallbackCode = this.generateFallbackCode(analyticalResponse, executorResponse, userMessage);
         if (fallbackCode) {
           codeBlocks = [fallbackCode];
-          console.log('🔧 Fallback code generated from analytical response');
+          logVerbose('🔧 Fallback code generated from analytical response');
         }
       }
     }
@@ -3502,7 +3506,7 @@ ${result.error || ''}`;
 
       for (let llmAttempt = 0; llmAttempt <= MAX_LLM_RETRIES; llmAttempt++) {
         const sanitizedCode = this.sanitizeCode(currentCode);
-        console.log(`📤 [Attempt ${llmAttempt + 1}/${MAX_LLM_RETRIES + 1}] Code sent to MCP sympy_calculate:`, sanitizedCode.substring(0, 120));
+        logVerbose(`📤 [Attempt ${llmAttempt + 1}/${MAX_LLM_RETRIES + 1}] Code sent to MCP sympy_calculate:`, sanitizedCode.substring(0, 120));
 
         try {
           const result = await this.executeWithRetry(sanitizedCode);
@@ -3510,7 +3514,7 @@ ${result.error || ''}`;
           // Check if result looks like an error that leaked through
           const suspicion = this.isOutputSuspicious(result);
           if (suspicion && llmAttempt < MAX_LLM_RETRIES) {
-            console.warn(`⚠️ Attempt ${llmAttempt + 1}: Suspicious output — ${suspicion}`);
+            logWarn(`⚠️ Attempt ${llmAttempt + 1}: Suspicious output — ${suspicion}`);
             lastErrorMsg = suspicion;
             // Fall through to LLM re-generation below
           } else {
@@ -3521,12 +3525,12 @@ ${result.error || ''}`;
             const retryLabel = llmAttempt > 0 ? ` (LLM retry #${llmAttempt})` : '';
             finalExecutorContent += `\n\n---\n**WYNIKI WYKONANIA${retryLabel}:**\n${result}`;
             executionSuccess = true;
-            if (llmAttempt > 0) console.log(`✅ LLM retry #${llmAttempt} succeeded!`);
+            if (llmAttempt > 0) logVerbose(`✅ LLM retry #${llmAttempt} succeeded!`);
             break;
           }
         } catch (error) {
           lastErrorMsg = error instanceof Error ? error.message : String(error);
-          console.warn(`⚠️ Attempt ${llmAttempt + 1} failed:`, lastErrorMsg.substring(0, 120));
+          logWarn(`⚠️ Attempt ${llmAttempt + 1} failed:`, lastErrorMsg.substring(0, 120));
         }
 
         // ── Re-generate code via LLM ──
@@ -3551,7 +3555,7 @@ ${result.error || ''}`;
               if (retryHint) retryPrompt += `\n${retryHint}`;
             }
 
-            console.log(`🔄 LLM retry #${llmAttempt + 1}: re-calling Executor${llmAttempt === 0 ? ' (fix mode)' : ' (fresh generation)'}`);
+            logVerbose(`🔄 LLM retry #${llmAttempt + 1}: re-calling Executor${llmAttempt === 0 ? ' (fix mode)' : ' (fresh generation)'}`);
 
             const retryResponse = await this.executeAgentTurn(
               `Agent Wykonawczy (retry-${llmAttempt + 1})`,
@@ -3563,23 +3567,23 @@ ${result.error || ''}`;
             const retryCodeBlocks = this.extractCode(retryResponse);
             if (retryCodeBlocks.length > 0) {
               currentCode = retryCodeBlocks[0];
-              console.log(`📝 Got new code from LLM retry #${llmAttempt + 1}`);
+              logVerbose(`📝 Got new code from LLM retry #${llmAttempt + 1}`);
               // Update displayed content
               const retryTruncated = this.truncateAfterFirstCodeBlock(retryResponse);
               finalExecutorContent = this.cleanMalformedLatex(retryTruncated);
             } else {
-              console.warn(`⚠️ LLM retry #${llmAttempt + 1} produced no code — trying fallback generation...`);
+              logWarn(`⚠️ LLM retry #${llmAttempt + 1} produced no code — trying fallback generation...`);
               const fallbackCode = this.generateFallbackCode(analyticalResponse, '', userMessage);
               if (fallbackCode) {
                 currentCode = fallbackCode;
-                console.log('🔧 Using fallback-generated code');
+                logVerbose('🔧 Using fallback-generated code');
               } else {
                 // No code at all — break out
                 break;
               }
             }
           } catch (retryError) {
-            console.warn(`⚠️ LLM retry #${llmAttempt + 1} call failed:`, retryError);
+            logWarn(`⚠️ LLM retry #${llmAttempt + 1} call failed:`, retryError);
             break;
           }
         }
@@ -3593,7 +3597,7 @@ ${result.error || ''}`;
         finalExecutorContent += `\n\n---\n**BŁĄD WYKONANIA:**\n${errorMsg}`;
       }
     } else if (codeBlocks.length === 0) {
-      console.warn('⚠️ No code blocks found in executor response');
+      logWarn('⚠️ No code blocks found in executor response');
     }
 
     const executorMsgId = crypto.randomUUID();
@@ -3663,13 +3667,13 @@ ${result.error || ''}`;
     const executionFailed = executionResults.length > 0 && executionResults.some(r => r.includes('❌'));
 
     if (hasResults || executionFailed) {
-      console.log('\n=== AGENT 3: Summary ===');
+      logDebug('\n=== AGENT 3: Summary ===');
 
       // If execution failed, instruct summary agent to solve analytically
       let summaryPrompt = prompts.summary;
       if (executionFailed) {
         summaryPrompt += '\n\nUWAGA: Kod SymPy nie zadziałał. Rozwiąż zadanie analitycznie na podstawie planu Agenta Analitycznego. Podaj odpowiedź na podstawie własnych obliczeń. Zapisz "ODPOWIEDZ:" z wynikiem.';
-        console.log('⚠️ SymPy failed — asking summary agent to solve analytically');
+        logDebug('⚠️ SymPy failed — asking summary agent to solve analytically');
       }
 
       const summaryContext = this.getAgentContext();
@@ -3696,7 +3700,7 @@ ${result.error || ''}`;
     // AGENT 4: Lean Verifier (optional — only for proof-type problems)
     // ═══════════════════════════════════════════════════════════════════
     if (shouldVerify && hasResults) {
-      console.log('\n=== AGENT 4: Lean Verifier ===');
+      logDebug('\n=== AGENT 4: Lean Verifier ===');
 
       // Step 4a: Use formalizer prompt to translate solution to Lean code
       const formalizerPrompt = (prompts as any).formalizer_lean || prompts.executor_lean;
@@ -3720,7 +3724,7 @@ ${result.error || ''}`;
 
       if (this.leanClient && this.leanAvailable) {
         try {
-          console.log('🎯 Sending to Lean Prover for verification...');
+          logInfo('🎯 Sending to Lean Prover for verification...');
 
           leanToolCalls.push({
             id: 'lean-verify-1',
@@ -3741,7 +3745,7 @@ ${result.error || ''}`;
             isError: leanResult.includes('❌') || leanResult.includes('⚠️'),
           });
         } catch (error) {
-          console.warn('Lean verification failed:', error);
+          logWarn('Lean verification failed:', error);
           const errorMsg = `Błąd weryfikacji: ${error instanceof Error ? error.message : String(error)}`;
           leanVerification = `\n\n---\n**Weryfikacja Lean Prover:**\n${errorMsg}`;
 
@@ -3768,7 +3772,7 @@ ${result.error || ''}`;
       if (onMessageCallback) onMessageCallback(verifierMsg);
     }
 
-    console.log('✅ Processing complete');
+    logInfo('✅ Processing complete');
     return newMessages;
   }
 
@@ -3787,7 +3791,7 @@ ${result.error || ''}`;
 
       if (!this.mcpClient) return answer;
 
-      console.log(`🔍 Running deterministic verification for answer: ${answer}`);
+      logVerbose(`🔍 Running deterministic verification for answer: ${answer}`);
 
       const result = await this.mcpClient.callTool('sympy_calculate', {
         expression: code,
@@ -3799,7 +3803,7 @@ ${result.error || ''}`;
         .join('\n');
 
       if (/Error:|Traceback|SyntaxError/i.test(output)) {
-        console.log(`  ⚠️ Verification code error: ${output.substring(0, 80)}`);
+        logVerbose(`  ⚠️ Verification code error: ${output.substring(0, 80)}`);
         return answer;
       }
 
@@ -3808,14 +3812,14 @@ ${result.error || ''}`;
 
       const verified = match[1];
       if (verified !== answer) {
-        console.log(`🔍 Verification override: formula=${answer} → brute-force=${verified}`);
+        logVerbose(`🔍 Verification override: formula=${answer} → brute-force=${verified}`);
         return verified;
       }
 
-      console.log(`✅ Verification confirms: ${answer}`);
+      logInfo(`✅ Verification confirms: ${answer}`);
       return answer;
     } catch (error) {
-      console.log(`  ⚠️ Verification error: ${error}`);
+      logVerbose(`  ⚠️ Verification error: ${error}`);
       return answer;
     }
   }
@@ -3854,7 +3858,7 @@ ${result.error || ''}`;
     const totalDigits = nOdd + nEven;
     if (totalDigits < 1 || totalDigits > 9) return null;
 
-    console.log(`🎯 Detected digit-counting: ${totalDigits} digits, ${nOdd} odd, ${nEven} even, noRepeats=${noRepeats}`);
+    logDebug(`🎯 Detected digit-counting: ${totalDigits} digits, ${nOdd} odd, ${nEven} even, noRepeats=${noRepeats}`);
 
     return `from itertools import permutations, combinations
 odd_digits = [1, 3, 5, 7, 9]

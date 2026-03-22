@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { MLXAgent } from './mlxAgent';
+import { logDebug, logVerbose, logWarn } from './logger';
 
 export type LLMProvider = 'claude' | 'mlx';
 
@@ -98,7 +99,7 @@ export class GroupChatOrchestrator {
     let content = '';
 
     if (this.provider === 'claude' && this.client) {
-      console.log(`🤖 [${agent.name}] Wysyłanie zapytania do Claude API:`, {
+      logDebug(`🤖 [${agent.name}] Wysyłanie zapytania do Claude API:`, {
         model: 'claude-haiku-4-5-20251001',
         agent: agent.name,
         systemPrompt: agent.systemPrompt,
@@ -112,21 +113,21 @@ export class GroupChatOrchestrator {
         messages,
       });
 
-      console.log(`✅ [${agent.name}] Otrzymano odpowiedź z Claude API:`, response);
+      logDebug(`✅ [${agent.name}] Otrzymano odpowiedź z Claude API:`, response);
 
       // Extract text content from response
       if (response.content && response.content.length > 0) {
         const firstBlock = response.content[0];
-        console.log(`📝 [${agent.name}] Pierwszy blok odpowiedzi:`, firstBlock);
+        logVerbose(`📝 [${agent.name}] Pierwszy blok odpowiedzi:`, firstBlock);
         if (firstBlock.type === 'text') {
           content = firstBlock.text.trim();
-          console.log(`📄 [${agent.name}] Treść odpowiedzi (${content.length} znaków):`, content);
+          logVerbose(`📄 [${agent.name}] Treść odpowiedzi (${content.length} znaków):`, content);
         }
       } else {
-        console.warn(`⚠️ [${agent.name}] Brak contentu w odpowiedzi!`, response);
+        logWarn(`⚠️ [${agent.name}] Brak contentu w odpowiedzi!`, response);
       }
     } else if (this.provider === 'mlx' && this.mlxAgent) {
-      console.log(`🤖 [${agent.name}] Wysyłanie zapytania do MLX:`, {
+      logDebug(`🤖 [${agent.name}] Wysyłanie zapytania do MLX:`, {
         model: this.mlxAgent.getModel(),
         agent: agent.name,
         systemPrompt: agent.systemPrompt,
@@ -135,7 +136,7 @@ export class GroupChatOrchestrator {
 
       content = await this.mlxAgent.execute(agent.systemPrompt, messages);
 
-      console.log(`✅ [${agent.name}] Otrzymano odpowiedź z MLX:`, {
+      logDebug(`✅ [${agent.name}] Otrzymano odpowiedź z MLX:`, {
         contentLength: content.length,
       });
     } else {
@@ -150,7 +151,7 @@ export class GroupChatOrchestrator {
       timestamp: new Date(),
     };
 
-    console.log(`💾 [${agent.name}] Zapisano wiadomość:`, message);
+    logVerbose(`💾 [${agent.name}] Zapisano wiadomość:`, message);
 
     this.conversationHistory.push(message);
     return message;
@@ -164,7 +165,7 @@ export class GroupChatOrchestrator {
     rounds: number = 2,
     onMessageCallback?: (message: Message) => void
   ): Promise<Message[]> {
-    console.log('🎯 Rozpoczynam orkiestrację konwersacji:', {
+    logDebug('🎯 Rozpoczynam orkiestrację konwersacji:', {
       userMessage,
       rounds,
       agentsCount: this.agents.length,
@@ -172,9 +173,9 @@ export class GroupChatOrchestrator {
 
     // Add user message
     const userMsg = this.addUserMessage(userMessage);
-    console.log('👤 Dodano wiadomość użytkownika:', userMsg);
+    logVerbose('👤 Dodano wiadomość użytkownika:', userMsg);
     if (onMessageCallback) {
-      console.log('📢 Wywołuję callback dla wiadomości użytkownika');
+      logVerbose('📢 Wywołuję callback dla wiadomości użytkownika');
       onMessageCallback(userMsg);
     }
 
@@ -182,17 +183,17 @@ export class GroupChatOrchestrator {
 
     // Round-robin between agents
     for (let round = 0; round < rounds; round++) {
-      console.log(`\n🔄 === RUNDA ${round + 1}/${rounds} ===`);
+      logDebug(`\n🔄 === RUNDA ${round + 1}/${rounds} ===`);
       for (const agent of this.agents) {
-        console.log(`\n🤖 Tura agenta: ${agent.name}`);
+        logDebug(`\n🤖 Tura agenta: ${agent.name}`);
         const agentMessage = await this.executeAgentTurn(agent.id);
         newMessages.push(agentMessage);
-        console.log(`📢 Wywołuję callback dla wiadomości agenta ${agent.name}`);
+        logVerbose(`📢 Wywołuję callback dla wiadomości agenta ${agent.name}`);
         if (onMessageCallback) onMessageCallback(agentMessage);
       }
     }
 
-    console.log('✅ Orkiestracja zakończona. Łącznie wiadomości:', newMessages.length);
+    logDebug('✅ Orkiestracja zakończona. Łącznie wiadomości:', newMessages.length);
     return newMessages;
   }
 

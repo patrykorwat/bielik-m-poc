@@ -4,7 +4,8 @@
     "base_url": "http://localhost:8011"
   },
   "features": {
-    "university_level": true
+    "university_level": true,
+    "log_level": 1
   },
   "agents": {
     "analytical": {

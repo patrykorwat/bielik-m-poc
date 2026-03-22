@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { MLXAgent } from './mlxAgent';
 import { MCPClientBrowser as MCPClient, MCPTool } from './mcpClientBrowser';
+import { logDebug, logVerbose, logError } from './logger';
 
 export type LLMProvider = 'claude' | 'mlx';
 
@@ -73,9 +74,9 @@ export class TwoAgentOrchestrator {
       this.mcpClient = new MCPClient(proxyUrl);
       await this.mcpClient.connect();
       this.availableTools = await this.mcpClient.listTools();
-      console.log('🔌 Connected to MCP server. Available tools:', this.availableTools.map(t => t.name));
+      logDebug('🔌 Connected to MCP server. Available tools:', this.availableTools.map(t => t.name));
     } catch (error) {
-      console.error('Failed to connect to MCP server:', error);
+      logError('Failed to connect to MCP server:', error);
       throw error;
     }
   }
@@ -107,7 +108,7 @@ export class TwoAgentOrchestrator {
     contextMessages: Array<{ role: 'user' | 'assistant'; content: string }>
   ): Promise<string> {
     if (this.provider === 'claude' && this.client) {
-      console.log(`🤖 [${agentName}] Calling Claude API...`);
+      logDebug(`🤖 [${agentName}] Calling Claude API...`);
 
       const response = await this.client.messages.create({
         model: 'claude-haiku-4-5-20251001',
@@ -123,18 +124,18 @@ export class TwoAgentOrchestrator {
         }
       }
 
-      console.log(`✅ [${agentName}] Response received`);
+      logDebug(`✅ [${agentName}] Response received`);
       return content.trim();
 
     } else if (this.provider === 'mlx' && this.mlxAgent) {
-      console.log(`🤖 [${agentName}] Calling MLX...`);
+      logDebug(`🤖 [${agentName}] Calling MLX...`);
 
       const content = await this.mlxAgent.execute(systemPrompt, contextMessages);
 
       // Remove <think> blocks from Bielik responses
       const cleanContent = content.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
-      console.log(`✅ [${agentName}] Response received`);
+      logDebug(`✅ [${agentName}] Response received`);
       return cleanContent;
 
     } else {
@@ -150,7 +151,7 @@ export class TwoAgentOrchestrator {
       throw new Error('MCP client not connected');
     }
 
-    console.log('🔧 Executing SymPy calculation:', code);
+    logDebug('🔧 Executing SymPy calculation:', code);
 
     try {
       const result = await this.mcpClient.callTool('sympy_calculate', {
@@ -162,11 +163,11 @@ export class TwoAgentOrchestrator {
         .map(c => c.text)
         .join('\n');
 
-      console.log('✅ SymPy result:', textContent);
+      logDebug('✅ SymPy result:', textContent);
       return textContent;
 
     } catch (error) {
-      console.error('❌ SymPy execution failed:', error);
+      logError('❌ SymPy execution failed:', error);
       throw error;
     }
   }
@@ -271,7 +272,7 @@ export class TwoAgentOrchestrator {
     userMessage: string,
     onMessageCallback?: (message: Message) => void
   ): Promise<Message[]> {
-    console.log('🎯 Processing user message with two-agent system:', userMessage);
+    logDebug('🎯 Processing user message with two-agent system:', userMessage);
 
     // Add user message
     const userMsg: Message = {
@@ -349,7 +350,7 @@ DOZWOLONE:
 Odpowiadaj po polsku.`;
 
     // AGENT 1: Analytical Agent creates the plan
-    console.log('\n=== TURA 1: Agent Analityczny tworzy plan ===');
+    logDebug('\n=== TURA 1: Agent Analityczny tworzy plan ===');
     const analyticalContext = this.getAgentContext();
     const analyticalResponse = await this.executeAgentTurn(
       'Agent Analityczny',
@@ -372,7 +373,7 @@ Odpowiadaj po polsku.`;
     if (onMessageCallback) onMessageCallback(analyticalMsg);
 
     // AGENT 2: Executor Agent executes the plan step by step
-    console.log('\n=== TURA 2: Agent Wykonawczy wykonuje plan ===');
+    logDebug('\n=== TURA 2: Agent Wykonawczy wykonuje plan ===');
 
     // Add the analytical response to context for executor
     const executorContext = this.getAgentContext();
@@ -387,7 +388,7 @@ Odpowiadaj po polsku.`;
 
     // Extract code blocks from executor's response
     const codeBlocks = this.extractSymPyCode(executorResponse);
-    console.log(`📝 Found ${codeBlocks.length} code blocks to execute`);
+    logDebug(`📝 Found ${codeBlocks.length} code blocks to execute`);
 
     // Combine all code blocks into one script to maintain variable context
     let combinedCode = '';
@@ -413,7 +414,7 @@ Odpowiadaj po polsku.`;
       // Build the combined code
       combinedCode = Array.from(imports).join('\n') + '\n\n' + codeLines.join('\n');
 
-      console.log(`\n🔧 Executing combined code:\n${combinedCode}`);
+      logVerbose(`\n🔧 Executing combined code:\n${combinedCode}`);
 
       try {
         const result = await this.executeSymPyCalculation(combinedCode);
@@ -451,7 +452,7 @@ Odpowiadaj po polsku.`;
     newMessages.push(executorMsg);
     if (onMessageCallback) onMessageCallback(executorMsg);
 
-    console.log('✅ Two-agent processing complete');
+    logDebug('✅ Two-agent processing complete');
     return newMessages;
   }
 

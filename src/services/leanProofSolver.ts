@@ -12,6 +12,7 @@
 
 import { LeanProverServiceBrowser } from './leanProverService.browser';
 import { LLMAgent } from './mlxAgent';
+import { logDebug, logError } from './logger';
 
 export interface ProofResult {
   success: boolean;
@@ -72,16 +73,16 @@ export class LeanProofSolver {
    * Main entry point: attempt to solve a proof problem via Lean
    */
   async solveProof(problem: string, ragContext?: string): Promise<ProofResult> {
-    console.log('🎯 LeanProofSolver: Attempting Lean formalization...');
+    logDebug('🎯 LeanProofSolver: Attempting Lean formalization...');
 
     try {
       // Step 1: LLM formalizes the problem into Lean 4
       const leanCode = await this.formalizeProblem(problem, ragContext);
-      console.log('📝 Lean code generated:', leanCode.substring(0, 200) + '...');
+      logDebug('📝 Lean code generated:', leanCode.substring(0, 200) + '...');
 
       // Step 2: Verify with Lean proxy
       const result = await this.leanClient.verifyTheorem(leanCode, `proof_${Date.now()}.lean`);
-      console.log('🔍 Lean verification result:', {
+      logDebug('🔍 Lean verification result:', {
         success: result.success,
         verified: result.verificationDetails?.verified,
         errors: result.verificationDetails?.errors?.length || 0,
@@ -97,7 +98,7 @@ export class LeanProofSolver {
       }
 
       // Step 3: If verification failed, try a simplified fallback theorem
-      console.log('⚠️ Primary Lean verification failed, trying fallback...');
+      logDebug('⚠️ Primary Lean verification failed, trying fallback...');
       const fallbackCode = this.buildFallbackTheorem(problem, leanCode);
       const fallbackResult = await this.leanClient.verifyTheorem(fallbackCode, `proof_fallback_${Date.now()}.lean`);
 
@@ -120,7 +121,7 @@ export class LeanProofSolver {
       };
 
     } catch (error) {
-      console.error('❌ LeanProofSolver error:', error);
+      logError('❌ LeanProofSolver error:', error);
       return {
         success: false,
         leanCode: '',

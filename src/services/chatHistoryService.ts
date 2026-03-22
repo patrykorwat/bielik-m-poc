@@ -1,4 +1,5 @@
 import { Message } from './mcpAgentService';
+import { logDebug, logError } from './logger';
 
 export interface ChatSession {
   id: string;
@@ -36,7 +37,7 @@ export class ChatHistoryService {
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
     } catch (error) {
-      console.error('[ChatHistory] Failed to load sessions:', error);
+      logError('[ChatHistory] Failed to load sessions:', error);
       return [];
     }
   }
@@ -73,9 +74,9 @@ export class ChatHistoryService {
       }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-      console.log(`[ChatHistory] Saved session ${session.id}`);
+      logDebug(`[ChatHistory] Saved session ${session.id}`);
     } catch (error) {
-      console.error('[ChatHistory] Failed to save session:', error);
+      logError('[ChatHistory] Failed to save session:', error);
     }
   }
 
@@ -87,9 +88,9 @@ export class ChatHistoryService {
       const sessions = this.getAllSessions();
       const filtered = sessions.filter(s => s.id !== chatId);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-      console.log(`[ChatHistory] Deleted session ${chatId}`);
+      logDebug(`[ChatHistory] Deleted session ${chatId}`);
     } catch (error) {
-      console.error('[ChatHistory] Failed to delete session:', error);
+      logError('[ChatHistory] Failed to delete session:', error);
     }
   }
 
@@ -99,9 +100,9 @@ export class ChatHistoryService {
   static clearAllSessions(): void {
     try {
       localStorage.removeItem(STORAGE_KEY);
-      console.log('[ChatHistory] Cleared all sessions');
+      logDebug('[ChatHistory] Cleared all sessions');
     } catch (error) {
-      console.error('[ChatHistory] Failed to clear sessions:', error);
+      logError('[ChatHistory] Failed to clear sessions:', error);
     }
   }
 
@@ -155,7 +156,7 @@ export class ChatHistoryService {
   static exportSession(chatId: string): void {
     const session = this.getSession(chatId);
     if (!session) {
-      console.error('[ChatHistory] Session not found:', chatId);
+      logError('[ChatHistory] Session not found:', chatId);
       return;
     }
 
@@ -167,7 +168,7 @@ export class ChatHistoryService {
     link.download = `formulo-${chatId}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    console.log(`[ChatHistory] Exported session ${chatId}`);
+    logDebug(`[ChatHistory] Exported session ${chatId}`);
   }
 
   /**
@@ -189,10 +190,10 @@ export class ChatHistoryService {
       session.updatedAt = new Date().toISOString();
 
       this.saveSession(session);
-      console.log(`[ChatHistory] Imported session as ${session.id}`);
+      logDebug(`[ChatHistory] Imported session as ${session.id}`);
       return session;
     } catch (error) {
-      console.error('[ChatHistory] Failed to import session:', error);
+      logError('[ChatHistory] Failed to import session:', error);
       return null;
     }
   }

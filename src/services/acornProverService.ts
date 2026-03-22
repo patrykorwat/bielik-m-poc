@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { logDebug, logError } from './logger';
 
 /**
  * Service for integrating with Acorn Prover CLI
@@ -225,9 +226,9 @@ ${steps ? steps.map((step, i) => `  # Step ${i + 1}: ${step}`).join('\n') : '  #
     try {
       // Remove temporary files
       // In production, you might want more sophisticated cleanup
-      console.log('Cleaning up Acorn workspace:', this.workDir);
+      logDebug('Cleaning up Acorn workspace:', this.workDir);
     } catch (error) {
-      console.error('Cleanup error:', error);
+      logError('Cleanup error:', error);
     }
   }
 

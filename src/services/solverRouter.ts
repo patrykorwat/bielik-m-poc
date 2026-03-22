@@ -7,6 +7,7 @@
 import { ClassificationResult, SolverResult, ProblemType } from './classifierTypes.js';
 import { buildSolverCode } from './deterministicSolvers.js';
 import { MCPClientBrowser } from './mcpClientBrowser.js';
+import { logDebug } from './logger';
 
 // ============================================================
 // Answer extraction from SymPy output
@@ -205,7 +206,7 @@ export async function routeAndSolveWithRetry(
 
   // Retry with small modifications
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    console.log(`[SolverRouter] Retry ${attempt}/${maxRetries} for ${classification.type}`);
+    logDebug(`[SolverRouter] Retry ${attempt}/${maxRetries} for ${classification.type}`);
 
     // Modify classification slightly for retry
     const modified = { ...classification };
