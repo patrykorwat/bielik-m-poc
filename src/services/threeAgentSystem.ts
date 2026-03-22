@@ -1088,7 +1088,23 @@ ${result.error || ''}`;
     let cleaned = text;
 
     // Strip agent name prefixes that LLM sometimes adds to its output
+    // Matches: [Agent Xyz], [Agent Podsumowujący]:, etc.
     cleaned = cleaned.replace(/^\s*\[Agent [^\]]+\]\s*:?\s*/i, '');
+
+    // Strip emoji-labeled prefixes that decomposer/pipeline labels leak into summaries
+    // Matches: [🔨 Dekompozycja]:, [📂 Krok 1: ...], [🎯 SymPy]:, [🏁 Wynik]:, etc.
+    cleaned = cleaned.replace(/\[[\p{Emoji}\p{Emoji_Presentation}\s]*[^\]]*\]\s*:?\s*/gu, (match) => {
+      // Only strip if the bracket content starts with an emoji or common pipeline label
+      if (/^[\[]\s*[\p{Emoji}\p{Emoji_Presentation}]/u.test(match) ||
+          /^\[\s*(Dekompozycja|Krok \d|SymPy|Wynik|Agent)/i.test(match)) {
+        return '';
+      }
+      return match;
+    });
+
+    // Remove LaTeX line break commands (\\) that leak as raw text
+    cleaned = cleaned.replace(/\s*\\\\\s*$/gm, '');
+    cleaned = cleaned.replace(/\\\\/g, '\n');
 
     // Convert common LaTeX to readable text
     cleaned = cleaned.replace(/\\d?frac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)');

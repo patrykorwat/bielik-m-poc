@@ -1339,7 +1339,7 @@ sol = solve(Eq(S, total), a1)
 wynik = sol[0] if isinstance(sol, list) else sol
 print("ODPOWIEDZ:", wynik)
 `,
-  keywords: ['rat', 'spłac', 'pożyczk', 'mniejsz'],
+  keywords: ['rata', 'raty', 'ratach', 'spłac', 'pożyczk', 'rata mniejsz'],
 };
 
 // ============================================================
@@ -1937,10 +1937,69 @@ ${constraintCode}
 };
 
 // ============================================================
+// Template: Optimization word problem (minimize/maximize)
+// Covers: fencing, box surface area, minimum cost, etc.
+// ============================================================
+
+const optimizationWordProblem: ExtractionTemplate = {
+  id: 'optimization_word',
+  name: 'Optymalizacja (zadanie z treścią)',
+  description: 'Zadanie optymalizacyjne: minimalizacja/maksymalizacja z warunkiem (ogrodzenie, pudełko, koszty itp.)',
+  extractionPrompt: `Przeanalizuj zadanie optymalizacyjne. Odpowiedz TYLKO JSON:
+{
+  "objective": "<co minimalizujemy/maksymalizujemy, np. 2*x + 600/x>",
+  "constraint": "<rownanie wiazace zmienne, np. x*y - 600>",
+  "variable": "x",
+  "goal": "<min lub max>",
+  "context": "<krotki opis co oznaczaja zmienne>"
+}`,
+  buildCode: (v) => {
+    const variable = v.variable || 'x';
+    const objective = v.objective || '2*x + 600/x';
+    const goal = v.goal || 'min';
+
+    return `from sympy import *
+${variable} = symbols('${variable}', positive=True)
+
+# Funkcja celu
+f = ${objective}
+
+# Pochodna i miejsca zerowe
+f_prime = diff(f, ${variable})
+critical = solve(f_prime, ${variable})
+
+# Filtruj rzeczywiste dodatnie rozwiazania
+real_positive = [s for s in critical if s.is_real and s > 0]
+
+if not real_positive:
+    print("ODPOWIEDZ: Brak rozwiazania")
+else:
+    # Sprawdz druga pochodna
+    f_double = diff(f_prime, ${variable})
+    best = None
+    best_val = None
+    for cp in real_positive:
+        val = f.subs(${variable}, cp)
+        second = f_double.subs(${variable}, cp)
+        is_${goal} = second > 0 if '${goal}' == 'min' else second < 0
+        if is_${goal} or best is None:
+            best = cp
+            best_val = val
+
+    print(f"${variable}_opt = {best}")
+    print(f"f(${variable}_opt) = {best_val}")
+    print("ODPOWIEDZ:", best_val, "${variable} =", best)
+`;
+  },
+  keywords: ['najmniejsz', 'największ', 'minimali', 'maksymali', 'optymali', 'ogrodzi', 'jak najmniej', 'jak najwięcej', 'minimaln', 'maksymaln'],
+};
+
+// ============================================================
 // Registry of all templates
 // ============================================================
 
 export const EXTRACTION_TEMPLATES: ExtractionTemplate[] = [
+  optimizationWordProblem,
   exponentialDecay,
   bernoulliProbability,
   tangentLineComplete,
