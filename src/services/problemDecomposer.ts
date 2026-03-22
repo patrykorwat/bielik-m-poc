@@ -223,6 +223,16 @@ export class ProblemDecomposer {
       }
     }
 
+    // Step 5: Substitution verification for equation/algebraic problems
+    // Catches cases where decomposition incorrectly simplifies equations
+    if (finalAnswer) {
+      const substitutionOk = await this.verifyBySubstitution(problem, finalAnswer, subTasks);
+      if (substitutionOk === false) {
+        console.log(`❌ Substitution verification FAILED for answer: ${finalAnswer}`);
+        finalAnswer = undefined;
+      }
+    }
+
     return {
       success: !!finalAnswer,
       subTasks,
@@ -771,6 +781,112 @@ Odpowiedź z formuły: ${formulaAnswer} — sprawdź czy to poprawne przez wylic
     } catch (error) {
       console.log(`  ⚠️ Brute-force verification error: ${error}`);
       return null;
+    }
+  }
+
+  // ─── Substitution Verification ──────────────────────────────────────────
+
+  /**
+   * Verify the final answer by substituting it back into the original equation.
+   * Returns true if verification passes or is not applicable,
+   * false if the answer provably does NOT satisfy the original problem,
+   * null if verification could not be performed.
+   */
+  private async verifyBySubstitution(
+    problem: string,
+    finalAnswer: string,
+    _subTasks: SubTask[],
+  ): Promise<boolean | null> {
+    try {
+      // Only verify equation/algebraic problems where substitution makes sense
+      const textLower = problem.toLowerCase();
+      const isEquationProblem =
+        /równani[ea]|rozwiąż|wyznacz|znajdź.*spełniaj|=/.test(textLower) ||
+        /suma.*równ[ae]|iloczyn.*równ[ae]|wyrażeni[ea]/.test(textLower);
+
+      if (!isEquationProblem) {
+        return null; // Not an equation problem, skip
+      }
+
+      // Skip if answer is a simple number (counting problems verified elsewhere)
+      const isSimpleNumber = /^\d+$/.test(finalAnswer.trim());
+      if (isSimpleNumber) {
+        return null;
+      }
+
+      // Skip if answer looks like a multiple-choice letter
+      if (/^[A-D]\.?$/.test(finalAnswer.trim())) {
+        return null;
+      }
+
+      console.log(`🔬 Running substitution verification for: ${finalAnswer.substring(0, 60)}`);
+
+      const verifyPrompt = `Mam zadanie i proponowaną odpowiedź. Napisz KRÓTKI kod SymPy (max 12 linii) który SPRAWDZI czy odpowiedź jest poprawna przez podstawienie do oryginalnego równania.
+
+ZASADY:
+- from sympy import *
+- Podstaw odpowiedź do ORYGINALNEGO równania/wyrażenia
+- Sprawdź czy równanie jest spełnione (simplify powinno dać 0 lub True)
+- Jeśli odpowiedź to rozwiązanie parametryczne (np. zbiór punktów), podstaw losowe wartości parametrów i sprawdź
+- Ostatnia linia: print("WERYFIKACJA:", "TAK" if wynik_ok else "NIE")
+- TYLKO kod w bloku \`\`\`python ... \`\`\`
+
+Zadanie: ${problem}
+
+Proponowana odpowiedź: ${finalAnswer}
+
+Sprawdź czy ta odpowiedź faktycznie spełnia warunki zadania.`;
+
+      const response = await this.llmAgent.execute(
+        'Jesteś weryfikatorem matematycznym. Piszesz WYŁĄCZNIE kod SymPy do sprawdzenia poprawności odpowiedzi przez podstawienie. TYLKO kod, bez wyjaśnień.',
+        [{ role: 'user', content: verifyPrompt }],
+        { maxTokens: 500, temperature: 0.1 },
+      );
+
+      // Extract code
+      const codeMatch = /```python\s*\n([\s\S]*?)\n```/.exec(response)
+        || /```\s*\n([\s\S]*?)\n```/.exec(response);
+
+      if (!codeMatch) {
+        console.log(`  ⚠️ Could not extract verification code`);
+        return null;
+      }
+
+      let code = codeMatch[1].trim();
+      code = this.sanitizeCode(code);
+
+      // Ensure it has the verification print
+      if (!code.includes('WERYFIKACJA')) {
+        return null;
+      }
+
+      const result = await this.mcpClient.callTool('sympy_calculate', {
+        expression: code,
+      });
+
+      const output = result.content
+        .filter((c: any) => c.type === 'text')
+        .map((c: any) => c.text)
+        .join('\n');
+
+      // Check for execution errors
+      if (/Error:|Traceback|SyntaxError|NameError/i.test(output)) {
+        console.log(`  ⚠️ Substitution verification error: ${output.substring(0, 100)}`);
+        return null; // Cannot verify, don't reject the answer
+      }
+
+      const verifyMatch = /WERYFIKACJA:\s*(TAK|NIE)/i.exec(output);
+      if (!verifyMatch) {
+        console.log(`  ⚠️ Could not parse verification result from: ${output.substring(0, 80)}`);
+        return null;
+      }
+
+      const passed = verifyMatch[1].toUpperCase() === 'TAK';
+      console.log(`  ${passed ? '✅' : '❌'} Substitution verification: ${verifyMatch[1]}`);
+      return passed;
+    } catch (error) {
+      console.log(`  ⚠️ Substitution verification error: ${error}`);
+      return null; // On error, don't reject the answer
     }
   }
 
