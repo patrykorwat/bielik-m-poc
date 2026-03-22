@@ -3026,13 +3026,22 @@ ${result.error || ''}`;
               );
 
               if (chainResult.success && chainResult.answer) {
-                const chainContent = `**Metoda:** ${chainResult.templateUsed || 'extraction'}\n\n\`\`\`python\n${chainResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${chainResult.output}`;
                 const chainMsg: Message = {
                   id: crypto.randomUUID(),
                   role: 'assistant',
-                  content: chainContent,
+                  content: '',
                   agentName: 'Agent Ekstrakcyjny (fallback)',
                   timestamp: new Date(),
+                  toolCalls: [{
+                    id: 'extraction-fallback-1',
+                    name: 'sympy_calculate',
+                    arguments: { expression: chainResult.code || '' },
+                  }],
+                  toolResults: [{
+                    toolCallId: 'extraction-fallback-1',
+                    toolName: 'sympy_calculate',
+                    result: chainResult.output || chainResult.answer || '',
+                  }],
                 };
                 this.conversationHistory.push(chainMsg);
                 newMessages.push(chainMsg);
@@ -3116,12 +3125,10 @@ ${result.error || ''}`;
                 }
 
                 // Show extraction chain result
-                const chainContent = `**Metoda:** ${chainResult.templateUsed || 'multi-step extraction'}\n\n\`\`\`python\n${chainResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${chainResult.output}`;
-
                 const chainMsg: Message = {
                   id: crypto.randomUUID(),
                   role: 'assistant',
-                  content: chainContent,
+                  content: '',
                   agentName: 'Agent Ekstrakcyjny',
                   timestamp: new Date(),
                   toolCalls: [{
@@ -3200,14 +3207,22 @@ ${result.error || ''}`;
             chainResult.output = (chainResult.output || '') + `\n\n🔍 Weryfikacja brute-force: ${verifiedNC}`;
           }
 
-          const chainContent = `**Metoda:** ${chainResult.templateUsed || 'extraction'}\n\n\`\`\`python\n${chainResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${chainResult.output}`;
-
           const chainMsg: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: chainContent,
+            content: '',
             agentName: 'Agent Ekstrakcyjny',
             timestamp: new Date(),
+            toolCalls: [{
+              id: 'extraction-exec-2',
+              name: 'sympy_calculate',
+              arguments: { expression: chainResult.code || '' },
+            }],
+            toolResults: [{
+              toolCallId: 'extraction-exec-2',
+              toolName: 'sympy_calculate',
+              result: chainResult.output || chainResult.answer || '',
+            }],
           };
           this.conversationHistory.push(chainMsg);
           newMessages.push(chainMsg);
@@ -3537,25 +3552,42 @@ ${result.error || ''}`;
       console.warn('⚠️ No code blocks found in executor response');
     }
 
-    const executorMsg: Message = {
-      id: crypto.randomUUID(),
+    const executorMsgId = crypto.randomUUID();
+    const executorTimestamp = new Date();
+    const executorToolCalls = codeBlocks.length > 0 ? [{
+      id: 'sympy-exec-1',
+      name: 'sympy_calculate',
+      arguments: { expression: codeBlocks[0] }
+    }] : undefined;
+    const executorToolResults = executionResults.map((result, idx) => ({
+      toolCallId: `exec-${idx}`,
+      toolName: 'sympy_calculate',
+      result,
+      isError: result.includes('❌'),
+    }));
+
+    // Keep full content in conversation history (summary agent needs it)
+    const historyMsg: Message = {
+      id: executorMsgId,
       role: 'assistant',
       content: finalExecutorContent,
       agentName: 'Agent Wykonawczy',
-      timestamp: new Date(),
-      toolCalls: codeBlocks.length > 0 ? [{
-        id: 'sympy-exec-1',
-        name: 'sympy_calculate',
-        arguments: { expression: codeBlocks[0] }
-      }] : undefined,
-      toolResults: executionResults.map((result, idx) => ({
-        toolCallId: `exec-${idx}`,
-        toolName: 'sympy_calculate',
-        result,
-        isError: result.includes('❌'),
-      })),
+      timestamp: executorTimestamp,
+      toolCalls: executorToolCalls,
+      toolResults: executorToolResults,
     };
-    this.conversationHistory.push(executorMsg);
+    this.conversationHistory.push(historyMsg);
+
+    // Display message has empty content (code in toolCalls, results in toolResults)
+    const executorMsg: Message = {
+      id: executorMsgId,
+      role: 'assistant',
+      content: '',
+      agentName: 'Agent Wykonawczy',
+      timestamp: executorTimestamp,
+      toolCalls: executorToolCalls,
+      toolResults: executorToolResults,
+    };
     newMessages.push(executorMsg);
     if (onMessageCallback) onMessageCallback(executorMsg);
 

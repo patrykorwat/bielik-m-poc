@@ -545,8 +545,10 @@ export function MessageContent({ content }: MessageContentProps) {
           // Render inline markdown (bold, italic) and preserve newlines
           const renderInlineMarkdown = (text: string): JSX.Element[] => {
             const nodes: JSX.Element[] = [];
-            // Match **bold**, *italic*, and plain text segments
-            const inlineRegex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
+            // Match **bold** and *italic* but NOT multiplication like 4*1*4
+            // Negative lookbehind: * must not be preceded by a digit/letter
+            // Negative lookahead: closing * must not be followed by a digit/letter
+            const inlineRegex = /(?<![a-zA-Z0-9])(\*\*(.+?)\*\*|\*(.+?)\*)(?![a-zA-Z0-9])/g;
             let lastIndex = 0;
             let match;
             while ((match = inlineRegex.exec(text)) !== null) {
