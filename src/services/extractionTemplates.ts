@@ -96,22 +96,49 @@ const exponentialModelUnknownBase: ExtractionTemplate = {
   extractionPrompt: `Zadanie opisuje model wykładniczy typu f(t) = A * k^(-t) + C lub f(t) = A * q^t + C.
 Parametr k (lub q) NIE jest podany wprost, trzeba go wyznaczyć z danych.
 
-Wyodrębnij wartości. Odpowiedz TYLKO JSON:
+INSTRUKCJE:
+- A to LICZBA: współczynnik/amplituda. Np. jeśli Tp=80 i Tz=20, to A = 80 - 20 = 60. Podaj samą liczbę.
+- C to LICZBA: wartość asymptotyczna (temperatura otoczenia, dolna granica). Podaj 0 jeśli brak.
+- known_t: LICZBA czas absolutny (od t=0), w którym znamy wartość funkcji.
+- known_value: LICZBA wartość funkcji w momencie known_t.
+- target_t: LICZBA czas absolutny (od t=0) do obliczenia. UWAGA: jeśli zadanie mówi "po następnych X minutach" po chwili known_t, to target_t = known_t + X.
+- rounding: null, "integer", lub liczba. Jeśli "zaokrągleniu do jedności" to "integer".
+
+Odpowiedz TYLKO JSON z LICZBAMI (nie tekstem):
 {
-  "A": "<amplituda/współczynnik przy części wykładniczej, np. Tp - Tz = 60>",
-  "C": "<wartość asymptotyczna/stała dodawana, np. Tz = 20. Wpisz 0 jeśli brak>",
-  "known_t": "<znany czas/punkt, np. 10>",
-  "known_value": "<znana wartość funkcji w known_t, np. 65>",
-  "target_t": "<czas/punkt do obliczenia, np. 15>",
-  "initial_value": "<wartość początkowa f(0), np. 80. Wpisz null jeśli nie podana>",
-  "rounding": "<null lub 'integer' lub liczba miejsc dziesiętnych>"
+  "A": 60,
+  "C": 20,
+  "known_t": 10,
+  "known_value": 65,
+  "target_t": 15,
+  "rounding": "integer"
 }`,
   buildCode: (v, _mc) => {
-    const A = v.A || 60;
-    const C = v.C ?? 0;
-    const knownT = v.known_t || 10;
-    const knownValue = v.known_value || 65;
-    const targetT = v.target_t || 15;
+    // Parse values robustly (handle strings, expressions like "80 - 20")
+    const parseNum = (val: any, fallback: number): number => {
+      if (typeof val === 'number') return val;
+      if (typeof val === 'string') {
+        const trimmed = val.trim();
+        // Try "80 - 20" arithmetic expression first
+        const exprMatch = trimmed.match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/);
+        if (exprMatch) return parseFloat(exprMatch[1]) - parseFloat(exprMatch[2]);
+        // Try "text = 60" pattern (extract number after =)
+        const eqMatch = trimmed.match(/=\s*(-?\d+(?:\.\d+)?)\s*$/);
+        if (eqMatch) return parseFloat(eqMatch[1]);
+        // Try pure number
+        if (/^-?\d+(\.\d+)?$/.test(trimmed)) return parseFloat(trimmed);
+        // Last resort: find any number in the string
+        const anyNum = trimmed.match(/(-?\d+(?:\.\d+)?)/);
+        if (anyNum) return parseFloat(anyNum[1]);
+      }
+      return fallback;
+    };
+
+    const A = parseNum(v.A, 60);
+    const C = parseNum(v.C, 0);
+    const knownT = parseNum(v.known_t, 10);
+    const knownValue = parseNum(v.known_value, 65);
+    const targetT = parseNum(v.target_t, 15);
     const rounding = v.rounding;
 
     // Pure arithmetic: no SymPy solve needed, compute k directly
@@ -2124,22 +2151,31 @@ export function matchTemplate(question: string, classifiedType?: string): Extrac
   let bestMatch: ExtractionTemplate | null = null;
   let bestScore = 0;
 
+  const scores: { id: string; score: number; matchedKw: string[] }[] = [];
+
   for (const template of EXTRACTION_TEMPLATES) {
     let score = 0;
+    const matchedKw: string[] = [];
     for (const keyword of template.keywords) {
       if (lowerQ.includes(keyword.toLowerCase())) {
         score += 1;
+        matchedKw.push(keyword);
       }
     }
     // Boost by 0.5 if template ID matches classified type partially
     if (classifiedType && template.id.includes(classifiedType)) {
       score += 0.5;
     }
+    if (score > 0) {
+      scores.push({ id: template.id, score, matchedKw });
+    }
     if (score > bestScore) {
       bestScore = score;
       bestMatch = template;
     }
   }
+
+  console.log(`[matchTemplate] classifiedType=${classifiedType}, bestScore=${bestScore}, scores:`, JSON.stringify(scores.filter(s => s.score >= 1).slice(0, 5)));
 
   // Only return if we matched at least 2 keywords
   return bestScore >= 2 ? bestMatch : null;

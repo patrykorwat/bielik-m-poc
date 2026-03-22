@@ -52,17 +52,30 @@ async function extractValues(
 ): Promise<{ values: Record<string, any> | null; raw: string }> {
   const systemPrompt = buildExtractionSystemPrompt(template);
 
+  console.log(`[extractValues] Template: ${template.id}, maxTokens: ${maxTokens}`);
+  console.log(`[extractValues] System prompt length: ${systemPrompt.length}`);
+
   const response = await llmAgent.execute(
     systemPrompt,
     [{ role: 'user', content: question }],
     { maxTokens, temperature: 0.1 }
   );
 
+  console.log(`[extractValues] Raw LLM response (first 500 chars): ${response.substring(0, 500)}`);
+
   // Strip <think> blocks
   const cleaned = response.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
+  console.log(`[extractValues] Cleaned response (first 500 chars): ${cleaned.substring(0, 500)}`);
+
   // Extract JSON
   const parsed = extractJSON(cleaned);
+
+  if (parsed) {
+    console.log(`[extractValues] Parsed JSON:`, JSON.stringify(parsed));
+  } else {
+    console.warn(`[extractValues] FAILED to parse JSON from cleaned response`);
+  }
 
   return { values: parsed, raw: cleaned };
 }
@@ -80,6 +93,9 @@ async function executeTemplate(
 ): Promise<{ success: boolean; answer?: string; code: string; output: string }> {
   // Build code from template + extracted values
   let code = template.buildCode(values, mcOptions);
+
+  console.log(`[executeTemplate] Template: ${template.id}, values:`, JSON.stringify(values));
+  console.log(`[executeTemplate] Generated code:\n${code}`);
 
   // Sanitize
   code = sanitizeCode(code);
@@ -106,6 +122,8 @@ async function executeTemplate(
       output.includes('SyntaxError') ||
       output.includes('NameError') ||
       output.includes('TypeError');
+
+    console.log(`[executeTemplate] Output: ${output.substring(0, 300)}, isError: ${isError}`);
 
     if (isError) {
       return { success: false, code, output, answer: undefined };
@@ -143,15 +161,19 @@ export async function runExtractionChain(
   const steps: ChainStep[] = [];
 
   // Step 1: Match a template
+  console.log(`[runExtractionChain] classifiedType=${options?.classifiedType}, question length=${question.length}`);
   const template = matchTemplate(question, options?.classifiedType);
 
   if (!template) {
+    console.warn(`[runExtractionChain] No template matched (threshold=2). Question first 200 chars: ${question.substring(0, 200)}`);
     return {
       success: false,
       error: 'No matching extraction template found',
       steps,
     };
   }
+
+  console.log(`[runExtractionChain] Matched template: ${template.id} (${template.name})`);
 
   steps.push({
     name: 'Template Match',
