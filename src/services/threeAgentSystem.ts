@@ -1951,19 +1951,32 @@ ${result.error || ''}`;
   private tryFixCode(code: string, errorMsg: string): string {
     let fixedCode = code;
 
-    // Fix 1: NameError — add missing symbol definition
+    // Fix 1: NameError — rename hallucinated function or add missing symbol definition
     const nameErrorMatch = errorMsg.match(/NameError: name '(\w+)' is not defined/);
     if (nameErrorMatch) {
       const missingVar = nameErrorMatch[1];
-      const lines = fixedCode.split('\n');
-      let insertIdx = 0;
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i].trim().startsWith('from ') || lines[i].trim().startsWith('import ')) {
-          insertIdx = i + 1;
+      // Check if this is a hallucinated function name that should be renamed
+      const functionRenames: Record<string, string> = {
+        'binomial_coeff': 'binomial',
+        'binomial_coefficient': 'binomial',
+        'comb': 'binomial',
+        'factorial2': 'factorial',
+        'nCr': 'binomial',
+        'nPr': 'factorial',
+      };
+      if (functionRenames[missingVar]) {
+        fixedCode = fixedCode.replace(new RegExp(`\\b${missingVar}\\b`, 'g'), functionRenames[missingVar]);
+      } else {
+        const lines = fixedCode.split('\n');
+        let insertIdx = 0;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].trim().startsWith('from ') || lines[i].trim().startsWith('import ')) {
+            insertIdx = i + 1;
+          }
         }
+        lines.splice(insertIdx, 0, `${missingVar} = symbols('${missingVar}', real=True)`);
+        fixedCode = lines.join('\n');
       }
-      lines.splice(insertIdx, 0, `${missingVar} = symbols('${missingVar}', real=True)`);
-      fixedCode = lines.join('\n');
     }
 
     // Fix 2: IndexError on solve()[0]
@@ -2058,6 +2071,8 @@ ${result.error || ''}`;
       const renames: Record<string, string> = {
         'Power': 'Pow', 'Logarithm': 'log', 'Sine': 'sin', 'Cosine': 'cos',
         'Tangent': 'tan', 'ArcSin': 'asin', 'ArcCos': 'acos', 'ArcTan': 'atan',
+        'binomial_coeff': 'binomial', 'Binomial_coeff': 'binomial',
+        'binomial_coefficient': 'binomial', 'comb': 'binomial',
       };
       if (renames[badName]) {
         fixedCode = fixedCode.replace(new RegExp(`\\b${badName}\\b`, 'g'), renames[badName]);
@@ -3645,14 +3660,22 @@ ${result.error || ''}`;
     // AGENT 3: Summary — explain the solution step by step
     // ═══════════════════════════════════════════════════════════════════
     const hasResults = executionResults.length > 0 && !executionResults.some(r => r.includes('❌'));
+    const executionFailed = executionResults.length > 0 && executionResults.some(r => r.includes('❌'));
 
-    if (hasResults) {
+    if (hasResults || executionFailed) {
       console.log('\n=== AGENT 3: Summary ===');
+
+      // If execution failed, instruct summary agent to solve analytically
+      let summaryPrompt = prompts.summary;
+      if (executionFailed) {
+        summaryPrompt += '\n\nUWAGA: Kod SymPy nie zadziałał. Rozwiąż zadanie analitycznie na podstawie planu Agenta Analitycznego. Podaj odpowiedź na podstawie własnych obliczeń. Zapisz "ODPOWIEDZ:" z wynikiem.';
+        console.log('⚠️ SymPy failed — asking summary agent to solve analytically');
+      }
 
       const summaryContext = this.getAgentContext();
       const summaryResponse = await this.executeAgentTurn(
         'Agent Podsumowujący',
-        prompts.summary,
+        summaryPrompt,
         summaryContext,
         { maxTokens: prompts.agents.summary.max_tokens, temperature: prompts.agents.summary.temperature }
       );

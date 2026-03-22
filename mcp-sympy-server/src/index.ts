@@ -355,6 +355,30 @@ function sanitizeCode(code: string): string {
     return line;
   });
 
+  // 5f1. Proactive fix: hallucinated SymPy function names
+  lines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
+    // binomial_coeff / binomial_coefficient / comb → binomial
+    line = line.replace(/\bbinomial_coeff\b/g, 'binomial');
+    line = line.replace(/\bbinomial_coefficient\b/g, 'binomial');
+    line = line.replace(/\bcomb\(/g, 'binomial(');
+    line = line.replace(/\bnCr\(/g, 'binomial(');
+    return line;
+  });
+
+  // 5f2. Proactive fix: variable named S conflicts with SymPy S singleton
+  // Rename variable S to S_val when used as assignment target (not SymPy's S())
+  lines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ')) return line;
+    // Match: S = something (but not S(...) which is SymPy's S function)
+    if (/^\s*S\s*=\s*/.test(line) && !line.includes('S(')) {
+      line = line.replace(/\bS\b(?!\s*\()/g, 'S_val');
+    }
+    return line;
+  });
+
   // 5f. Proactive fix: Polish text in code → remove or translate
   lines = lines.filter(line => {
     const trimmed = line.trim();
