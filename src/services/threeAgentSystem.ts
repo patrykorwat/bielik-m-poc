@@ -2954,18 +2954,19 @@ ${result.error || ''}`;
           // Only show solver result to the user if it succeeded.
           // If it failed, try the extraction chain first — don't scare the user with errors.
           if (solverResult.success) {
-            const solverContent = `\`\`\`python\n${solverResult.code}\n\`\`\`\n\n---\n**WYNIKI WYKONANIA:**\n${solverResult.output}`;
+            // Use clean displayCode (without boilerplate wrapper) for UI
+            const cleanCode = solverResult.displayCode || solverResult.code;
 
             const solverMsg: Message = {
               id: crypto.randomUUID(),
               role: 'assistant',
-              content: solverContent,
+              content: '',
               agentName: 'Agent Wykonawczy (deterministyczny)',
               timestamp: new Date(),
               toolCalls: [{
                 id: 'classifier-exec-1',
                 name: 'sympy_calculate',
-                arguments: { expression: solverResult.code }
+                arguments: { expression: cleanCode }
               }],
               toolResults: [{
                 toolCallId: 'classifier-exec-1',

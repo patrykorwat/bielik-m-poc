@@ -72,6 +72,9 @@ export async function routeAndSolve(
     // Step 2: Light sanitization
     code = lightSanitize(code);
 
+    // Save clean code for display before wrapping with boilerplate
+    const displayCode = code;
+
     // Step 3: Apply heavy sanitization if available (from threeAgentSystem)
     if (sanitizeCode) {
       code = sanitizeCode(code);
@@ -132,6 +135,7 @@ export async function routeAndSolve(
       if (!eqPart.includes(solveVar)) {
         return {
           code,
+          displayCode,
           output,
           solverType: classification.type,
           success: false,
@@ -154,6 +158,7 @@ export async function routeAndSolve(
     if (isError) {
       return {
         code,
+        displayCode,
         output,
         solverType: classification.type,
         success: false,
@@ -166,6 +171,7 @@ export async function routeAndSolve(
 
     return {
       code,
+      displayCode,
       output,
       answer: answer || undefined,
       solverType: classification.type,

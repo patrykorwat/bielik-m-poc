@@ -354,7 +354,8 @@ export interface ClassificationResult {
 // --- Solver result ---
 
 export interface SolverResult {
-  code: string;              // Generated SymPy code
+  code: string;              // Generated SymPy code (with sanitization wrapper)
+  displayCode?: string;      // Clean code for UI display (without boilerplate wrapper)
   output?: string;           // MCP execution output
   answer?: string;           // Extracted answer
   solverType: ProblemType;

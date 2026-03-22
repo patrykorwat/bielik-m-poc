@@ -537,10 +537,40 @@ export function MessageContent({ content }: MessageContentProps) {
             </div>
           );
         } else if (segment.type === 'text') {
-          // Preserve newlines
+          // Render inline markdown (bold, italic) and preserve newlines
+          const renderInlineMarkdown = (text: string): JSX.Element[] => {
+            const nodes: JSX.Element[] = [];
+            // Match **bold**, *italic*, and plain text segments
+            const inlineRegex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
+            let lastIndex = 0;
+            let match;
+            while ((match = inlineRegex.exec(text)) !== null) {
+              // Text before match
+              if (match.index > lastIndex) {
+                nodes.push(<span key={key++}>{text.slice(lastIndex, match.index)}</span>);
+              }
+              if (match[2]) {
+                // **bold**
+                nodes.push(<strong key={key++}>{match[2]}</strong>);
+              } else if (match[3]) {
+                // *italic*
+                nodes.push(<em key={key++}>{match[3]}</em>);
+              }
+              lastIndex = match.index + match[0].length;
+            }
+            // Remaining text after last match
+            if (lastIndex < text.length) {
+              nodes.push(<span key={key++}>{text.slice(lastIndex)}</span>);
+            }
+            if (nodes.length === 0) {
+              nodes.push(<span key={key++}>{text}</span>);
+            }
+            return nodes;
+          };
+
           segment.content.split('\n').forEach((line, idx, arr) => {
             if (line) {
-              parts.push(<span key={key++}>{line}</span>);
+              renderInlineMarkdown(line).forEach(node => parts.push(node));
             }
             if (idx < arr.length - 1) {
               parts.push(<br key={key++} />);
