@@ -593,7 +593,7 @@ function App() {
                       {msg.toolCalls.map(tc => (
                         <div key={tc.id} className="tool-call">
                           <Icon type="wrench" /> Używam narzędzia: <code>{tc.name}</code>
-                          <details style={{ marginTop: '0.5em', fontSize: '0.85em' }} open>
+                          <details style={{ marginTop: '0.5em', fontSize: '0.85em' }}>
                             <summary>
                               {tc.name === 'sympy_calculate' ? 'Kod Python' :
                                tc.name === 'lean_prover_verify' ? 'Argumenty narzędzia' :
