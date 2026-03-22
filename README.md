@@ -2,7 +2,7 @@
 
 **Darmowy asystent matematyczny po polsku, oparty na modelu Bielik.**
 
-Rozwiązuje zadania krok po kroku i tłumaczy sposób rozwiązywania. Idealny do przygotowania do matury z matematyki rozszerzonej, ale sprawdzi się też na studiach.
+Rozwiązuje zadania krok po kroku i tłumaczy sposób rozwiązywania. Zakres: matura rozszerzona z matematyki oraz zadania akademickie (teoria liczb, równania diofantyczne, optymalizacja, dowody, algebra).
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Website](https://img.shields.io/badge/Website-formulo.pl-667eea)](https://formulo.pl)
@@ -47,37 +47,56 @@ Pytanie użytkownika
       |     Jeśli nie, przechodzi do normalnego pipeline.
       |
       v
+ Input Guardrail
+ Walidacja: czy to zadanie matematyczne? Odrzuca spam/prompt injection.
+      |
+      v
  RAG Service (port 3003)
  Wyszukuje metodę + podobne zadania (TF-IDF)
       |
       v
- Dekompozycja (opcjonalna, zadania złożone)
- Rozbija problem na 2-4 pod-zadania z formułami SymPy
+ Academic Pre-Router (problemDecomposer.ts)
+ Rozpoznaje zadania, których nie należy dekomponować
+ (dowody, optymalizacja, istnienie rozwiązań, kontrprzykłady,
+  równania diofantyczne) i rozwiązuje je jednym skryptem SymPy.
       |
-      v
- Klasyfikator --> typ zadania (równanie/geometria/...)
+      +---> [direct solver] jeśli rozpoznano kategorię akademicką
       |
-      +---> Deterministyczny solver (bez LLM!)
-      |     (równania, pochodne, całki przez SymPy)
-      |
-      +---> Chain ekstrakcji (LLM -> kod SymPy -> wynik)
-      |
-      +---> Multi-step chain (LLM wielokrokowy)
-      |
-      +---> Agent Analityczny + Agent Wykonawczy (fallback)
-                |
-                v
-         Agent Podsumowujący
-         (wyjaśnienie krok po kroku)
-                |
-                v
-         Lean Verifier (Agent 4)
-         Formalizuje i weryfikuje dowód przez Lean 4
+      +---> [standard]      domyślna ścieżka, dekompozycja
+            Rozbija problem na 2-4 pod-zadania z formułami SymPy
+                  |
+                  v
+            Klasyfikator -> typ zadania (równanie/geometria/...)
+                  |
+                  +---> Deterministyczny solver (bez LLM!)
+                  |     (równania, pochodne, całki przez SymPy)
+                  |
+                  +---> Chain ekstrakcji (LLM -> kod SymPy -> wynik)
+                  |
+                  +---> Multi-step chain (LLM wielokrokowy)
+                  |
+                  +---> Agent Analityczny + Agent Wykonawczy (fallback)
+                              |
+                              v
+            Walidacja substytucyjna
+            Podstawia odpowiedź do oryginalnego równania
+                              |
+                              v
+            Weryfikacja brute-force (kombinatoryka)
+            Wyliczenie wszystkich przypadków bez LLM
+                              |
+                              v
+                       Agent Podsumowujący
+                       (wyjaśnienie krok po kroku)
+                              |
+                              v
+                       Lean Verifier (Agent 4)
+                       Formalizuje i weryfikuje dowód przez Lean 4
 ```
 
 RAG jest używany dwukrotnie: przed analizą (kontekst metody trafia do promptu Agenta Analitycznego) i przy generowaniu kodu (wskazówki SymPy wstrzykiwane do promptu Agenta Wykonawczego).
 
-Przy zadaniach kombinatorycznych wynik jest dodatkowo weryfikowany brute-force (wyliczenie wszystkich przypadków w Python) bez udziału LLM.
+Academic pre-router rozwiązuje zadanie jednym celowanym skryptem SymPy zamiast rozbijać go na podkroki. Wyniki dekompozycji są weryfikowane brute-force (kombinatoryka) lub substytucyjnie (algebra).
 
 ## Szybki start
 
@@ -163,7 +182,7 @@ System ma dostęp do 9 narzędzi: `sympy_calculate`, `sympy_solve`, `sympy_diffe
 formulo/
 ├── src/services/
 │   ├── threeAgentSystem.ts      # Orkiestrator, główna pętla pipeline'a
-│   ├── problemDecomposer.ts     # Dekompozycja złożonych zadań
+│   ├── problemDecomposer.ts     # Academic pre-router + dekompozycja złożonych zadań
 │   ├── classifierService.ts     # Klasyfikacja typu zadania
 │   ├── solverRouter.ts          # Router do deterministycznych solverów
 │   ├── multiStepChain.ts        # Chain ekstrakcji kodu SymPy
