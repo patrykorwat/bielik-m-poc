@@ -1087,6 +1087,9 @@ ${result.error || ''}`;
   private cleanMalformedLatex(text: string): string {
     let cleaned = text;
 
+    // Strip agent name prefixes that LLM sometimes adds to its output
+    cleaned = cleaned.replace(/^\s*\[Agent [^\]]+\]\s*:?\s*/i, '');
+
     // Convert common LaTeX to readable text
     cleaned = cleaned.replace(/\\d?frac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)');
     cleaned = cleaned.replace(/\\sqrt\{([^}]*)\}/g, 'sqrt($1)');
@@ -2805,11 +2808,11 @@ ${result.error || ''}`;
         if (templateResult && templateResult.success) {
           console.log(`✅ Template solver matched: ${templateResult.template}, answer: ${templateResult.answer}`);
 
-        // Show template solver code & output
+        // Show template solver code & output (code only in toolCalls, not in content)
         const templateMsg: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: `**Metoda:** Template solver (${templateResult.template})\n\n\`\`\`python\n${templateResult.code}\n\`\`\`\n\n---\n**WYNIKI:**\n${templateResult.output}`,
+          content: '',
           agentName: '🎯 Template Solver',
           timestamp: new Date(),
           toolCalls: [{

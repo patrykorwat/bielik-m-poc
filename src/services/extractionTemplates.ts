@@ -784,7 +784,7 @@ except:
     try:
         wynik = solve_univariate_inequality(expr ${v.relation || '>'} 0, x, relational=False)
     except:
-        wynik = solveset(expr, x, S.Reals)
+        wynik = solveset(expr ${v.relation || '>'} 0, x, S.Reals)
 
 print("ODPOWIEDZ:", wynik)
 `;
