@@ -60,6 +60,11 @@ export function MessageContent({ content }: MessageContentProps) {
     // Ensure content is a string
     const textContent = typeof content === 'string' ? content : String(content);
 
+    // Skip rendering for empty content
+    if (!textContent.trim()) {
+      return null;
+    }
+
     // Debug: log raw content
     console.log('Raw content:', textContent);
 

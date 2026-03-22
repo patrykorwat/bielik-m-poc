@@ -526,7 +526,10 @@ export async function classifyProblem(
       p.expression = (funcMatch[1] as string)
         .replace(/\^/g, '**')
         .replace(/x²/g, 'x**2')
-        .replace(/x³/g, 'x**3');
+        .replace(/x³/g, 'x**3')
+        .replace(/x⁴/g, 'x**4')
+        .replace(/(\d)x/g, '$1*x')
+        .replace(/x(\d)/g, 'x**$1');
     }
     // Try to extract tangent point: "w punkcie (x0, y0)" or "at point (x0, y0)"
     const pointMatch = question.match(/punkt(?:cie)?\s*\(\s*([\d.\-]+)\s*,/i) ||
