@@ -83,11 +83,6 @@
   --select-option-bg: #ffffff;
 }
 
-html, body {
-  height: 100dvh;
-  overflow: hidden;
-}
-
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
@@ -387,7 +382,7 @@ body::after {
 .app-container {
   max-width: 1100px;
   margin: 0 auto;
-  height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: 16px;
@@ -508,6 +503,7 @@ body::after {
 /* ===== CHAT CONTAINER ===== */
 .chat-container {
   flex: 1;
+  min-height: 0;
   background: var(--glass-bg);
   backdrop-filter: blur(var(--blur));
   -webkit-backdrop-filter: blur(var(--blur));
