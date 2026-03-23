@@ -1,3 +1,4 @@
+import { logDebug, logVerbose, logError } from './logger.js';
 const LLM_PROXY_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_MCP_PROXY_URL) || 'http://localhost:3001';
 /**
  * Unified LLM Agent supporting MLX, Ollama, and Remote APIs (all OpenAI-compatible)
@@ -37,7 +38,7 @@ export class LLMAgent {
             return response.ok;
         }
         catch (error) {
-            console.error(`[LLMAgent:${this.provider}] Server not available:`, error);
+            logError(`[LLMAgent:${this.provider}] Server not available:`, error);
             return false;
         }
     }
@@ -68,7 +69,7 @@ export class LLMAgent {
             return data.data?.map((m) => m.id) || [];
         }
         catch (error) {
-            console.error(`[LLMAgent:${this.provider}] Error listing models:`, error);
+            logError(`[LLMAgent:${this.provider}] Error listing models:`, error);
             return [];
         }
     }
@@ -89,7 +90,7 @@ export class LLMAgent {
                 temperature: overrides?.temperature ?? this.temperature,
                 max_tokens: overrides?.maxTokens ?? this.maxTokens,
             };
-            console.log(`[LLMAgent:${this.provider}] Sending request:`, {
+            logDebug(`[LLMAgent:${this.provider}] Sending request:`, {
                 baseUrl: this.baseUrl,
                 model: this.model,
                 messagesCount: messagesWithSystem.length,
@@ -127,11 +128,12 @@ export class LLMAgent {
                 clearTimeout(timeoutId);
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(`LLM API error (${response.status}): ${errorText}`);
+                    logError(`LLM API error (${response.status}):`, errorText);
+                    throw new Error(`Błąd API LLM (HTTP ${response.status})`);
                 }
                 const data = await response.json();
                 const content = data.choices?.[0]?.message?.content || '';
-                console.log(`[LLMAgent:${this.provider}] Response received:`, {
+                logVerbose(`[LLMAgent:${this.provider}] Response received:`, {
                     contentLength: content.length,
                     finishReason: data.choices?.[0]?.finish_reason,
                 });
@@ -146,17 +148,20 @@ export class LLMAgent {
             }
         }
         catch (error) {
-            console.error(`[LLMAgent:${this.provider}] Error executing:`, error);
-            // Provide helpful error messages
+            logError(`[LLMAgent:${this.provider}] Error executing:`, error);
+            // Provide helpful error messages (without leaking internal URLs)
             if (error instanceof Error) {
                 if (error.message.includes('ECONNREFUSED') || error.message.includes('Failed to fetch')) {
                     const hint = this.useProxy
-                        ? `Make sure MCP proxy is running (npm run mcp-proxy) and remote API is accessible at ${this.baseUrl}`
-                        : `Make sure the server is running at ${this.baseUrl}`;
-                    throw new Error(`Cannot connect to ${this.providerLabel()} server. ${hint}`);
+                        ? 'Sprawdź połączenie z serwerem LLM.'
+                        : 'Sprawdź, czy serwer LLM jest uruchomiony.';
+                    throw new Error(`Nie można połączyć z ${this.providerLabel()}. ${hint}`);
+                }
+                if (error.message.includes('LLM API error')) {
+                    throw new Error('Błąd serwera LLM. Spróbuj ponownie za chwilę.');
                 }
             }
-            throw error;
+            throw new Error('Wystąpił nieoczekiwany błąd podczas komunikacji z LLM.');
         }
     }
     /**
@@ -169,7 +174,7 @@ export class LLMAgent {
      * Set the model to use
      */
     setModel(model) {
-        console.log(`[LLMAgent:${this.provider}] Changing model from ${this.model} to ${model}`);
+        logDebug(`[LLMAgent:${this.provider}] Changing model from ${this.model} to ${model}`);
         this.model = model;
     }
     /**

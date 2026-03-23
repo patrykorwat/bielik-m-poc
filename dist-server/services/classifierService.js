@@ -5,6 +5,7 @@
  * Robust parsing handles markdown fences, partial JSON, and common LLM output quirks.
  */
 import { ProblemType, CLASSIFIER_CONFIDENCE_THRESHOLD, } from './classifierTypes.js';
+import { logDebug, logWarn } from './logger.js';
 // ============================================================
 // JSON Extraction from LLM output
 // ============================================================
@@ -393,7 +394,7 @@ export async function classifyProblem(question, classifierPrompt, llmAgent, ragC
     // === Stage 1: Regex pre-classification (skip university patterns when disabled) ===
     const regexHint = universityEnabled ? regexPreClassify(question) : null;
     if (regexHint) {
-        console.log(`🔍 [Regex Pre-Classifier] Detected: ${regexHint}`);
+        logDebug(`🔍 [Regex Pre-Classifier] Detected: ${regexHint}`);
     }
     // Build the user message with optional RAG context
     let userMessage = question;
@@ -410,10 +411,10 @@ export async function classifyProblem(question, classifierPrompt, llmAgent, ragC
     // Extract JSON
     const parsed = extractJSON(cleaned);
     if (!parsed) {
-        console.warn('[Classifier] Failed to extract JSON from response:', cleaned.substring(0, 200));
+        logWarn('[Classifier] Failed to extract JSON from response:', cleaned.substring(0, 200));
         // If regex detected a type, use it instead of GENERAL
         if (regexHint) {
-            console.log(`🔍 [Regex Override] LLM failed JSON parse → using regex hint: ${regexHint}`);
+            logDebug(`🔍 [Regex Override] LLM failed JSON parse → using regex hint: ${regexHint}`);
             return {
                 type: regexHint,
                 params: { description: question },
@@ -433,7 +434,7 @@ export async function classifyProblem(question, classifierPrompt, llmAgent, ragC
     const result = validateClassification(parsed, question);
     // === Stage 3: Regex override when LLM gives GENERAL but regex found specific type ===
     if (regexHint && result.type === ProblemType.GENERAL && regexHint !== ProblemType.GENERAL) {
-        console.log(`🔍 [Regex Override] LLM → general, regex → ${regexHint}. Overriding type.`);
+        logDebug(`🔍 [Regex Override] LLM → general, regex → ${regexHint}. Overriding type.`);
         result.type = regexHint;
         // Boost confidence slightly so it doesn't immediately fall back
         result.confidence = Math.max(result.confidence, 0.75);
@@ -446,9 +447,46 @@ export async function classifyProblem(question, classifierPrompt, llmAgent, ragC
         ProblemType.ALGEBRAIC_GEOMETRY, ProblemType.GRAPH_THEORY,
     ];
     if (regexHint && universityTypes.includes(regexHint) && !universityTypes.includes(result.type)) {
-        console.log(`🔍 [Regex Override] LLM → ${result.type} (matura), regex → ${regexHint} (university). Overriding.`);
+        logDebug(`🔍 [Regex Override] LLM → ${result.type} (matura), regex → ${regexHint} (university). Overriding.`);
         result.type = regexHint;
         result.confidence = Math.max(result.confidence, 0.75);
+    }
+    // === Stage 4: Keyword-based override for commonly misclassified matura problems ===
+    const lowerQ = question.toLowerCase();
+    // Tangent line problems: "styczna", "równanie stycznej", "tangent line"
+    if (/styczn|tangent\s*line/i.test(lowerQ) && result.type !== ProblemType.DERIVATIVE) {
+        logDebug(`🔍 [Keyword Override] Detected tangent line problem, LLM said ${result.type} → derivative`);
+        result.type = ProblemType.DERIVATIVE;
+        result.confidence = Math.max(result.confidence, 0.9);
+        const p = (result.params || {});
+        p.task = 'tangent_line';
+        p.variable = p.variable || 'x';
+        // Try to extract function expression: "y = <expr>" or "f(x) = <expr>"
+        const funcMatch = question.match(/[yf]\s*(?:\(x\))?\s*=\s*([^\s,]+(?:\s*[\+\-\*\/\^]\s*[^\s,]+)*)/i);
+        if (funcMatch && !p.expression) {
+            p.expression = funcMatch[1]
+                .replace(/\^/g, '**')
+                .replace(/x²/g, 'x**2')
+                .replace(/x³/g, 'x**3')
+                .replace(/x⁴/g, 'x**4')
+                .replace(/(\d)x/g, '$1*x')
+                .replace(/x(\d)/g, 'x**$1');
+        }
+        // Try to extract tangent point: "w punkcie (x0, y0)" or "at point (x0, y0)"
+        const pointMatch = question.match(/punkt(?:cie)?\s*\(\s*([\d.\-]+)\s*,/i) ||
+            question.match(/at\s*\(\s*([\d.\-]+)\s*,/i) ||
+            question.match(/x\s*=\s*([\d.\-]+)/i);
+        if (pointMatch && !p.tangent_point) {
+            p.tangent_point = pointMatch[1];
+        }
+        result.params = p;
+    }
+    // Optimization problems: "największa/najmniejsza wartość", "minimalizuj", "maksymalizuj"
+    if (/najwększ|najmniejsz|minimali|maksymali|optymali|minimum\s+funkcji|maksimum\s+funkcji/i.test(lowerQ) &&
+        result.type !== ProblemType.OPTIMIZATION && result.type !== ProblemType.DERIVATIVE) {
+        logDebug(`🔍 [Keyword Override] Detected optimization problem, LLM said ${result.type} → optimization`);
+        result.type = ProblemType.OPTIMIZATION;
+        result.confidence = Math.max(result.confidence, 0.85);
     }
     return result;
 }

@@ -813,9 +813,12 @@ try:
     wynik = solve_univariate_inequality(expr ${p.relation} ${rhs}, ${p.variable}, relational=False)
 except:
     try:
-        wynik = solveset(expr - (${rhs}), ${p.variable}, S.Reals)
+        wynik = reduce_inequalities(expr ${p.relation} ${rhs}, ${p.variable})
     except:
-        wynik = solve(expr - (${rhs}), ${p.variable})
+        try:
+            wynik = solveset(expr ${p.relation} ${rhs}, ${p.variable}, S.Reals)
+        except:
+            wynik = solve(expr ${p.relation} ${rhs}, ${p.variable})
 print("ODPOWIEDZ:", wynik)
 `;
         case 'range':
@@ -824,7 +827,10 @@ ${p.variable} = symbols('${p.variable}', real=True)
 try:
     wynik = solveset(${p.expression} ${p.relation} ${rhs}, ${p.variable}, S.Reals)
 except:
-    wynik = solve(${p.expression} - (${rhs}), ${p.variable})
+    try:
+        wynik = reduce_inequalities(${p.expression} ${p.relation} ${rhs}, ${p.variable})
+    except:
+        wynik = solve(${p.expression} ${p.relation} ${rhs}, ${p.variable})
 print("ODPOWIEDZ:", wynik)
 `;
         case 'prove':

@@ -1,4 +1,4 @@
-import { logDebug, logVerbose, logError } from './logger';
+import { logDebug, logVerbose, logError } from './logger.js';
 
 export type LLMProviderType = 'mlx' | 'ollama' | 'remote';
 

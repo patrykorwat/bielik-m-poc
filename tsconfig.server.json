@@ -19,6 +19,7 @@
     "src/services/classifierTypes.ts",
     "src/services/classifierService.ts",
     "src/services/deterministicSolvers.ts",
-    "src/services/mlxAgent.ts"
+    "src/services/mlxAgent.ts",
+    "src/services/logger.ts"
   ]
 }

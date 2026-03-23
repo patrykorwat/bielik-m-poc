@@ -11,7 +11,7 @@ import {
   ClassificationResult,
   CLASSIFIER_CONFIDENCE_THRESHOLD,
 } from './classifierTypes.js';
-import { logDebug, logWarn } from './logger';
+import { logDebug, logWarn } from './logger.js';
 
 // ============================================================
 // JSON Extraction from LLM output
