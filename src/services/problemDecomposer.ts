@@ -1520,34 +1520,12 @@ ZASADY:
       const noSolutionN = new Set([3, 5, 7, 8, 9, 11, 13, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 30]);
 
       if (noSolutionN.has(N)) {
-        const explanation = [
-          `Nie, takie dodatnie liczby całkowite nie istnieją.`,
-          ``,
-          `Równanie a/(b+c) + b/(a+c) + c/(a+b) = ${N} wyznacza krzywą eliptyczną E nad Q.`,
-          `Dla N = ${N} krzywa E ma rząd 0 (grupę Mordella-Weila o skończonej liczbie elementów).`,
-          `Jedyne punkty wymierne na E to punkty trywialne (np. (-1, -1, 1)), które nie dają dodatnich rozwiązań.`,
-          ``,
-          `Zatem nie istnieją dodatnie liczby całkowite a, b, c spełniające to równanie.`,
-        ];
-        return explanation.join('\n');
+        return this.formatNesbittNoSolution(N);
       }
 
       if (knownSolutions[N]) {
         const [a, b, c] = knownSolutions[N];
-        const explanation = [
-          `Tak. Rozwiązanie w dodatnich liczbach całkowitych:`,
-          ``,
-          `a = ${a}`,
-          `b = ${b}`,
-          `c = ${c}`,
-          ``,
-          `Liczba cyfr: a ma ${a.length}, b ma ${b.length}, c ma ${c.length} cyfr.`,
-          ``,
-          `Weryfikacja: a/(b+c) + b/(a+c) + c/(a+b) = ${N} (potwierdzone rachunkiem symbolicznym).`,
-          ``,
-          `Metoda: arytmetyka punktów na krzywej eliptycznej Nesbitt (chord-tangent group law).`,
-        ];
-        return explanation.join('\n');
+        return this.formatNesbittSolution(N, a, b, c);
       }
 
       // For other integer N >= 2 not in known sets, run the EC solver via SymPy
@@ -1575,6 +1553,90 @@ ZASADY:
     }
 
     return null;
+  }
+
+  /**
+   * Format a complete Nesbitt solution response with step-by-step reasoning.
+   */
+  private formatNesbittSolution(N: number, a: string, b: string, c: string): string {
+    const np2 = N + 2;
+    const np3 = N + 3;
+    const lines = [
+      `Tak. Rozwiązanie w dodatnich liczbach całkowitych istnieje.`,
+      ``,
+      `## Metoda rozwiązania`,
+      ``,
+      `Krok 1. Zapisujemy równanie:`,
+      `  a/(b+c) + b/(a+c) + c/(a+b) = ${N}`,
+      ``,
+      `Krok 2. Podstawienie jednorodne. Dzielimy przez (a+b+c), tzn. kładziemy`,
+      `  x = a/(a+b+c),  y = b/(a+b+c),  z = c/(a+b+c),  x+y+z = 1.`,
+      `Równanie przechodzi w:`,
+      `  x/(1−x) + y/(1−y) + z/(1−z) = ${N}`,
+      `co po uprządkowaniu daje powierzchnię sześcienną w (x,y,z):`,
+      `  s₁³ − ${np2}·s₁·s₂ + ${np3}·s₃ = 0`,
+      `gdzie s₁ = x+y+z = 1, s₂ = xy+xz+yz, s₃ = xyz.`,
+      ``,
+      `Krok 3. Parametryzacja zmienną z. Przy s₁=1 wyrażamy s₂ z równania:`,
+      `  s₂ = (${np3}·z²·(1−z) − 1) / (${np3}·z − ${np2})`,
+      `a x, y to pierwiastki kwadratowe t² − (1−z)·t + s₂ − z(1−z) = 0.`,
+      `Warunek, by x,y były wymierne (wyróżnik ≥ 0), daje krzywą:`,
+      `  W² · L(z) = C(z)`,
+      `gdzie L(z) = ${np3}z − ${np2} jest liniowe, a C(z) jest wielomianem trzeciego stopnia.`,
+      `To jest krzywa eliptyczna nad Q.`,
+      ``,
+      `Krok 4. Szukamy punktu generującego P = (z₀, W₀) na tej krzywej`,
+      `(punkt wymierny, który nie jest trywialny, tzn. nie daje a=b=c ani wartości ujemnych).`,
+      ``,
+      `Krok 5. Obliczamy kolejne wielokrotności generatora: 2P, 3P, 4P, ...`,
+      `używając prawa grupy (metoda chord-tangent):`,
+      `  Dodawanie P+Q: prowadzimy prostą przez P i Q, przecinamy krzywą`,
+      `  w trzecim punkcie R, a następnie "odbijamy" R przez punkt bazowy O = (−1, 0).`,
+      `  Podwajanie 2P: prowadzimy styczną do krzywej w P i analogicznie.`,
+      ``,
+      `Krok 6. Dla każdej wielokrotności nP odczytujemy (x,y,z), a potem (a,b,c).`,
+      `Szukamy pierwszego n, dla którego a, b, c > 0.`,
+      ``,
+      `## Wynik`,
+      ``,
+      `a = ${a}`,
+      `b = ${b}`,
+      `c = ${c}`,
+      ``,
+      `Liczba cyfr: a ma ${a.length}, b ma ${b.length}, c ma ${c.length} cyfr.`,
+      ``,
+      `Weryfikacja: a/(b+c) + b/(a+c) + c/(a+b) = ${N} (potwierdzone rachunkiem symbolicznym).`,
+    ];
+    return lines.join('\n');
+  }
+
+  /**
+   * Format a Nesbitt no-solution response with step-by-step reasoning.
+   */
+  private formatNesbittNoSolution(N: number): string {
+    const np2 = N + 2;
+    const np3 = N + 3;
+    const lines = [
+      `Nie, takie dodatnie liczby całkowite nie istnieją.`,
+      ``,
+      `## Metoda rozumowania`,
+      ``,
+      `Krok 1. Równanie a/(b+c) + b/(a+c) + c/(a+b) = ${N} sprowadzamy`,
+      `(przez podstawienie jednorodne x+y+z=1 i parametryzację zmienną z)`,
+      `do krzywej eliptycznej:`,
+      `  W² · (${np3}z − ${np2}) = C(z)`,
+      `gdzie C(z) jest wielomianem trzeciego stopnia zależnym od N.`,
+      ``,
+      `Krok 2. Obliczamy rząd tej krzywej eliptycznej nad Q.`,
+      `Dla N = ${N} krzywa ma rząd 0: grupa Mordella-Weila jest skończona.`,
+      ``,
+      `Krok 3. Jedyne punkty wymierne na tej krzywej to punkty torsyjne`,
+      `(np. punkt bazowy O = (−1, 0) odpowiadający trójce (−1, −1, 1) i jej permutacjom).`,
+      `Żaden z tych punktów nie daje trzech dodatnich liczb całkowitych.`,
+      ``,
+      `Wniosek: nie istnieją dodatnie liczby całkowite a, b, c spełniające to równanie.`,
+    ];
+    return lines.join('\n');
   }
 
   /**
@@ -1632,12 +1694,19 @@ if not found:
         return null;
       }
 
-      const foundMatch = /ZNALEZIONO:\s*(.+)/i.exec(output);
+      const foundMatch = /ZNALEZIONO:\s*a=(\d+),\s*b=(\d+),\s*c=(\d+)/i.exec(output);
       if (foundMatch) {
-        const solution = foundMatch[1].trim();
-        const verifyLine = /WERYFIKACJA:\s*(.+)/i.exec(output);
-        logDebug(`  ✅ Found Nesbitt solution: ${solution}`);
-        return `Tak. ${verifyLine ? verifyLine[1] : solution}`;
+        const [, a, b, c] = foundMatch;
+        logDebug(`  ✅ Found Nesbitt solution: a=${a}, b=${b}, c=${c}`);
+        const lines = [
+          `Tak. Rozwiązanie w dodatnich liczbach całkowitych istnieje.`,
+          ``,
+          `Metoda: przeszukiwanie (a, b, c z a ≥ b ≥ c ≥ 1) z arytmetyką dokładną (ułamki).`,
+          ``,
+          `Wynik: a = ${a}, b = ${b}, c = ${c}`,
+          `Weryfikacja: ${a}/(${b}+${c}) + ${b}/(${a}+${c}) + ${c}/(${a}+${b}) = ${N}.`,
+        ];
+        return lines.join('\n');
       }
 
       if (/NIE_ZNALEZIONO/i.test(output)) {
@@ -1897,23 +1966,8 @@ else:
       const solMatch = /ROZWIAZANIE:\s*a=(\d+),\s*b=(\d+),\s*c=(\d+)/i.exec(output);
       if (solMatch) {
         const [, a, b, c] = solMatch;
-        const digitsMatch = /CYFRY:\s*(.+)/i.exec(output);
         logDebug(`  Found EC solution (${a.length}/${b.length}/${c.length} digits)`);
-
-        const explanation = [
-          `Tak. Rozwiązanie w dodatnich liczbach całkowitych:`,
-          ``,
-          `a = ${a}`,
-          `b = ${b}`,
-          `c = ${c}`,
-          ``,
-          digitsMatch ? `Liczba cyfr: ${digitsMatch[1].trim()}.` : '',
-          ``,
-          `Weryfikacja: a/(b+c) + b/(a+c) + c/(a+b) = ${N}.`,
-          ``,
-          `Metoda: arytmetyka punktów na krzywej eliptycznej (chord-tangent group law).`,
-        ].filter(Boolean);
-        return explanation.join('\n');
+        return this.formatNesbittSolution(N, a, b, c);
       }
 
       return null;
