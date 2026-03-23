@@ -118,9 +118,9 @@ function proxyRequest(prefix, targetPort, req, res) {
 
 // ── Query logging (stdout) ───────────────────────────────────────────────
 
-app.use(express.json({ limit: '1kb' }));
+const queryJsonParser = express.json({ limit: '2kb' });
 
-app.post('/api/log/query', (req, res) => {
+app.post('/api/log/query', queryJsonParser, (req, res) => {
   const query = req.body?.query;
   if (query && typeof query === 'string') {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
