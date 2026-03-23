@@ -197,7 +197,7 @@ app.post('/tools/call', async (req, res) => {
       arguments: args || {},
     });
 
-    console.log(`Tool result:`, JSON.stringify(result, null, 2));
+    console.log(`Tool result:`, JSON.stringify(result));
 
     res.json(result);
   } catch (error) {
