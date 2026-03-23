@@ -3319,12 +3319,12 @@ ${result.error || ''}`;
           classifierPromptText,
         );
 
-        // Show decomposition start to user
+        // Show analysis start to user
         const decompStartMsg: Message = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: '✂️ Rozbijam zadanie na prostsze pod-zadania...',
-          agentName: '✂️ Dekompozycja',
+          content: '🔍 Analizuję zadanie...',
+          agentName: '🔍 Analiza',
           timestamp: new Date(),
         };
         this.conversationHistory.push(decompStartMsg);
@@ -3353,20 +3353,36 @@ ${result.error || ''}`;
         if (decompResult.success && decompResult.finalAnswer) {
           logInfo(`✅ Decomposition succeeded: ${decompResult.stepsCompleted}/${decompResult.totalSteps} steps, answer: ${decompResult.finalAnswer}`);
 
-          // Show final decomposition result
-          const stepsDetail = decompResult.subResults
-            .map((r, i) => {
-              const task = decompResult.subTasks[i];
-              const status = r.success ? '✅' : '❌';
-              return `${status} ${task?.description?.substring(0, 60) || `Krok ${r.subTaskId}`}: **${r.answer || r.error || '?'}**`;
-            })
-            .join('\n');
+          // Check if this was a direct solver (1 step, no decomposition)
+          const isDirect = decompResult.totalSteps === 1 &&
+            decompResult.subResults[0]?.pipeline &&
+            ['direct_academic', 'existence_solver'].includes(decompResult.subResults[0].pipeline);
+
+          let resultContent: string;
+          let resultAgent: string;
+
+          if (isDirect) {
+            // Direct solver: clean output, no step listing
+            resultContent = `ODPOWIEDZ: ${decompResult.finalAnswer}`;
+            resultAgent = '📊 Wynik';
+          } else {
+            // Standard decomposition: show steps
+            const stepsDetail = decompResult.subResults
+              .map((r, i) => {
+                const task = decompResult.subTasks[i];
+                const status = r.success ? '✅' : '❌';
+                return `${status} ${task?.description?.substring(0, 60) || `Krok ${r.subTaskId}`}: **${r.answer || r.error || '?'}**`;
+              })
+              .join('\n');
+            resultContent = `**Rozwiązanie metodą dekompozycji** (${decompResult.stepsCompleted}/${decompResult.totalSteps} kroków):\n\n${stepsDetail}\n\nODPOWIEDZ: ${decompResult.finalAnswer}`;
+            resultAgent = '📊 Wynik (Dekompozycja)';
+          }
 
           const decompResultMsg: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: `**Rozwiązanie metodą dekompozycji** (${decompResult.stepsCompleted}/${decompResult.totalSteps} kroków):\n\n${stepsDetail}\n\nODPOWIEDZ: ${decompResult.finalAnswer}`,
-            agentName: '📊 Wynik (Dekompozycja)',
+            content: resultContent,
+            agentName: resultAgent,
             timestamp: new Date(),
           };
           this.conversationHistory.push(decompResultMsg);
