@@ -1474,7 +1474,6 @@ ZASADY:
 
     // Nesbitt's inequality: minimum is 3/2 for positive reals
     if (N < 2) {
-      // For N=1, impossible since min is 3/2
       const isExistenceQ = /da si[eę]|czy/.test(textLower);
       if (isExistenceQ) {
         return `Nie. Z nierówności Nesbitt wynika, że a/(b+c) + b/(a+c) + c/(a+b) >= 3/2 dla dodatnich a, b, c. Wartość ${N} jest nieosiągalna.`;
@@ -1482,59 +1481,60 @@ ZASADY:
       return `Brak rozwiązań. Nierówność Nesbitt: a/(b+c) + b/(a+c) + c/(a+b) >= 3/2 dla dodatnich a, b, c.`;
     }
 
-    // Phase 1: Brute-force search for small solutions
+    // ── Phase 0: Instant lookups (no MCP calls) ──────────────────────
+
+    // Known solutions computed via elliptic curve point multiplication.
+    // N=4: Bremner & Macleod 2014 (81/80/79 digits, 9P on EC)
+    // N=6: 134 digits (11P), N=10: 190 digits (13P)
+    const knownSolutions: Record<number, [string, string, string]> = {
+      4: [
+        '154476802108746166441951315019919837485664325669565431700026634898253202035277999',
+        '36875131794129999827197811565225474825492979968971970996283137471637224634055579',
+        '4373612677928697257861252602371390152816537558161613618621437993378423467772036',
+      ],
+      6: [
+        '20260869859883222379931520298326390700152988332214525711323500132179943287700005601210288797153868533207131302477269470450828233936557',
+        '2250324022012683866886426461942494811141200084921223218461967377588564477616220767789632257358521952443049813799712386367623925971447',
+        '1218343242702905855792264237868803223073090298310121297526752830558323845503910071851999217959704024280699759290559009162035102974023',
+      ],
+      10: [
+        '4862378745380642626737318101484977637219057323564658907686653339599714454790559130946320953938197181210525554039710122136086190642013402927952831079021210585653078786813279351784906397934209',
+        '269103113846520710198086599018316928810831097261381335767926880507079911347095440987749703663156874995907158014866846058485318408629957749519665987782327830143454337518378955846463785600977',
+        '221855981602380704196804518854316541759883857932028285581812549404634844243737502744011549757448453135493556098964216532950604590733853450272184987603430882682754171300742698179931849310347',
+      ],
+    };
+
+    if (knownSolutions[N]) {
+      const [a, b, c] = knownSolutions[N];
+      logDebug(`  ✅ Returning known Nesbitt solution for N=${N}`);
+      return this.formatNesbittSolution(N, a, b, c);
+    }
+
+    // N values where the elliptic curve has rank 0 (no positive integer solution).
+    const noSolutionN = new Set([3, 5, 7, 8, 9, 11, 13, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 30]);
+
+    if (noSolutionN.has(N)) {
+      logDebug(`  ❌ N=${N} is rank-0, no solution exists`);
+      return this.formatNesbittNoSolution(N);
+    }
+
+    // ── Phase 1: Brute-force for unknown small N ─────────────────────
+
     const bruteResult = await this.nesbittBruteForce(N);
     if (bruteResult) {
       return bruteResult;
     }
 
-    // Phase 2: Known solutions and elliptic curve solver for integer N >= 2
+    // ── Phase 2: Elliptic curve solver for unknown integer N >= 2 ────
+
     if (N >= 2 && Number.isInteger(N)) {
-      logDebug(`  📐 No small solution for N=${N}, using elliptic curve solver`);
+      logDebug(`  📐 No small solution for N=${N}, trying EC solver`);
 
-      // Known solutions computed via elliptic curve point multiplication.
-      // Each entry: [a, b, c] strings verified by symbolic computation.
-      // N=4: Bremner & Macleod 2014 (81/80/79 digits, 9P on EC)
-      // N=6: 134 digits (11P), N=10: 190 digits (13P), N=12: 2707 digits (35P), N=14: 1876 digits (47P)
-      const knownSolutions: Record<number, [string, string, string]> = {
-        4: [
-          '154476802108746166441951315019919837485664325669565431700026634898253202035277999',
-          '36875131794129999827197811565225474825492979968971970996283137471637224634055579',
-          '4373612677928697257861252602371390152816537558161613618621437993378423467772036',
-        ],
-        6: [
-          '20260869859883222379931520298326390700152988332214525711323500132179943287700005601210288797153868533207131302477269470450828233936557',
-          '2250324022012683866886426461942494811141200084921223218461967377588564477616220767789632257358521952443049813799712386367623925971447',
-          '1218343242702905855792264237868803223073090298310121297526752830558323845503910071851999217959704024280699759290559009162035102974023',
-        ],
-        10: [
-          '4862378745380642626737318101484977637219057323564658907686653339599714454790559130946320953938197181210525554039710122136086190642013402927952831079021210585653078786813279351784906397934209',
-          '269103113846520710198086599018316928810831097261381335767926880507079911347095440987749703663156874995907158014866846058485318408629957749519665987782327830143454337518378955846463785600977',
-          '221855981602380704196804518854316541759883857932028285581812549404634844243737502744011549757448453135493556098964216532950604590733853450272184987603430882682754171300742698179931849310347',
-        ],
-      };
-
-      // N values where the associated elliptic curve has rank 0,
-      // meaning no positive integer solution exists.
-      // Verified computationally: no non-trivial rational points on the Nesbitt curve.
-      const noSolutionN = new Set([3, 5, 7, 8, 9, 11, 13, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 30]);
-
-      if (noSolutionN.has(N)) {
-        return this.formatNesbittNoSolution(N);
-      }
-
-      if (knownSolutions[N]) {
-        const [a, b, c] = knownSolutions[N];
-        return this.formatNesbittSolution(N, a, b, c);
-      }
-
-      // For other integer N >= 2 not in known sets, run the EC solver via SymPy
       const ecResult = await this.nesbittEllipticCurveSolver(N);
       if (ecResult) {
         return ecResult;
       }
 
-      // Fallback: we don't know for sure
       const explanation = [
         `Dla N = ${N} nie udało się obliczyć rozwiązania w dostępnym czasie.`,
         ``,
