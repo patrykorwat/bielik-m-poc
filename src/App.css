@@ -83,13 +83,17 @@
   --select-option-bg: #ffffff;
 }
 
+html, body {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
     sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: linear-gradient(135deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
-  min-height: 100vh;
   color: var(--text-primary);
 }
 
@@ -383,12 +387,13 @@ body::after {
 .app-container {
   max-width: 1100px;
   margin: 0 auto;
-  height: 100dvh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 16px;
   position: relative;
   z-index: 1;
+  overflow: hidden;
 }
 
 .app-header {
@@ -403,6 +408,7 @@ body::after {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .app-header h1 {
@@ -692,6 +698,7 @@ body::after {
   display: flex;
   gap: 10px;
   background: var(--input-area-bg);
+  flex-shrink: 0;
 }
 
 .message-input {
@@ -896,6 +903,7 @@ body::after {
   margin-top: 8px;
   font-size: 12px;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .app-footer a {
@@ -939,7 +947,6 @@ body::after {
 @media (max-width: 768px) {
   .app-container {
     padding: 4px;
-    height: 100dvh;
   }
 
   .app-header {

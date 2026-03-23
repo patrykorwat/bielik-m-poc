@@ -116,6 +116,20 @@ function proxyRequest(prefix, targetPort, req, res) {
   req.pipe(proxyReq, { end: true });
 }
 
+// ── Query logging ────────────────────────────────────────────────────────
+
+app.use(express.json({ limit: '1kb' }));
+
+app.post('/api/log/query', (req, res) => {
+  const query = req.body?.query;
+  if (query && typeof query === 'string') {
+    const ts = new Date().toISOString();
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    console.log(`[query] ${ts} | ${ip} | ${query}`);
+  }
+  res.status(204).end();
+});
+
 // ── Routes ──────────────────────────────────────────────────────────────
 
 // Proxy /api/mcp/* → localhost:MCP_PORT/*

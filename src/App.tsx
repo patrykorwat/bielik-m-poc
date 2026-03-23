@@ -274,6 +274,13 @@ function App() {
     const userInput = inputMessage;
     setInputMessage('');
 
+    // Log query to backend (fire-and-forget)
+    fetch('/api/log/query', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: userInput }),
+    }).catch(() => {});
+
     try {
       await orchestratorRef.current.processMessage(
         userInput,
