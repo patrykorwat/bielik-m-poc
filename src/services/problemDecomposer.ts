@@ -1434,15 +1434,38 @@ ZASADY:
 
     if (!hasThreeFractions) return null;
 
-    // Extract target value N
+    // Polish word-to-number mapping for target extraction
+    const polishNumbers: Record<string, number> = {
+      'zero': 0, 'jeden': 1, 'jedną': 1, 'jedno': 1,
+      'dwa': 2, 'dwie': 2, 'trzy': 3, 'cztery': 4, 'pięć': 5,
+      'sześć': 6, 'siedem': 7, 'osiem': 8, 'dziewięć': 9, 'dziesięć': 10,
+      'jedenaście': 11, 'dwanaście': 12, 'trzynaście': 13, 'czternaście': 14,
+      'piętnaście': 15, 'szesnaście': 16, 'siedemnaście': 17, 'osiemnaście': 18,
+      'dziewiętnaście': 19, 'dwadzieścia': 20,
+    };
+
+    // Extract target value N (digits or Polish number words)
     const targetMatch = problem.match(/(?:wyszło|wyniosło|równ[ae]|wynik[ie]*|=)\s*(?:dokładnie\s+)?(\d+)/i)
       || problem.match(/dokładnie\s+(\d+)/i)
       || problem.match(/=\s*(\d+)/);
 
-    if (!targetMatch) return null;
+    let N: number | null = null;
 
-    const N = parseInt(targetMatch[1]);
-    if (isNaN(N) || N < 1) return null;
+    if (targetMatch) {
+      N = parseInt(targetMatch[1]);
+    } else {
+      // Try Polish number words after keywords
+      const wordPattern = /(?:wyszło|wyniosło|równ[ae]|wynik[ie]*|dokładnie)\s+(?:dokładnie\s+)?([a-ząćęłńóśźż]+)/i;
+      const wordMatch = problem.match(wordPattern);
+      if (wordMatch) {
+        const word = wordMatch[1].toLowerCase();
+        if (polishNumbers[word] !== undefined) {
+          N = polishNumbers[word];
+        }
+      }
+    }
+
+    if (N === null || isNaN(N) || N < 1) return null;
 
     // Check if problem asks about positive integers
     const requiresIntegers = /całkowit|naturaln|integer|dodatni/i.test(problem);
