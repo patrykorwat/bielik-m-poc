@@ -25,6 +25,9 @@ export interface LLMResponse {
 
 const LLM_PROXY_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_MCP_PROXY_URL) || 'http://localhost:3001';
 
+// Stable session ID per browser tab for LLM Observability grouping
+const LLM_SESSION_ID = crypto.randomUUID();
+
 /**
  * Unified LLM Agent supporting MLX, Ollama, and Remote APIs (all OpenAI-compatible)
  * Remote API requests are proxied through MCP proxy server to avoid CORS issues.
@@ -151,6 +154,7 @@ export class LLMAgent {
               targetUrl: `${this.baseUrl}/v1/chat/completions`,
               apiKey: this.apiKey,
               payload: requestBody,
+              sessionId: LLM_SESSION_ID,
             }),
             signal: controller.signal,
           });

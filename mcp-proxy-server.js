@@ -12,9 +12,12 @@ import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import OpenAI from 'openai';
+import { randomUUID } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const llmobs = tracer.llmobs;
 
 const app = express();
 const PORT = process.env.MCP_PORT || 3001;
@@ -225,32 +228,37 @@ app.post('/tools/call', async (req, res) => {
  * Body: { targetUrl: string, apiKey?: string, payload: object }
  */
 app.post('/llm-proxy', async (req, res) => {
+  const { targetUrl: clientUrl, apiKey: reqApiKey, payload, sessionId: clientSessionId } = req.body;
+  const apiKey = reqApiKey || DEFAULT_API_KEY;
+  const sessionId = clientSessionId || req.headers['x-session-id'] || randomUUID();
+
+  const baseURL = DEFAULT_LLM_URL
+    ? `${DEFAULT_LLM_URL}/v1`
+    : clientUrl ? new URL(clientUrl).origin + '/v1' : null;
+
+  if (!baseURL) {
+    return res.status(400).json({ error: 'targetUrl is required (or set LLM_API_URL env var)' });
+  }
+
   try {
-    const { targetUrl: clientUrl, apiKey: reqApiKey, payload } = req.body;
-    const apiKey = reqApiKey || DEFAULT_API_KEY;
+    const result = await llmobs.trace({ kind: 'workflow', name: 'formulo.chat', sessionId }, async () => {
+      const client = new OpenAI({
+        apiKey: apiKey || 'no-key',
+        baseURL,
+      });
 
-    const baseURL = DEFAULT_LLM_URL
-      ? `${DEFAULT_LLM_URL}/v1`
-      : clientUrl ? new URL(clientUrl).origin + '/v1' : null;
+      const { model, messages, ...rest } = payload;
 
-    if (!baseURL) {
-      return res.status(400).json({ error: 'targetUrl is required (or set LLM_API_URL env var)' });
-    }
+      const completion = await client.chat.completions.create({
+        model,
+        messages,
+        ...rest,
+      });
 
-    const client = new OpenAI({
-      apiKey: apiKey || 'no-key',
-      baseURL,
+      return completion;
     });
 
-    const { model, messages, ...rest } = payload;
-
-    const completion = await client.chat.completions.create({
-      model,
-      messages,
-      ...rest,
-    });
-
-    res.json(completion);
+    res.json(result);
   } catch (error) {
     console.error('LLM proxy error:', error);
     if (error instanceof OpenAI.APIError) {
