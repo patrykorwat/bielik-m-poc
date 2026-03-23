@@ -39,10 +39,16 @@ function spawnChild(label, command, args, env = {}) {
   });
 
   child.stdout.on('data', (data) => {
-    console.log(`[${label}] ${data.toString().trim()}`);
+    for (const line of data.toString().split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed) console.log(`[${label}] ${trimmed}`);
+    }
   });
   child.stderr.on('data', (data) => {
-    console.error(`[${label}] ${data.toString().trim()}`);
+    for (const line of data.toString().split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed) console.error(`[${label}] ${trimmed}`);
+    }
   });
   child.on('exit', (code) => {
     console.log(`[${label}] exited with code ${code}`);

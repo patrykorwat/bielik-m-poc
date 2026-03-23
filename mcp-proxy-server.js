@@ -148,12 +148,12 @@ async function initializeMCP() {
       },
     });
 
-    console.log('MCP initialized:', result);
+    console.log('MCP initialized:', JSON.stringify(result));
 
     // List tools
     const toolsResult = await sendMCPRequest('tools/list', {});
     tools = toolsResult.tools || [];
-    console.log('Available tools:', tools.map(t => t.name));
+    console.log('Available tools:', JSON.stringify(tools.map(t => t.name)));
   } catch (error) {
     console.error('MCP initialization failed:', error);
   }
@@ -190,7 +190,7 @@ app.post('/tools/call', async (req, res) => {
       return res.status(400).json({ error: 'Tool name is required' });
     }
 
-    console.log(`Calling tool: ${name}`, args);
+    console.log(`Calling tool: ${name}`, JSON.stringify(args));
 
     const result = await sendMCPRequest('tools/call', {
       name,
