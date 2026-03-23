@@ -26,7 +26,10 @@ export interface LLMResponse {
 const LLM_PROXY_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_MCP_PROXY_URL) || 'http://localhost:3001';
 
 // Stable session ID per browser tab for LLM Observability grouping
-const LLM_SESSION_ID = crypto.randomUUID();
+const LLM_SESSION_ID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+  const r = (Math.random() * 16) | 0;
+  return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+});
 
 /**
  * Unified LLM Agent supporting MLX, Ollama, and Remote APIs (all OpenAI-compatible)
