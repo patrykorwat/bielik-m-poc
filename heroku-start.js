@@ -64,8 +64,6 @@ console.log(`Starting MCP proxy on localhost:${MCP_PORT}...`);
 spawnChild('mcp-proxy', 'node', ['--import', 'dd-trace/initialize.mjs', 'mcp-proxy-server.js'], {
   MCP_PORT: String(MCP_PORT),
   DD_SERVICE: 'formulo-mcp-proxy',
-  DD_LLMOBS_ENABLED: '1',
-  DD_LLMOBS_ML_APP: 'formulo',
 });
 
 // Start RAG service
