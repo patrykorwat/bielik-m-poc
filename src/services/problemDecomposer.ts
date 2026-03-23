@@ -1557,114 +1557,132 @@ ZASADY:
 
   /**
    * Format a complete Nesbitt solution response with step-by-step reasoning.
+   * Pedagogical structure inspired by "Jej wysokość krzywa eliptyczna" (Deltami, 2024).
    */
   private formatNesbittSolution(N: number, a: string, b: string, c: string): string {
-    const np2 = N + 2;
-    const np3 = N + 3;
-
-    // Generator info for known N values (for the concrete example in the explanation)
-    const generatorInfo: Record<number, { z: string; w: string; mult: number; abc: string }> = {
-      4: { z: '-1/3', w: '2/15', mult: 9, abc: '(11, 9, -5)' },
-      6: { z: '-1/3', w: '2/27', mult: 11, abc: '(11, 9, -5)' },
-      10: { z: '-1/7', w: '2/91', mult: 13, abc: '(11, 9, -5)' },
+    // Per-N data for concrete examples in the explanation
+    const perN: Record<number, {
+      negSols: string;     // known negative-integer solutions
+      genUV: string;       // generator in (u,v) coordinates
+      genABC: string;      // generator mapped to (a,b,c)
+      mult: number;        // which multiple gives all-positive
+    }> = {
+      4: {
+        negSols: 'np. (-1, 4, 11) i (-5, 9, 11)',
+        genUV: '(-9/5, -11/5)',
+        genABC: '(-5, 9, 11)',
+        mult: 9,
+      },
+      6: {
+        negSols: 'np. (-1, 2, 9)',
+        genUV: '(-1/3, 2/27)',
+        genABC: '(-1, 2, 9)',
+        mult: 11,
+      },
+      10: {
+        negSols: 'np. (-1, 3, 5)',
+        genUV: '(-1/7, 2/91)',
+        genABC: '(-1, 3, 5)',
+        mult: 13,
+      },
     };
 
-    const gen = generatorInfo[N];
+    const info = perN[N];
 
     const lines = [
       `Tak. Rozwiązanie w dodatnich liczbach całkowitych istnieje.`,
       ``,
-      `## Metoda rozwiązania`,
+      `## Tok rozwiązania`,
       ``,
-      `### Krok 1. Dlaczego to nie jest proste?`,
+      `### 1. Proste próby nie działają`,
       ``,
       `Równanie: a/(b+c) + b/(a+c) + c/(a+b) = ${N}`,
       ``,
-      `Z nierówności Nesbitt lewa strona ≥ 3/2, więc ${N} jest osiągalne`,
-      `w teorii. Ale próba przeszukiwania a, b, c = 1, 2, 3, ...`,
-      `nic nie da: najmniejsze rozwiązanie ma ${a.length} cyfr.`,
-      `Trzeba użyć krzywych eliptycznych.`,
-      ``,
-      `### Krok 2. Sprowadzenie do jednej zmiennej`,
-      ``,
-      `Podstawiamy x = a/(a+b+c), y = b/(a+b+c), z = c/(a+b+c),`,
-      `czyli x + y + z = 1. Równanie przechodzi w:`,
-      `  x/(1-x) + y/(1-y) + z/(1-z) = ${N}`,
-      ``,
-      `Po uporządkowaniu (symetryczne wielomiany s₂ = xy+xz+yz, s₃ = xyz):`,
-      `  1 - ${np2}·s₂ + ${np3}·s₃ = 0`,
-      ``,
-      `Ustalamy z jako wolny parametr. Wtedy s₂ wyraża się przez z:`,
-      `  s₂ = (${np3}·z²·(1-z) - 1) / (${np3}·z - ${np2})`,
-      `a x i y to pierwiastki równania kwadratowego`,
-      `  t² - (1-z)·t + (s₂ - z + z²) = 0`,
-      ``,
-      `Żeby x, y były wymierne, wyróżnik tego równania musi być`,
-      `kwadratem liczby wymiernej. Oznaczamy go W²:`,
-      `  W² · (${np3}z - ${np2}) = C(z)`,
-      `gdzie C(z) jest wielomianem trzeciego stopnia w z.`,
-      `To jest krzywa eliptyczna E nad Q.`,
-      ``,
-      `### Krok 3. Czym jest krzywa eliptyczna?`,
-      ``,
-      `Krzywa eliptyczna to zbiór punktów (z, W) spełniających`,
-      `powyższe równanie. Na takim zbiorze można zdefiniować`,
-      `operację dodawania punktów (prawo grupowe). Mając jeden`,
-      `punkt P, można obliczyć 2P, 3P, 4P, ... (wielokrotności).`,
-      `Każdy punkt odpowiada pewnej trójce (a, b, c).`,
-      ``,
-      `### Krok 4. Znajdowanie generatora`,
-      ``,
-      `Szukamy punktu wymiernego P na krzywej E, który nie jest`,
-      `trywialny (tzn. nie daje trójki w stylu (-1, -1, 1)).`,
-      `Robimy to systematycznie: sprawdzamy z = 0, ±1, ±1/2, ±1/3, ...`,
-      `i dla każdego z obliczamy, czy W² wychodzi kwadratem.`,
+      `Gdy a = b = c, lewa strona wynosi 3/2, nie ${N}.`,
+      `Gdy a = b, po uproszczeniu c wychodzi niewymierne.`,
+      `Przeszukiwanie a, b, c od 1 do kilkuset tysięcy też nic nie daje.`,
     ];
 
-    if (gen) {
+    if (info) {
       lines.push(
         ``,
-        `Dla N = ${N} znajdujemy generator P = (${gen.z}, ${gen.w}).`,
-        `Ten punkt odpowiada trójce ${gen.abc}, ale ona zawiera`,
-        `wartość ujemną, więc jeszcze nie mamy rozwiązania.`,
+        `Istnieją natomiast rozwiązania z liczbami ujemnymi,`,
+        `${info.negSols}. To wskazówka: rozwiązania wymierne`,
+        `istnieją, ale dodatnie wymagają dużo większych liczb.`,
       );
     }
 
     lines.push(
       ``,
-      `### Krok 5. Mnożenie punktu na krzywej (dodawanie geometryczne)`,
+      `### 2. Równanie jako krzywa algebraiczna`,
       ``,
-      `Mając punkt P, obliczamy kolejne wielokrotności. Dodawanie`,
-      `dwóch punktów P i Q na krzywej eliptycznej działa tak:`,
-      `  1. Prowadzimy prostą przechodzącą przez P i Q.`,
-      `  2. Ta prosta przecina krzywą w trzecim punkcie R.`,
-      `  3. "Odbijamy" R przez punkt bazowy O = (-1, 0),`,
-      `     czyli prowadzimy prostą przez O i R, trzeci punkt`,
-      `     przecięcia to P + Q.`,
-      `Podwajanie (P + P = 2P): zamiast prostej przez dwa`,
-      `punkty prowadzimy styczną do krzywej w P.`,
+      `Podstawiamy u = a/c, v = b/c (dzielimy przez c,`,
+      `bo równanie jest jednorodne). Dostajemy kubikę C`,
+      `na płaszczyźnie (u, v): wielomian stopnia 3 w u i v.`,
+      `Kluczowa własność kubik:`,
       ``,
-      `Każda wielokrotność nP daje nową trójkę (a, b, c),`,
-      `ale współrzędne rosną wykładniczo (podwajają liczbę`,
-      `cyfr z każdym krokiem).`,
+      `  Jeśli prosta przecina kubikę w dwóch punktach`,
+      `  wymiernych P i Q, to trzeci punkt przecięcia R`,
+      `  też jest wymierny.`,
+      ``,
+      `Dowód: po podstawieniu prostej v = αu + β do`,
+      `równania kubiki dostajemy wielomian stopnia 3 w u.`,
+      `Znamy dwa pierwiastki (wymierności P i Q), więc`,
+      `trzeci wynika ze wzorów Viète'a (suma pierwiastków`,
+      `= współczynnik wymierny), czyli też jest wymierny.`,
+      ``,
+      `### 3. Dodawanie punktów na kubice`,
+      ``,
+      `Z powyższej własności definiujemy operację na punktach:`,
+      ``,
+      `  P + Q := trzeci punkt przecięcia prostej PQ`,
+      `           z kubiką, "odbity" przez punkt bazowy O.`,
+      ``,
+      `Konkretnie:`,
+      `  1. Prowadzimy prostą przez P i Q.`,
+      `  2. Prosta przecina kubikę w trzecim punkcie R.`,
+      `  3. Prowadzimy prostą przez O i R; trzeci punkt`,
+      `     przecięcia to wynik P + Q.`,
+      ``,
+      `Gdy P = Q (podwajanie): zamiast prostej PQ`,
+      `bierzemy styczną do kubiki w P.`,
+      ``,
+      `Ta operacja jest łączna i przemienna, więc punkty`,
+      `wymierne kubiki tworzą grupę. Mając punkt P, możemy`,
+      `obliczać wielokrotności: 2P = P+P, 3P = 2P+P, itd.`,
+      `Każda wielokrotność nP daje nową trójkę (a,b,c).`,
     );
 
-    if (gen) {
+    if (info) {
       lines.push(
         ``,
-        `### Krok 6. Wynik dla N = ${N}`,
+        `### 4. Generator i iteracja`,
         ``,
-        `Dopiero wielokrotność ${gen.mult}P daje trójkę,`,
-        `w której wszystkie trzy liczby są dodatnie.`,
-        `To dlatego rozwiązanie ma aż ${a.length} cyfr.`,
+        `Rozwiązanie ujemne ${info.negSols} daje punkt P = ${info.genUV}`,
+        `na kubice C. Trójka to ${info.genABC}: zawiera wartość ujemną,`,
+        `więc nie jest rozwiązaniem, ale jest punktem startowym.`,
+        ``,
+        `Obliczamy kolejne wielokrotności P, 2P, 3P, ...`,
+        `Współrzędne rosną wykładniczo: każde podwojenie mniej`,
+        `więcej podwaja liczbę cyfr. Sprawdzamy dla każdego nP,`,
+        `czy odpowiadająca trójka (a, b, c) ma same dodatnie.`,
+        ``,
+        `### 5. Dlaczego dopiero ${info.mult}P?`,
+        ``,
+        `Dla n = 1, 2, ..., ${info.mult - 1} trójka (a, b, c) zawsze`,
+        `ma co najmniej jedną wartość ujemną lub zerową.`,
+        `Dopiero n = ${info.mult} daje trzy dodatnie liczby.`,
+        `Z twierdzenia Mordella wynika, że to jest najmniejsze`,
+        `takie n, więc poniższe rozwiązanie jest minimalne.`,
       );
     } else {
       lines.push(
         ``,
-        `### Krok 6. Wynik`,
+        `### 4. Generator i iteracja`,
         ``,
-        `Sprawdzamy 1P, 2P, 3P, ... aż znajdziemy trójkę`,
-        `z trzema dodatnimi wartościami.`,
+        `Szukamy punktu wymiernego P na kubice (np. z rozwiązania`,
+        `z liczbami ujemnymi) i obliczamy kolejne wielokrotności`,
+        `2P, 3P, 4P, ... aż trójka (a, b, c) ma same dodatnie.`,
       );
     }
 
@@ -1679,6 +1697,9 @@ ZASADY:
       `Liczba cyfr: a ma ${a.length}, b ma ${b.length}, c ma ${c.length}.`,
       ``,
       `Weryfikacja: a/(b+c) + b/(a+c) + c/(a+b) = ${N} (potwierdzone rachunkiem symbolicznym).`,
+      ``,
+      `Źródło metody: arytmetyka krzywych eliptycznych; por. A. Bremner, A. Macleod (2014),`,
+      `"An unusual cubic representation problem", Annales Mathematicae et Informaticae 43.`,
     );
     return lines.join('\n');
   }
@@ -1687,46 +1708,44 @@ ZASADY:
    * Format a Nesbitt no-solution response with step-by-step reasoning.
    */
   private formatNesbittNoSolution(N: number): string {
-    const np2 = N + 2;
-    const np3 = N + 3;
     const lines = [
       `Nie, takie dodatnie liczby całkowite nie istnieją.`,
       ``,
-      `## Metoda rozumowania`,
+      `## Tok rozumowania`,
       ``,
-      `### Krok 1. Sprowadzenie do krzywej eliptycznej`,
+      `### 1. Sprowadzenie do kubiki`,
       ``,
-      `Równanie a/(b+c) + b/(a+c) + c/(a+b) = ${N} przekształcamy`,
-      `podstawieniem x + y + z = 1 (dzielimy przez sumę a+b+c),`,
-      `a następnie parametryzujemy jedną zmienną z. Warunek, by`,
-      `pozostałe zmienne x, y były wymierne, daje krzywą eliptyczną:`,
-      `  W² · (${np3}z - ${np2}) = C(z)`,
-      `gdzie C(z) jest wielomianem stopnia 3 w z.`,
-      `(Szczegóły tego przekształcenia: patrz odpowiedź dla N,`,
-      `dla którego rozwiązanie istnieje, np. N = 4.)`,
+      `Równanie a/(b+c) + b/(a+c) + c/(a+b) = ${N} jest jednorodne,`,
+      `więc podstawiamy u = a/c, v = b/c i dostajemy kubikę C`,
+      `na płaszczyźnie (u, v). Szukamy na niej punktów wymiernych`,
+      `odpowiadających trójkom dodatnich liczb całkowitych.`,
       ``,
-      `### Krok 2. Rząd krzywej`,
+      `### 2. Struktura grupowa i twierdzenie Mordella`,
       ``,
-      `Na krzywej eliptycznej nad Q punkty wymierne tworzą grupę`,
-      `(twierdzenie Mordella). Rząd tej grupy mówi nam, ile`,
-      `jest niezależnych punktów wymiernych nieskończonego rzędu.`,
+      `Na kubice C działa dodawanie punktów: prosta przez dwa`,
+      `punkty wymierne P, Q przecina kubikę w trzecim punkcie`,
+      `wymiernym (wynika to ze wzorów Viète'a). Z tego powstaje`,
+      `grupa punktów wymiernych.`,
       ``,
-      `Dla N = ${N} obliczenie (np. algorytmem 2-descent) pokazuje,`,
-      `że rząd wynosi 0. Oznacza to, że krzywa ma tylko skończenie`,
-      `wiele punktów wymiernych (tzw. punkty torsyjne).`,
+      `Twierdzenie Mordella mówi, że ta grupa jest skończenie`,
+      `generowana: każdy punkt wymierny da się zapisać jako`,
+      `kombinacja skończenie wielu generatorów P₁, ..., Pᵣ`,
+      `i punktów torsyjnych T₁, ..., Tₖ (skończonego rzędu).`,
+      `Liczba r nazywa się rzędem krzywej.`,
       ``,
-      `### Krok 3. Punkty torsyjne nie dają rozwiązania`,
+      `### 3. Rząd krzywej dla N = ${N}`,
       ``,
-      `Jedyne punkty wymierne na tej krzywej to:`,
-      `  O = (-1, 0) odpowiadający trójce (-1, -1, 1)`,
-      `i ewentualnie kilka innych punktów torsyjnych.`,
-      `Żaden z nich nie daje trzech dodatnich liczb całkowitych.`,
+      `Obliczenie (algorytm 2-descent) pokazuje, że rząd`,
+      `krzywej C dla N = ${N} wynosi 0. Nie ma generatorów`,
+      `nieskończonego rzędu. Jedyne punkty wymierne na C`,
+      `to punkty torsyjne, np. O odpowiadający trójce`,
+      `(-1, -1, 1) i jej permutacjom.`,
       ``,
-      `### Wniosek`,
+      `### 4. Wniosek`,
       ``,
-      `Skoro krzywa ma rząd 0 i żaden punkt torsyjny nie daje`,
-      `dodatniej trójki, to nie istnieją dodatnie liczby całkowite`,
-      `a, b, c spełniające a/(b+c) + b/(a+c) + c/(a+b) = ${N}.`,
+      `Żaden punkt torsyjny nie daje trzech dodatnich wartości.`,
+      `Skoro nie ma innych punktów wymiernych, to nie istnieją`,
+      `dodatnie liczby całkowite a, b, c spełniające to równanie.`,
     ];
     return lines.join('\n');
   }

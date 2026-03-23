@@ -286,15 +286,12 @@ function App() {
         userInput,
         (message) => {
           setMessages(prev => {
-            // Check if message with this ID already exists
             const existingIndex = prev.findIndex(m => m.id === message.id);
             if (existingIndex !== -1) {
-              // Update existing message
               const updated = [...prev];
               updated[existingIndex] = message;
               return updated;
             }
-            // Add new message
             return [...prev, message];
           });
         },
