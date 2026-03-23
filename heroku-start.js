@@ -12,6 +12,7 @@
  * Uses only built-in Node modules + express (already a dependency).
  */
 
+import tracer from 'dd-trace';
 import express from 'express';
 import http from 'node:http';
 import { spawn } from 'node:child_process';
@@ -60,7 +61,10 @@ function spawnChild(label, command, args, env = {}) {
 
 // Start MCP proxy
 console.log(`Starting MCP proxy on localhost:${MCP_PORT}...`);
-spawnChild('mcp-proxy', 'node', ['mcp-proxy-server.js'], { MCP_PORT: String(MCP_PORT) });
+spawnChild('mcp-proxy', 'node', ['--import', 'dd-trace/initialize.mjs', 'mcp-proxy-server.js'], {
+  MCP_PORT: String(MCP_PORT),
+  DD_SERVICE: 'formulo-mcp-proxy',
+});
 
 // Start RAG service
 console.log(`Starting RAG service on localhost:${RAG_PORT}...`);
@@ -99,6 +103,11 @@ await new Promise((resolve) => setTimeout(resolve, 3000));
 
 function proxyRequest(prefix, targetPort, req, res) {
   const targetPath = req.originalUrl.replace(prefix, '') || '/';
+  const span = tracer.scope().active();
+  if (span) {
+    span.setTag('proxy.target', `localhost:${targetPort}${targetPath}`);
+    span.setTag('proxy.prefix', prefix);
+  }
   const options = {
     hostname: '127.0.0.1',
     port: targetPort,
@@ -114,6 +123,7 @@ function proxyRequest(prefix, targetPort, req, res) {
 
   proxyReq.on('error', (err) => {
     console.error(`[proxy] ${prefix} error:`, err.message);
+    if (span) span.setTag('error', true);
     if (!res.headersSent) {
       res.status(502).json({ error: `Service unavailable: ${err.message}` });
     }
@@ -130,6 +140,11 @@ app.post('/api/log/query', queryJsonParser, (req, res) => {
   const query = req.body?.query;
   if (query && typeof query === 'string') {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    const span = tracer.scope().active();
+    if (span) {
+      span.setTag('user.query', query.slice(0, 500));
+      span.setTag('user.ip', ip);
+    }
     console.log(`[query] ${ip} | ${query}`);
   }
   res.status(204).end();

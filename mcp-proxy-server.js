@@ -5,6 +5,7 @@
  * Allows browser clients to communicate with MCP servers
  */
 
+import tracer from 'dd-trace';
 import express from 'express';
 import cors from 'cors';
 import { spawn } from 'child_process';
@@ -183,13 +184,17 @@ app.get('/tools', (req, res) => {
  * POST /tools/call - Call a tool
  */
 app.post('/tools/call', async (req, res) => {
+  const span = tracer.startSpan('mcp.tool_call', { childOf: tracer.scope().active() });
   try {
     const { name, arguments: args } = req.body;
 
     if (!name) {
+      span.finish();
       return res.status(400).json({ error: 'Tool name is required' });
     }
 
+    span.setTag('tool.name', name);
+    span.setTag('resource.name', `tool:${name}`);
     console.log(`Calling tool: ${name}`, JSON.stringify(args));
 
     const result = await sendMCPRequest('tools/call', {
@@ -197,10 +202,16 @@ app.post('/tools/call', async (req, res) => {
       arguments: args || {},
     });
 
-    console.log(`Tool result:`, JSON.stringify(result));
+    const resultStr = JSON.stringify(result);
+    span.setTag('tool.result_size', resultStr.length);
+    console.log(`Tool result:`, resultStr);
 
     res.json(result);
+    span.finish();
   } catch (error) {
+    span.setTag('error', true);
+    span.setTag('error.message', error instanceof Error ? error.message : 'unknown');
+    span.finish();
     console.error('Tool call error:', error);
     res.status(500).json({
       error: error instanceof Error ? error.message : 'Tool call failed',
@@ -213,6 +224,7 @@ app.post('/tools/call', async (req, res) => {
  * Body: { targetUrl: string, apiKey?: string, payload: object }
  */
 app.post('/llm-proxy', async (req, res) => {
+  const span = tracer.startSpan('llm.completion', { childOf: tracer.scope().active() });
   try {
     const { targetUrl: clientUrl, apiKey: reqApiKey, payload } = req.body;
     const apiKey = reqApiKey || DEFAULT_API_KEY;
@@ -223,8 +235,12 @@ app.post('/llm-proxy', async (req, res) => {
       : clientUrl;
 
     if (!targetUrl) {
+      span.finish();
       return res.status(400).json({ error: 'targetUrl is required (or set LLM_API_URL env var)' });
     }
+
+    span.setTag('llm.model', payload?.model || 'unknown');
+    span.setTag('llm.target_url', targetUrl);
 
     const headers = { 'Content-Type': 'application/json' };
     if (apiKey) {
@@ -238,13 +254,24 @@ app.post('/llm-proxy', async (req, res) => {
     });
 
     const data = await response.json();
+    span.setTag('llm.status', response.status);
+    if (data?.usage) {
+      span.setTag('llm.tokens_prompt', data.usage.prompt_tokens);
+      span.setTag('llm.tokens_completion', data.usage.completion_tokens);
+    }
 
     if (!response.ok) {
+      span.setTag('error', true);
+      span.finish();
       return res.status(response.status).json(data);
     }
 
     res.json(data);
+    span.finish();
   } catch (error) {
+    span.setTag('error', true);
+    span.setTag('error.message', error instanceof Error ? error.message : 'unknown');
+    span.finish();
     console.error('LLM proxy error:', error);
     res.status(502).json({
       error: error instanceof Error ? error.message : 'LLM proxy request failed',
