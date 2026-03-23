@@ -42,7 +42,7 @@ System przetwarza zadanie przez wieloetapowy pipeline:
 ```
 Pytanie użytkownika
       |
-      +---> Lean Prover (TYLKO dla zadań-dowodów, opcjonalny)
+      +---> Lean Prover (TYLKO dla zadań dowodów, opcjonalny)
       |     Próbuje udowodnić formalnie. Jeśli się uda, kończy pipeline.
       |     Jeśli nie, przechodzi do normalnego pipeline.
       |
@@ -62,41 +62,52 @@ Pytanie użytkownika
       |
       +---> [direct solver] jeśli rozpoznano kategorię akademicką
       |
-      +---> [standard]      domyślna ścieżka, dekompozycja
-            Rozbija problem na 2-4 pod-zadania z formułami SymPy
-                  |
-                  v
-            Klasyfikator -> typ zadania (równanie/geometria/...)
-                  |
-                  +---> Deterministyczny solver (bez LLM!)
-                  |     (równania, pochodne, całki przez SymPy)
-                  |
-                  +---> Chain ekstrakcji (LLM -> kod SymPy -> wynik)
-                  |
-                  +---> Multi-step chain (LLM wielokrokowy)
-                  |
-                  +---> Agent Analityczny + Agent Wykonawczy (fallback)
-                              |
-                              v
-            Walidacja substytucyjna
-            Podstawia odpowiedź do oryginalnego równania
-                              |
-                              v
-            Weryfikacja brute-force (kombinatoryka)
-            Wyliczenie wszystkich przypadków bez LLM
-                              |
-                              v
-                       Agent Podsumowujący
-                       (wyjaśnienie krok po kroku)
-                              |
-                              v
-                       Lean Verifier (Agent 4)
-                       Formalizuje i weryfikuje dowód przez Lean 4
+      v
+ Extraction Chain (bezpośrednia)
+ Próba dopasowania szablonu do całego zadania bez dekompozycji.
+ Szablony: dziedzina funkcji, nierówności, analiza funkcji,
+ trygonometria, geometria analityczna, ciągi, bryły i inne.
+ LLM ekstrahuje dane (JSON), szablon generuje kod SymPy.
+      |
+      +---> [wynik] jeśli szablon pasuje i SymPy da odpowiedź
+      |
+      v
+ Dekompozycja (fallback)
+ Rozbija problem na 2-4 pod-zadania z formułami SymPy.
+ Każde pod-zadanie przechodzi przez:
+            |
+            v
+      Klasyfikator -> typ zadania (równanie/geometria/...)
+            |
+            +---> Deterministyczny solver (bez LLM!)
+            |     (równania, pochodne, całki przez SymPy)
+            |
+            +---> Chain ekstrakcji (LLM -> kod SymPy -> wynik)
+            |
+            +---> Multi-step chain (LLM wielokrokowy)
+            |
+            +---> Agent Analityczny + Agent Wykonawczy (fallback)
+                        |
+                        v
+      Walidacja substytucyjna
+      Podstawia odpowiedź do oryginalnego równania
+                        |
+                        v
+      Weryfikacja brute-force (kombinatoryka)
+      Wyliczenie wszystkich przypadków bez LLM
+                        |
+                        v
+                 Agent Podsumowujący
+                 (wyjaśnienie krok po kroku)
+                        |
+                        v
+                 Lean Verifier (Agent 4)
+                 Formalizuje i weryfikuje dowód przez Lean 4
 ```
 
 RAG jest używany dwukrotnie: przed analizą (kontekst metody trafia do promptu Agenta Analitycznego) i przy generowaniu kodu (wskazówki SymPy wstrzykiwane do promptu Agenta Wykonawczego).
 
-Academic pre-router rozwiązuje zadanie jednym celowanym skryptem SymPy zamiast rozbijać go na podkroki. Wyniki dekompozycji są weryfikowane brute-force (kombinatoryka) lub substytucyjnie (algebra).
+Academic pre-router rozwiązuje zadanie jednym celowanym skryptem SymPy zamiast rozbijać go na podkroki. Extraction chain bezpośrednia to kolejna warstwa, która rozwiązuje zadania jednokoncepcyjne (dziedzina, analiza funkcji, wyrażenia trygonometryczne) w jednym kroku, bez dekompozycji. Dekompozycja na pod-zadania uruchamia się dopiero gdy żadna z wcześniejszych ścieżek nie dała wyniku. Wyniki dekompozycji są weryfikowane brute-force (kombinatoryka) lub substytucyjnie (algebra).
 
 ## Szybki start
 

@@ -157,6 +157,32 @@ export class ProblemDecomposer {
       };
     }
 
+    // Step 0.5: Try extraction chain directly on the whole problem BEFORE decomposition.
+    // Many single-concept problems (domain, function analysis, trig evaluation) have
+    // a matching template that handles the entire problem in one shot. Decomposition
+    // would only add noise and risk incorrect sub-task splits.
+    const directChain = await this.tryExtractionChain(problem, null);
+    if (directChain?.success && directChain.answer) {
+      logDebug(`🎯 Direct extraction chain resolved (template): ${directChain.answer.substring(0, 80)}`);
+      const directResult: SubTaskResult = {
+        subTaskId: 1,
+        success: true,
+        answer: directChain.answer,
+        code: directChain.code,
+        output: directChain.output,
+        pipeline: 'extraction_chain',
+      };
+      if (onStepComplete) onStepComplete(1, 1, directResult);
+      return {
+        success: true,
+        subTasks: [{ id: 1, description: problem, operation: 'extraction_chain', depends_on: [], expected_output: 'string' }],
+        subResults: [directResult],
+        finalAnswer: directChain.answer,
+        totalSteps: 1,
+        stepsCompleted: 1,
+      };
+    }
+
     // Step 1: LLM decomposes the problem
     const subTasks = await this.decomposeProblem(problem, ragContext);
 
