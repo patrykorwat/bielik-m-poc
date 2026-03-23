@@ -11,6 +11,7 @@ import cors from 'cors';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import OpenAI from 'openai';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -224,55 +225,39 @@ app.post('/tools/call', async (req, res) => {
  * Body: { targetUrl: string, apiKey?: string, payload: object }
  */
 app.post('/llm-proxy', async (req, res) => {
-  const span = tracer.startSpan('llm.completion', { childOf: tracer.scope().active() });
   try {
     const { targetUrl: clientUrl, apiKey: reqApiKey, payload } = req.body;
     const apiKey = reqApiKey || DEFAULT_API_KEY;
 
-    // Use server-side URL if configured, otherwise fall back to client-provided URL
-    const targetUrl = DEFAULT_LLM_URL
-      ? `${DEFAULT_LLM_URL}/v1/chat/completions`
-      : clientUrl;
+    const baseURL = DEFAULT_LLM_URL
+      ? `${DEFAULT_LLM_URL}/v1`
+      : clientUrl ? new URL(clientUrl).origin + '/v1' : null;
 
-    if (!targetUrl) {
-      span.finish();
+    if (!baseURL) {
       return res.status(400).json({ error: 'targetUrl is required (or set LLM_API_URL env var)' });
     }
 
-    span.setTag('llm.model', payload?.model || 'unknown');
-    span.setTag('llm.target_url', targetUrl);
-
-    const headers = { 'Content-Type': 'application/json' };
-    if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
-
-    const response = await fetch(targetUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
+    const client = new OpenAI({
+      apiKey: apiKey || 'no-key',
+      baseURL,
     });
 
-    const data = await response.json();
-    span.setTag('llm.status', response.status);
-    if (data?.usage) {
-      span.setTag('llm.tokens_prompt', data.usage.prompt_tokens);
-      span.setTag('llm.tokens_completion', data.usage.completion_tokens);
-    }
+    const { model, messages, ...rest } = payload;
 
-    if (!response.ok) {
-      span.setTag('error', true);
-      span.finish();
-      return res.status(response.status).json(data);
-    }
+    const completion = await client.chat.completions.create({
+      model,
+      messages,
+      ...rest,
+    });
 
-    res.json(data);
-    span.finish();
+    res.json(completion);
   } catch (error) {
-    span.setTag('error', true);
-    span.setTag('error.message', error instanceof Error ? error.message : 'unknown');
-    span.finish();
     console.error('LLM proxy error:', error);
+    if (error instanceof OpenAI.APIError) {
+      return res.status(error.status || 502).json({
+        error: { message: error.message, type: error.type, code: error.code },
+      });
+    }
     res.status(502).json({
       error: error instanceof Error ? error.message : 'LLM proxy request failed',
     });
@@ -288,29 +273,28 @@ app.get('/llm-proxy/models', async (req, res) => {
     const { targetUrl: clientUrl, apiKey: reqApiKey } = req.query;
     const apiKey = reqApiKey || DEFAULT_API_KEY;
 
-    const targetUrl = DEFAULT_LLM_URL
-      ? `${DEFAULT_LLM_URL}/v1/models`
-      : clientUrl;
+    const baseURL = DEFAULT_LLM_URL
+      ? `${DEFAULT_LLM_URL}/v1`
+      : clientUrl ? new URL(clientUrl).origin + '/v1' : null;
 
-    if (!targetUrl) {
+    if (!baseURL) {
       return res.status(400).json({ error: 'targetUrl query param is required (or set LLM_API_URL env var)' });
     }
 
-    const headers = {};
-    if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
+    const client = new OpenAI({
+      apiKey: apiKey || 'no-key',
+      baseURL,
+    });
 
-    const response = await fetch(targetUrl, { method: 'GET', headers });
-    const data = await response.json();
-
-    if (!response.ok) {
-      return res.status(response.status).json(data);
-    }
-
-    res.json(data);
+    const models = await client.models.list();
+    res.json(models);
   } catch (error) {
     console.error('LLM proxy models error:', error);
+    if (error instanceof OpenAI.APIError) {
+      return res.status(error.status || 502).json({
+        error: { message: error.message, type: error.type, code: error.code },
+      });
+    }
     res.status(502).json({
       error: error instanceof Error ? error.message : 'LLM proxy request failed',
     });
