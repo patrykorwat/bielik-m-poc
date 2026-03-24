@@ -30,6 +30,15 @@ const RAG_PORT = process.env.RAG_PORT || 3003;
 const app = express();
 const children = [];
 
+// ── HTTPS redirect (Heroku sets x-forwarded-proto) ────────────────────
+
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(301, `https://${req.hostname}${req.url}`);
+  }
+  next();
+});
+
 // ── Child process spawning ──────────────────────────────────────────────
 
 function spawnChild(label, command, args, env = {}) {
