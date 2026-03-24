@@ -179,8 +179,8 @@ app.get('/health', (req, res) => {
 // ── SEO static pages (served before SPA fallback) ─────────────────────
 
 const seoPath = join(__dirname, 'seo', 'pages');
-app.use('/zadania', express.static(join(seoPath, 'zadania')));
-app.use('/tematy', express.static(join(seoPath, 'tematy')));
+app.use('/zadania', express.static(join(seoPath, 'zadania'), { extensions: ['html'] }));
+app.use('/tematy', express.static(join(seoPath, 'tematy'), { extensions: ['html'] }));
 app.get('/sitemap.xml', (_req, res) => {
   res.sendFile(join(__dirname, 'seo', 'sitemap.xml'));
 });
