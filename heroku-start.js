@@ -176,6 +176,18 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ── SEO static pages (served before SPA fallback) ─────────────────────
+
+const seoPath = join(__dirname, 'seo', 'pages');
+app.use('/zadania', express.static(join(seoPath, 'zadania')));
+app.use('/tematy', express.static(join(seoPath, 'tematy')));
+app.get('/sitemap.xml', (_req, res) => {
+  res.sendFile(join(__dirname, 'seo', 'sitemap.xml'));
+});
+app.get('/robots.txt', (_req, res) => {
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: https://formulo.pl/sitemap.xml`);
+});
+
 // ── Static SPA serving ──────────────────────────────────────────────────
 
 const distPath = join(__dirname, 'dist');
