@@ -2862,6 +2862,84 @@ ${result.error || ''}`;
     return undefined;
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // Arithmetic Scheme — written method for basic operations
+  // ═══════════════════════════════════════════════════════════════════
+
+  private tryArithmeticScheme(message: string): string | null {
+    // Extract arithmetic expression from natural language
+    // Matches patterns like: "999*333", "ile to jest 123 * 456", "oblicz 12×34", "999*333=332667"
+    const cleaned = message.replace(/\s/g, '');
+    const match = cleaned.match(/(\d{2,})\s*[*×·]\s*(\d{2,})/);
+    if (!match) {
+      // Also try with spaces in original message
+      const spaced = message.match(/(\d{2,})\s*[*×·]\s*(\d{2,})/);
+      if (!spaced) return null;
+      return this.buildMultiplicationScheme(parseInt(spaced[1]), parseInt(spaced[2]));
+    }
+    return this.buildMultiplicationScheme(parseInt(match[1]), parseInt(match[2]));
+  }
+
+  private formatNumber(n: number): string {
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+
+  private buildMultiplicationScheme(a: number, b: number): string {
+    const result = a * b;
+    const lines: string[] = [];
+
+    // Put the larger number on top for cleaner layout
+    const top = Math.max(a, b);
+    const bottom = Math.min(a, b);
+    const bottomDigits = bottom.toString().split('').map(Number);
+
+    lines.push(`**${this.formatNumber(a)} × ${this.formatNumber(b)} = ?**`);
+    lines.push('');
+    lines.push('Schemat mnożenia pisemnego:');
+    lines.push('');
+    lines.push('```');
+
+    // Calculate partial products
+    const partials: { value: number; label: string }[] = [];
+    for (let i = bottomDigits.length - 1; i >= 0; i--) {
+      const digit = bottomDigits[i];
+      const placeValue = Math.pow(10, bottomDigits.length - 1 - i);
+      const partial = top * digit * placeValue;
+      const digitWithPlace = digit * placeValue;
+      partials.push({ value: partial, label: `${top} × ${this.formatNumber(digitWithPlace)}` });
+    }
+
+    // Determine max width for alignment
+    const resultStr = this.formatNumber(result);
+    const maxWidth = Math.max(
+      `${this.formatNumber(top)}`.length,
+      `× ${this.formatNumber(bottom)}`.length,
+      resultStr.length,
+      ...partials.map(p => this.formatNumber(p.value).length)
+    ) + 2;
+
+    // Print the scheme
+    lines.push(this.formatNumber(top).padStart(maxWidth));
+    lines.push(('× ' + this.formatNumber(bottom)).padStart(maxWidth));
+    lines.push('─'.repeat(maxWidth));
+
+    if (partials.length > 1) {
+      for (const p of partials) {
+        const valStr = this.formatNumber(p.value);
+        lines.push(`${valStr.padStart(maxWidth)}    (${p.label})`);
+      }
+      lines.push('─'.repeat(maxWidth));
+    }
+
+    lines.push(resultStr.padStart(maxWidth));
+    lines.push('```');
+
+    lines.push('');
+    lines.push(`**Wynik: ${this.formatNumber(a)} × ${this.formatNumber(b)} = ${this.formatNumber(result)}**`);
+
+    return lines.join('\n');
+  }
+
   private async tryGeneratorIntent(message: string): Promise<string | null> {
     const intent = this.detectGeneratorIntent(message);
     if (!intent.isTrigger) return null;
@@ -2988,6 +3066,24 @@ ${result.error || ''}`;
       this.conversationHistory.push(genMsg);
       newMessages.push(genMsg);
       if (onMessageCallback) onMessageCallback(genMsg);
+      return newMessages;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Arithmetic Scheme — show written method for basic operations
+    // ═══════════════════════════════════════════════════════════════════
+    const arithmeticResult = this.tryArithmeticScheme(userMessage);
+    if (arithmeticResult) {
+      const arithMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: arithmeticResult,
+        agentName: '🧮 Kalkulator',
+        timestamp: new Date(),
+      };
+      this.conversationHistory.push(arithMsg);
+      newMessages.push(arithMsg);
+      if (onMessageCallback) onMessageCallback(arithMsg);
       return newMessages;
     }
 
