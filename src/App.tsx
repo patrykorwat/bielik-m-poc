@@ -534,17 +534,8 @@ function App() {
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="empty-state">
-              <p><Icon type="wave" /> Witaj! Zadaj pytanie matematyczne - system agentów będzie współpracować nad rozwiązaniem.</p>
+              <p><Icon type="wave" /> Witaj! Wklej zadanie z matematyki, a rozwiążę je krok po kroku.</p>
               <p style={{ marginTop: '10px', fontSize: '0.95em', color: 'var(--text-secondary)' }}>
-                <Icon type="brain" /> <strong>Agent Analityczny</strong> rozbije problem na kroki<br/>
-                <Icon type="bolt" /> <strong>Agent Wykonawczy</strong> wykona obliczenia lub przygotuje dowód<br/>
-                <Icon type="target" /> <strong>Agent Weryfikujący</strong> sprawdzi poprawność dowodu (Lean Prover)<br/>
-                <Icon type="microscope" /> <strong>Agent Formalizujący</strong> (opcjonalny) - pełna formalna weryfikacja z Mathlib
-              </p>
-              <p style={{ marginTop: '8px', fontSize: '0.85em', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                <Icon type="bulb" /> Dla zadań z dowodami, Agent Formalizujący automatycznie przetłumaczy dowód na pełny formalny kod Lean 4 z biblioteką Mathlib, gotowy do kompilacji i weryfikacji.
-              </p>
-              <p style={{ marginTop: '12px', fontSize: '0.95em', color: 'var(--text-secondary)' }}>
                 <Icon type="bulb" /> Możesz też <strong>wygenerować zadania</strong> do ćwiczeń! Wpisz np. <em>„trygonometria"</em>, <em>„wymyśl arkusz zadań"</em> lub <em>„zadaj mi pytania z całek"</em>.
               </p>
               <div className="examples">
