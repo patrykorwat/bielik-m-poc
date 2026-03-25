@@ -2,6 +2,5 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /mcp-proxy/
-Disallow: /llm-proxy/
 
 Sitemap: https://formulo.pl/sitemap.xml

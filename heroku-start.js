@@ -5,20 +5,22 @@
  *
  * Single entry point that:
  * 1. Serves the Vite SPA from dist/
- * 2. Reverse-proxies /api/mcp/* → MCP proxy (localhost:MCP_PORT)
- * 3. Reverse-proxies /api/rag/*  → RAG service (localhost:RAG_PORT)
- * 4. Spawns MCP proxy + RAG service as child processes
+ * 2. Spawns MCP proxy + RAG service as child processes
+ * 3. Exposes /api/solve (SSE) as the single public API endpoint
+ *
+ * MCP proxy and RAG are internal only, accessed by solve-pipeline.js via localhost.
  *
  * Uses only built-in Node modules + express (already a dependency).
  */
 
 import tracer from 'dd-trace';
 import express from 'express';
-import http from 'node:http';
+
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -108,66 +110,7 @@ if (process.env.DISCORD_TOKEN) {
 // Give child processes a moment to start
 await new Promise((resolve) => setTimeout(resolve, 3000));
 
-// ── Reverse proxy helper (pure Node http) ───────────────────────────────
-
-function proxyRequest(prefix, targetPort, req, res) {
-  const targetPath = req.originalUrl.replace(prefix, '') || '/';
-  const span = tracer.scope().active();
-  if (span) {
-    span.setTag('proxy.target', `localhost:${targetPort}${targetPath}`);
-    span.setTag('proxy.prefix', prefix);
-  }
-  const options = {
-    hostname: '127.0.0.1',
-    port: targetPort,
-    path: targetPath,
-    method: req.method,
-    headers: { ...req.headers, host: `127.0.0.1:${targetPort}` },
-  };
-
-  const proxyReq = http.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
-    proxyRes.pipe(res, { end: true });
-  });
-
-  proxyReq.on('error', (err) => {
-    console.error(`[proxy] ${prefix} error:`, err.message);
-    if (span) span.setTag('error', true);
-    if (!res.headersSent) {
-      res.status(502).json({ error: `Service unavailable: ${err.message}` });
-    }
-  });
-
-  req.pipe(proxyReq, { end: true });
-}
-
-// ── Query logging (stdout) ───────────────────────────────────────────────
-
-const queryJsonParser = express.json({ limit: '2kb' });
-
-app.post('/api/log/query', queryJsonParser, (req, res) => {
-  const query = req.body?.query;
-  if (query && typeof query === 'string') {
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-    const span = tracer.scope().active();
-    if (span) {
-      span.setTag('user.query', query.slice(0, 500));
-      span.setTag('user.ip', ip);
-    }
-    console.log(`[query] ${ip} | ${query}`);
-  }
-  res.status(204).end();
-});
-
-// ── Routes ──────────────────────────────────────────────────────────────
-
-// Proxy /api/mcp/* → localhost:MCP_PORT/*
-app.all('/api/mcp/*', (req, res) => proxyRequest('/api/mcp', MCP_PORT, req, res));
-app.all('/api/mcp', (req, res) => proxyRequest('/api/mcp', MCP_PORT, req, res));
-
-// Proxy /api/rag/* → localhost:RAG_PORT/*
-app.all('/api/rag/*', (req, res) => proxyRequest('/api/rag', RAG_PORT, req, res));
-app.all('/api/rag', (req, res) => proxyRequest('/api/rag', RAG_PORT, req, res));
+// ── Routes (MCP + RAG are internal only, accessed via localhost) ────────
 
 // Health endpoint
 app.get('/health', (req, res) => {
@@ -185,131 +128,18 @@ app.get('/health', (req, res) => {
   });
 });
 
-// ── Problem Generator API ─────────────────────────────────────────────
-
-const TOPIC_KEYWORDS = {
-  'funkcja kwadratowa': ['kwadrat', 'parabo', 'wierzchoł', 'delta', 'funkcj', 'f(x)', 'wielomian'],
-  'trygonometria': ['sin', 'cos', 'tan', 'ctg', 'tg', 'trygon', 'kąt', 'stopni', 'radian'],
-  'ciągi': ['ciąg', 'ciag', 'arytmetycz', 'geometrycz', 'wyraz', 'suma.*wyraz'],
-  'geometria analityczna': ['prosta', 'okrąg', 'okrag', 'współrzędn', 'wspolrzedn', 'wektor', 'odcin'],
-  'prawdopodobieństwo': ['prawdopodobi', 'losow', 'kostk', 'kul', 'urn', 'zdarzeni'],
-  'kombinatoryka': ['kombinacj', 'permutacj', 'wariacj', 'silni', 'newton', 'dwumian', 'ile.*sposob'],
-  'pochodne': ['pochodn', 'ekstr', 'monotonicz', 'styczn', 'asympto', 'przebieg'],
-  'równania': ['równani', 'rownani', 'nierównoś', 'nierownosc', 'rozwiąż', 'rozwiaz', 'układ'],
-  'geometria': ['trójkąt', 'trojkat', 'prostokąt', 'prostopadło', 'romb', 'ostrosłup', 'stożek', 'walec', 'kula', 'pole', 'objętość', 'obwód', 'planimetri', 'stereometri'],
-  'logarytmy': ['log', 'logarytm'],
-  'potęgi': ['potęg', 'poteg', 'wykładnicz', 'wykladnicz'],
-  'granice': ['granic', 'limes', 'lim\\b'],
-  'całki': ['całk', 'calk', 'pierwotna'],
-};
-
-function loadAllTasks() {
-  const tasks = [];
-  for (const level of ['podstawowa', 'rozszerzona']) {
-    const dir = join(__dirname, 'datasets', level);
-    if (!existsSync(dir)) continue;
-    for (const file of readdirSync(dir).filter(f => f.endsWith('.json')).sort()) {
-      try {
-        const data = JSON.parse(readFileSync(join(dir, file), 'utf8'));
-        const [yearStr, lvlNum] = file.replace('.json', '').split('_');
-        const year = parseInt(yearStr);
-        const levelName = lvlNum === '1' ? 'podstawowa' : 'rozszerzona';
-        for (const task of data) {
-          const questionLower = (task.question || '').toLowerCase();
-          const topics = [];
-          for (const [topic, keywords] of Object.entries(TOPIC_KEYWORDS)) {
-            if (keywords.some(kw => new RegExp(kw, 'i').test(questionLower))) {
-              topics.push(topic);
-            }
-          }
-          tasks.push({ ...task, year, level: levelName, topics });
-        }
-      } catch (e) {
-        console.error(`Failed to load ${file}:`, e.message);
-      }
-    }
-  }
-  console.log(`[generator] Loaded ${tasks.length} tasks`);
-  return tasks;
-}
-
-const allTasks = loadAllTasks();
-
-const generatorJsonParser = express.json({ limit: '2kb' });
-
-app.post('/api/generator', generatorJsonParser, (req, res) => {
-  const { topic, level, count = 5, year } = req.body || {};
-  let pool = [...allTasks];
-
-  if (level) {
-    pool = pool.filter(t => t.level === level);
-  }
-  if (year) {
-    pool = pool.filter(t => t.year === parseInt(year));
-  }
-  if (topic) {
-    const topicLower = topic.toLowerCase();
-    const topicMatched = pool.filter(t =>
-      t.topics.some(tp => tp.toLowerCase().includes(topicLower)) ||
-      t.question.toLowerCase().includes(topicLower)
-    );
-    if (topicMatched.length > 0) pool = topicMatched;
-  }
-
-  const n = Math.min(Math.max(1, parseInt(count) || 5), 20);
-  const shuffled = pool.sort(() => Math.random() - 0.5);
-  const selected = shuffled.slice(0, n);
-
-  res.json({
-    count: selected.length,
-    total_pool: pool.length,
-    tasks: selected.map(t => ({
-      question: t.question,
-      options: t.options || null,
-      answer: t.answer || null,
-      year: t.year,
-      level: t.level,
-      topics: t.topics,
-      task_number: t.metadata?.task_number,
-      max_points: t.metadata?.max_points,
-    })),
-  });
-});
-
-app.get('/api/generator/topics', (_req, res) => {
-  const topicCounts = {};
-  for (const [topic] of Object.entries(TOPIC_KEYWORDS)) {
-    topicCounts[topic] = allTasks.filter(t => t.topics.includes(topic)).length;
-  }
-  res.json({ topics: topicCounts, total: allTasks.length });
-});
-
 // ── Server-side solve pipeline (SSE) ──────────────────────────────────
 
-import { solve, checkGuardrail } from './solve-pipeline.js';
+import { solve } from './solve-pipeline.js';
 
 const solveJsonParser = express.json({ limit: '50kb' });
 
-app.post('/api/guardrail', solveJsonParser, async (req, res) => {
-  const { message } = req.body || {};
-  if (!message) {
-    return res.status(400).json({ error: 'message is required' });
-  }
-  try {
-    const result = await checkGuardrail(message);
-    res.json(result);
-  } catch (err) {
-    console.error('[guardrail] Error:', err);
-    // Fail open on error
-    res.json({ valid: true });
-  }
-});
-
 app.post('/api/solve', solveJsonParser, async (req, res) => {
-  const { message, sessionId } = req.body || {};
+  const { message, sessionId: clientSessionId } = req.body || {};
   if (!message) {
     return res.status(400).json({ error: 'message is required' });
   }
+  const sessionId = clientSessionId || randomUUID();
 
   // SSE headers
   res.writeHead(200, {
@@ -366,8 +196,8 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => {
   console.log(`\n🚀 Heroku wrapper listening on port ${PORT}`);
   console.log(`   SPA:  http://localhost:${PORT}/`);
-  console.log(`   MCP:  http://localhost:${PORT}/api/mcp/health`);
-  console.log(`   RAG:  http://localhost:${PORT}/api/rag/health`);
+  console.log(`   MCP:  internal only (localhost:${MCP_PORT})`);
+  console.log(`   RAG:  internal only (localhost:${RAG_PORT})`);
   console.log(`   BOT:  active: ${bot_active}`);
   console.log(`   ENV:  DISCORD_TOKEN=${process.env.DISCORD_TOKEN ? 'set' : 'MISSING'}`);
   console.log(`   ENV:  DISCORD_CHANNEL_ID=${process.env.DISCORD_CHANNEL_ID ? process.env.DISCORD_CHANNEL_ID : 'MISSING'}`);

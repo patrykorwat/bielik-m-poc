@@ -3,7 +3,7 @@
 /**
  * Discord Bot for Formulo
  *
- * Uses the SAME /api/guardrail + /api/solve endpoints as the web UI.
+ * Uses the SAME /api/solve endpoint as the web UI.
  * No direct LLM or SymPy calls. Single pipeline for both consumers.
  *
  * Environment variables:
@@ -32,27 +32,8 @@ if (!DISCORD_CHANNEL_ID) {
 // ── API helpers ──────────────────────────────────────────────────────────────
 
 /**
- * Call the server-side guardrail. Returns { valid, reason }.
- * Fails open (returns valid:true) on network errors.
- */
-async function checkGuardrail(message) {
-  try {
-    const res = await fetch(`${API_BASE}/api/guardrail`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) return { valid: true };
-    return await res.json();
-  } catch (err) {
-    console.error('[discord-bot] Guardrail error:', err.message);
-    return { valid: true };
-  }
-}
-
-/**
  * Call /api/solve (SSE) and collect the final result.
+ * Guardrail runs as the first step inside the pipeline.
  * Calls onStep for each progress event so the bot can update its message.
  * Returns the final result object from the 'done' event.
  */
@@ -191,16 +172,6 @@ client.on('messageCreate', async (message) => {
   };
 
   try {
-    // Step 1: Guardrail
-    await updateProgress('Sprawdzam zapytanie...');
-    const guard = await checkGuardrail(problem);
-
-    if (!guard.valid) {
-      await progressMsg.edit(guard.reason || 'To zapytanie nie dotyczy matematyki.');
-      return;
-    }
-
-    // Step 2: Solve via SSE
     await updateProgress('Rozwiazuję zadanie...');
 
     const sessionId = `discord-${message.author.id}-${Date.now()}`;
@@ -213,7 +184,11 @@ client.on('messageCreate', async (message) => {
     });
 
     if (!result || !result.success) {
-      await progressMsg.edit('Nie udalo sie rozwiazac zadania.');
+      if (result?.blocked) {
+        await progressMsg.edit(result.reason || 'To zapytanie nie dotyczy matematyki.');
+      } else {
+        await progressMsg.edit('Nie udalo sie rozwiazac zadania.');
+      }
       return;
     }
 
@@ -224,24 +199,30 @@ client.on('messageCreate', async (message) => {
       // Ignore
     }
 
-    // Send classification info
-    if (result.classification) {
-      const classType = result.classification.type || 'general';
-      const conf = Math.round((result.classification.confidence || 0) * 100);
-      await message.channel.send(`**Klasyfikacja:** ${classType} (${conf}%)`);
-    }
-
-    // Send SymPy result
-    if (result.sympyResult) {
-      for (const chunk of splitMessage(`**Wynik SymPy:**\n${result.sympyResult}`)) {
+    // Handle different result types
+    if (result.type === 'generator' || result.type === 'arithmetic') {
+      // Generator tasks or arithmetic scheme: single content block
+      for (const chunk of splitMessage(result.content)) {
         await message.channel.send(chunk);
       }
-    }
+    } else {
+      // Solve pipeline result
+      if (result.classification) {
+        const classType = result.classification.type || 'general';
+        const conf = Math.round((result.classification.confidence || 0) * 100);
+        await message.channel.send(`**Klasyfikacja:** ${classType} (${conf}%)`);
+      }
 
-    // Send summary (the main explanation)
-    if (result.summary) {
-      for (const chunk of splitMessage(result.summary)) {
-        await message.channel.send(chunk);
+      if (result.sympyResult) {
+        for (const chunk of splitMessage(`**Wynik SymPy:**\n${result.sympyResult}`)) {
+          await message.channel.send(chunk);
+        }
+      }
+
+      if (result.summary) {
+        for (const chunk of splitMessage(result.summary)) {
+          await message.channel.send(chunk);
+        }
       }
     }
 

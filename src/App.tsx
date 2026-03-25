@@ -141,31 +141,7 @@ function App() {
         return;
       }
 
-      // 1. Check if proxy has API key (remote provider like Cyfronet)
-      try {
-        const configRes = await fetch(`${MCP_PROXY_URL}/llm-proxy/config`);
-        const data = await configRes.json();
-        if (data.hasApiKey && data.llmUrl) {
-          const remoteUrl = data.llmUrl;
-          setLlmProvider('remote');
-
-          const mlxConfig: MLXConfig = {
-            provider: 'remote',
-            baseUrl: remoteUrl,
-            model: DEFAULT_REMOTE_MODEL,
-            temperature: 0.7,
-            maxTokens: 4096,
-          };
-          orchestratorRef.current = new ThreeAgentOrchestrator('sympy', mlxConfig, false);
-          await orchestratorRef.current.connectMCP(MCP_PROXY_URL);
-          setMcpConnected(true);
-          const newChatId = ChatHistoryService.generateChatId();
-          setCurrentChatId(newChatId);
-          return;
-        }
-      } catch { /* proxy not ready, continue to MLX check */ }
-
-      // 2. Check if MLX is running locally (port 8011)
+      // 1. Check if MLX is running locally (port 8011)
       try {
         const mlxRes = await fetch('http://localhost:8011/v1/models', { signal: AbortSignal.timeout(2000) });
         const mlxData = await mlxRes.json();
@@ -273,13 +249,6 @@ function App() {
     setIsProcessing(true);
     const userInput = inputMessage;
     setInputMessage('');
-
-    // Log query to backend (fire-and-forget)
-    fetch('/api/log/query', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: userInput }),
-    }).catch(() => {});
 
     try {
       await orchestratorRef.current.processMessage(

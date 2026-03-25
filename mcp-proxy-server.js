@@ -11,8 +11,8 @@ import cors from 'cors';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import OpenAI from 'openai';
-import { randomUUID } from 'crypto';
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,8 +21,6 @@ const llmobs = tracer.llmobs;
 
 const app = express();
 const PORT = process.env.MCP_PORT || 3001;
-const DEFAULT_API_KEY = process.env.LLM_API_KEY || '';
-const DEFAULT_LLM_URL = process.env.LLM_API_URL || '';  // Server-side remote LLM URL (never sent to client)
 
 // Enable CORS for browser access
 app.use(cors());
@@ -223,130 +221,6 @@ app.post('/tools/call', async (req, res) => {
   }
 });
 
-/**
- * POST /llm-proxy - Forward LLM API requests to remote server (bypasses CORS)
- * Body: { targetUrl: string, apiKey?: string, payload: object }
- */
-app.post('/llm-proxy', async (req, res) => {
-  const { targetUrl: clientUrl, apiKey: reqApiKey, payload, sessionId: clientSessionId } = req.body;
-  const apiKey = reqApiKey || DEFAULT_API_KEY;
-  const sessionId = clientSessionId || req.headers['x-session-id'] || randomUUID();
-
-  const baseURL = DEFAULT_LLM_URL
-    ? `${DEFAULT_LLM_URL}/v1`
-    : clientUrl ? new URL(clientUrl).origin + '/v1' : null;
-
-  if (!baseURL) {
-    return res.status(400).json({ error: 'targetUrl is required (or set LLM_API_URL env var)' });
-  }
-
-  try {
-    const result = await llmobs.trace({ kind: 'workflow', name: 'formulo.chat', sessionId }, async () => {
-      const client = new OpenAI({
-        apiKey: apiKey || 'no-key',
-        baseURL,
-      });
-
-      const { model, messages, ...rest } = payload;
-
-      const completion = await llmobs.trace({
-        kind: 'llm',
-        name: model || 'chat',
-        modelName: model || 'custom',
-        modelProvider: 'vllm',
-      }, async () => {
-        const result = await client.chat.completions.create({
-          model,
-          messages,
-          ...rest,
-        });
-
-        const outputMessages = result.choices?.map(c => ({
-          role: c.message?.role || 'assistant',
-          content: c.message?.content || '',
-        })) || [];
-
-        llmobs.annotate({
-          inputData: messages.map(m => ({ role: m.role, content: m.content })),
-          outputData: outputMessages,
-          metadata: {
-            temperature: rest.temperature,
-            max_tokens: rest.max_tokens,
-          },
-          metrics: {
-            input_tokens: result.usage?.prompt_tokens,
-            output_tokens: result.usage?.completion_tokens,
-            total_tokens: result.usage?.total_tokens,
-          },
-        });
-
-        return result;
-      });
-
-      return completion;
-    });
-
-    res.json(result);
-  } catch (error) {
-    console.error('LLM proxy error:', error);
-    if (error instanceof OpenAI.APIError) {
-      return res.status(error.status || 502).json({
-        error: { message: error.message, type: error.type, code: error.code },
-      });
-    }
-    res.status(502).json({
-      error: error instanceof Error ? error.message : 'LLM proxy request failed',
-    });
-  }
-});
-
-/**
- * GET /llm-proxy/models - Forward model list request to remote server
- * Query: ?targetUrl=...&apiKey=...
- */
-app.get('/llm-proxy/models', async (req, res) => {
-  try {
-    const { targetUrl: clientUrl, apiKey: reqApiKey } = req.query;
-    const apiKey = reqApiKey || DEFAULT_API_KEY;
-
-    const baseURL = DEFAULT_LLM_URL
-      ? `${DEFAULT_LLM_URL}/v1`
-      : clientUrl ? new URL(clientUrl).origin + '/v1' : null;
-
-    if (!baseURL) {
-      return res.status(400).json({ error: 'targetUrl query param is required (or set LLM_API_URL env var)' });
-    }
-
-    const client = new OpenAI({
-      apiKey: apiKey || 'no-key',
-      baseURL,
-    });
-
-    const models = await client.models.list();
-    res.json(models);
-  } catch (error) {
-    console.error('LLM proxy models error:', error);
-    if (error instanceof OpenAI.APIError) {
-      return res.status(error.status || 502).json({
-        error: { message: error.message, type: error.type, code: error.code },
-      });
-    }
-    res.status(502).json({
-      error: error instanceof Error ? error.message : 'LLM proxy request failed',
-    });
-  }
-});
-
-/**
- * GET /llm-proxy/config - Check if server-side API key is configured
- */
-app.get('/llm-proxy/config', (_req, res) => {
-  res.json({
-    hasApiKey: !!DEFAULT_API_KEY,
-    llmUrl: DEFAULT_LLM_URL || undefined,
-  });
-});
-
 // Start server
 startMCPServer();
 
@@ -356,6 +230,4 @@ app.listen(PORT, () => {
   console.log('  GET  /health - Health check');
   console.log('  GET  /tools - List available tools');
   console.log('  POST /tools/call - Call a tool');
-  console.log('  POST /llm-proxy - Forward LLM requests (CORS bypass)');
-  console.log('  GET  /llm-proxy/models - List remote models');
 });
