@@ -155,13 +155,81 @@ function stripThink(text) {
 
 function extractPythonCode(text) {
   const fenceMatch = text.match(/```python\s*([\s\S]*?)```/);
-  if (fenceMatch) return fenceMatch[1].trim();
+  if (fenceMatch) return sanitizeGeneratedCode(fenceMatch[1].trim());
   const plainMatch = text.match(/```\s*([\s\S]*?)```/);
-  if (plainMatch) return plainMatch[1].trim();
+  if (plainMatch) return sanitizeGeneratedCode(plainMatch[1].trim());
   if (text.includes('from sympy') || text.includes('import sympy')) {
-    return text.trim();
+    return sanitizeGeneratedCode(text.trim());
   }
   return null;
+}
+
+// ── Helper: fix common Bielik code generation mistakes ────────────────
+
+function sanitizeGeneratedCode(code) {
+  let lines = code.split('\n');
+
+  // 1. Replace f-string ODPOWIEDZ prints with simple concatenation.
+  //    Bielik often produces broken f-strings with Polish text and unmatched parens.
+  lines = lines.map(line => {
+    // Match: print(f"ODPOWIEDZ: ... {var1} ... {var2} ...")
+    if (/print\(f["']ODPOWIED/.test(line)) {
+      // Extract all {variable} references from the f-string
+      const vars = [];
+      const varPattern = /\{([^}]+)\}/g;
+      let m;
+      while ((m = varPattern.exec(line)) !== null) {
+        vars.push(m[1]);
+      }
+      if (vars.length === 1) {
+        return `print("ODPOWIEDZ:", ${vars[0]})`;
+      }
+      if (vars.length > 1) {
+        const pairs = vars.map(v => `"${v} =", ${v}`).join(', ", ", ');
+        return `print("ODPOWIEDZ:", ${pairs})`;
+      }
+      // No vars found, just fix the print
+      return line.replace(/print\(f["']/, 'print("').replace(/["']\)$/, '")');
+    }
+    return line;
+  });
+
+  // 2. Fix bare Polish text lines that aren't comments (Bielik hallucination)
+  lines = lines.filter(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return true;
+    if (trimmed.startsWith('#') || trimmed.startsWith('from ') || trimmed.startsWith('import ')) return true;
+    // Lines that are just Polish text (no = sign, no parentheses, no operators)
+    if (/^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż\s,]+[.:]?$/.test(trimmed)) return false;
+    return true;
+  });
+
+  // 3. Fix unmatched quotes in print statements
+  lines = lines.map(line => {
+    if (/print\(/.test(line)) {
+      const open = (line.match(/\(/g) || []).length;
+      const close = (line.match(/\)/g) || []).length;
+      if (open > close) {
+        line += ')'.repeat(open - close);
+      }
+    }
+    return line;
+  });
+
+  // 4. Ensure there's a print("ODPOWIEDZ:") somewhere
+  const joined = lines.join('\n');
+  if (!joined.includes('ODPOWIEDZ')) {
+    // Find last assignment and add print
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const assignMatch = lines[i].match(/^(\s*)(\w+)\s*=/);
+      if (assignMatch && !lines[i].trim().startsWith('#')) {
+        lines.push(`print("ODPOWIEDZ:", ${assignMatch[2]})`);
+        break;
+      }
+    }
+  }
+
+  return lines.join('\n');
 }
 
 // ── Helper: extract JSON from classifier response ─────────────────────
