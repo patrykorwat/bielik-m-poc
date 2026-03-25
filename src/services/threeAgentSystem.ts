@@ -2782,12 +2782,25 @@ ${result.error || ''}`;
       return { isTrigger: true, topic, level, count };
     }
 
-    // Check if the message is ONLY a topic name (1 or 2 words, matching a known topic)
+    // Check if the message is ONLY a topic name (1-3 words, matching a known topic)
     const words = lower.split(/\s+/);
     if (words.length <= 3) {
       const isTopicOnly = ThreeAgentOrchestrator.TOPIC_ONLY_PATTERNS.some(tp => lower.includes(tp));
       if (isTopicOnly) {
         return { isTrigger: true, topic: this.matchTopicName(lower) };
+      }
+    }
+
+    // Check if the message mentions a level keyword without a specific math problem
+    // e.g. "podstawowe", "rozszerzone", "podstawowe nr nwm co"
+    const hasLevelWord = lower.includes('podstawow') || lower.includes('rozszerzon');
+    if (hasLevelWord) {
+      // Only trigger if this does NOT look like a real math problem
+      const looksLikeProblem = /[=+\-*/^√∫∑]|\d{2,}|oblicz|wyznacz|rozwiąż|rozwiaz|udowodnij|ile|jaki|który/.test(lower);
+      if (!looksLikeProblem) {
+        const level = lower.includes('podstawow') ? 'podstawowa' : 'rozszerzona';
+        const topic = this.matchTopicName(lower);
+        return { isTrigger: true, topic, level };
       }
     }
 
