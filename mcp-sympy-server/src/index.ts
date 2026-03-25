@@ -191,6 +191,22 @@ const TOOLS: Tool[] = [
       required: ["operation", "matrix"],
     },
   },
+  {
+    name: "sympy_plot",
+    description:
+      "Generate an SVG diagram from Python code that uses sympy.geometry. The code MUST print SVG markup to stdout. No matplotlib needed. Use for geometry construction tasks (triangles, circles, inscribed/circumscribed figures).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: {
+          type: "string",
+          description:
+            "Python code that computes geometry using sympy and prints SVG markup to stdout. Must output a complete <svg>...</svg> element.",
+        },
+      },
+      required: ["code"],
+    },
+  },
 ];
 
 /**
@@ -1541,6 +1557,22 @@ else:
     result = 'Unknown operation'
 print(result)`;
         return await executePythonSymPy(code);
+      }
+
+      case "sympy_plot": {
+        if (!args.code) {
+          return "Error: No code provided to sympy_plot";
+        }
+        // Execute the code as-is; it must print SVG to stdout
+        const plotResult = await executePythonSymPyRaw(args.code);
+        if (plotResult.exitCode !== 0) {
+          return `Error: Plot generation failed: ${plotResult.stderr}`;
+        }
+        const svgOutput = plotResult.stdout.trim();
+        if (!svgOutput.includes('<svg')) {
+          return `Error: Code did not produce SVG output. Got: ${svgOutput.substring(0, 200)}`;
+        }
+        return svgOutput;
       }
 
       default:

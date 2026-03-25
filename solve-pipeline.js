@@ -617,6 +617,131 @@ async function callSymPy(code) {
   });
 }
 
+// ── Helper: call sympy_plot via MCP proxy ─────────────────────────────
+
+async function callSymPyPlot(code) {
+  return llmobs.trace({ kind: 'tool', name: 'sympy_plot' }, async () => {
+    return new Promise((resolve, reject) => {
+      const postData = JSON.stringify({
+        name: 'sympy_plot',
+        arguments: { code },
+      });
+
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: MCP_PORT,
+        path: '/tools/call',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+        },
+        timeout: 30000,
+      }, (res) => {
+        let body = '';
+        res.on('data', chunk => body += chunk);
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            const content = data.content?.[0]?.text || data.result?.content?.[0]?.text || body;
+            llmobs.annotate({ inputData: code, outputData: content.substring(0, 200) });
+            resolve(content);
+          } catch (e) {
+            resolve(body);
+          }
+        });
+      });
+
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('Plot timeout')); });
+      req.write(postData);
+      req.end();
+    });
+  });
+}
+
+// ── Geometry construction detection ───────────────────────────────────
+
+const CONSTRUCTION_KEYWORDS = [
+  'narysuj', 'rysuj', 'szkic', 'konstruk', 'wykres',
+  'wpisz okrąg', 'opisz okrąg', 'okrąg wpisany', 'okrąg opisany',
+  'inscribed circle', 'circumscribed circle',
+  'draw', 'sketch', 'plot', 'diagram',
+  'wykonaj konstrukcj', 'wykonaj rysunek',
+];
+
+function isConstructionTask(text) {
+  const lower = text.toLowerCase();
+  return CONSTRUCTION_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+const GEOMETRY_PLOT_PROMPT = `Napisz kod Python ktory generuje diagram SVG dla tego zadania geometrycznego.
+
+ZASADY:
+1. Oblicz wspolrzedne punktow uzywajac sympy (Triangle, Circle, incircle, circumcircle, itp.)
+2. Na koniec wypisz SVG uzywajac print(). SVG musi byc KOMPLETNY: <svg xmlns="http://www.w3.org/2000/svg" ...>...</svg>
+3. Uzyj viewBox i skalowania zeby diagram byl czytelny (min 400x400)
+4. Kolory: trojkat niebieski (#2563eb), okrag wpisany czerwony (#dc2626), okrag opisany zielony (#16a34a)
+5. Dodaj etykiety punktow (A, B, C) i wartosci (r, R)
+6. Linie: stroke-width="2", fill="none"
+7. Tlo biale
+8. NIE uzywaj matplotlib! Generuj SVG recznie z obliczonych wspolrzednych
+9. float() na kazdej wartosci sympy przed umieszeniem w SVG
+10. TYLKO kod w bloku \`\`\`python ... \`\`\`
+
+SZABLON:
+\`\`\`python
+from sympy import *
+from sympy.geometry import *
+
+# Definiuj trojkat
+A = Point(0, 0)
+B = Point(6, 0)
+C = Point(3, 5)
+t = Triangle(A, B, C)
+
+# Oblicz okregi
+ic = t.incircle    # okrag wpisany
+cc = t.circumcircle # okrag opisany
+
+# Konwersja do float
+def pf(point):
+    return (float(point.x), float(point.y))
+
+def rf(val):
+    return float(val)
+
+# Skalowanie i przesuniecie
+pts = [pf(A), pf(B), pf(C)]
+cx_ic, cy_ic = pf(ic.center)
+r_ic = rf(ic.radius)
+cx_cc, cy_cc = pf(cc.center)
+r_cc = rf(cc.radius)
+
+# Oblicz bounding box i skaluj
+all_x = [p[0] for p in pts] + [cx_cc - r_cc, cx_cc + r_cc]
+all_y = [p[1] for p in pts] + [cy_cc - r_cc, cy_cc + r_cc]
+margin = 1
+min_x, max_x = min(all_x) - margin, max(all_x) + margin
+min_y, max_y = min(all_y) - margin, max(all_y) + margin
+w = max_x - min_x
+h = max_y - min_y
+
+# SVG (y-axis flipped)
+def sy(y):
+    return max_y - y + min_y
+
+svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="{min_x:.1f} {min_y:.1f} {w:.1f} {h:.1f}" width="500" height="500" style="background:white">
+  <polygon points="{pts[0][0]:.2f},{sy(pts[0][1]):.2f} {pts[1][0]:.2f},{sy(pts[1][1]):.2f} {pts[2][0]:.2f},{sy(pts[2][1]):.2f}" fill="none" stroke="#2563eb" stroke-width="0.08"/>
+  <circle cx="{cx_ic:.2f}" cy="{sy(cy_ic):.2f}" r="{r_ic:.2f}" fill="none" stroke="#dc2626" stroke-width="0.06" stroke-dasharray="0.15,0.1"/>
+  <circle cx="{cx_cc:.2f}" cy="{sy(cy_cc):.2f}" r="{r_cc:.2f}" fill="none" stroke="#16a34a" stroke-width="0.06" stroke-dasharray="0.15,0.1"/>
+  <text x="{pts[0][0]:.1f}" y="{sy(pts[0][1]) + 0.5:.1f}" font-size="0.5" text-anchor="middle">A</text>
+  <text x="{pts[1][0]:.1f}" y="{sy(pts[1][1]) + 0.5:.1f}" font-size="0.5" text-anchor="middle">B</text>
+  <text x="{pts[2][0] - 0.5:.1f}" y="{sy(pts[2][1]):.1f}" font-size="0.5" text-anchor="middle">C</text>
+</svg>"""
+print(svg)
+\`\`\``;
+
 // ── Guardrail ─────────────────────────────────────────────────────────
 
 async function checkGuardrail(userMessage) {
@@ -1412,6 +1537,32 @@ export async function solve(userMessage, sessionId, onStep) {
       }
     }
 
+    // ── Step 6: Geometry diagram (construction tasks only) ─────────
+
+    let diagram = null;
+    if (isConstructionTask(userMessage)) {
+      send('diagram', 'Diagram', 'Generuję diagram...');
+      try {
+        const plotCodeRaw = await llmCall('geometry_plot', GEOMETRY_PLOT_PROMPT, [
+          { role: 'user', content: userMessage },
+          ...(hasResult ? [{ role: 'assistant', content: `Wynik obliczeń:\n${sympyResult}` }] : []),
+        ], { maxTokens: 1200, temperature: 0.1 });
+
+        const plotCode = extractPythonCode(stripThink(plotCodeRaw));
+        if (plotCode) {
+          const svgResult = await callSymPyPlot(plotCode);
+          if (svgResult && svgResult.includes('<svg')) {
+            diagram = svgResult;
+            send('diagram_done', 'Diagram', svgResult, { isSvg: true });
+          } else {
+            send('diagram_fail', 'Diagram', svgResult || 'Nie udało się wygenerować diagramu');
+          }
+        }
+      } catch (err) {
+        send('diagram_fail', 'Diagram', `Błąd generowania diagramu: ${err.message}`);
+      }
+    }
+
     return {
       success: true,
       type: 'solve',
@@ -1421,6 +1572,7 @@ export async function solve(userMessage, sessionId, onStep) {
       sympyResult,
       summary,
       leanVerified,
+      diagram,
     };
   });
 }
