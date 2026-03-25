@@ -3013,6 +3013,154 @@ ${result.error || ''}`;
     return lines.join('\n');
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // Server-side Guardrail via /api/guardrail
+  // ═══════════════════════════════════════════════════════════════════
+
+  private async checkServerGuardrail(message: string): Promise<{ valid: boolean; reason?: string } | null> {
+    try {
+      const res = await fetch('/api/guardrail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (!res.ok) return null; // Server unavailable, fall through
+
+      const data = await res.json();
+      return data;
+    } catch {
+      // Server unavailable (local dev), return null to skip
+      return null;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // Server-side solve via /api/solve (SSE)
+  // ═══════════════════════════════════════════════════════════════════
+
+  private static SOLVE_SESSION_ID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+
+  private async tryServerSolve(
+    userMessage: string,
+    newMessages: Message[],
+    onMessageCallback?: (message: Message) => void,
+  ): Promise<Message[] | null> {
+    try {
+      const res = await fetch('/api/solve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage,
+          sessionId: ThreeAgentOrchestrator.SOLVE_SESSION_ID,
+        }),
+        signal: AbortSignal.timeout(300000),
+      });
+
+      if (!res.ok || !res.body) {
+        logWarn(`Server-side solve unavailable (${res.status}), falling back to client pipeline`);
+        return null;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalResult: any = null;
+
+      const agentIcons: Record<string, string> = {
+        'Guardrail': '🛡️',
+        'Klasyfikator': '🔍',
+        'Agent Analityczny': '🧠',
+        'Agent Wykonawczy': '⚡',
+        'Agent Podsumowujący': '📝',
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let eventType = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6);
+            try {
+              const data = JSON.parse(dataStr);
+
+              if (eventType === 'step') {
+                const { step, agentName, content } = data;
+
+                // Show intermediate steps as messages
+                if (step.endsWith('_done') && !data.blocked && agentName !== 'Guardrail' && agentName !== 'Klasyfikator') {
+                  const icon = agentIcons[agentName] || '📋';
+                  const msg: Message = {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content,
+                    agentName: `${icon} ${agentName}`,
+                    timestamp: new Date(),
+                  };
+                  this.conversationHistory.push(msg);
+                  newMessages.push(msg);
+                  if (onMessageCallback) onMessageCallback(msg);
+                }
+
+                // Handle guardrail block
+                if (data.blocked) {
+                  const blockedMsg: Message = {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: content || 'Mogę pomóc tylko z zadaniami z matematyki i nauk ścisłych.',
+                    agentName: '🛡️ Guardrail',
+                    timestamp: new Date(),
+                  };
+                  this.conversationHistory.push(blockedMsg);
+                  newMessages.push(blockedMsg);
+                  if (onMessageCallback) onMessageCallback(blockedMsg);
+                  return newMessages;
+                }
+              }
+
+              if (eventType === 'done') {
+                finalResult = data;
+              }
+
+              if (eventType === 'error') {
+                logWarn(`Server-side solve error: ${data.error}`);
+                return null; // Fall back to client pipeline
+              }
+            } catch (e) {
+              // Skip unparseable lines
+            }
+            eventType = '';
+          }
+        }
+      }
+
+      if (!finalResult) {
+        logWarn('Server-side solve: no final result received');
+        return null;
+      }
+
+      logInfo('Server-side solve completed successfully');
+      return newMessages;
+
+    } catch (err) {
+      // /api/solve not available (local dev, network error) — silent fallback
+      logDebug(`Server-side solve unavailable: ${err}`);
+      return null;
+    }
+  }
+
   /**
    * Process a user message through the full pipeline.
    *
@@ -3055,7 +3203,25 @@ ${result.error || ''}`;
     const newMessages: Message[] = [userMsg];
 
     // ═══════════════════════════════════════════════════════════════════
-    // Generator Intent Detection — before guardrail (guardrail blocks these)
+    // Server-side Guardrail — every request must pass (cannot bypass)
+    // ═══════════════════════════════════════════════════════════════════
+    const serverGuardrail = await this.checkServerGuardrail(userMessage);
+    if (serverGuardrail && !serverGuardrail.valid) {
+      const blockedMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: serverGuardrail.reason || 'Mogę pomóc tylko z zadaniami z matematyki i nauk ścisłych.',
+        agentName: '🛡️ Guardrail',
+        timestamp: new Date(),
+      };
+      this.conversationHistory.push(blockedMsg);
+      newMessages.push(blockedMsg);
+      if (onMessageCallback) onMessageCallback(blockedMsg);
+      return newMessages;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Generator Intent Detection (after guardrail)
     // ═══════════════════════════════════════════════════════════════════
     const generatorResult = await this.tryGeneratorIntent(userMessage);
     if (generatorResult) {
@@ -3091,7 +3257,15 @@ ${result.error || ''}`;
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    // Input Guardrail — validate before expensive pipeline steps
+    // Server-side pipeline (if available) — one workflow span in DD
+    // ═══════════════════════════════════════════════════════════════════
+    const serverResult = await this.tryServerSolve(userMessage, newMessages, onMessageCallback);
+    if (serverResult) {
+      return serverResult;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Fallback: Client-side pipeline (local dev / server unavailable)
     // ═══════════════════════════════════════════════════════════════════
     const guardrailResult = await this.validateInput(userMessage);
     if (!guardrailResult.valid) {

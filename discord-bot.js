@@ -3,48 +3,22 @@
 /**
  * Discord Bot for Formulo
  *
- * Uses the SAME classifier + deterministic solver pipeline as the web UI.
- * Compiled TS modules are imported from dist-server/.
- *
- * Pipeline:
- *   1. Classifier (regex + LLM) → classification JSON
- *   2. Deterministic solver → SymPy code (no LLM needed)
- *   3. Execute SymPy via MCP proxy
- *   4. Summary agent (LLM) for explanation
- *   Fallback: 3-agent pipeline if classifier fails
+ * Uses the SAME /api/guardrail + /api/solve endpoints as the web UI.
+ * No direct LLM or SymPy calls. Single pipeline for both consumers.
  *
  * Environment variables:
  *   DISCORD_TOKEN        - Bot token from Discord Developer Portal (required)
  *   DISCORD_CHANNEL_ID   - Channel ID to monitor (required)
- *   MCP_PROXY_URL        - MCP proxy base URL (default: http://localhost:3001)
- *   RAG_URL              - RAG service base URL (default: http://localhost:3003)
- *   LLM_API_URL          - LLM endpoint URL (forwarded to /llm-proxy)
- *   LLM_API_KEY          - API key for LLM
- *   LLM_MODEL            - Model name (default: bielik-11b-v3.0)
+ *   FORMULO_API_URL      - Base URL of the Formulo server (default: http://localhost:5000)
  */
 
 import { Client, GatewayIntentBits } from 'discord.js';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-
-// ── Import shared modules (compiled from TypeScript) ────────────────────────
-import { classifyProblem, shouldUseFallback } from './dist-server/services/classifierService.js';
-import { buildSolverCode } from './dist-server/services/deterministicSolvers.js';
-import { LLMAgent } from './dist-server/services/mlxAgent.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // ── Configuration ────────────────────────────────────────────────────────────
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
-const MCP_PROXY_URL = process.env.MCP_PROXY_URL || 'http://localhost:3001';
-const RAG_URL = process.env.RAG_URL || 'http://localhost:3003';
-const LLM_API_URL = process.env.LLM_API_URL || '';
-const LLM_API_KEY = process.env.LLM_API_KEY || '';
-const LLM_MODEL = process.env.VITE_REMOTE_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
+const API_BASE = process.env.FORMULO_API_URL || `http://localhost:${process.env.PORT || 5000}`;
 
 if (!DISCORD_TOKEN) {
   console.error('[discord-bot] DISCORD_TOKEN is required');
@@ -55,338 +29,102 @@ if (!DISCORD_CHANNEL_ID) {
   process.exit(1);
 }
 
-// ── Load prompts ──────────────────────────────────────────────────────────────
+// ── API helpers ──────────────────────────────────────────────────────────────
 
-const promptsPath = join(__dirname, 'prompts.json');
-let prompts;
-try {
-  prompts = JSON.parse(readFileSync(promptsPath, 'utf8'));
-} catch (err) {
-  console.error('[discord-bot] Failed to load prompts.json:', err.message);
-  process.exit(1);
-}
-
-const ANALYTICAL_PROMPT = prompts.analytical;
-const EXECUTOR_PROMPT = prompts.executor_sympy;
-const SUMMARY_PROMPT = prompts.summary;
-const CLASSIFIER_PROMPT = prompts.classifier || '';
-
-const AGENT_CONFIG = prompts.agents || {};
-const ANALYTICAL_MAX_TOKENS = AGENT_CONFIG.analytical?.max_tokens || 350;
-const ANALYTICAL_TEMP = AGENT_CONFIG.analytical?.temperature ?? 0.2;
-const EXECUTOR_MAX_TOKENS = AGENT_CONFIG.executor?.max_tokens || 900;
-const EXECUTOR_TEMP = AGENT_CONFIG.executor?.temperature ?? 0.15;
-const SUMMARY_MAX_TOKENS = AGENT_CONFIG.summary?.max_tokens || 500;
-const SUMMARY_TEMP = AGENT_CONFIG.summary?.temperature ?? 0.2;
-const CLASSIFIER_MAX_TOKENS = AGENT_CONFIG.classifier?.max_tokens || 800;
-const CLASSIFIER_TEMP = AGENT_CONFIG.classifier?.temperature ?? 0.1;
-
-const UNIVERSITY_ENABLED = prompts.features?.university_level ?? true;
-
-// ── Create shared LLMAgent instance ──────────────────────────────────────────
-
-const llmAgent = new LLMAgent({
-  provider: 'remote',
-  baseUrl: LLM_API_URL,
-  model: LLM_MODEL,
-  temperature: 0.7,
-  maxTokens: 4096,
-  apiKey: LLM_API_KEY || undefined,
-});
-
-// ── ServerOrchestrator ───────────────────────────────────────────────────────
-
-class ServerOrchestrator {
-  constructor() {
-    this.mcpProxyUrl = MCP_PROXY_URL;
-    this.ragUrl = RAG_URL;
-  }
-
-  /**
-   * Query RAG service for similar problems / math methods.
-   */
-  async queryRAG(problem) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
-
-      const res = await fetch(`${this.ragUrl}/query`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: problem, k: 3 }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-
-      if (!res.ok) return '';
-
-      const data = await res.json();
-      const results = data.results || [];
-      if (results.length === 0) return '';
-
-      return results
-        .map((r) => {
-          const parts = [`[${r.category}] ${r.title}`, r.content];
-          if (r.sympy_hint) parts.push(`SymPy: ${r.sympy_hint}`);
-          if (r.tips) parts.push(`Wskazówki: ${r.tips}`);
-          return parts.join('\n');
-        })
-        .join('\n\n---\n\n');
-    } catch {
-      return '';
-    }
-  }
-
-  /**
-   * Call LLM via the MCP proxy /llm-proxy endpoint.
-   */
-  async callLLM(systemPrompt, messages, maxTokens, temperature) {
-    const payload = {
-      model: LLM_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages,
-      ],
-      max_tokens: maxTokens,
-      temperature,
-    };
-
-    const body = { payload };
-
-    if (!LLM_API_URL) {
-      throw new Error('LLM_API_URL is not configured');
-    }
-    if (LLM_API_KEY) {
-      body.apiKey = LLM_API_KEY;
-    }
-    body.targetUrl = `${LLM_API_URL}/v1/chat/completions`;
-
-    const res = await fetch(`${this.mcpProxyUrl}/llm-proxy`, {
+/**
+ * Call the server-side guardrail. Returns { valid, reason }.
+ * Fails open (returns valid:true) on network errors.
+ */
+async function checkGuardrail(message) {
+  try {
+    const res = await fetch(`${API_BASE}/api/guardrail`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ message }),
+      signal: AbortSignal.timeout(15000),
     });
-
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`LLM proxy error ${res.status}: ${err}`);
-    }
-
-    const data = await res.json();
-    const content = data.choices?.[0]?.message?.content || '';
-    return content;
-  }
-
-  /**
-   * Execute Python SymPy code via MCP proxy /tools/call.
-   */
-  async callSympy(code) {
-    try {
-      const res = await fetch(`${this.mcpProxyUrl}/tools/call`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: 'sympy_calculate',
-          arguments: { code },
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.text();
-        return { output: '', error: `Tool call failed: ${err}` };
-      }
-
-      const result = await res.json();
-      const text = result.content?.map((c) => c.text || '').join('\n') || '';
-      if (result.isError) {
-        return { output: '', error: text };
-      }
-      return { output: text, error: null };
-    } catch (err) {
-      return { output: '', error: err.message };
-    }
-  }
-
-  /**
-   * Extract Python code block from LLM response.
-   */
-  extractCode(text) {
-    const match = text.match(/```python\n([\s\S]*?)```/);
-    return match ? match[1].trim() : null;
-  }
-
-  /**
-   * Run the full pipeline — CLASSIFIER + DETERMINISTIC SOLVER first, then 3-agent fallback.
-   * Uses the SAME classifyProblem() and buildSolverCode() as the web UI.
-   */
-  async solve(problem, onProgress) {
-    // Step 0: RAG retrieval
-    await onProgress('🔍 Szukam podobnych zadań...');
-    const ragContext = await this.queryRAG(problem);
-
-    // ═══════════════════════════════════════════════════════════════════
-    // CLASSIFIER PIPELINE — same logic as ThreeAgentOrchestrator
-    // ═══════════════════════════════════════════════════════════════════
-    try {
-      await onProgress('🏷️ Klasyfikuję problem...');
-
-      // Use shared classifyProblem() from compiled TS
-      const classification = await classifyProblem(
-        problem,
-        CLASSIFIER_PROMPT,
-        llmAgent,
-        ragContext || undefined,
-        {
-          maxTokens: CLASSIFIER_MAX_TOKENS,
-          temperature: CLASSIFIER_TEMP,
-          enableUniversity: UNIVERSITY_ENABLED,
-        }
-      );
-
-      console.log(`[discord-bot] Classification: type=${classification.type}, confidence=${classification.confidence}`);
-
-      if (!shouldUseFallback(classification)) {
-        // Use shared buildSolverCode() from compiled TS
-        const solverCode = buildSolverCode(classification);
-
-        if (solverCode && solverCode !== '# No solver available for this type') {
-          await onProgress(`🧮 Deterministyczny solver: ${classification.type}...`);
-          console.log(`[discord-bot] Running deterministic solver for ${classification.type}`);
-
-          // Execute via MCP (same as web UI uses)
-          const { output, error } = await this.callSympy(solverCode);
-
-          if (!error && output) {
-            const answerMatch = output.match(/ODPOWIEDZ:\s*(.+)/);
-
-            if (answerMatch) {
-              console.log(`[discord-bot] ✅ Deterministic answer: ${answerMatch[1]}`);
-
-              // Summary agent with deterministic result
-              await onProgress('📝 Przygotowuję wyjaśnienie...');
-              const summaryUserMessage =
-                `ZADANIE: ${problem}\n\n` +
-                `KLASYFIKACJA: ${classification.type} (pewność: ${Math.round((classification.confidence || 0) * 100)}%)\n\n` +
-                `KOD SYMPY:\n\`\`\`python\n${solverCode}\n\`\`\`\n\n` +
-                `WYNIK SYMPY:\n${output}\n\n` +
-                `Wytłumacz rozwiązanie krok po kroku.`;
-
-              const summaryResponse = await this.callLLM(
-                SUMMARY_PROMPT,
-                [{ role: 'user', content: summaryUserMessage }],
-                SUMMARY_MAX_TOKENS,
-                SUMMARY_TEMP,
-              );
-
-              return {
-                analytical: `🏷️ Klasyfikacja: **${classification.type}** (pewność: ${Math.round((classification.confidence || 0) * 100)}%)\n📐 Deterministyczny solver — bez generowania kodu przez LLM.`,
-                sympy: output,
-                summary: summaryResponse,
-              };
-            }
-          }
-
-          // Solver execution failed — log and fall through
-          console.log(`[discord-bot] ⚠️ Deterministic solver failed: ${error || 'no ODPOWIEDZ'}`);
-        }
-      } else {
-        console.log(`[discord-bot] ⚠️ Classifier suggests fallback (type=${classification.type}, confidence=${classification.confidence})`);
-      }
-    } catch (classifierError) {
-      console.error('[discord-bot] ⚠️ Classifier pipeline error:', classifierError.message);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // FALLBACK: 3-agent LLM pipeline (same as before)
-    // ═══════════════════════════════════════════════════════════════════
-    console.log('[discord-bot] Using 3-agent fallback pipeline');
-
-    await onProgress('⚙️ Analizuję problem (3-agent fallback)...');
-
-    const analyticalUserMessage = ragContext
-      ? `STRATEGIE Z BAZY WIEDZY:\n${ragContext}\n\nZADANIE: ${problem}`
-      : `ZADANIE: ${problem}`;
-
-    const analyticalResponse = await this.callLLM(
-      ANALYTICAL_PROMPT,
-      [{ role: 'user', content: analyticalUserMessage }],
-      ANALYTICAL_MAX_TOKENS,
-      ANALYTICAL_TEMP,
-    );
-
-    await onProgress('🧮 Wykonuję obliczenia...');
-
-    const executorUserMessage = `ZADANIE: ${problem}\n\nPLAN ANALITYCZNY:\n${analyticalResponse}\n\nNapisz kod SymPy.`;
-
-    const executorResponse = await this.callLLM(
-      EXECUTOR_PROMPT,
-      [{ role: 'user', content: executorUserMessage }],
-      EXECUTOR_MAX_TOKENS,
-      EXECUTOR_TEMP,
-    );
-
-    let sympyOutput = '';
-    let lastError = '';
-    let currentCode = this.extractCode(executorResponse);
-    let currentExecutorResponse = executorResponse;
-
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      if (!currentCode) {
-        lastError = 'Brak bloku kodu Python w odpowiedzi modelu.';
-        break;
-      }
-
-      const { output, error } = await this.callSympy(currentCode);
-
-      if (!error) {
-        sympyOutput = output;
-        break;
-      }
-
-      lastError = error;
-      console.log(`[discord-bot] SymPy attempt ${attempt} failed: ${error}`);
-
-      if (attempt < 3) {
-        const fixMessage = `KOD PYTHON:\n\`\`\`python\n${currentCode}\n\`\`\`\n\nBŁĄD:\n${error}\n\nPopraw kod i wróć TYLKO poprawiony blok \`\`\`python.`;
-        const fixResponse = await this.callLLM(
-          EXECUTOR_PROMPT,
-          [
-            { role: 'user', content: executorUserMessage },
-            { role: 'assistant', content: currentExecutorResponse },
-            { role: 'user', content: fixMessage },
-          ],
-          EXECUTOR_MAX_TOKENS,
-          EXECUTOR_TEMP,
-        );
-        currentCode = this.extractCode(fixResponse);
-        currentExecutorResponse = fixResponse;
-      }
-    }
-
-    const sympyResult = sympyOutput || `(Błąd SymPy: ${lastError})`;
-
-    await onProgress('📝 Przygotowuję wyjaśnienie...');
-
-    const summaryUserMessage =
-      `ZADANIE: ${problem}\n\n` +
-      `PLAN ANALITYCZNY:\n${analyticalResponse}\n\n` +
-      `WYNIK SYMPY:\n${sympyResult}\n\n` +
-      `Wytłumacz rozwiązanie krok po kroku.`;
-
-    const summaryResponse = await this.callLLM(
-      SUMMARY_PROMPT,
-      [{ role: 'user', content: summaryUserMessage }],
-      SUMMARY_MAX_TOKENS,
-      SUMMARY_TEMP,
-    );
-
-    return { analytical: analyticalResponse, sympy: sympyResult, summary: summaryResponse };
+    if (!res.ok) return { valid: true };
+    return await res.json();
+  } catch (err) {
+    console.error('[discord-bot] Guardrail error:', err.message);
+    return { valid: true };
   }
 }
 
-// ── Discord Bot ───────────────────────────────────────────────────────────────
+/**
+ * Call /api/solve (SSE) and collect the final result.
+ * Calls onStep for each progress event so the bot can update its message.
+ * Returns the final result object from the 'done' event.
+ */
+async function callSolve(message, sessionId, onStep) {
+  const res = await fetch(`${API_BASE}/api/solve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, sessionId }),
+    signal: AbortSignal.timeout(120000),
+  });
 
-const orchestrator = new ServerOrchestrator();
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`/api/solve returned ${res.status}: ${text}`);
+  }
+
+  // Parse SSE stream
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let result = null;
+  let lastError = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    // Process complete SSE events (separated by double newline)
+    let boundary;
+    while ((boundary = buffer.indexOf('\n\n')) >= 0) {
+      const rawEvent = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+
+      let eventType = 'message';
+      let eventData = '';
+
+      for (const line of rawEvent.split('\n')) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7);
+        } else if (line.startsWith('data: ')) {
+          eventData += line.slice(6);
+        }
+      }
+
+      if (!eventData) continue;
+
+      try {
+        const parsed = JSON.parse(eventData);
+
+        if (eventType === 'step' && onStep) {
+          onStep(parsed);
+        } else if (eventType === 'done') {
+          result = parsed;
+        } else if (eventType === 'error') {
+          lastError = parsed.error || 'Unknown error';
+        }
+      } catch {
+        // Ignore malformed SSE data
+      }
+    }
+  }
+
+  if (lastError && !result) {
+    throw new Error(lastError);
+  }
+
+  return result;
+}
+
+// ── Discord Bot ──────────────────────────────────────────────────────────────
 
 const client = new Client({
   intents: [
@@ -399,7 +137,7 @@ const client = new Client({
 client.once('ready', () => {
   console.log(`[discord-bot] Logged in as ${client.user.tag}`);
   console.log(`[discord-bot] Monitoring channel: ${DISCORD_CHANNEL_ID}`);
-  console.log(`[discord-bot] Classifier pipeline: ENABLED (shared with web UI)`);
+  console.log(`[discord-bot] API base: ${API_BASE}`);
 });
 
 /**
@@ -438,13 +176,13 @@ client.on('messageCreate', async (message) => {
 
   let progressMsg;
   try {
-    progressMsg = await message.channel.send('⏳ Przetwarzam zadanie...');
+    progressMsg = await message.channel.send('Przetwarzam zadanie...');
   } catch (err) {
     console.error('[discord-bot] Failed to send initial message:', err);
     return;
   }
 
-  const onProgress = async (text) => {
+  const updateProgress = async (text) => {
     try {
       await progressMsg.edit(text);
     } catch {
@@ -453,27 +191,64 @@ client.on('messageCreate', async (message) => {
   };
 
   try {
-    const { analytical, sympy, summary } = await orchestrator.solve(problem, onProgress);
+    // Step 1: Guardrail
+    await updateProgress('Sprawdzam zapytanie...');
+    const guard = await checkGuardrail(problem);
 
+    if (!guard.valid) {
+      await progressMsg.edit(guard.reason || 'To zapytanie nie dotyczy matematyki.');
+      return;
+    }
+
+    // Step 2: Solve via SSE
+    await updateProgress('Rozwiazuję zadanie...');
+
+    const sessionId = `discord-${message.author.id}-${Date.now()}`;
+
+    const result = await callSolve(problem, sessionId, (step) => {
+      // Update progress message with the latest step
+      if (step.content && step.agentName) {
+        updateProgress(`${step.agentName}: ${step.content.slice(0, 150)}`);
+      }
+    });
+
+    if (!result || !result.success) {
+      await progressMsg.edit('Nie udalo sie rozwiazac zadania.');
+      return;
+    }
+
+    // Delete progress message and send results
     try {
       await progressMsg.delete();
     } catch {
       // Ignore
     }
 
-    for (const chunk of splitMessage(`⚙️ **Analiza:**\n${analytical}`)) {
-      await message.channel.send(chunk);
+    // Send classification info
+    if (result.classification) {
+      const classType = result.classification.type || 'general';
+      const conf = Math.round((result.classification.confidence || 0) * 100);
+      await message.channel.send(`**Klasyfikacja:** ${classType} (${conf}%)`);
     }
-    for (const chunk of splitMessage(`🧮 **Wynik SymPy:**\n${sympy}`)) {
-      await message.channel.send(chunk);
+
+    // Send SymPy result
+    if (result.sympyResult) {
+      for (const chunk of splitMessage(`**Wynik SymPy:**\n${result.sympyResult}`)) {
+        await message.channel.send(chunk);
+      }
     }
-    for (const chunk of splitMessage(`📝 **Wyjaśnienie:**\n${summary}`)) {
-      await message.channel.send(chunk);
+
+    // Send summary (the main explanation)
+    if (result.summary) {
+      for (const chunk of splitMessage(result.summary)) {
+        await message.channel.send(chunk);
+      }
     }
+
   } catch (err) {
     console.error('[discord-bot] Pipeline error:', err);
     try {
-      await progressMsg.edit(`❌ Błąd: ${err.message}`);
+      await progressMsg.edit(`Blad: ${err.message}`);
     } catch {
       // Ignore
     }
@@ -482,8 +257,7 @@ client.on('messageCreate', async (message) => {
 
 console.log('[discord-bot] Attempting login...');
 console.log(`[discord-bot] DISCORD_CHANNEL_ID: ${DISCORD_CHANNEL_ID}`);
-console.log(`[discord-bot] LLM_API_URL: ${LLM_API_URL || 'MISSING'}`);
-console.log(`[discord-bot] LLM_API_KEY: ${LLM_API_KEY ? 'set' : 'MISSING'}`);
+console.log(`[discord-bot] API_BASE: ${API_BASE}`);
 
 client.login(DISCORD_TOKEN).catch((err) => {
   console.error('[discord-bot] Login failed:', err.message);

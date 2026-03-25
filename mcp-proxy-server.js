@@ -254,7 +254,6 @@ app.post('/llm-proxy', async (req, res) => {
         name: model || 'chat',
         modelName: model || 'custom',
         modelProvider: 'vllm',
-        sessionId,
       }, async () => {
         const result = await client.chat.completions.create({
           model,

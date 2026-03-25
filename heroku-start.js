@@ -284,6 +284,59 @@ app.get('/api/generator/topics', (_req, res) => {
   res.json({ topics: topicCounts, total: allTasks.length });
 });
 
+// ── Server-side solve pipeline (SSE) ──────────────────────────────────
+
+import { solve, checkGuardrail } from './solve-pipeline.js';
+
+const solveJsonParser = express.json({ limit: '50kb' });
+
+app.post('/api/guardrail', solveJsonParser, async (req, res) => {
+  const { message } = req.body || {};
+  if (!message) {
+    return res.status(400).json({ error: 'message is required' });
+  }
+  try {
+    const result = await checkGuardrail(message);
+    res.json(result);
+  } catch (err) {
+    console.error('[guardrail] Error:', err);
+    // Fail open on error
+    res.json({ valid: true });
+  }
+});
+
+app.post('/api/solve', solveJsonParser, async (req, res) => {
+  const { message, sessionId } = req.body || {};
+  if (!message) {
+    return res.status(400).json({ error: 'message is required' });
+  }
+
+  // SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  const sendSSE = (event, data) => {
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  };
+
+  try {
+    const result = await solve(message, sessionId, (step) => {
+      sendSSE('step', step);
+    });
+
+    sendSSE('done', result);
+  } catch (err) {
+    console.error('[solve] Pipeline error:', err);
+    sendSSE('error', { error: err.message || 'Pipeline failed' });
+  }
+
+  res.end();
+});
+
 // ── SEO static pages (served before SPA fallback) ─────────────────────
 
 const seoPath = join(__dirname, 'seo', 'pages');
