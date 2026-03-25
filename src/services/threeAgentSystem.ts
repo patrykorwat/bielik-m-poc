@@ -2731,6 +2731,163 @@ ${result.error || ''}`;
     return { valid: true };
   }
 
+  // ═══════════════════════════════════════════════════════════════════
+  // Generator Intent Detection
+  // ═══════════════════════════════════════════════════════════════════
+
+  private static GENERATOR_KEYWORDS = [
+    'wymyśl', 'wymysl', 'wygeneruj', 'generuj', 'losuj',
+    'zadaj mi', 'zadaj pytani', 'zadawaj',
+    'arkusz', 'zestaw zadań', 'zestaw zadan',
+    'ćwiczeni', 'cwiczeni', 'trening', 'praktyk',
+    'daj mi zadani', 'podaj zadani', 'pokaż zadani', 'pokaz zadani',
+    'przygotuj zadani', 'kilka zadań', 'kilka zadan',
+  ];
+
+  private static TOPIC_ONLY_PATTERNS = [
+    'ostrosłup', 'ostroslup', 'trójkąt', 'trojkat', 'funkcja kwadrat',
+    'trygonometri', 'ciąg', 'ciag', 'geometri', 'prawdopodobień', 'prawdopodobien',
+    'kombinatoryk', 'pochodn', 'równani', 'rownani', 'logarytm', 'potęg', 'poteg',
+    'granic', 'całk', 'calk', 'stereometri', 'planimetri', 'wielomian',
+    'procent', 'statystyk', 'wektor',
+  ];
+
+  private detectGeneratorIntent(message: string): { isTrigger: boolean; topic?: string; level?: string; count?: number } {
+    const lower = message.toLowerCase().trim();
+
+    // Check for explicit generator keywords
+    const hasKeyword = ThreeAgentOrchestrator.GENERATOR_KEYWORDS.some(kw => lower.includes(kw));
+
+    if (hasKeyword) {
+      // Extract level if mentioned
+      let level: string | undefined;
+      if (lower.includes('podstawow')) level = 'podstawowa';
+      else if (lower.includes('rozszerzon')) level = 'rozszerzona';
+
+      // Extract count if mentioned
+      let count: number | undefined;
+      const countMatch = lower.match(/(\d+)\s*(zadań|zadan|zadani|pytań|pytan)/);
+      if (countMatch) count = parseInt(countMatch[1]);
+
+      // Extract topic from the message (everything that is not a keyword/filler)
+      let topic: string | undefined;
+      for (const tp of ThreeAgentOrchestrator.TOPIC_ONLY_PATTERNS) {
+        if (lower.includes(tp)) {
+          // Find the full topic name from TOPIC_KEYWORDS mapping
+          topic = this.matchTopicName(lower);
+          break;
+        }
+      }
+
+      return { isTrigger: true, topic, level, count };
+    }
+
+    // Check if the message is ONLY a topic name (1 or 2 words, matching a known topic)
+    const words = lower.split(/\s+/);
+    if (words.length <= 3) {
+      const isTopicOnly = ThreeAgentOrchestrator.TOPIC_ONLY_PATTERNS.some(tp => lower.includes(tp));
+      if (isTopicOnly) {
+        return { isTrigger: true, topic: this.matchTopicName(lower) };
+      }
+    }
+
+    return { isTrigger: false };
+  }
+
+  private matchTopicName(lower: string): string | undefined {
+    const topicMap: Record<string, string[]> = {
+      'funkcja kwadratowa': ['kwadrat', 'parabo', 'wierzchoł'],
+      'trygonometria': ['trygonometri', 'sin', 'cos', 'tg'],
+      'ciągi': ['ciąg', 'ciag', 'arytmetycz', 'geometrycz'],
+      'geometria analityczna': ['geometri analityczn', 'współrzędn', 'wspolrzedn'],
+      'prawdopodobieństwo': ['prawdopodobień', 'prawdopodobien', 'losow'],
+      'kombinatoryka': ['kombinatoryk', 'permutacj', 'wariacj'],
+      'pochodne': ['pochodn', 'ekstr', 'monotonicz'],
+      'równania': ['równani', 'rownani', 'nierównoś', 'nierownosc'],
+      'geometria': ['trójkąt', 'trojkat', 'prostokąt', 'ostrosłup', 'ostroslup', 'stereometri', 'planimetri', 'pole', 'obwód'],
+      'logarytmy': ['logarytm'],
+      'potęgi': ['potęg', 'poteg', 'wykładnicz', 'wykladnicz'],
+      'granice': ['granic', 'limes'],
+      'całki': ['całk', 'calk', 'pierwotna'],
+    };
+    for (const [topic, keywords] of Object.entries(topicMap)) {
+      if (keywords.some(kw => lower.includes(kw))) {
+        return topic;
+      }
+    }
+    return undefined;
+  }
+
+  private async tryGeneratorIntent(message: string): Promise<string | null> {
+    const intent = this.detectGeneratorIntent(message);
+    if (!intent.isTrigger) return null;
+
+    logInfo(`📝 Generator intent detected: topic=${intent.topic}, level=${intent.level}, count=${intent.count}`);
+
+    try {
+      const body: Record<string, any> = { count: intent.count || 5 };
+      if (intent.topic) body.topic = intent.topic;
+      if (intent.level) body.level = intent.level;
+
+      const res = await fetch('/api/generator', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        logWarn(`📝 Generator API returned ${res.status}`);
+        return null;
+      }
+
+      const data = await res.json();
+      if (!data.tasks || data.tasks.length === 0) {
+        return `Nie znalazłem zadań pasujących do "${intent.topic || 'ogólne'}". Spróbuj inne słowo kluczowe lub temat.`;
+      }
+
+      return this.formatGeneratorTasks(data.tasks, intent.topic, intent.level);
+    } catch (err) {
+      logWarn(`📝 Generator fetch failed: ${err}`);
+      // Fall through to normal pipeline if generator is unavailable
+      return null;
+    }
+  }
+
+  private formatGeneratorTasks(tasks: any[], topic?: string, level?: string): string {
+    const header = topic
+      ? `Oto zadania z tematu **${topic}**${level ? ` (${level})` : ''}:`
+      : `Oto losowe zadania maturalne${level ? ` (${level})` : ''}:`;
+
+    const lines = [header, ''];
+
+    for (let i = 0; i < tasks.length; i++) {
+      const t = tasks[i];
+      const meta = [];
+      if (t.year) meta.push(`${t.year}`);
+      if (t.level) meta.push(t.level);
+      if (t.max_points) meta.push(`${t.max_points} pkt`);
+
+      lines.push(`**Zadanie ${i + 1}** ${meta.length > 0 ? `(${meta.join(', ')})` : ''}`);
+      lines.push(t.question);
+
+      if (t.options && typeof t.options === 'object') {
+        const optionLabels = ['A', 'B', 'C', 'D'];
+        const optEntries = Object.entries(t.options);
+        for (let j = 0; j < optEntries.length; j++) {
+          const label = optionLabels[j] || optEntries[j][0];
+          lines.push(`${label}. ${optEntries[j][1]}`);
+        }
+      }
+
+      lines.push('');
+    }
+
+    lines.push('---');
+    lines.push('Wklej treść zadania, żeby je rozwiązać krok po kroku.');
+
+    return lines.join('\n');
+  }
+
   /**
    * Process a user message through the full pipeline.
    *
@@ -2771,6 +2928,24 @@ ${result.error || ''}`;
     if (onMessageCallback) onMessageCallback(userMsg);
 
     const newMessages: Message[] = [userMsg];
+
+    // ═══════════════════════════════════════════════════════════════════
+    // Generator Intent Detection — before guardrail (guardrail blocks these)
+    // ═══════════════════════════════════════════════════════════════════
+    const generatorResult = await this.tryGeneratorIntent(userMessage);
+    if (generatorResult) {
+      const genMsg: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: generatorResult,
+        agentName: '📝 Generator Zadań',
+        timestamp: new Date(),
+      };
+      this.conversationHistory.push(genMsg);
+      newMessages.push(genMsg);
+      if (onMessageCallback) onMessageCallback(genMsg);
+      return newMessages;
+    }
 
     // ═══════════════════════════════════════════════════════════════════
     // Input Guardrail — validate before expensive pipeline steps

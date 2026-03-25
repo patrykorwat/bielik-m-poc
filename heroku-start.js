@@ -18,7 +18,7 @@ import http from 'node:http';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -183,6 +183,105 @@ app.get('/health', (req, res) => {
       pid: bot_pid,
     },
   });
+});
+
+// ── Problem Generator API ─────────────────────────────────────────────
+
+const TOPIC_KEYWORDS = {
+  'funkcja kwadratowa': ['kwadrat', 'parabo', 'wierzchoł', 'delta', 'funkcj', 'f(x)', 'wielomian'],
+  'trygonometria': ['sin', 'cos', 'tan', 'ctg', 'tg', 'trygon', 'kąt', 'stopni', 'radian'],
+  'ciągi': ['ciąg', 'ciag', 'arytmetycz', 'geometrycz', 'wyraz', 'suma.*wyraz'],
+  'geometria analityczna': ['prosta', 'okrąg', 'okrag', 'współrzędn', 'wspolrzedn', 'wektor', 'odcin'],
+  'prawdopodobieństwo': ['prawdopodobi', 'losow', 'kostk', 'kul', 'urn', 'zdarzeni'],
+  'kombinatoryka': ['kombinacj', 'permutacj', 'wariacj', 'silni', 'newton', 'dwumian', 'ile.*sposob'],
+  'pochodne': ['pochodn', 'ekstr', 'monotonicz', 'styczn', 'asympto', 'przebieg'],
+  'równania': ['równani', 'rownani', 'nierównoś', 'nierownosc', 'rozwiąż', 'rozwiaz', 'układ'],
+  'geometria': ['trójkąt', 'trojkat', 'prostokąt', 'prostopadło', 'romb', 'ostrosłup', 'stożek', 'walec', 'kula', 'pole', 'objętość', 'obwód', 'planimetri', 'stereometri'],
+  'logarytmy': ['log', 'logarytm'],
+  'potęgi': ['potęg', 'poteg', 'wykładnicz', 'wykladnicz'],
+  'granice': ['granic', 'limes', 'lim\\b'],
+  'całki': ['całk', 'calk', 'pierwotna'],
+};
+
+function loadAllTasks() {
+  const tasks = [];
+  for (const level of ['podstawowa', 'rozszerzona']) {
+    const dir = join(__dirname, 'datasets', level);
+    if (!existsSync(dir)) continue;
+    for (const file of readdirSync(dir).filter(f => f.endsWith('.json')).sort()) {
+      try {
+        const data = JSON.parse(readFileSync(join(dir, file), 'utf8'));
+        const [yearStr, lvlNum] = file.replace('.json', '').split('_');
+        const year = parseInt(yearStr);
+        const levelName = lvlNum === '1' ? 'podstawowa' : 'rozszerzona';
+        for (const task of data) {
+          const questionLower = (task.question || '').toLowerCase();
+          const topics = [];
+          for (const [topic, keywords] of Object.entries(TOPIC_KEYWORDS)) {
+            if (keywords.some(kw => new RegExp(kw, 'i').test(questionLower))) {
+              topics.push(topic);
+            }
+          }
+          tasks.push({ ...task, year, level: levelName, topics });
+        }
+      } catch (e) {
+        console.error(`Failed to load ${file}:`, e.message);
+      }
+    }
+  }
+  console.log(`[generator] Loaded ${tasks.length} tasks`);
+  return tasks;
+}
+
+const allTasks = loadAllTasks();
+
+const generatorJsonParser = express.json({ limit: '2kb' });
+
+app.post('/api/generator', generatorJsonParser, (req, res) => {
+  const { topic, level, count = 5, year } = req.body || {};
+  let pool = [...allTasks];
+
+  if (level) {
+    pool = pool.filter(t => t.level === level);
+  }
+  if (year) {
+    pool = pool.filter(t => t.year === parseInt(year));
+  }
+  if (topic) {
+    const topicLower = topic.toLowerCase();
+    const topicMatched = pool.filter(t =>
+      t.topics.some(tp => tp.toLowerCase().includes(topicLower)) ||
+      t.question.toLowerCase().includes(topicLower)
+    );
+    if (topicMatched.length > 0) pool = topicMatched;
+  }
+
+  const n = Math.min(Math.max(1, parseInt(count) || 5), 20);
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+  const selected = shuffled.slice(0, n);
+
+  res.json({
+    count: selected.length,
+    total_pool: pool.length,
+    tasks: selected.map(t => ({
+      question: t.question,
+      options: t.options || null,
+      answer: t.answer || null,
+      year: t.year,
+      level: t.level,
+      topics: t.topics,
+      task_number: t.metadata?.task_number,
+      max_points: t.metadata?.max_points,
+    })),
+  });
+});
+
+app.get('/api/generator/topics', (_req, res) => {
+  const topicCounts = {};
+  for (const [topic] of Object.entries(TOPIC_KEYWORDS)) {
+    topicCounts[topic] = allTasks.filter(t => t.topics.includes(topic)).length;
+  }
+  res.json({ topics: topicCounts, total: allTasks.length });
 });
 
 // ── SEO static pages (served before SPA fallback) ─────────────────────
