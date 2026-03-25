@@ -544,21 +544,18 @@ function App() {
               <p style={{ marginTop: '8px', fontSize: '0.85em', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                 <Icon type="bulb" /> Dla zadań z dowodami, Agent Formalizujący automatycznie przetłumaczy dowód na pełny formalny kod Lean 4 z biblioteką Mathlib, gotowy do kompilacji i weryfikacji.
               </p>
+              <p style={{ marginTop: '12px', fontSize: '0.95em', color: 'var(--text-secondary)' }}>
+                <Icon type="bulb" /> Możesz też <strong>wygenerować zadania</strong> do ćwiczeń! Wpisz np. <em>„trygonometria"</em>, <em>„wymyśl arkusz zadań"</em> lub <em>„zadaj mi pytania z całek"</em>.
+              </p>
               <div className="examples">
-                <p><strong>Zadania maturalne (poziom podstawowy):</strong></p>
+                <p><strong>Poziom podstawowy:</strong></p>
                 <ul>
                   <li>Rozwiąż nierówność 2x + 3 &gt; 5x - 9</li>
-                  <li>Oblicz pole trójkąta o bokach 5, 12 i 13</li>
                   <li>Wyznacz dziedzinę funkcji f(x) = sqrt(4 - x²)</li>
-                  <li>Ciąg arytmetyczny ma a₁ = 3 i r = 4. Oblicz sumę 20 pierwszych wyrazów</li>
-                  <li>Jaka jest objętość stożka o promieniu 5 i wysokości 12?</li>
                 </ul>
-                <p style={{ marginTop: '12px' }}><strong>Zadania maturalne (poziom rozszerzony):</strong></p>
+                <p style={{ marginTop: '12px' }}><strong>Poziom rozszerzony:</strong></p>
                 <ul>
-                  <li>Dla jakich wartości parametru m równanie x² + mx + 4 = 0 ma dwa różne pierwiastki rzeczywiste?</li>
                   <li>Zbadaj przebieg zmienności funkcji f(x) = (x² - 1) / (x + 2)</li>
-                  <li>Wyznacz równanie stycznej do paraboli y = x² w punkcie (2, 4)</li>
-                  <li>Rozwiąż układ równań: x² + y² = 25 i x + y = 7</li>
                   <li>Udowodnij, że suma kwadratów dwóch kolejnych liczb nieparzystych daje resztę 2 z dzielenia przez 4</li>
                 </ul>
               </div>
