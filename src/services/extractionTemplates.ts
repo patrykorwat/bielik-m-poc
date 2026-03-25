@@ -1735,7 +1735,7 @@ except Exception:
         print("ODPOWIEDZ: R (cala prosta rzeczywista)")
 `;
   },
-  keywords: ['dziedzin', 'domain', 'określona', 'okreslona', 'zbiór wartości', 'zbior wartosci'],
+  keywords: ['dziedzin', 'domain', 'określona', 'okreslona', 'zbiór wartości', 'zbior wartosci', 'funkcj'],
 };
 
 // ============================================================
