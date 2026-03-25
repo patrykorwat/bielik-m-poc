@@ -423,6 +423,21 @@ function sanitizeCode(code: string): string {
     return line;
   });
 
+  // 5i-geom. Proactive fix: geometry free-function calls → method calls
+  // Bielik writes incenter(tri), circumcenter(tri) etc. but SymPy uses tri.incenter
+  lines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('#') || trimmed.startsWith('"') || trimmed.startsWith("'")) return line;
+    line = line.replace(/\bsemiperimeter\((\w+)\)/g, '($1.perimeter / 2)');
+    line = line.replace(/\bincenter\((\w+)\)/g, '$1.incenter');
+    line = line.replace(/\bcircumcenter\((\w+)\)/g, '$1.circumcenter');
+    line = line.replace(/\bcircumradius\((\w+)\)/g, '$1.circumradius');
+    line = line.replace(/\binradius\((\w+)\)/g, '$1.inradius');
+    line = line.replace(/\bincircle\((\w+)\)/g, '$1.incircle');
+    line = line.replace(/\bcircumcircle\((\w+)\)/g, '$1.circumcircle');
+    return line;
+  });
+
   // 5i. Proactive fix: format(sympy_expr, '.Nf') → format(float(sympy_expr), '.Nf')
   lines = lines.map(line => {
     line = line.replace(/format\((\w+),\s*(['"][^'"]+['"])\)/g, 'format(float($1), $2)');

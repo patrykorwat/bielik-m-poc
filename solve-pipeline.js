@@ -216,7 +216,28 @@ function sanitizeGeneratedCode(code) {
     return line;
   });
 
-  // 4. Ensure there's a print("ODPOWIEDZ:") somewhere
+  // 4. Fix SymPy geometry API: free-function calls → method calls on Triangle
+  //    Bielik writes incenter(tri), circumcenter(tri), semiperimeter(tri)
+  //    but SymPy uses tri.incenter, tri.circumcenter, etc.
+  lines = lines.map(line => {
+    // semiperimeter(varname) → varname.perimeter / 2
+    line = line.replace(/\bsemiperimeter\((\w+)\)/g, '($1.perimeter / 2)');
+    // incenter(varname) → varname.incenter
+    line = line.replace(/\bincenter\((\w+)\)/g, '$1.incenter');
+    // circumcenter(varname) → varname.circumcenter
+    line = line.replace(/\bcircumcenter\((\w+)\)/g, '$1.circumcenter');
+    // circumradius(varname) → varname.circumradius
+    line = line.replace(/\bcircumradius\((\w+)\)/g, '$1.circumradius');
+    // inradius(varname) → varname.inradius
+    line = line.replace(/\binradius\((\w+)\)/g, '$1.inradius');
+    // incircle(varname) → varname.incircle
+    line = line.replace(/\bincircle\((\w+)\)/g, '$1.incircle');
+    // circumcircle(varname) → varname.circumcircle
+    line = line.replace(/\bcircumcircle\((\w+)\)/g, '$1.circumcircle');
+    return line;
+  });
+
+  // 5. Ensure there's a print("ODPOWIEDZ:") somewhere
   const joined = lines.join('\n');
   if (!joined.includes('ODPOWIEDZ')) {
     // Find last assignment and add print
