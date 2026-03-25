@@ -2997,7 +2997,10 @@ ${result.error || ''}`;
         const optEntries = Object.entries(t.options);
         for (let j = 0; j < optEntries.length; j++) {
           const label = optionLabels[j] || optEntries[j][0];
-          lines.push(`${label}. ${optEntries[j][1]}`);
+          const val = optEntries[j][1] as string;
+          // Wrap in $...$ if value contains LaTeX commands but isn't already delimited
+          const needsLatex = /[\\{}^_]/.test(val) && !/^\$/.test(val.trim());
+          lines.push(`${label}. ${needsLatex ? `$${val}$` : val}`);
         }
       }
 
