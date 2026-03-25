@@ -2159,7 +2159,7 @@ function matchTemplate(question, classifiedType) {
     }
   }
 
-  logDebug(`[matchTemplate] classifiedType=${classifiedType}, bestScore=${bestScore}, scores:`, JSON.stringify(scores.filter(s => s.score >= 1).slice(0, 5)));
+  console.log(`[matchTemplate] classifiedType=${classifiedType}, bestScore=${bestScore}, top:`, JSON.stringify(scores.filter(s => s.score >= 1).slice(0, 5)));
 
   // Only return if we matched at least 2 keywords
   return bestScore >= 2 ? bestMatch : null;
