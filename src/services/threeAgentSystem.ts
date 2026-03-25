@@ -2744,12 +2744,24 @@ ${result.error || ''}`;
     'przygotuj zadani', 'kilka zadań', 'kilka zadan',
   ];
 
+  // Tutorial/educational phrases that, combined with a topic, mean "show me tasks"
+  private static TUTORIAL_KEYWORDS = [
+    'jak policzyć', 'jak policzyc', 'jak rozwiązać', 'jak rozwiazac',
+    'jak liczyć', 'jak liczyc', 'jak obliczyć', 'jak obliczyc',
+    'pokaż mi sposób', 'pokaz mi sposob', 'pokaż sposób', 'pokaz sposob',
+    'naucz mnie', 'wytłumacz', 'wytlumacz', 'wyjaśnij', 'wyjasni',
+    'sposób rozwiązywania', 'sposob rozwiazywania',
+    'jak się robi', 'jak sie robi',
+    'chcę się nauczyć', 'chce sie nauczyc',
+    'potrzebuję pomocy z', 'potrzebuje pomocy z',
+  ];
+
   private static TOPIC_ONLY_PATTERNS = [
-    'ostrosłup', 'ostroslup', 'trójkąt', 'trojkat', 'funkcja kwadrat',
+    'ostrosłup', 'ostroslup', 'trójkąt', 'trojkat', 'funkcja kwadrat', 'funkcja liniow',
     'trygonometri', 'ciąg', 'ciag', 'geometri', 'prawdopodobień', 'prawdopodobien',
     'kombinatoryk', 'pochodn', 'równani', 'rownani', 'logarytm', 'potęg', 'poteg',
     'granic', 'całk', 'calk', 'stereometri', 'planimetri', 'wielomian',
-    'procent', 'statystyk', 'wektor',
+    'procent', 'statystyk', 'wektor', 'bezwzględn', 'bezwzgledn',
   ];
 
   private detectGeneratorIntent(message: string): { isTrigger: boolean; topic?: string; level?: string; count?: number } {
@@ -2791,6 +2803,19 @@ ${result.error || ''}`;
       }
     }
 
+    // Check for tutorial/educational intent + topic combination
+    // e.g. "jak policzyć całkę", "pokaż mi sposób rozwiązywania całek"
+    const hasTutorial = ThreeAgentOrchestrator.TUTORIAL_KEYWORDS.some(kw => lower.includes(kw));
+    if (hasTutorial) {
+      const topic = this.matchTopicName(lower);
+      if (topic) {
+        let level: string | undefined;
+        if (lower.includes('podstawow')) level = 'podstawowa';
+        else if (lower.includes('rozszerzon')) level = 'rozszerzona';
+        return { isTrigger: true, topic, level };
+      }
+    }
+
     // Check if the message mentions a level keyword without a specific math problem
     // e.g. "podstawowe", "rozszerzone", "podstawowe nr nwm co"
     const hasLevelWord = lower.includes('podstawow') || lower.includes('rozszerzon');
@@ -2810,18 +2835,24 @@ ${result.error || ''}`;
   private matchTopicName(lower: string): string | undefined {
     const topicMap: Record<string, string[]> = {
       'funkcja kwadratowa': ['kwadrat', 'parabo', 'wierzchoł'],
-      'trygonometria': ['trygonometri', 'sin', 'cos', 'tg'],
+      'trygonometria': ['trygonometri', 'sin', 'cos', 'tg', 'ctg'],
       'ciągi': ['ciąg', 'ciag', 'arytmetycz', 'geometrycz'],
       'geometria analityczna': ['geometri analityczn', 'współrzędn', 'wspolrzedn'],
       'prawdopodobieństwo': ['prawdopodobień', 'prawdopodobien', 'losow'],
       'kombinatoryka': ['kombinatoryk', 'permutacj', 'wariacj'],
       'pochodne': ['pochodn', 'ekstr', 'monotonicz'],
-      'równania': ['równani', 'rownani', 'nierównoś', 'nierownosc'],
-      'geometria': ['trójkąt', 'trojkat', 'prostokąt', 'ostrosłup', 'ostroslup', 'stereometri', 'planimetri', 'pole', 'obwód'],
+      'równania': ['równani', 'rownani', 'nierównoś', 'nierownosc', 'układ równ', 'uklad rown'],
+      'geometria': ['trójkąt', 'trojkat', 'prostokąt', 'ostrosłup', 'ostroslup', 'stereometri', 'planimetri', 'pole', 'obwód', 'obwod', 'kąt', 'kat', 'okrąg', 'okrag', 'koł', 'kol'],
       'logarytmy': ['logarytm'],
       'potęgi': ['potęg', 'poteg', 'wykładnicz', 'wykladnicz'],
       'granice': ['granic', 'limes'],
       'całki': ['całk', 'calk', 'pierwotna'],
+      'wielomiany': ['wielomian', 'stopień wielomian', 'pierwiastk wielomian'],
+      'procenty': ['procent', 'oprocentowan', 'rabat'],
+      'statystyka': ['statystyk', 'średni', 'sredni', 'median', 'odchyleni'],
+      'wektory': ['wektor', 'skalar'],
+      'wartość bezwzględna': ['bezwzględn', 'bezwzgledn', 'moduł', 'modul'],
+      'funkcja liniowa': ['liniow', 'współczynnik kierunkow', 'wspolczynnik kierunkow', 'prosta'],
     };
     for (const [topic, keywords] of Object.entries(topicMap)) {
       if (keywords.some(kw => lower.includes(kw))) {
