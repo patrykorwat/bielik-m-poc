@@ -249,10 +249,39 @@ app.post('/llm-proxy', async (req, res) => {
 
       const { model, messages, ...rest } = payload;
 
-      const completion = await client.chat.completions.create({
-        model,
-        messages,
-        ...rest,
+      const completion = await llmobs.trace({
+        kind: 'llm',
+        name: model || 'chat',
+        modelName: model || 'custom',
+        modelProvider: 'vllm',
+        sessionId,
+      }, async () => {
+        const result = await client.chat.completions.create({
+          model,
+          messages,
+          ...rest,
+        });
+
+        const outputMessages = result.choices?.map(c => ({
+          role: c.message?.role || 'assistant',
+          content: c.message?.content || '',
+        })) || [];
+
+        llmobs.annotate({
+          inputData: messages.map(m => ({ role: m.role, content: m.content })),
+          outputData: outputMessages,
+          metadata: {
+            temperature: rest.temperature,
+            max_tokens: rest.max_tokens,
+          },
+          metrics: {
+            input_tokens: result.usage?.prompt_tokens,
+            output_tokens: result.usage?.completion_tokens,
+            total_tokens: result.usage?.total_tokens,
+          },
+        });
+
+        return result;
       });
 
       return completion;
