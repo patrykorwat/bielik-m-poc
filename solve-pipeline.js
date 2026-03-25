@@ -36,7 +36,7 @@ const LLM_BASE_URL = process.env.LLM_API_URL
   : 'http://localhost:8011/v1';
 
 const LLM_API_KEY = process.env.LLM_API_KEY || 'no-key';
-const MODEL = process.env.LLM_MODEL || prompts.model?.default || 'bielik';
+const MODEL = process.env.LLM_MODEL || prompts.model?.default || 'speakleash/Bielik-11B-v3.0-Instruct';
 
 function createClient() {
   return new OpenAI({ apiKey: LLM_API_KEY, baseURL: LLM_BASE_URL });

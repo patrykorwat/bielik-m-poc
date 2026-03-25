@@ -1,6 +1,6 @@
 {
   "model": {
-    "default": "LibraxisAI/Bielik-11B-v3.0-mlx-q4",
+    "default": "speakleash/Bielik-11B-v3.0-Instruct",
     "base_url": "http://localhost:8011"
   },
   "features": {
