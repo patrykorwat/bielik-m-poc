@@ -1635,58 +1635,74 @@ export async function solve(userMessage, sessionId, onStep) {
     const generatorIntent = detectGeneratorIntent(userMessage);
 
     if (generatorIntent.isTrigger) {
-      // Custom constraints or non-matura level: use LLM to generate tasks
-      if (generatorIntent.needsLLM) {
-        send('generator', 'Generator Zadań', 'Tworzę zadania...');
+      return llmobs.trace({ kind: 'task', name: 'generator' }, async () => {
+        llmobs.annotate({ inputData: userMessage, metadata: {
+          topic: generatorIntent.topic || 'ogolne',
+          level: generatorIntent.level || 'brak',
+          needsLLM: !!generatorIntent.needsLLM,
+          count: generatorIntent.count || 5,
+        }});
 
-        const genRaw = await llmCall('generator_llm', GENERATOR_LLM_SYSTEM_PROMPT, [
-          { role: 'user', content: userMessage },
-        ], { maxTokens: 2000, temperature: 0.7 });
+        // Custom constraints or non-matura level: use LLM to generate tasks
+        if (generatorIntent.needsLLM) {
+          send('generator', 'Generator Zadań', 'Tworzę zadania...');
 
-        const content = stripThink(genRaw);
+          const genRaw = await llmCall('generator_llm', GENERATOR_LLM_SYSTEM_PROMPT, [
+            { role: 'user', content: userMessage },
+          ], { maxTokens: 2000, temperature: 0.7 });
+
+          const content = stripThink(genRaw);
+          llmobs.annotate({ outputData: content });
+          send('generator_done', 'Generator Zadań', content);
+          return { success: true, type: 'generator', content };
+        }
+
+        // Standard matura pool lookup
+        send('generator', 'Generator Zadań', 'Szukam zadań...');
+
+        const tasks = filterTasks({
+          topic: generatorIntent.topic,
+          level: generatorIntent.level,
+          count: generatorIntent.count || 5,
+        });
+
+        if (tasks.length === 0) {
+          // Pool empty for this topic: fall back to LLM generation
+          send('generator', 'Generator Zadań', 'Brak zadań w bazie, tworzę nowe...');
+
+          const genRaw = await llmCall('generator_llm', GENERATOR_LLM_SYSTEM_PROMPT, [
+            { role: 'user', content: userMessage },
+          ], { maxTokens: 2000, temperature: 0.7 });
+
+          const content = stripThink(genRaw);
+          llmobs.annotate({ outputData: content });
+          send('generator_done', 'Generator Zadań', content);
+          return { success: true, type: 'generator', content };
+        }
+
+        const content = formatGeneratorTasks(tasks, generatorIntent.topic, generatorIntent.level);
+        llmobs.annotate({ outputData: content.substring(0, 500) + (content.length > 500 ? '...' : '') });
         send('generator_done', 'Generator Zadań', content);
         return { success: true, type: 'generator', content };
-      }
-
-      // Standard matura pool lookup
-      send('generator', 'Generator Zadań', 'Szukam zadań...');
-
-      const tasks = filterTasks({
-        topic: generatorIntent.topic,
-        level: generatorIntent.level,
-        count: generatorIntent.count || 5,
       });
-
-      if (tasks.length === 0) {
-        // Pool empty for this topic: fall back to LLM generation
-        send('generator', 'Generator Zadań', 'Brak zadań w bazie, tworzę nowe...');
-
-        const genRaw = await llmCall('generator_llm', GENERATOR_LLM_SYSTEM_PROMPT, [
-          { role: 'user', content: userMessage },
-        ], { maxTokens: 2000, temperature: 0.7 });
-
-        const content = stripThink(genRaw);
-        send('generator_done', 'Generator Zadań', content);
-        return { success: true, type: 'generator', content };
-      }
-
-      const content = formatGeneratorTasks(tasks, generatorIntent.topic, generatorIntent.level);
-      send('generator_done', 'Generator Zadań', content);
-      return { success: true, type: 'generator', content };
     }
 
     // ── Step 0.55: Definitional / theoretical question ────────────
 
     if (isDefinitionalQuestion(userMessage)) {
-      send('definition', 'Definicja', 'Przygotowuję wyjaśnienie...');
+      return llmobs.trace({ kind: 'task', name: 'definition' }, async () => {
+        llmobs.annotate({ inputData: userMessage });
+        send('definition', 'Definicja', 'Przygotowuję wyjaśnienie...');
 
-      const definitionRaw = await llmCall('definition', DEFINITION_SYSTEM_PROMPT, [
-        { role: 'user', content: userMessage },
-      ], { maxTokens: 1000, temperature: 0.3 });
+        const definitionRaw = await llmCall('definition', DEFINITION_SYSTEM_PROMPT, [
+          { role: 'user', content: userMessage },
+        ], { maxTokens: 1000, temperature: 0.3 });
 
-      const definition = stripThink(definitionRaw);
-      send('definition_done', 'Definicja', definition);
-      return { success: true, type: 'definition', content: definition };
+        const definition = stripThink(definitionRaw);
+        llmobs.annotate({ outputData: definition });
+        send('definition_done', 'Definicja', definition);
+        return { success: true, type: 'definition', content: definition };
+      });
     }
 
     // ── Step 0.6: Arithmetic scheme ───────────────────────────────
