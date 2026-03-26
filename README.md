@@ -11,13 +11,15 @@ Rozwiązuje zadania krok po kroku i tłumaczy sposób rozwiązywania. Zakres: ma
 
 ## Co to jest?
 
-Formulo to aplikacja webowa z wieloetapowym pipeline AI, która:
+Aplikacja webowa z wieloetapowym pipeline AI:
 
-- rozwiązuje zadania matematyczne krok po kroku z wyjaśnieniami
-- wykonuje dokładne obliczenia symboliczne przez SymPy (nie zgaduje)
-- tworzy formalne dowody matematyczne w Lean 4
-- generuje diagramy geometryczne (SVG) dla zadań konstrukcyjnych
-- działa w przeglądarce, za darmo, w całości po polsku
+- rozwiązuje zadania krok po kroku z wyjaśnieniami
+- obliczenia symboliczne przez SymPy (nie zgaduje)
+- formalne dowody w Lean 4
+- diagramy SVG (geometria, wykresy funkcji, bryły 3D)
+- generuje zadania na zamówienie (dowolny poziom, format, temat)
+- wyjaśnia pojęcia matematyczne (tryb definicji)
+- po polsku, za darmo
 
 ## Architektura
 
@@ -43,87 +45,81 @@ solve-pipeline.js  (jedyny punkt wejścia)                 |
 
 ## Pipeline
 
-Każde zapytanie przechodzi przez następujące etapy. Każdy krok wysyła status przez SSE do przeglądarki.
+Każdy krok wysyła status przez SSE do przeglądarki.
 
 ```
 Pytanie użytkownika
       |
       v
- Step 0: Guardrail
- Walidacja: czy to zadanie matematyczne? Odrzuca spam/prompt injection.
+ 0  Guardrail
+    Walidacja: czy to matematyka? Odrzuca spam/injection.
       |
       v
- Step 0.5: Generator Intent
- Wykrywa komendy typu "daj mi zadania z trygonometrii".
- Jeśli tak, losuje zadania z datasetu CKE i kończy pipeline.
+ 0.5 Generator Intent
+    "daj mi zadania z trygonometrii" → losuje z datasetu CKE.
+    Niestandardowe prośby (inna klasa, format, poziom trudności)
+    → LLM generuje zadania od zera.
       |
       v
- Step 0.6: Arithmetic Scheme
- Wykrywa mnożenie pisemne (np. 123 × 456). Bezpośredni wynik, bez LLM.
+ 0.55 Definition
+    "co to jest pochodna", "na czym polega..." → LLM wyjaśnia
+    pojęcie bez uruchamiania executora.
       |
       v
- RAG Service (port 3003)
- Wyszukuje metody i podobne zadania (TF-IDF). Wynik:
-   - ragContext: kontekst dla Agenta Analitycznego
-   - sympyHints: podpowiedzi kodu dla Agenta Wykonawczego
-   - retryHint: kompaktowa podpowiedź dla retry loop
- Wysyła podsumowanie do SSE (kategorie, metody, liczba trafień).
+ 0.6 Arithmetic Scheme
+    Mnożenie pisemne (np. 123 × 456). Wynik bez LLM.
       |
       v
- Step 0.7: Deterministic Solver (deterministic-solvers.js)
- Regex-based, zero LLM. 4 wzorce: digit_counting, triangle_optimization,
- parametric_quadratic, tetrahedron_sphere. Jeśli match: callSymPy → summary → return.
+    RAG Service (port 3003, TF-IDF)
+    Wyszukuje metody, podobne zadania, podpowiedzi SymPy.
       |
       v
- Step 0.8: Lean Proof Solver
- Jeśli zadanie to dowód (isProofProblem) i Lean zdrowy:
- LLM formalizuje w Lean 4 → leanVerify → jeśli verified: summary → return.
+ 0.7 Deterministic Solver
+    4 wzorce regex, zero LLM. Match → callSymPy → summary → return.
       |
       v
- Step 1: Classifier
- LLM klasyfikuje typ zadania (JSON). Ustawia problemType, confidence, mc_options.
+ 0.8 Lean Proof Solver
+    Dowód → LLM formalizuje w Lean 4 → leanVerify → return.
       |
       v
- Step 1.5: Extraction Template (extraction-templates.js, 45 szablonów)
- Keyword matching (score >= 2) → LLM ekstrahuje JSON z wartościami →
- szablon generuje kod SymPy → callSymPy. Jeśli ODPOWIEDZ: pomija analytical+executor.
+ 1   Classifier
+    LLM klasyfikuje typ zadania (JSON): problemType, confidence, mc_options.
       |
       v
- Step 2: Agent Analityczny
- LLM planuje rozwiązanie (metoda, kroki, SymPy hint).
- Prompt wzbogacony o ragContext.
+ 1.5 Extraction Template (45 szablonów)
+    Keyword match (score >= 2) → LLM ekstrahuje wartości →
+    szablon generuje SymPy → callSymPy. Pomija analytical+executor.
       |
       v
- Step 3: Agent Wykonawczy (executor, max 3 próby)
- LLM generuje kod SymPy → sanitizeGeneratedCode → callSymPy.
- Prompt wzbogacony o sympyHints.
- Retry loop: isOutputSuspicious wykrywa ukryte błędy i wymusza retry.
- Retry prompt zawiera retryHint z RAG.
+ 2   Agent Analityczny
+    LLM planuje rozwiązanie. Prompt wzbogacony o ragContext.
       |
       v
- Step 3.5: Decomposition Fallback (decomposer.js)
- Jeśli executor nie dał wyniku: LLM rozbija problem na 2-4 pod-zadań
- z formułami SymPy. Każde pod-zadanie: direct formula → LLM code fallback.
+ 3   Agent Wykonawczy (max 3 próby)
+    LLM → kod SymPy → sanitizeGeneratedCode → callSymPy.
+    isOutputSuspicious wymusza retry. Retry prompt zawiera retryHint z RAG.
       |
       v
- Step 3.7: Brute-force Verification
- Dla odpowiedzi liczbowych (kombinatoryka): deterministyczna weryfikacja
- przez wyliczenie (generateDigitCountingVerification). Jeśli nie pasuje:
- LLM brute-force fallback (bruteForceViaLLM).
+ 3.5 Decomposition Fallback
+    Po 3 nieudanych próbach: LLM rozbija problem na 2-4 pod-zadań.
       |
       v
- Step 4: Agent Podsumowujący
- LLM tłumaczy rozwiązanie krok po kroku, podaje odpowiedź.
+ 3.7 Brute-force Verification
+    Weryfikacja liczbowa (kombinatoryka): deterministyczna + LLM fallback.
       |
       v
- Step 5: Lean Post-Solve Verification (tylko dowody)
- Jeśli zadanie dotyczy dowodu i jest wynik: LLM formalizuje rozwiązanie
- w Lean 4 → leanVerify → raportuje czy przeszło.
+ 4   Agent Podsumowujący
+    Krok po kroku wyjaśnienie + odpowiedź.
       |
       v
- Step 6: Geometry Diagram (tylko zadania konstrukcyjne)
- Jeśli isConstructionTask: LLM generuje kod Python → sympy.geometry →
- SVG diagram → callSymPyPlot → wysyłka SVG przez SSE.
+ 5   Lean Post-Solve Verification (dowody)
+    Formalizacja wyniku w Lean 4 → leanVerify.
+      |
+      v
+ 6   Diagram (geometria, wykresy funkcji, bryły 3D)
+    shouldGenerateDiagram wykrywa typ (trójkąt, czworokąt, okrąg,
+    bryła 3D, układ współrzędnych, wykres funkcji). LLM generuje
+    kod Python → SVG → callSymPyPlot. Retry z kontekstem błędu.
 ```
 
 ## Zakres tematyczny
@@ -172,20 +168,7 @@ Otwórz http://localhost:5173 i zacznij rozwiązywać zadania.
 - Dla Lean (opcjonalne): Lean 4 zainstalowany lokalnie
 - vLLM lub kompatybilne API obsługujące speakleash/Bielik-11B-v3.0-Instruct
 
-### Co robi `setup.sh`?
-
-- Sprawdza zależności (Node.js, Python)
-- Instaluje zależności Node.js
-- Konfiguruje środowisko Python z SymPy
-- Instaluje RAG Service (baza wiedzy)
-- Buduje serwery MCP
-
-### Co robi `start.sh`?
-
-- Uruchamia MCP Proxy (SymPy) na porcie 3001
-- Uruchamia Lean Proxy (weryfikacja) na porcie 3002
-- Uruchamia RAG Service (baza wiedzy) na porcie 3003
-- Uruchamia aplikację webową na porcie 5173
+`setup.sh` instaluje zależności Node.js i Python, konfiguruje SymPy, RAG Service i buduje serwery MCP. `start.sh` uruchamia MCP Proxy (3001), Lean Proxy (3002), RAG Service (3003) i aplikację (5173).
 
 ## Przykłady zadań
 
@@ -243,11 +226,11 @@ formulo/
 
 ## Sanityzacja kodu
 
-Kod generowany przez Bielik przechodzi przez dwa etapy sanityzacji:
+Dwie warstwy, obie uruchamiane przed wykonaniem kodu (executor i diagram):
 
-1. `sanitizeGeneratedCode()` w solve-pipeline.js: naprawia f-stringi z polskim tekstem, usuwa luźny tekst polski, naprawia niezamknięte nawiasy, zamienia wolne funkcje geometry API na metody Triangle (incenter → tri.incenter, semiperimeter → tri.perimeter/2), dodaje brakujący print ODPOWIEDZ.
+1. `sanitizeGeneratedCode()` (solve-pipeline.js): zamienia wszystkie f-string printy na konkatenację, usuwa luźny tekst polski, naprawia niezamknięte nawiasy, zamienia wolne funkcje geometry API na metody Triangle, dodaje brakujący print ODPOWIEDZ.
 
-2. `sanitizeCode()` w mcp-sympy-server: naprawia ^ → **, filtruje halucynowane importy, naprawia cos**2(x) → cos(x)**2, zamienia polskie pętle, poprawia Piecewise z chainowanymi porównaniami, i wiele innych wzorców specyficznych dla Bielik.
+2. `sanitizeCode()` (mcp-sympy-server): ^ → **, halucynowane importy, cos**2(x) → cos(x)**2, polskie pętle, Piecewise z chainowanymi porównaniami i inne wzorce specyficzne dla Bielik.
 
 ## Technologie
 

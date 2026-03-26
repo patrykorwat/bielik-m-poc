@@ -1291,6 +1291,29 @@ ZASADY:
 7. Uzyj formatowania Markdown: **pogrubienie** dla kluczowych terminow
 8. Odpowiedz ma miec 150 do 400 slow`;
 
+// ── Generator: custom constraint detection ────────────────────────────
+
+// Patterns that indicate the user wants LLM-generated content, not pool lookup.
+// Grade levels other than matura, specific formatting, pedagogical constraints.
+function detectCustomGeneratorConstraints(lower) {
+  // Non-matura grade levels (klasa 1-8, szkoła podstawowa, etc.)
+  if (/\b(dla\s+)?\d\s*klas/.test(lower)) return true;
+  if (/klasa?\s*\d/i.test(lower)) return true;
+  if (/szko[łl][ayły]*\s*podstawow|szkol\w*\s*podstawow|szk\.\s*podst/i.test(lower)) return true;
+  if (/przedszko|zerówk|zerowk/i.test(lower)) return true;
+  // Specific format constraints
+  if (/bez\s+(pytań|pytan|odpowiedzi|rozwiąza|rozwiaza)/.test(lower)) return true;
+  if (/sam\s+(wymyśl|wymysl|sformuł|sformul|ułoż|uloz)/.test(lower)) return true;
+  if (/tekstow|fabularny|słown|slown|historyjk/.test(lower)) return true;
+  // Difficulty specification beyond basic/extended
+  if (/łatw|latw|trudn|prostych|prosty|zaawansowan/.test(lower)) return true;
+  // Teaching instructions
+  if (/żeby uczeń|zeby uczen|tak aby|niech uczeń|niech uczen/.test(lower)) return true;
+  // Specific operations for elementary math
+  if (/dodawani|odejmowani|mnożeni|mnozeni|dzieleni|tabliczk/.test(lower)) return true;
+  return false;
+}
+
 // ── Generator: intent detection ───────────────────────────────────────
 
 const GENERATOR_KEYWORDS = [
@@ -1383,7 +1406,10 @@ function detectGeneratorIntent(message) {
       }
     }
 
-    return { isTrigger: true, topic, level, count };
+    // Detect if this needs LLM generation (custom constraints the pool can't serve)
+    const needsLLM = detectCustomGeneratorConstraints(lower);
+
+    return { isTrigger: true, topic, level, count, needsLLM, rawMessage: message };
   }
 
   // Single topic name (1-3 words)
@@ -1490,6 +1516,21 @@ function formatGeneratorTasks(tasks, topic, level) {
   return lines.join('\n');
 }
 
+// ── Generator: LLM-based task creation ────────────────────────────────
+
+const GENERATOR_LLM_SYSTEM_PROMPT = `Jestes doswiadczonym nauczycielem matematyki. Tworzysz zadania matematyczne na zamowienie.
+
+ZASADY:
+1. Tworzysz dokladnie tyle zadan ile prosi uzytkownik (domyslnie 5)
+2. Zadania musza byc poprawne matematycznie
+3. Dostosuj poziom trudnosci do podanej klasy/poziomu
+4. Jezeli uzytkownik podaje specjalne wymagania (format, typ, ograniczenia), scisle je przestrzegaj
+5. Numeruj zadania: **Zadanie 1**, **Zadanie 2**, itd.
+6. Na koncu dodaj linie: ---
+7. Uzyj formatowania Markdown
+8. Pisz po polsku
+9. NIE podawaj odpowiedzi ani rozwiazania, chyba ze uzytkownik o to prosi`;
+
 // =====================================================================
 // Arithmetic scheme: written multiplication method
 // =====================================================================
@@ -1594,6 +1635,20 @@ export async function solve(userMessage, sessionId, onStep) {
     const generatorIntent = detectGeneratorIntent(userMessage);
 
     if (generatorIntent.isTrigger) {
+      // Custom constraints or non-matura level: use LLM to generate tasks
+      if (generatorIntent.needsLLM) {
+        send('generator', 'Generator Zadań', 'Tworzę zadania...');
+
+        const genRaw = await llmCall('generator_llm', GENERATOR_LLM_SYSTEM_PROMPT, [
+          { role: 'user', content: userMessage },
+        ], { maxTokens: 2000, temperature: 0.7 });
+
+        const content = stripThink(genRaw);
+        send('generator_done', 'Generator Zadań', content);
+        return { success: true, type: 'generator', content };
+      }
+
+      // Standard matura pool lookup
       send('generator', 'Generator Zadań', 'Szukam zadań...');
 
       const tasks = filterTasks({
@@ -1603,9 +1658,16 @@ export async function solve(userMessage, sessionId, onStep) {
       });
 
       if (tasks.length === 0) {
-        const noResult = `Nie znalazłem zadań pasujących do "${generatorIntent.topic || 'ogólne'}". Spróbuj inne słowo kluczowe lub temat.`;
-        send('generator_done', 'Generator Zadań', noResult);
-        return { success: true, type: 'generator', content: noResult };
+        // Pool empty for this topic: fall back to LLM generation
+        send('generator', 'Generator Zadań', 'Brak zadań w bazie, tworzę nowe...');
+
+        const genRaw = await llmCall('generator_llm', GENERATOR_LLM_SYSTEM_PROMPT, [
+          { role: 'user', content: userMessage },
+        ], { maxTokens: 2000, temperature: 0.7 });
+
+        const content = stripThink(genRaw);
+        send('generator_done', 'Generator Zadań', content);
+        return { success: true, type: 'generator', content };
       }
 
       const content = formatGeneratorTasks(tasks, generatorIntent.topic, generatorIntent.level);
