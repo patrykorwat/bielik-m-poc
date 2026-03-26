@@ -1300,6 +1300,14 @@ const GENERATOR_KEYWORDS = [
   'ćwiczeni', 'cwiczeni', 'trening', 'praktyk',
   'daj mi zadani', 'podaj zadani', 'pokaż zadani', 'pokaz zadani',
   'przygotuj zadani', 'kilka zadań', 'kilka zadan',
+  'poszukaj mi zadani', 'poszukaj zadani', 'znajdź mi zadani', 'znajdz mi zadani',
+  'znajdź zadani', 'znajdz zadani', 'wyszukaj zadani', 'wyszukaj mi zadani',
+  'dobierz zadani', 'dobierz mi zadani',
+  'poszukaj mi ćwicze', 'poszukaj mi cwicze',
+  'daj ćwiczeni', 'daj cwiczeni', 'daj przykład', 'daj przyklad',
+  'pokaż przykład', 'pokaz przyklad', 'podaj przykład', 'podaj przyklad',
+  'potrzebuję zadań', 'potrzebuje zadan',
+  'jakieś zadani', 'jakies zadani', 'pare zadań', 'pare zadan',
 ];
 
 const TUTORIAL_KEYWORDS = [
@@ -1319,6 +1327,7 @@ const TOPIC_ONLY_PATTERNS = [
   'kombinatoryk', 'pochodn', 'równani', 'rownani', 'logarytm', 'potęg', 'poteg',
   'granic', 'całk', 'calk', 'stereometri', 'planimetri', 'wielomian',
   'procent', 'statystyk', 'wektor', 'bezwzględn', 'bezwzgledn',
+  'funkcj', 'odwrotn', 'dziedzin', 'złożeni', 'zlozeni',
 ];
 
 function matchTopicName(lower) {
@@ -1342,6 +1351,7 @@ function matchTopicName(lower) {
     'wektory': ['wektor', 'skalar'],
     'wartość bezwzględna': ['bezwzględn', 'bezwzgledn', 'moduł', 'modul'],
     'funkcja liniowa': ['liniow', 'współczynnik kierunkow', 'wspolczynnik kierunkow', 'prosta'],
+    'funkcje': ['funkcj', 'dziedzin', 'przeciwdziedzin', 'postać funkcj', 'postac funkcj', 'zamian postaci', 'odwrotn', 'złożeni funkcj', 'zlozeni funkcj'],
   };
   for (const [topic, keywords] of Object.entries(topicMap)) {
     if (keywords.some(kw => lower.includes(kw))) {
