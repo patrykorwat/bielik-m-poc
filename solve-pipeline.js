@@ -681,8 +681,9 @@ async function callSymPyPlot(code) {
   });
 }
 
-// ── Geometry construction detection ───────────────────────────────────
+// ── Geometry diagram detection ────────────────────────────────────────
 
+// Explicit construction requests (always generate a diagram)
 const CONSTRUCTION_KEYWORDS = [
   'narysuj', 'rysuj', 'szkic', 'konstruk', 'wykres',
   'wpisz okrąg', 'opisz okrąg', 'okrąg wpisany', 'okrąg opisany',
@@ -691,77 +692,469 @@ const CONSTRUCTION_KEYWORDS = [
   'wykonaj konstrukcj', 'wykonaj rysunek',
 ];
 
-function isConstructionTask(text) {
+// Geometry shape keywords: if 2+ match, the problem likely benefits from a diagram
+const GEOMETRY_SHAPE_KEYWORDS = [
+  'trójkąt', 'trojkat', 'triangle',
+  'prostokąt', 'prostokat', 'rectangle',
+  'kwadrat', 'square',
+  'romb', 'rhombus',
+  'trapez', 'trapezoid',
+  'równoległobok', 'rownoleglobok', 'parallelogram',
+  'okrąg', 'okrag', 'circle', 'koło', 'kolo',
+  'sześciokąt', 'szesciokat', 'hexagon',
+  'pięciokąt', 'pieciokat', 'pentagon',
+  'wielokąt', 'wielokat', 'polygon',
+  'ostrosłup', 'ostroslup', 'pyramid',
+  'graniastosłup', 'graniastoslup', 'prism',
+  'walec', 'cylinder',
+  'stożek', 'stozek', 'cone',
+  'kula', 'sphere',
+  'przekątna', 'przekatna', 'diagonal',
+  'wysokość', 'wysokosc', 'height',
+  'podstawa', 'base',
+  'wierzchołek', 'wierzcholek', 'vertex',
+  'bok', 'krawędź', 'krawedz', 'side', 'edge',
+  'kąt', 'kat', 'angle',
+  'promień', 'promien', 'radius',
+  'średnica', 'srednica', 'diameter',
+];
+
+// Function graph keywords
+const GRAPH_KEYWORDS = [
+  'wykres funkcji', 'narysuj wykres', 'naszkicuj wykres',
+  'graph of', 'plot function',
+  'parabola', 'hiperbola', 'sinusoida',
+  'oś symetrii', 'os symetrii',
+  'przedziały monotoniczności', 'przedzialy monotonnicznosci',
+  'miejsca zerowe',
+];
+
+// Classify what type of diagram is appropriate
+const DIAGRAM_TYPE = {
+  TRIANGLE: 'triangle',
+  QUADRILATERAL: 'quadrilateral',
+  CIRCLE: 'circle',
+  SOLID_3D: 'solid_3d',
+  COORDINATE: 'coordinate',
+  FUNCTION_GRAPH: 'function_graph',
+  GENERIC: 'generic',
+};
+
+function detectDiagramType(text) {
   const lower = text.toLowerCase();
-  return CONSTRUCTION_KEYWORDS.some(kw => lower.includes(kw));
+
+  // Function graphs
+  if (GRAPH_KEYWORDS.some(kw => lower.includes(kw))) return DIAGRAM_TYPE.FUNCTION_GRAPH;
+  if (/funkcj[aie]\s+(kwadrat|liniow|wykładnicz|logarytm)/.test(lower)) return DIAGRAM_TYPE.FUNCTION_GRAPH;
+
+  // 3D solids
+  const solidWords = ['ostrosłup', 'ostroslup', 'graniastosłup', 'graniastoslup', 'walec', 'stożek', 'stozek', 'kula', 'prostopadłościan', 'prostopadloscian', 'sześcian', 'szescian', 'bryła', 'bryla', 'objętość', 'objetosc'];
+  if (solidWords.some(kw => lower.includes(kw))) return DIAGRAM_TYPE.SOLID_3D;
+
+  // Coordinate geometry
+  const coordWords = ['współrzędn', 'wspolrzedn', 'punkt (', 'punkt a(', 'punkt b(', 'punkt c(', 'A(', 'B(', 'C(', 'równanie prostej', 'rownanie prostej'];
+  if (coordWords.some(kw => lower.includes(kw))) return DIAGRAM_TYPE.COORDINATE;
+
+  // Circle problems
+  const circleWords = ['okrąg', 'okrag', 'koło', 'kolo', 'promień', 'promien', 'średnica', 'srednica', 'wpisany', 'opisany', 'styczna', 'cięciwa', 'cieciwa'];
+  const circleHits = circleWords.filter(kw => lower.includes(kw)).length;
+  if (circleHits >= 2) return DIAGRAM_TYPE.CIRCLE;
+
+  // Quadrilaterals
+  const quadWords = ['prostokąt', 'prostokat', 'kwadrat', 'romb', 'trapez', 'równoległobok', 'rownoleglobok', 'czworokąt', 'czworokat'];
+  if (quadWords.some(kw => lower.includes(kw))) return DIAGRAM_TYPE.QUADRILATERAL;
+
+  // Triangles
+  const triWords = ['trójkąt', 'trojkat', 'triangle', 'przyprostokątn', 'przeciwprostokątn', 'przyległ', 'naprzeciwk'];
+  if (triWords.some(kw => lower.includes(kw))) return DIAGRAM_TYPE.TRIANGLE;
+
+  return DIAGRAM_TYPE.GENERIC;
 }
 
-const GEOMETRY_PLOT_PROMPT = `Napisz kod Python ktory generuje diagram SVG dla tego zadania geometrycznego.
+function shouldGenerateDiagram(text, problemType) {
+  const lower = text.toLowerCase();
 
-ZASADY:
-1. Oblicz wspolrzedne punktow uzywajac sympy (Triangle, Circle, incircle, circumcircle, itp.)
-2. Na koniec wypisz SVG uzywajac print(). SVG musi byc KOMPLETNY: <svg xmlns="http://www.w3.org/2000/svg" ...>...</svg>
-3. Uzyj viewBox i skalowania zeby diagram byl czytelny (min 400x400)
-4. Kolory: trojkat niebieski (#2563eb), okrag wpisany czerwony (#dc2626), okrag opisany zielony (#16a34a)
-5. Dodaj etykiety punktow (A, B, C) i wartosci (r, R)
-6. Linie: stroke-width="2", fill="none"
-7. Tlo biale
-8. NIE uzywaj matplotlib! Generuj SVG recznie z obliczonych wspolrzednych
-9. float() na kazdej wartosci sympy przed umieszeniem w SVG
-10. TYLKO kod w bloku \`\`\`python ... \`\`\`
+  // Explicit request always wins
+  if (CONSTRUCTION_KEYWORDS.some(kw => lower.includes(kw))) return true;
 
-SZABLON:
-\`\`\`python
-from sympy import *
-from sympy.geometry import *
+  // Function graph requests
+  if (GRAPH_KEYWORDS.some(kw => lower.includes(kw))) return true;
 
-# Definiuj trojkat
-A = Point(0, 0)
-B = Point(6, 0)
-C = Point(3, 5)
-t = Triangle(A, B, C)
+  // Geometry classified problems: check if 2+ shape keywords match
+  const geometryTypes = ['geometria', 'geometria_analityczna', 'stereometria', 'planimetria', 'trygonometria'];
+  const isGeometryProblem = geometryTypes.some(t => (problemType || '').toLowerCase().includes(t));
+  const shapeHits = GEOMETRY_SHAPE_KEYWORDS.filter(kw => lower.includes(kw)).length;
 
-# Oblicz okregi
-ic = t.incircle    # okrag wpisany
-cc = t.circumcircle # okrag opisany
+  if (isGeometryProblem && shapeHits >= 1) return true;
+  if (shapeHits >= 2) return true;
 
-# Konwersja do float
+  return false;
+}
+
+// ── SVG generation: shared rules and type-specific prompts ───────────
+
+const SVG_COMMON_RULES = `ZASADY OGOLNE:
+1. Na koniec wypisz SVG uzywajac print(). SVG musi byc KOMPLETNY: <svg xmlns="http://www.w3.org/2000/svg" ...>...</svg>
+2. Uzyj viewBox i skalowania zeby diagram byl czytelny (min 400x400)
+3. Linie: stroke-width proporcjonalny do rozmiaru viewBoxa, fill="none" dla kszaltow
+4. Tlo biale, font-family="sans-serif"
+5. NIE uzywaj matplotlib! Generuj SVG recznie z obliczonych wspolrzednych
+6. float() na kazdej wartosci sympy przed umieszczeniem w SVG
+7. TYLKO kod w bloku \\\`\\\`\\\`python ... \\\`\\\`\\\`
+8. NIE uzywaj f-stringow! Buduj SVG przez konkatenacje lub format()
+9. Dodaj etykiety punktow i wartosci liczbowych (dlugosci, katy, promienie)
+10. Dodaj lekka siatke w tle (szare linie co 1 jednostke, opacity 0.15)
+11. Oznacz katy lukiami (maly luk przy wierzcholku kata)
+12. Oznacz dlugosci bokow (tekst na srodku boku)`;
+
+const SVG_HELPER_CODE = `
+# Pomocnicze funkcje SVG
 def pf(point):
     return (float(point.x), float(point.y))
 
 def rf(val):
     return float(val)
 
-# Skalowanie i przesuniecie
-pts = [pf(A), pf(B), pf(C)]
-cx_ic, cy_ic = pf(ic.center)
-r_ic = rf(ic.radius)
-cx_cc, cy_cc = pf(cc.center)
-r_cc = rf(cc.radius)
+def svg_bbox(points, extra_points=None, margin=1.5):
+    all_x = [p[0] for p in points]
+    all_y = [p[1] for p in points]
+    if extra_points:
+        for p in extra_points:
+            all_x.append(p[0])
+            all_y.append(p[1])
+    mn_x, mx_x = min(all_x) - margin, max(all_x) + margin
+    mn_y, mx_y = min(all_y) - margin, max(all_y) + margin
+    return mn_x, mn_y, mx_x - mn_x, mx_y - mn_y, mx_y
 
-# Oblicz bounding box i skaluj
-all_x = [p[0] for p in pts] + [cx_cc - r_cc, cx_cc + r_cc]
-all_y = [p[1] for p in pts] + [cy_cc - r_cc, cy_cc + r_cc]
-margin = 1
-min_x, max_x = min(all_x) - margin, max(all_x) + margin
-min_y, max_y = min(all_y) - margin, max(all_y) + margin
-w = max_x - min_x
-h = max_y - min_y
-
-# SVG (y-axis flipped)
-def sy(y):
+def sy(y, max_y, min_y):
     return max_y - y + min_y
 
-svg = f"""<svg xmlns="http://www.w3.org/2000/svg" viewBox="{min_x:.1f} {min_y:.1f} {w:.1f} {h:.1f}" width="500" height="500" style="background:white">
-  <polygon points="{pts[0][0]:.2f},{sy(pts[0][1]):.2f} {pts[1][0]:.2f},{sy(pts[1][1]):.2f} {pts[2][0]:.2f},{sy(pts[2][1]):.2f}" fill="none" stroke="#2563eb" stroke-width="0.08"/>
-  <circle cx="{cx_ic:.2f}" cy="{sy(cy_ic):.2f}" r="{r_ic:.2f}" fill="none" stroke="#dc2626" stroke-width="0.06" stroke-dasharray="0.15,0.1"/>
-  <circle cx="{cx_cc:.2f}" cy="{sy(cy_cc):.2f}" r="{r_cc:.2f}" fill="none" stroke="#16a34a" stroke-width="0.06" stroke-dasharray="0.15,0.1"/>
-  <text x="{pts[0][0]:.1f}" y="{sy(pts[0][1]) + 0.5:.1f}" font-size="0.5" text-anchor="middle">A</text>
-  <text x="{pts[1][0]:.1f}" y="{sy(pts[1][1]) + 0.5:.1f}" font-size="0.5" text-anchor="middle">B</text>
-  <text x="{pts[2][0] - 0.5:.1f}" y="{sy(pts[2][1]):.1f}" font-size="0.5" text-anchor="middle">C</text>
-</svg>"""
-print(svg)
-\`\`\``;
+def svg_grid(min_x, min_y, w, h, step=1):
+    import math
+    lines = []
+    start_x = math.floor(min_x)
+    start_y = math.floor(min_y)
+    x = start_x
+    while x <= min_x + w:
+        lines.append('<line x1="' + str(round(x, 1)) + '" y1="' + str(round(min_y, 1)) + '" x2="' + str(round(x, 1)) + '" y2="' + str(round(min_y + h, 1)) + '" stroke="#ccc" stroke-width="0.02" opacity="0.3"/>')
+        x += step
+    y = start_y
+    while y <= min_y + h:
+        lines.append('<line x1="' + str(round(min_x, 1)) + '" y1="' + str(round(y, 1)) + '" x2="' + str(round(min_x + w, 1)) + '" y2="' + str(round(y, 1)) + '" stroke="#ccc" stroke-width="0.02" opacity="0.3"/>')
+        y += step
+    return "\\n  ".join(lines)
+
+def svg_label(x, y, text, font_size=0.45, anchor="middle", color="#333"):
+    return '<text x="' + str(round(x, 2)) + '" y="' + str(round(y, 2)) + '" font-size="' + str(font_size) + '" text-anchor="' + anchor + '" fill="' + color + '" font-family="sans-serif">' + str(text) + '</text>'
+
+def svg_line(x1, y1, x2, y2, color="#2563eb", width=0.06, dash=""):
+    attr = ""
+    if dash:
+        attr = ' stroke-dasharray="' + dash + '"'
+    return '<line x1="' + str(round(x1,2)) + '" y1="' + str(round(y1,2)) + '" x2="' + str(round(x2,2)) + '" y2="' + str(round(y2,2)) + '" stroke="' + color + '" stroke-width="' + str(width) + '"' + attr + '/>'
+
+def svg_circle(cx, cy, r, color="#dc2626", width=0.06, dash=""):
+    attr = ""
+    if dash:
+        attr = ' stroke-dasharray="' + dash + '"'
+    return '<circle cx="' + str(round(cx,2)) + '" cy="' + str(round(cy,2)) + '" r="' + str(round(r,2)) + '" fill="none" stroke="' + color + '" stroke-width="' + str(width) + '"' + attr + '/>'
+
+def svg_polygon(points, color="#2563eb", width=0.08):
+    pts_str = " ".join(str(round(p[0],2)) + "," + str(round(p[1],2)) for p in points)
+    return '<polygon points="' + pts_str + '" fill="none" stroke="' + color + '" stroke-width="' + str(width) + '"/>'
+
+def svg_angle_arc(cx, cy, r, start_angle, end_angle, color="#f59e0b", width=0.04):
+    import math
+    sa = math.radians(start_angle)
+    ea = math.radians(end_angle)
+    x1 = cx + r * math.cos(sa)
+    y1 = cy - r * math.sin(sa)
+    x2 = cx + r * math.cos(ea)
+    y2 = cy - r * math.sin(ea)
+    large = 1 if abs(end_angle - start_angle) > 180 else 0
+    return '<path d="M ' + str(round(x1,2)) + ' ' + str(round(y1,2)) + ' A ' + str(round(r,2)) + ' ' + str(round(r,2)) + ' 0 ' + str(large) + ' 0 ' + str(round(x2,2)) + ' ' + str(round(y2,2)) + '" fill="none" stroke="' + color + '" stroke-width="' + str(width) + '"/>'
+
+def svg_mid_label(p1, p2, text, sy_fn, min_y_val, offset=0.35):
+    mx = (p1[0] + p2[0]) / 2
+    my = (p1[1] + p2[1]) / 2
+    return svg_label(mx, sy_fn(my, min_y_val, min_y_val) - offset, text, font_size=0.35, color="#666")
+`;
+
+const DIAGRAM_PROMPTS = {
+  triangle: `Napisz kod Python ktory generuje diagram SVG dla tego zadania o trojkacie.
+
+${SVG_COMMON_RULES}
+
+KOLORY: trojkat niebieski (#2563eb), okrag wpisany czerwony (#dc2626), okrag opisany zielony (#16a34a), katy zolty (#f59e0b), wysokosc fioletowy (#7c3aed)
+
+\\\`\\\`\\\`python
+from sympy import *
+from sympy.geometry import *
+${SVG_HELPER_CODE}
+# Definiuj trojkat z wymiarami z zadania
+A = Point(0, 0)
+B = Point(6, 0)
+C = Point(3, 5)
+t = Triangle(A, B, C)
+
+# Oblicz co trzeba (incircle, circumcircle, wysokosci, katy)
+# ...
+
+# Zbierz punkty, oblicz viewBox
+pts = [pf(A), pf(B), pf(C)]
+mn_x, mn_y, w, h, mx_y = svg_bbox(pts, margin=1.5)
+
+# Zbuduj SVG
+elements = []
+elements.append(svg_grid(mn_x, mn_y, w, h))
+elements.append(svg_polygon([(p[0], sy(p[1], mx_y, mn_y)) for p in pts]))
+# Dodaj etykiety, katy, dlugosci bokow
+# ...
+
+svg_body = "\\n  ".join(elements)
+header = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + str(round(mn_x,1)) + ' ' + str(round(mn_y,1)) + ' ' + str(round(w,1)) + ' ' + str(round(h,1)) + '" width="500" height="500" style="background:white">'
+print(header + "\\n  " + svg_body + "\\n</svg>")
+\\\`\\\`\\\``,
+
+  quadrilateral: `Napisz kod Python ktory generuje diagram SVG dla tego zadania o czworokacie (prostokat/kwadrat/romb/trapez/rownoleglobok).
+
+${SVG_COMMON_RULES}
+
+KOLORY: czworokat niebieski (#2563eb), przekatne pomaranczowy (#ea580c), wysokosc fioletowy (#7c3aed), katy zolty (#f59e0b)
+
+\\\`\\\`\\\`python
+from sympy import *
+from sympy.geometry import *
+${SVG_HELPER_CODE}
+# Definiuj wierzcholki czworokata z wymiarami z zadania
+A = Point(0, 0)
+B = Point(8, 0)
+C = Point(8, 5)
+D = Point(0, 5)
+
+pts = [pf(A), pf(B), pf(C), pf(D)]
+mn_x, mn_y, w, h, mx_y = svg_bbox(pts, margin=1.5)
+
+elements = []
+elements.append(svg_grid(mn_x, mn_y, w, h))
+# Rysuj czworokat
+flipped = [(p[0], sy(p[1], mx_y, mn_y)) for p in pts]
+elements.append(svg_polygon(flipped))
+# Dodaj przekatne jesli potrzebne
+# Dodaj etykiety, dlugosci, katy
+# ...
+
+svg_body = "\\n  ".join(elements)
+header = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + str(round(mn_x,1)) + ' ' + str(round(mn_y,1)) + ' ' + str(round(w,1)) + ' ' + str(round(h,1)) + '" width="500" height="500" style="background:white">'
+print(header + "\\n  " + svg_body + "\\n</svg>")
+\\\`\\\`\\\``,
+
+  circle: `Napisz kod Python ktory generuje diagram SVG dla tego zadania o okregach/kolach.
+
+${SVG_COMMON_RULES}
+
+KOLORY: okrag glowny niebieski (#2563eb), promien czerwony (#dc2626), srednica zielony (#16a34a), styczna pomaranczowy (#ea580c), ciecie fioletowy (#7c3aed)
+
+\\\`\\\`\\\`python
+from sympy import *
+from sympy.geometry import *
+${SVG_HELPER_CODE}
+# Definiuj okregi z wymiarami z zadania
+O = Point(0, 0)
+r = 5
+c = Circle(O, r)
+
+center = pf(O)
+pts = [(center[0] - float(r) - 1, center[1] - float(r) - 1),
+       (center[0] + float(r) + 1, center[1] + float(r) + 1)]
+mn_x, mn_y, w, h, mx_y = svg_bbox(pts, margin=1.5)
+
+elements = []
+elements.append(svg_grid(mn_x, mn_y, w, h))
+elements.append(svg_circle(center[0], sy(center[1], mx_y, mn_y), float(r), color="#2563eb", width=0.08))
+# Dodaj promien, srednice, styczne, punkty
+# ...
+
+svg_body = "\\n  ".join(elements)
+header = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + str(round(mn_x,1)) + ' ' + str(round(mn_y,1)) + ' ' + str(round(w,1)) + ' ' + str(round(h,1)) + '" width="500" height="500" style="background:white">'
+print(header + "\\n  " + svg_body + "\\n</svg>")
+\\\`\\\`\\\``,
+
+  solid_3d: `Napisz kod Python ktory generuje diagram SVG (rzut 2D) dla tego zadania o bryle 3D.
+
+${SVG_COMMON_RULES}
+
+SPECJALNE ZASADY DLA 3D:
+- Uzyj rzutu aksonometrycznego (skos 30 stopni) zeby pokazac glebokosc
+- Krawedzie niewidoczne rysuj linia przerywana
+- Oznacz wymiary: a (krawedz), h (wysokosc), d (przekatna)
+
+KOLORY: krawedzie widoczne niebieski (#2563eb), krawedzie niewidoczne szary (#94a3b8), podstawa zielony (#16a34a), wysokosc czerwony (#dc2626), przekatna pomaranczowy (#ea580c)
+
+\\\`\\\`\\\`python
+from sympy import *
+import math
+${SVG_HELPER_CODE}
+# Rzut aksonometryczny: przesuniecie dla osi Z i glebokosci
+def project_3d(x, y, z, skew=0.5, angle=30):
+    rad = math.radians(angle)
+    px = x + z * skew * math.cos(rad)
+    py = y + z * skew * math.sin(rad)
+    return (px, py)
+
+# Definiuj wymiary bryly z zadania
+# ...
+
+# Oblicz wierzcholki po rzucie
+# Rysuj widoczne krawedzie linia ciagla, niewidoczne przerywana
+# Dodaj etykiety wymiarow
+# ...
+
+# Zbierz w SVG i print()
+\\\`\\\`\\\``,
+
+  coordinate: `Napisz kod Python ktory generuje diagram SVG ukladu wspolrzednych z punktami/prostymi/okregami.
+
+${SVG_COMMON_RULES}
+
+SPECJALNE ZASADY:
+- ZAWSZE rysuj osie X i Y ze strzalkami na koncach
+- Oznacz skale na osiach (co 1 jednostke)
+- Zaznacz punkty kolkami (r=0.12) z etykietami "A(x,y)"
+- Proste/odcinki rysuj z rownaniem obok
+
+KOLORY: osie czarny (#1e293b), punkty czerwony (#dc2626), proste niebieski (#2563eb), okrag zielony (#16a34a)
+
+\\\`\\\`\\\`python
+from sympy import *
+from sympy.geometry import *
+${SVG_HELPER_CODE}
+def svg_arrow(x1, y1, x2, y2, color="#1e293b", width=0.06):
+    import math
+    dx = x2 - x1
+    dy = y2 - y1
+    angle = math.atan2(dy, dx)
+    arr_len = 0.3
+    ax1 = x2 - arr_len * math.cos(angle - 0.4)
+    ay1 = y2 - arr_len * math.sin(angle - 0.4)
+    ax2 = x2 - arr_len * math.cos(angle + 0.4)
+    ay2 = y2 - arr_len * math.sin(angle + 0.4)
+    line = svg_line(x1, y1, x2, y2, color=color, width=width)
+    head = '<polygon points="' + str(round(x2,2)) + ',' + str(round(y2,2)) + ' ' + str(round(ax1,2)) + ',' + str(round(ay1,2)) + ' ' + str(round(ax2,2)) + ',' + str(round(ay2,2)) + '" fill="' + color + '"/>'
+    return line + "\\n  " + head
+
+def svg_axes(mn_x, mn_y, w, h):
+    lines = []
+    # os X
+    lines.append(svg_arrow(mn_x, 0, mn_x + w, 0))
+    lines.append(svg_label(mn_x + w - 0.2, 0.4, "x", font_size=0.4))
+    # os Y
+    lines.append(svg_arrow(0, mn_y + h, 0, mn_y))
+    lines.append(svg_label(0.3, mn_y + 0.3, "y", font_size=0.4))
+    # Skala
+    import math
+    i = math.ceil(mn_x)
+    while i < mn_x + w:
+        if i != 0:
+            lines.append(svg_line(i, -0.1, i, 0.1, color="#1e293b", width=0.03))
+            lines.append(svg_label(i, 0.45, str(i), font_size=0.3, color="#666"))
+        i += 1
+    j = math.ceil(mn_y)
+    while j < mn_y + h:
+        if j != 0:
+            lines.append(svg_line(-0.1, j, 0.1, j, color="#1e293b", width=0.03))
+            lines.append(svg_label(-0.4, j + 0.12, str(int(-j)), font_size=0.3, color="#666"))
+        j += 1
+    return "\\n  ".join(lines)
+
+# Definiuj punkty/proste z zadania
+# ...
+
+# Oblicz viewBox
+# Dodaj osie, siatke, punkty, proste, etykiety
+# Zbierz w SVG i print()
+\\\`\\\`\\\``,
+
+  function_graph: `Napisz kod Python ktory generuje diagram SVG wykresu funkcji.
+
+${SVG_COMMON_RULES}
+
+SPECJALNE ZASADY:
+- ZAWSZE rysuj osie X i Y ze strzalkami
+- Oznacz skale na osiach
+- Wykres funkcji rysuj jako polyline z duza iloscia punktow (100+)
+- Zaznacz wazne punkty: miejsca zerowe (kolko), wierzcholek (kolko wypelnione), ekstrema
+- Dodaj etykiete funkcji np. "f(x) = x^2 + 2x + 1"
+- Zaznacz os symetrii linia przerywana jesli dotyczy
+
+KOLORY: osie czarny (#1e293b), wykres niebieski (#2563eb), miejsca zerowe czerwony (#dc2626), wierzcholek zielony (#16a34a), os symetrii szary (#94a3b8)
+
+\\\`\\\`\\\`python
+from sympy import *
+import math as pymath
+${SVG_HELPER_CODE}
+# Definiuj funkcje z zadania
+x = symbols('x')
+f = x**2 + 2*x - 3  # ZMIEN na funkcje z zadania
+
+# Oblicz wazne punkty
+zeros = [float(z) for z in solve(f, x) if z.is_real]
+vertex_x = float(-Rational(2, 2))  # dla kwadratowej
+vertex_y = float(f.subs(x, vertex_x))
+
+# Zakres wykresu: od min(zeros) - 2 do max(zeros) + 2
+x_min = min(zeros + [vertex_x]) - 2 if zeros else -5
+x_max = max(zeros + [vertex_x]) + 2 if zeros else 5
+
+# Wygeneruj punkty wykresu
+n_points = 200
+dx = (x_max - x_min) / n_points
+plot_points = []
+for i in range(n_points + 1):
+    xi = x_min + i * dx
+    yi = float(f.subs('x', xi))
+    plot_points.append((xi, yi))
+
+# viewBox
+all_y = [p[1] for p in plot_points]
+y_min = min(all_y) - 1
+y_max = max(all_y) + 1
+# flip y for SVG
+vb_x = x_min - 1
+vb_y = -(y_max + 1)
+vb_w = (x_max - x_min) + 2
+vb_h = (y_max - y_min) + 2
+
+# Polyline points (SVG y flipped)
+poly_str = " ".join(str(round(p[0], 2)) + "," + str(round(-p[1], 2)) for p in plot_points)
+
+elements = []
+elements.append(svg_grid(vb_x, vb_y, vb_w, vb_h))
+# Dodaj osie, wykres, punkty, etykiety
+# ...
+
+# Zbierz w SVG i print()
+\\\`\\\`\\\``,
+
+  generic: `Napisz kod Python ktory generuje diagram SVG dla tego zadania matematycznego.
+
+${SVG_COMMON_RULES}
+
+Przeanalizuj zadanie i zdecyduj co narysowac. Uzyj odpowiednie ksztalty SVG.
+
+\\\`\\\`\\\`python
+from sympy import *
+from sympy.geometry import *
+${SVG_HELPER_CODE}
+# Przeanalizuj zadanie i oblicz wspolrzedne
+# Uzyj svg_bbox, svg_grid, svg_polygon, svg_circle, svg_line, svg_label
+# Na koniec print() kompletny SVG
+\\\`\\\`\\\``,
+};
+
+function getDiagramPrompt(diagramType) {
+  return DIAGRAM_PROMPTS[diagramType] || DIAGRAM_PROMPTS.generic;
+}
 
 // ── Guardrail ─────────────────────────────────────────────────────────
 
@@ -1558,29 +1951,63 @@ export async function solve(userMessage, sessionId, onStep) {
       }
     }
 
-    // ── Step 6: Geometry diagram (construction tasks only) ─────────
+    // ── Step 6: Geometry / function diagram ─────────────────────────
 
     let diagram = null;
-    if (isConstructionTask(userMessage)) {
-      send('diagram', 'Diagram', 'Generuję diagram...');
-      try {
-        const plotCodeRaw = await llmCall('geometry_plot', GEOMETRY_PLOT_PROMPT, [
-          { role: 'user', content: userMessage },
-          ...(hasResult ? [{ role: 'assistant', content: `Wynik obliczeń:\n${sympyResult}` }] : []),
-        ], { maxTokens: 1200, temperature: 0.1 });
+    if (shouldGenerateDiagram(userMessage, problemType)) {
+      const diagramType = detectDiagramType(userMessage);
+      const diagramPrompt = getDiagramPrompt(diagramType);
+      send('diagram', 'Diagram', `Generuję diagram (${diagramType})...`);
 
-        const plotCode = extractPythonCode(stripThink(plotCodeRaw));
-        if (plotCode) {
+      const MAX_DIAGRAM_ATTEMPTS = 2;
+      let lastError = null;
+
+      for (let attempt = 1; attempt <= MAX_DIAGRAM_ATTEMPTS; attempt++) {
+        try {
+          const messages = [
+            { role: 'user', content: userMessage },
+            ...(hasResult ? [{ role: 'assistant', content: 'Wynik obliczen:\n' + sympyResult }] : []),
+          ];
+
+          // On retry, include the error so the LLM can fix it
+          if (attempt > 1 && lastError) {
+            messages.push({
+              role: 'user',
+              content: 'Poprzedni kod SVG zakonczyl sie bledem:\n' + lastError + '\nPopraw kod. Pamietaj: NIE uzywaj f-stringow, uzyj konkatenacji stringow lub format().',
+            });
+          }
+
+          const plotCodeRaw = await llmCall('geometry_plot', diagramPrompt, messages, {
+            maxTokens: 2000,
+            temperature: attempt === 1 ? 0.1 : 0.2,
+          });
+
+          let plotCode = extractPythonCode(stripThink(plotCodeRaw));
+          if (!plotCode) {
+            lastError = 'Nie udalo sie wyekstrahowac kodu Python z odpowiedzi LLM';
+            continue;
+          }
+
+          // Sanitize the plot code (same fixes as executor code)
+          plotCode = sanitizeGeneratedCode(plotCode);
+
           const svgResult = await callSymPyPlot(plotCode);
           if (svgResult && svgResult.includes('<svg')) {
             diagram = svgResult;
-            send('diagram_done', 'Diagram', svgResult, { isSvg: true });
+            send('diagram_done', 'Diagram', svgResult, { isSvg: true, diagramType });
+            break;
           } else {
-            send('diagram_fail', 'Diagram', svgResult || 'Nie udało się wygenerować diagramu');
+            lastError = svgResult || 'Kod nie wygenerował poprawnego SVG';
+            if (attempt === MAX_DIAGRAM_ATTEMPTS) {
+              send('diagram_fail', 'Diagram', lastError);
+            }
+          }
+        } catch (err) {
+          lastError = err.message;
+          if (attempt === MAX_DIAGRAM_ATTEMPTS) {
+            send('diagram_fail', 'Diagram', 'Blad generowania diagramu: ' + err.message);
           }
         }
-      } catch (err) {
-        send('diagram_fail', 'Diagram', `Błąd generowania diagramu: ${err.message}`);
       }
     }
 

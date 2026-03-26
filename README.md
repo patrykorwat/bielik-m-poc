@@ -11,12 +11,120 @@ Rozwiązuje zadania krok po kroku i tłumaczy sposób rozwiązywania. Zakres: ma
 
 ## Co to jest?
 
-Formulo to aplikacja webowa z systemem agentów AI, która:
+Formulo to aplikacja webowa z wieloetapowym pipeline AI, która:
 
 - rozwiązuje zadania matematyczne krok po kroku z wyjaśnieniami
 - wykonuje dokładne obliczenia symboliczne przez SymPy (nie zgaduje)
 - tworzy formalne dowody matematyczne w Lean 4
+- generuje diagramy geometryczne (SVG) dla zadań konstrukcyjnych
 - działa w przeglądarce, za darmo, w całości po polsku
+
+## Architektura
+
+Jeden publiczny endpoint: `POST /api/solve` (SSE). Wszystkie wewnętrzne serwisy (MCP proxy, RAG, LLM proxy, Lean proxy) działają wyłącznie na localhost w ramach jednego dynosa Heroku.
+
+```
+Klient (przeglądarka)
+    |
+    | POST /api/solve (SSE stream)
+    v
+heroku-start.js ─────────────────────────────────────────
+    |                                                     |
+    v                                                     |
+solve-pipeline.js  (jedyny punkt wejścia)                 |
+    |                                                     |
+    ├──> LLM proxy (vLLM, port 8011)  ← OpenAI SDK       |
+    ├──> MCP proxy (port 3001) ──> mcp-sympy-server       |
+    ├──> RAG service (port 3003, Python FastAPI + TF-IDF) |
+    └──> Lean proxy (port 3002) ──> lean-proxy-server.js  |
+                                                          |
+──────────────────────────────────────────────────────────
+```
+
+## Pipeline
+
+Każde zapytanie przechodzi przez następujące etapy. Każdy krok wysyła status przez SSE do przeglądarki.
+
+```
+Pytanie użytkownika
+      |
+      v
+ Step 0: Guardrail
+ Walidacja: czy to zadanie matematyczne? Odrzuca spam/prompt injection.
+      |
+      v
+ Step 0.5: Generator Intent
+ Wykrywa komendy typu "daj mi zadania z trygonometrii".
+ Jeśli tak, losuje zadania z datasetu CKE i kończy pipeline.
+      |
+      v
+ Step 0.6: Arithmetic Scheme
+ Wykrywa mnożenie pisemne (np. 123 × 456). Bezpośredni wynik, bez LLM.
+      |
+      v
+ RAG Service (port 3003)
+ Wyszukuje metody i podobne zadania (TF-IDF). Wynik:
+   - ragContext: kontekst dla Agenta Analitycznego
+   - sympyHints: podpowiedzi kodu dla Agenta Wykonawczego
+   - retryHint: kompaktowa podpowiedź dla retry loop
+ Wysyła podsumowanie do SSE (kategorie, metody, liczba trafień).
+      |
+      v
+ Step 0.7: Deterministic Solver (deterministic-solvers.js)
+ Regex-based, zero LLM. 4 wzorce: digit_counting, triangle_optimization,
+ parametric_quadratic, tetrahedron_sphere. Jeśli match: callSymPy → summary → return.
+      |
+      v
+ Step 0.8: Lean Proof Solver
+ Jeśli zadanie to dowód (isProofProblem) i Lean zdrowy:
+ LLM formalizuje w Lean 4 → leanVerify → jeśli verified: summary → return.
+      |
+      v
+ Step 1: Classifier
+ LLM klasyfikuje typ zadania (JSON). Ustawia problemType, confidence, mc_options.
+      |
+      v
+ Step 1.5: Extraction Template (extraction-templates.js, 45 szablonów)
+ Keyword matching (score >= 2) → LLM ekstrahuje JSON z wartościami →
+ szablon generuje kod SymPy → callSymPy. Jeśli ODPOWIEDZ: pomija analytical+executor.
+      |
+      v
+ Step 2: Agent Analityczny
+ LLM planuje rozwiązanie (metoda, kroki, SymPy hint).
+ Prompt wzbogacony o ragContext.
+      |
+      v
+ Step 3: Agent Wykonawczy (executor, max 3 próby)
+ LLM generuje kod SymPy → sanitizeGeneratedCode → callSymPy.
+ Prompt wzbogacony o sympyHints.
+ Retry loop: isOutputSuspicious wykrywa ukryte błędy i wymusza retry.
+ Retry prompt zawiera retryHint z RAG.
+      |
+      v
+ Step 3.5: Decomposition Fallback (decomposer.js)
+ Jeśli executor nie dał wyniku: LLM rozbija problem na 2-4 pod-zadań
+ z formułami SymPy. Każde pod-zadanie: direct formula → LLM code fallback.
+      |
+      v
+ Step 3.7: Brute-force Verification
+ Dla odpowiedzi liczbowych (kombinatoryka): deterministyczna weryfikacja
+ przez wyliczenie (generateDigitCountingVerification). Jeśli nie pasuje:
+ LLM brute-force fallback (bruteForceViaLLM).
+      |
+      v
+ Step 4: Agent Podsumowujący
+ LLM tłumaczy rozwiązanie krok po kroku, podaje odpowiedź.
+      |
+      v
+ Step 5: Lean Post-Solve Verification (tylko dowody)
+ Jeśli zadanie dotyczy dowodu i jest wynik: LLM formalizuje rozwiązanie
+ w Lean 4 → leanVerify → raportuje czy przeszło.
+      |
+      v
+ Step 6: Geometry Diagram (tylko zadania konstrukcyjne)
+ Jeśli isConstructionTask: LLM generuje kod Python → sympy.geometry →
+ SVG diagram → callSymPyPlot → wysyłka SVG przez SSE.
+```
 
 ## Zakres tematyczny
 
@@ -34,80 +142,6 @@ Zgodny z Informatorami CKE dla matury rozszerzonej:
 | Kombinatoryka | 75% | |
 | Geometria płaska | 70% | Wymaga opisu diagramów |
 | Geometria przestrzenna | 65% | Wymaga opisu wizualizacji |
-
-## Jak działa?
-
-System przetwarza zadanie przez wieloetapowy pipeline:
-
-```
-Pytanie użytkownika
-      |
-      +---> Lean Prover (TYLKO dla zadań dowodów, opcjonalny)
-      |     Próbuje udowodnić formalnie. Jeśli się uda, kończy pipeline.
-      |     Jeśli nie, przechodzi do normalnego pipeline.
-      |
-      v
- Input Guardrail
- Walidacja: czy to zadanie matematyczne? Odrzuca spam/prompt injection.
-      |
-      v
- RAG Service (port 3003)
- Wyszukuje metodę + podobne zadania (TF-IDF)
-      |
-      v
- Academic Pre-Router (problemDecomposer.ts)
- Rozpoznaje zadania, których nie należy dekomponować
- (dowody, optymalizacja, istnienie rozwiązań, kontrprzykłady,
-  równania diofantyczne) i rozwiązuje je jednym skryptem SymPy.
-      |
-      +---> [direct solver] jeśli rozpoznano kategorię akademicką
-      |
-      v
- Extraction Chain (bezpośrednia)
- Próba dopasowania szablonu do całego zadania bez dekompozycji.
- Szablony: dziedzina funkcji, nierówności, analiza funkcji,
- trygonometria, geometria analityczna, ciągi, bryły i inne.
- LLM ekstrahuje dane (JSON), szablon generuje kod SymPy.
-      |
-      +---> [wynik] jeśli szablon pasuje i SymPy da odpowiedź
-      |
-      v
- Dekompozycja (fallback)
- Rozbija problem na 2-4 pod-zadania z formułami SymPy.
- Każde pod-zadanie przechodzi przez:
-            |
-            v
-      Klasyfikator -> typ zadania (równanie/geometria/...)
-            |
-            +---> Deterministyczny solver (bez LLM!)
-            |     (równania, pochodne, całki przez SymPy)
-            |
-            +---> Chain ekstrakcji (LLM -> kod SymPy -> wynik)
-            |
-            +---> Multi-step chain (LLM wielokrokowy)
-            |
-            +---> Agent Analityczny + Agent Wykonawczy (fallback)
-                        |
-                        v
-      Walidacja substytucyjna
-      Podstawia odpowiedź do oryginalnego równania
-                        |
-                        v
-      Weryfikacja brute-force (kombinatoryka)
-      Wyliczenie wszystkich przypadków bez LLM
-                        |
-                        v
-                 Agent Podsumowujący
-                 (wyjaśnienie krok po kroku)
-                        |
-                        v
-                 Lean Verifier (Agent 4)
-                 Formalizuje i weryfikuje dowód przez Lean 4
-```
-
-RAG jest używany dwukrotnie: przed analizą (kontekst metody trafia do promptu Agenta Analitycznego) i przy generowaniu kodu (wskazówki SymPy wstrzykiwane do promptu Agenta Wykonawczego).
-
-Academic pre-router rozwiązuje zadanie jednym celowanym skryptem SymPy zamiast rozbijać go na podkroki. Extraction chain bezpośrednia to kolejna warstwa, która rozwiązuje zadania jednokoncepcyjne (dziedzina, analiza funkcji, wyrażenia trygonometryczne) w jednym kroku, bez dekompozycji. Dekompozycja na pod-zadania uruchamia się dopiero gdy żadna z wcześniejszych ścieżek nie dała wyniku. Wyniki dekompozycji są weryfikowane brute-force (kombinatoryka) lub substytucyjnie (algebra).
 
 ## Szybki start
 
@@ -136,7 +170,7 @@ Otwórz http://localhost:5173 i zacznij rozwiązywać zadania.
 - Node.js 18+
 - Python 3.8+ (dla SymPy)
 - Dla Lean (opcjonalne): Lean 4 zainstalowany lokalnie
-- Jedno z: Ollama (rekomendowane), MLX (Apple Silicon), zdalne API
+- vLLM lub kompatybilne API obsługujące speakleash/Bielik-11B-v3.0-Instruct
 
 ### Co robi `setup.sh`?
 
@@ -185,37 +219,46 @@ Udowodnij, że funkcja f(x) = 3x/(x+1) jest rosnąca na przedziale (-1, +∞)
 
 ## Narzędzia SymPy
 
-System ma dostęp do 9 narzędzi: `sympy_calculate`, `sympy_solve`, `sympy_differentiate`, `sympy_integrate`, `sympy_simplify`, `sympy_expand`, `sympy_factor`, `sympy_limit`, `sympy_matrix`.
+System ma dostęp do 10 narzędzi: `sympy_calculate`, `sympy_solve`, `sympy_differentiate`, `sympy_integrate`, `sympy_simplify`, `sympy_expand`, `sympy_factor`, `sympy_limit`, `sympy_matrix`, `sympy_plot`.
 
-## Architektura
+## Struktura plików
 
 ```
 formulo/
+├── solve-pipeline.js              # Jedyny punkt wejścia, cały pipeline
+├── extraction-templates.js        # 45 szablonów ekstrakcji (keyword → JSON → SymPy)
+├── deterministic-solvers.js       # 4 deterministyczne solvery (regex, zero LLM)
+├── decomposer.js                  # Dekompozycja na pod-zadania z formułami
+├── heroku-start.js                # HTTP server, SSE endpoint /api/solve
+├── mcp-proxy-server.js            # Proxy HTTP → MCP stdio (port 3001)
+├── lean-proxy-server.js           # Lean 4 proxy (port 3002)
+├── mcp-sympy-server/              # Serwer SymPy (MCP, 10 narzędzi)
+├── rag_service/                   # Baza wiedzy (FastAPI + TF-IDF, port 3003)
+├── datasets/                      # Zadania maturalne CKE (JSON)
+├── prompts.json                   # Prompty dla agentów
 ├── src/services/
-│   ├── threeAgentSystem.ts      # Orkiestrator, główna pętla pipeline'a
-│   ├── problemDecomposer.ts     # Academic pre-router + dekompozycja złożonych zadań
-│   ├── classifierService.ts     # Klasyfikacja typu zadania
-│   ├── solverRouter.ts          # Router do deterministycznych solverów
-│   ├── multiStepChain.ts        # Chain ekstrakcji kodu SymPy
-│   ├── ragService.ts            # Klient RAG Service (port 3003)
-│   ├── mlxAgent.ts              # Agent LLM (MLX/Ollama/zdalne API)
-│   └── mcpClientBrowser.ts      # Klient MCP (wywołania SymPy)
-├── mcp-proxy-server.js          # Proxy: SymPy + CORS proxy
-├── mcp-sympy-server/            # Serwer SymPy (MCP)
-├── rag_service/                 # Baza wiedzy (FastAPI + TF-IDF)
-├── datasets/                    # Zadania maturalne CKE (JSON)
-├── prompts.json                 # Prompty dla agentów
-└── start.sh                     # Uruchamianie
+│   └── threeAgentSystem.ts        # Thin client: wywołuje POST /api/solve (SSE)
+└── start.sh                       # Uruchamianie lokalne
 ```
+
+## Sanityzacja kodu
+
+Kod generowany przez Bielik przechodzi przez dwa etapy sanityzacji:
+
+1. `sanitizeGeneratedCode()` w solve-pipeline.js: naprawia f-stringi z polskim tekstem, usuwa luźny tekst polski, naprawia niezamknięte nawiasy, zamienia wolne funkcje geometry API na metody Triangle (incenter → tri.incenter, semiperimeter → tri.perimeter/2), dodaje brakujący print ODPOWIEDZ.
+
+2. `sanitizeCode()` w mcp-sympy-server: naprawia ^ → **, filtruje halucynowane importy, naprawia cos**2(x) → cos(x)**2, zamienia polskie pętle, poprawia Piecewise z chainowanymi porównaniami, i wiele innych wzorców specyficznych dla Bielik.
 
 ## Technologie
 
-- React 18, TypeScript
-- Bielik 11B (polski model LLM, SpeakLeash)
+- React 18, TypeScript (frontend)
+- speakleash/Bielik-11B-v3.0-Instruct (polski model LLM)
 - SymPy (obliczenia symboliczne)
 - Lean 4 + Mathlib (formalne dowody)
 - FastAPI + scikit-learn (RAG Service, TF-IDF)
 - MCP (Model Context Protocol)
+- dd-trace / LLM Observability (Datadog)
+- Heroku (deployment, jeden dyno)
 
 ## Dokumentacja
 
