@@ -152,8 +152,14 @@ export class ThreeAgentOrchestrator {
     userMessage: string,
     newMessages: Message[],
     onMessageCallback?: (message: Message) => void,
+    abortSignal?: AbortSignal,
   ): Promise<Message[] | null> {
     try {
+      const timeoutSignal = AbortSignal.timeout(300000);
+      const combinedSignal = abortSignal
+        ? AbortSignal.any([abortSignal, timeoutSignal])
+        : timeoutSignal;
+
       const res = await fetch('/api/solve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,7 +167,7 @@ export class ThreeAgentOrchestrator {
           message: userMessage,
           sessionId: ThreeAgentOrchestrator.SOLVE_SESSION_ID,
         }),
-        signal: AbortSignal.timeout(300000),
+        signal: combinedSignal,
       });
 
       if (!res.ok || !res.body) {
@@ -278,7 +284,7 @@ export class ThreeAgentOrchestrator {
   async processMessage(
     userMessage: string,
     onMessageCallback?: (message: Message) => void,
-    options?: { classifierMode?: boolean }
+    options?: { classifierMode?: boolean; abortSignal?: AbortSignal }
   ): Promise<Message[]> {
     // Allow per-call override of classifierMode
     if (options?.classifierMode !== undefined) {
@@ -310,7 +316,7 @@ export class ThreeAgentOrchestrator {
     // ═══════════════════════════════════════════════════════════════════
     // Server-side pipeline (guardrail + generator + arithmetic + solve)
     // ═══════════════════════════════════════════════════════════════════
-    const serverResult = await this.tryServerSolve(userMessage, newMessages, onMessageCallback);
+    const serverResult = await this.tryServerSolve(userMessage, newMessages, onMessageCallback, options?.abortSignal);
     if (serverResult) {
       return serverResult;
     }

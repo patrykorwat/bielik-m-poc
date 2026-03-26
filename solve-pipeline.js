@@ -169,27 +169,40 @@ function extractPythonCode(text) {
 function sanitizeGeneratedCode(code) {
   let lines = code.split('\n');
 
-  // 1. Replace f-string ODPOWIEDZ prints with simple concatenation.
+  // 1. Replace ALL f-string prints with simple concatenation.
   //    Bielik often produces broken f-strings with Polish text and unmatched parens.
+  //    Covers both ODPOWIEDZ prints and regular prints like print(f"x = {val}").
   lines = lines.map(line => {
-    // Match: print(f"ODPOWIEDZ: ... {var1} ... {var2} ...")
-    if (/print\(f["']ODPOWIED/.test(line)) {
-      // Extract all {variable} references from the f-string
+    // Match any print(f"...") or print(f'...')
+    if (/print\(f["']/.test(line)) {
+      // Extract the text prefix before first {var} and all {variable} references
+      const fstringMatch = line.match(/print\(f["'](.*)["']\s*\)/);
+      if (!fstringMatch) {
+        // Fallback: just remove the f prefix
+        return line.replace(/print\(f["']/, 'print("').replace(/["']\s*\)$/, '")');
+      }
+      const fContent = fstringMatch[1];
       const vars = [];
       const varPattern = /\{([^}]+)\}/g;
       let m;
-      while ((m = varPattern.exec(line)) !== null) {
+      while ((m = varPattern.exec(fContent)) !== null) {
         vars.push(m[1]);
       }
-      if (vars.length === 1) {
-        return `print("ODPOWIEDZ:", ${vars[0]})`;
+      // Reconstruct as comma-separated print
+      // Split the f-string content by {var} to get text segments
+      const textParts = fContent.split(/\{[^}]+\}/);
+      const args = [];
+      for (let i = 0; i < textParts.length; i++) {
+        const text = textParts[i];
+        if (text) args.push(`"${text}"`);
+        if (i < vars.length) args.push(vars[i]);
       }
-      if (vars.length > 1) {
-        const pairs = vars.map(v => `"${v} =", ${v}`).join(', ", ", ');
-        return `print("ODPOWIEDZ:", ${pairs})`;
+      if (args.length > 0) {
+        const indent = line.match(/^(\s*)/)?.[1] || '';
+        return `${indent}print(${args.join(', ')})`;
       }
-      // No vars found, just fix the print
-      return line.replace(/print\(f["']/, 'print("').replace(/["']\)$/, '")');
+      // Fallback
+      return line.replace(/print\(f["']/, 'print("').replace(/["']\s*\)$/, '")');
     }
     return line;
   });
@@ -1228,6 +1241,56 @@ function loadAllTasks() {
 
 const allTasks = loadAllTasks();
 
+// ── Definitional question detection ───────────────────────────────────
+
+const DEFINITION_PREFIXES = [
+  'co to jest', 'co to sa', 'co to są',
+  'czym jest', 'czym sa', 'czym są',
+  'zdefiniuj', 'definicja', 'podaj definicj',
+  'co oznacza', 'co znaczy', 'co to znaczy',
+  'what is', 'what are', 'define',
+  'opisz czym', 'opisz co to',
+  'na czym polega', 'o czym mówi', 'o czym mowi',
+  'co mówi', 'co mowi',
+  'jakie sa właściwości', 'jakie sa wlasciwosci',
+  'jakie są właściwości', 'jakie sa cechy',
+  'wymień właściwości', 'wymien wlasciwosci',
+  'podaj właściwości', 'podaj wlasciwosci',
+  'kiedy stosuje się', 'kiedy stosujemy',
+  'do czego służy', 'do czego sluzy',
+  'jaka jest różnica między', 'jaka jest roznica miedzy',
+  'porównaj', 'porownaj',
+];
+
+// Questions that look definitional but actually need computation
+const DEFINITION_EXCEPTIONS = /\d{2,}|oblicz|wyznacz|rozwiąż|rozwiaz|udowodnij|ile wynosi|jaki jest wynik|znajdź|znajdz|policz|=|\+\s*\d/;
+
+function isDefinitionalQuestion(message) {
+  const lower = message.toLowerCase().trim();
+  // Must start with or contain a definitional prefix
+  const hasPrefix = DEFINITION_PREFIXES.some(p => lower.includes(p));
+  if (!hasPrefix) return false;
+  // Must not contain computational markers
+  if (DEFINITION_EXCEPTIONS.test(lower)) return false;
+  // Short messages (< 15 words) with a definitional prefix are almost certainly definitional
+  const wordCount = lower.split(/\s+/).length;
+  if (wordCount <= 15) return true;
+  // Longer messages: only if they start with a definitional prefix
+  return DEFINITION_PREFIXES.some(p => lower.startsWith(p));
+}
+
+const DEFINITION_SYSTEM_PROMPT = `Jestes ekspertem matematyki. Odpowiadasz na pytania teoretyczne po polsku.
+
+ZASADY:
+1. Podaj jasna, zwiezla definicje lub wyjasnienie
+2. Dodaj wzory i notacje matematyczne tam gdzie to potrzebne (uzyj standardowej notacji)
+3. Podaj 1 lub 2 krotkie przyklady zastosowania
+4. Jezeli pytanie dotyczy twierdzenia, podaj tresc twierdzenia i warunki stosowania
+5. Nie generuj kodu Python ani SymPy
+6. Odpowiedz powinna byc zrozumiala dla ucznia liceum
+7. Uzyj formatowania Markdown: **pogrubienie** dla kluczowych terminow
+8. Odpowiedz ma miec 150 do 400 slow`;
+
 // ── Generator: intent detection ───────────────────────────────────────
 
 const GENERATOR_KEYWORDS = [
@@ -1538,6 +1601,20 @@ export async function solve(userMessage, sessionId, onStep) {
       const content = formatGeneratorTasks(tasks, generatorIntent.topic, generatorIntent.level);
       send('generator_done', 'Generator Zadań', content);
       return { success: true, type: 'generator', content };
+    }
+
+    // ── Step 0.55: Definitional / theoretical question ────────────
+
+    if (isDefinitionalQuestion(userMessage)) {
+      send('definition', 'Definicja', 'Przygotowuję wyjaśnienie...');
+
+      const definitionRaw = await llmCall('definition', DEFINITION_SYSTEM_PROMPT, [
+        { role: 'user', content: userMessage },
+      ], { maxTokens: 1000, temperature: 0.3 });
+
+      const definition = stripThink(definitionRaw);
+      send('definition_done', 'Definicja', definition);
+      return { success: true, type: 'definition', content: definition };
     }
 
     // ── Step 0.6: Arithmetic scheme ───────────────────────────────

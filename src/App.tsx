@@ -99,6 +99,7 @@ function App() {
   const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -242,18 +243,27 @@ function App() {
   }, [classifierMode]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !orchestratorRef.current || isProcessing) {
+    if (!inputMessage.trim() || !orchestratorRef.current) {
       return;
+    }
+
+    // If already processing, abort the previous request
+    if (isProcessing && abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
 
     setIsProcessing(true);
     const userInput = inputMessage;
     setInputMessage('');
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
       await orchestratorRef.current.processMessage(
         userInput,
         (message) => {
+          if (controller.signal.aborted) return;
           setMessages(prev => {
             const existingIndex = prev.findIndex(m => m.id === message.id);
             if (existingIndex !== -1) {
@@ -264,13 +274,20 @@ function App() {
             return [...prev, message];
           });
         },
-        { classifierMode }
+        { classifierMode, abortSignal: controller.signal }
       );
     } catch (error) {
-      console.error('Błąd podczas przetwarzania:', error);
-      alert('Wystąpił błąd podczas komunikacji z agentem. Sprawdź klucz API i połączenie.');
+      if (controller.signal.aborted) {
+        // Aborted intentionally, not an error
+        return;
+      }
+      console.error('Blad podczas przetwarzania:', error);
+      alert('Wystapil blad podczas komunikacji z agentem. Sprawdz klucz API i polaczenie.');
     } finally {
-      setIsProcessing(false);
+      if (abortControllerRef.current === controller) {
+        setIsProcessing(false);
+        abortControllerRef.current = null;
+      }
     }
   };
 
@@ -681,15 +698,14 @@ function App() {
             onKeyPress={handleKeyPress}
             placeholder="Wpisz zadanie matematyczne... (Enter aby wysłać, Shift+Enter dla nowej linii)"
             className="message-input"
-            disabled={isProcessing}
             rows={1}
           />
           <button
             onClick={handleSendMessage}
-            disabled={isProcessing || !inputMessage.trim()}
+            disabled={!inputMessage.trim()}
             className="send-button"
           >
-            {isProcessing ? 'Przetwarzanie...' : 'Wyślij'}
+            Wyślij
           </button>
         </div>
       </div>
