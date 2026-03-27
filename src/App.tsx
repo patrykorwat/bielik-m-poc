@@ -367,21 +367,12 @@ function App() {
 
   const handleShare = async () => {
     if (messages.length === 0 || shareStatus === 'saving') return;
-    const firstUserMsg = messages.find(m => m.role === 'user' && typeof m.content === 'string');
-    const question = firstUserMsg ? (firstUserMsg.content as string) : '';
-    if (!question) return;
+    const shareId = orchestratorRef.current?.lastShareId;
+    if (!shareId) return;
     setShareStatus('saving');
     try {
-      const res = await fetch('/api/share', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question,
-          messages: messages
-            .filter(m => !(m.role === 'user' && Array.isArray(m.content)))
-            .map(m => ({ role: m.role, content: m.content, agentName: m.agentName })),
-        }),
-      });
+      const res = await fetch(`/api/share/${shareId}/extend`, { method: 'POST' });
+      if (!res.ok) throw new Error('extend failed');
       const { url } = await res.json();
       const fullUrl = `${window.location.origin}${url}`;
       await navigator.clipboard.writeText(fullUrl);
@@ -815,7 +806,7 @@ function App() {
               <span>Agenci pracują nad odpowiedzią...</span>
             </div>
           )}
-          {messages.length > 0 && !isProcessing && (
+          {messages.length > 0 && !isProcessing && orchestratorRef.current?.lastShareId && (
             <div className="share-bar">
               <button
                 className="share-btn"

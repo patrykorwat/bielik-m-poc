@@ -61,6 +61,7 @@ export class ThreeAgentOrchestrator {
   private availableTools: MCPTool[] = [];
   private leanAvailable: boolean = false;
   private classifierMode: boolean = true;
+  public lastShareId: string | null = null;
 
   constructor(
     proverBackend: ProverBackend = 'both',
@@ -243,6 +244,9 @@ export class ThreeAgentOrchestrator {
 
               if (eventType === 'done') {
                 finalResult = data;
+                if (data.shareId) {
+                  this.lastShareId = data.shareId;
+                }
               }
 
               if (eventType === 'error') {

@@ -174,6 +174,7 @@ app.post('/api/solve', solveJsonParser, async (req, res) => {
     return res.status(400).json({ error: 'message is required' });
   }
   const sessionId = clientSessionId || randomUUID();
+  const shareId = randomUUID().replace(/-/g, '').slice(0, 8);
 
   // SSE headers
   res.writeHead(200, {
@@ -183,16 +184,30 @@ app.post('/api/solve', solveJsonParser, async (req, res) => {
     'X-Accel-Buffering': 'no',
   });
 
+  // Collect steps for the share cache
+  const collectedSteps = [];
+
   const sendSSE = (event, data) => {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
 
   try {
     const result = await solve(message, sessionId, (step) => {
+      collectedSteps.push(step);
       sendSSE('step', step);
     });
 
-    sendSSE('done', result);
+    // Include shareId in the done event so the client can reference it
+    sendSSE('done', { ...result, shareId });
+
+    // Save to Postgres (fire and forget, don't block SSE close)
+    const shareMessages = collectedSteps
+      .filter(s => s.step?.endsWith('_done') && !s.blocked && s.agentName !== 'Guardrail' && s.agentName !== 'Klasyfikator')
+      .map(s => ({ role: 'assistant', content: s.content, agentName: s.agentName }));
+    if (shareMessages.length > 0) {
+      shareMessages.unshift({ role: 'user', content: message });
+      saveShare(shareId, message, shareMessages);
+    }
   } catch (err) {
     console.error('[solve] Pipeline error:', err);
     sendSSE('error', { error: err.message || 'Pipeline failed' });
@@ -215,7 +230,8 @@ app.get('/robots.txt', (_req, res) => {
 
 // ── Shared solution cache (permalinks, Postgres) ────────────────────
 
-const SHARE_EXPIRY_DAYS = 60;
+const SHARE_SHORT_TTL_HOURS = 24;
+const SHARE_EXTENDED_TTL_DAYS = 60;
 
 const pool = process.env.DATABASE_URL
   ? new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
@@ -227,50 +243,67 @@ if (pool) {
       id TEXT PRIMARY KEY,
       question TEXT NOT NULL,
       messages JSONB NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL
     )
   `).then(() => {
-    pool.query(`CREATE INDEX IF NOT EXISTS idx_shares_created ON shares(created_at)`);
+    pool.query(`CREATE INDEX IF NOT EXISTS idx_shares_expires ON shares(expires_at)`);
     console.log('[shares] Postgres table ready');
   }).catch(err => console.error('[shares] Table init error:', err.message));
 
-  // Cleanup expired entries on startup and every 6 hours
+  // Cleanup expired entries on startup and every hour
   const cleanupExpired = () => {
-    pool.query(`DELETE FROM shares WHERE created_at < NOW() - INTERVAL '${SHARE_EXPIRY_DAYS} days'`)
+    pool.query('DELETE FROM shares WHERE expires_at < NOW()')
       .then(res => { if (res.rowCount > 0) console.log(`[shares] Cleaned up ${res.rowCount} expired entries`); })
       .catch(err => console.error('[shares] Cleanup error:', err.message));
   };
   setTimeout(cleanupExpired, 5000);
-  setInterval(cleanupExpired, 6 * 3600000);
+  setInterval(cleanupExpired, 3600000);
 } else {
   console.warn('[shares] DATABASE_URL not set, permalink sharing disabled');
 }
 
-const shareJsonParser = express.json({ limit: '200kb' });
-
-app.post('/api/share', shareJsonParser, async (req, res) => {
-  if (!pool) return res.status(503).json({ error: 'Sharing not available' });
-  const { question, messages } = req.body || {};
-  if (!question || !messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: 'question and messages[] are required' });
-  }
-  const id = randomUUID().replace(/-/g, '').slice(0, 8);
+// Called by the solve pipeline after a successful response
+async function saveShare(id, question, messages) {
+  if (!pool) return;
   try {
     await pool.query(
-      'INSERT INTO shares (id, question, messages) VALUES ($1, $2, $3)',
-      [id, question, JSON.stringify(messages.slice(0, 50))]
+      `INSERT INTO shares (id, question, messages, expires_at)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '${SHARE_SHORT_TTL_HOURS} hours')
+       ON CONFLICT (id) DO UPDATE SET messages = $3, expires_at = NOW() + INTERVAL '${SHARE_SHORT_TTL_HOURS} hours'`,
+      [id, question, JSON.stringify(messages)]
     );
-    res.json({ id, url: `/s/${id}` });
   } catch (err) {
-    console.error('[shares] Insert error:', err.message);
-    res.status(500).json({ error: 'Failed to save' });
+    console.error('[shares] Save error:', err.message);
+  }
+}
+
+// Extend lifespan to 60 days (triggered by user clicking "share")
+app.post('/api/share/:id/extend', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Sharing not available' });
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE shares SET expires_at = NOW() + INTERVAL '${SHARE_EXTENDED_TTL_DAYS} days' WHERE id = $1 AND expires_at > NOW()`,
+      [req.params.id]
+    );
+    if (rowCount === 0) {
+      return res.status(404).json({ error: 'Solution not found or expired' });
+    }
+    res.json({ url: `/s/${req.params.id}` });
+  } catch (err) {
+    console.error('[shares] Extend error:', err.message);
+    res.status(500).json({ error: 'Failed to extend' });
   }
 });
 
+// Fetch a shared solution
 app.get('/api/share/:id', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Sharing not available' });
   try {
-    const { rows } = await pool.query('SELECT question, messages, created_at FROM shares WHERE id = $1', [req.params.id]);
+    const { rows } = await pool.query(
+      'SELECT question, messages, created_at, expires_at FROM shares WHERE id = $1 AND expires_at > NOW()',
+      [req.params.id]
+    );
     if (rows.length === 0) {
       return res.status(404).json({ error: 'Solution not found or expired' });
     }
