@@ -316,11 +316,37 @@
   background: var(--glass-bg);
 }
 
+.formula-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
 .formula-card-name {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
-  margin-bottom: 6px;
+}
+
+.formula-card-link {
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  white-space: nowrap;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.formula-card-link:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 .formula-card-latex {

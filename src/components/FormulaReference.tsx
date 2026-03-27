@@ -187,7 +187,19 @@ export function FormulaReference({ onSubmitQuery, onNavigateToChat }: FormulaRef
                   /* CKE formula cards: show LaTeX directly, no expand needed */
                   cat.methods.map(formula => (
                     <div key={formula.id} className="formula-card">
-                      <div className="formula-card-name">{formula.name}</div>
+                      <div className="formula-card-top">
+                        <div className="formula-card-name">{formula.name}</div>
+                        <button
+                          className="formula-card-link"
+                          onClick={() => {
+                            onSubmitQuery(`Zadanie z: ${formula.name}`);
+                            onNavigateToChat();
+                          }}
+                          title="Rozwiąż zadanie wymagające tego wzoru"
+                        >
+                          Rozwiąż zadanie →
+                        </button>
+                      </div>
                       {formula.latex && (
                         <div
                           className="formula-card-latex"
