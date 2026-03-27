@@ -246,8 +246,15 @@ if (pool) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       expires_at TIMESTAMPTZ NOT NULL
     )
-  `).then(() => {
-    pool.query(`CREATE INDEX IF NOT EXISTS idx_shares_expires ON shares(expires_at)`);
+  `).then(() =>
+    // Migration: add expires_at if table existed before this column was introduced
+    pool.query(`ALTER TABLE shares ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ`).catch(() => {})
+  ).then(() =>
+    // Backfill: set expires_at for any old rows that have NULL (24h from created_at)
+    pool.query(`UPDATE shares SET expires_at = created_at + INTERVAL '24 hours' WHERE expires_at IS NULL`).catch(() => {})
+  ).then(() =>
+    pool.query(`CREATE INDEX IF NOT EXISTS idx_shares_expires ON shares(expires_at)`)
+  ).then(() => {
     console.log('[shares] Postgres table ready');
   }).catch(err => console.error('[shares] Table init error:', err.message));
 
