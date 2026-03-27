@@ -3,6 +3,8 @@ import { ThreeAgentOrchestrator, Message, MLXConfig, LLMProvider } from './servi
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
+import { FormulaReference } from './components/FormulaReference';
+import './components/FormulaReference.css';
 import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -74,8 +76,12 @@ function App() {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [orchestratorReady, setOrchestratorReady] = useState(false);
   const [, setMcpConnected] = useState(false);
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
+  const [showFormulas, setShowFormulas] = useState(false);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // Apply theme on mount and when it changes
   useEffect(() => {
@@ -100,6 +106,7 @@ function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const urlQueryHandled = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -210,6 +217,7 @@ function App() {
       } catch { /* MCP connection will be retried */ }
       const newChatId = ChatHistoryService.generateChatId();
       setCurrentChatId(newChatId);
+      setOrchestratorReady(true);
     };
     autoDetect();
   }, []);
@@ -288,6 +296,101 @@ function App() {
         setIsProcessing(false);
         abortControllerRef.current = null;
       }
+    }
+  };
+
+  const submitQuery = (query: string) => {
+    if (!orchestratorRef.current) return;
+    if (isProcessing && abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setInputMessage('');
+    setIsProcessing(true);
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    orchestratorRef.current.processMessage(
+      query,
+      (message) => {
+        if (controller.signal.aborted) return;
+        setMessages(prev => {
+          const idx = prev.findIndex(m => m.id === message.id);
+          if (idx !== -1) { const u = [...prev]; u[idx] = message; return u; }
+          return [...prev, message];
+        });
+      },
+      { classifierMode, abortSignal: controller.signal }
+    ).catch((error) => {
+      if (!controller.signal.aborted) {
+        console.error('Blad podczas przetwarzania:', error);
+      }
+    }).finally(() => {
+      if (abortControllerRef.current === controller) {
+        setIsProcessing(false);
+        abortControllerRef.current = null;
+      }
+    });
+  };
+
+  // Load shared solution from /s/:id or auto-submit from ?q=
+  useEffect(() => {
+    if (urlQueryHandled.current) return;
+    const path = window.location.pathname;
+    const shareMatch = path.match(/^\/s\/([a-z0-9]+)$/i);
+    if (shareMatch) {
+      urlQueryHandled.current = true;
+      fetch(`/api/share/${shareMatch[1]}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data && data.messages) {
+            const loaded = data.messages.map((m: any, i: number) => ({
+              id: `shared-${i}`,
+              role: m.role,
+              content: m.content,
+              agentName: m.agentName || undefined,
+              timestamp: new Date(),
+            }));
+            setMessages(loaded);
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+    if (!orchestratorReady) return;
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q && q.trim()) {
+      urlQueryHandled.current = true;
+      window.history.replaceState({}, '', window.location.pathname);
+      submitQuery(q.trim());
+    }
+  }, [orchestratorReady]);
+
+  const handleShare = async () => {
+    if (messages.length === 0 || shareStatus === 'saving') return;
+    const firstUserMsg = messages.find(m => m.role === 'user' && typeof m.content === 'string');
+    const question = firstUserMsg ? (firstUserMsg.content as string) : '';
+    if (!question) return;
+    setShareStatus('saving');
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question,
+          messages: messages
+            .filter(m => !(m.role === 'user' && Array.isArray(m.content)))
+            .map(m => ({ role: m.role, content: m.content, agentName: m.agentName })),
+        }),
+      });
+      const { url } = await res.json();
+      const fullUrl = `${window.location.origin}${url}`;
+      await navigator.clipboard.writeText(fullUrl);
+      setShareUrl(fullUrl);
+      setShareStatus('done');
+      setTimeout(() => { setShareStatus('idle'); setShareUrl(null); }, 8000);
+    } catch {
+      setShareStatus('error');
+      setTimeout(() => setShareStatus('idle'), 3000);
     }
   };
 
@@ -504,6 +607,9 @@ function App() {
               </svg>
             )}
           </button>
+          <button onClick={() => setShowFormulas(true)} className="formulas-button" title="Baza wzorów">
+            <Icon type="books" /> Wzory
+          </button>
           <button onClick={() => setShowHistory(true)} className="history-button">
             <Icon type="books" /> Historia
           </button>
@@ -521,20 +627,42 @@ function App() {
           {messages.length === 0 ? (
             <div className="empty-state">
               <p><Icon type="wave" /> Witaj! Wklej zadanie z matematyki, a rozwiążę je krok po kroku.</p>
-              <p style={{ marginTop: '10px', fontSize: '0.95em', color: 'var(--text-secondary)' }}>
-                <Icon type="bulb" /> Możesz też <strong>wygenerować zadania</strong> do ćwiczeń! Wpisz np. <em>„trygonometria"</em>, <em>„wymyśl arkusz zadań"</em> lub <em>„zadaj mi pytania z całek"</em>.
-              </p>
-              <div className="examples">
-                <p><strong>Poziom podstawowy:</strong></p>
-                <ul>
-                  <li>Rozwiąż nierówność 2x + 3 &gt; 5x - 9</li>
-                  <li>Wyznacz dziedzinę funkcji f(x) = sqrt(4 - x²)</li>
-                </ul>
-                <p style={{ marginTop: '12px' }}><strong>Poziom rozszerzony:</strong></p>
-                <ul>
-                  <li>Zbadaj przebieg zmienności funkcji f(x) = (x² - 1) / (x + 2)</li>
-                  <li>Udowodnij, że suma kwadratów dwóch kolejnych liczb nieparzystych daje resztę 2 z dzielenia przez 4</li>
-                </ul>
+              <div className="example-chips">
+                <p className="example-section-label">Spróbuj:</p>
+                <div className="chip-grid">
+                  {[
+                    { label: 'Nierówność kwadratowa', query: 'Rozwiąż nierówność x² - 5x + 6 > 0' },
+                    { label: 'Dziedzina funkcji', query: 'Wyznacz dziedzinę funkcji f(x) = sqrt(4 - x²)' },
+                    { label: 'Układ równań z parametrem', query: 'Rozwiąż układ równań z parametrem m:\nmx + y = m²\n4x + my = 8\nDla jakich wartości m układ ma dokładnie jedno rozwiązanie?' },
+                    { label: 'Przebieg zmienności', query: 'Zbadaj przebieg zmienności funkcji f(x) = (x² - 1) / (x + 2)' },
+                    { label: 'Optymalizacja', query: 'Z blachy o wymiarach 20cm x 30cm wycinamy kwadraty z rogów i zginamy, tworząc pudełko. Jakie wymiary dają największą objętość?' },
+                    { label: 'Dowód formalny', query: 'Udowodnij, że suma kwadratów dwóch kolejnych liczb nieparzystych daje resztę 2 z dzielenia przez 4' },
+                  ].map((ex) => (
+                    <button
+                      key={ex.label}
+                      className="example-chip"
+                      onClick={() => submitQuery(ex.query)}
+                    >
+                      {ex.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="example-section-label" style={{ marginTop: '16px' }}>Lub wygeneruj zadania:</p>
+                <div className="chip-grid">
+                  {[
+                    { label: 'Trygonometria', query: 'Daj mi 5 zadań z trygonometrii' },
+                    { label: 'Zadania tekstowe kl. 7', query: 'Wymyśl 5 zadań tekstowych z równaniami dla klasy 7' },
+                    { label: 'Co to jest pochodna?', query: 'Co to jest pochodna funkcji?' },
+                  ].map((ex) => (
+                    <button
+                      key={ex.label}
+                      className="example-chip example-chip-secondary"
+                      onClick={() => submitQuery(ex.query)}
+                    >
+                      {ex.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
@@ -687,6 +815,23 @@ function App() {
               <span>Agenci pracują nad odpowiedzią...</span>
             </div>
           )}
+          {messages.length > 0 && !isProcessing && (
+            <div className="share-bar">
+              <button
+                className="share-btn"
+                onClick={handleShare}
+                disabled={shareStatus === 'saving'}
+              >
+                {shareStatus === 'saving' ? 'Zapisuję...' :
+                 shareStatus === 'done' ? 'Link skopiowany!' :
+                 shareStatus === 'error' ? 'Nie udało się' :
+                 'Udostępnij rozwiązanie'}
+              </button>
+              {shareStatus === 'done' && shareUrl && (
+                <span className="share-expiry">Link ważny przez 60 dni</span>
+              )}
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
@@ -724,6 +869,13 @@ function App() {
           <a href="https://huggingface.co/speakleash/Bielik-11B-v3.0-Instruct" target="_blank" rel="noopener noreferrer">Bielik v3 11B</a>
         </span>
       </footer>
+
+      {showFormulas && (
+        <FormulaReference
+          onClose={() => setShowFormulas(false)}
+          onSubmitQuery={submitQuery}
+        />
+      )}
 
       {showHistory && (
         <ChatHistorySidebar

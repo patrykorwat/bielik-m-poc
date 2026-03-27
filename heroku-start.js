@@ -20,7 +20,8 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import pg from 'pg';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -128,6 +129,39 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ── Formula reference (serves mathematical_methods.json) ─────────────
+
+let formulasCache = null;
+
+app.get('/api/formulas', (req, res) => {
+  if (!formulasCache) {
+    try {
+      const raw = readFileSync(join(__dirname, 'docs', 'mathematical_methods.json'), 'utf8');
+      const data = JSON.parse(raw);
+      formulasCache = (data.categories || []).map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        name_en: cat.name_en,
+        methods: (cat.methods || []).map(m => ({
+          id: m.id,
+          name: m.name,
+          description: m.description,
+          sympy_functions: m.sympy_functions,
+          when_to_use: m.when_to_use,
+          worked_example: m.worked_example ? {
+            problem: m.worked_example.problem,
+            common_pitfalls: m.worked_example.common_pitfalls,
+          } : null,
+        })),
+      }));
+    } catch (err) {
+      console.error('[formulas] Failed to load:', err.message);
+      return res.status(500).json({ error: 'Failed to load formulas' });
+    }
+  }
+  res.json({ categories: formulasCache });
+});
+
 // ── Server-side solve pipeline (SSE) ──────────────────────────────────
 
 import { solve } from './solve-pipeline.js';
@@ -177,6 +211,78 @@ app.get('/sitemap.xml', (_req, res) => {
 });
 app.get('/robots.txt', (_req, res) => {
   res.type('text/plain').send(`User-agent: *\nAllow: /\nSitemap: https://formulo.pl/sitemap.xml`);
+});
+
+// ── Shared solution cache (permalinks, Postgres) ────────────────────
+
+const SHARE_EXPIRY_DAYS = 60;
+
+const pool = process.env.DATABASE_URL
+  ? new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  : null;
+
+if (pool) {
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS shares (
+      id TEXT PRIMARY KEY,
+      question TEXT NOT NULL,
+      messages JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).then(() => {
+    pool.query(`CREATE INDEX IF NOT EXISTS idx_shares_created ON shares(created_at)`);
+    console.log('[shares] Postgres table ready');
+  }).catch(err => console.error('[shares] Table init error:', err.message));
+
+  // Cleanup expired entries on startup and every 6 hours
+  const cleanupExpired = () => {
+    pool.query(`DELETE FROM shares WHERE created_at < NOW() - INTERVAL '${SHARE_EXPIRY_DAYS} days'`)
+      .then(res => { if (res.rowCount > 0) console.log(`[shares] Cleaned up ${res.rowCount} expired entries`); })
+      .catch(err => console.error('[shares] Cleanup error:', err.message));
+  };
+  setTimeout(cleanupExpired, 5000);
+  setInterval(cleanupExpired, 6 * 3600000);
+} else {
+  console.warn('[shares] DATABASE_URL not set, permalink sharing disabled');
+}
+
+const shareJsonParser = express.json({ limit: '200kb' });
+
+app.post('/api/share', shareJsonParser, async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Sharing not available' });
+  const { question, messages } = req.body || {};
+  if (!question || !messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: 'question and messages[] are required' });
+  }
+  const id = randomUUID().replace(/-/g, '').slice(0, 8);
+  try {
+    await pool.query(
+      'INSERT INTO shares (id, question, messages) VALUES ($1, $2, $3)',
+      [id, question, JSON.stringify(messages.slice(0, 50))]
+    );
+    res.json({ id, url: `/s/${id}` });
+  } catch (err) {
+    console.error('[shares] Insert error:', err.message);
+    res.status(500).json({ error: 'Failed to save' });
+  }
+});
+
+app.get('/api/share/:id', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Sharing not available' });
+  try {
+    const { rows } = await pool.query('SELECT question, messages, created_at FROM shares WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Solution not found or expired' });
+    }
+    res.json({
+      question: rows[0].question,
+      messages: rows[0].messages,
+      createdAt: rows[0].created_at,
+    });
+  } catch (err) {
+    console.error('[shares] Get error:', err.message);
+    res.status(500).json({ error: 'Failed to load' });
+  }
 });
 
 // ── Static SPA serving ──────────────────────────────────────────────────
