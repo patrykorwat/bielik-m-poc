@@ -16,6 +16,57 @@
   flex-shrink: 0;
 }
 
+/* Level tabs (podstawowa / matura podst. / matura rozsz. / studia) */
+.formula-level-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 12px 24px 0;
+  flex-shrink: 0;
+}
+
+.formula-level-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-secondary);
+  background: var(--glass-bg);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.formula-level-tab:hover {
+  color: var(--text-primary);
+  background: var(--glass-bg-light);
+}
+
+.formula-level-tab.active {
+  color: var(--text-primary);
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border);
+}
+
+.formula-level-icon {
+  font-size: 15px;
+}
+
+.formula-level-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--glass-bg-light);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
 .formula-header h2 {
   font-size: 18px;
   font-weight: 700;
@@ -257,6 +308,35 @@
   opacity: 0.85;
 }
 
+/* CKE formula cards (LaTeX display) */
+.formula-card {
+  padding: 10px 16px;
+  margin-bottom: 2px;
+  border-radius: var(--radius-xs);
+  background: var(--glass-bg);
+}
+
+.formula-card-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.formula-card-latex {
+  overflow-x: auto;
+  padding: 4px 0;
+}
+
+.formula-card-latex .katex-display {
+  margin: 4px 0;
+  text-align: left;
+}
+
+.formula-card-latex .katex {
+  font-size: 1.05em;
+}
+
 /* Mobile */
 @media (max-width: 640px) {
   .formula-header {
@@ -266,6 +346,30 @@
 
   .formula-search {
     padding: 8px 16px;
+  }
+
+  .formula-level-tabs {
+    padding: 8px 16px 0;
+  }
+
+  .formula-level-tabs {
+    flex-wrap: wrap;
+  }
+
+  .formula-level-tab {
+    padding: 7px 6px;
+    font-size: 11px;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .formula-level-icon {
+    display: none;
+  }
+
+  .formula-level-count {
+    font-size: 10px;
+    padding: 1px 5px;
   }
 
   .formula-category-header {

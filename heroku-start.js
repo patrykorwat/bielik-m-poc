@@ -133,15 +133,44 @@ app.get('/health', (req, res) => {
 
 let formulasCache = null;
 
+// Map category IDs from mathematical_methods.json to education levels
+const CATEGORY_LEVEL = {
+  algebra_expressions:      'matura_podstawowa',
+  equations_inequalities:   'matura_podstawowa',
+  functions:                'matura_podstawowa',
+  sequences_series:         'matura_podstawowa',
+  trigonometry:             'matura_podstawowa',
+  plane_geometry:           'podstawowa',
+  solid_geometry:           'matura_rozszerzona',
+  analytic_geometry:        'matura_rozszerzona',
+  combinatorics_probability:'matura_rozszerzona',
+  proofs_reasoning:         'matura_rozszerzona',
+  number_theory:            'studia',
+  derivatives_calculus:     'studia',
+  special_techniques:       'matura_rozszerzona',
+  exam_strategy:            'matura_podstawowa',
+};
+
+const LEVEL_ORDER = ['podstawowa', 'matura_podstawowa', 'matura_rozszerzona', 'studia'];
+const LEVEL_LABELS = {
+  podstawowa: 'Szkoła podstawowa',
+  matura_podstawowa: 'Matura podstawowa',
+  matura_rozszerzona: 'Matura rozszerzona',
+  studia: 'Studia',
+};
+
 app.get('/api/formulas', (req, res) => {
   if (!formulasCache) {
     try {
+      // Load SymPy method reference (mathematical_methods.json)
       const raw = readFileSync(join(__dirname, 'docs', 'mathematical_methods.json'), 'utf8');
       const data = JSON.parse(raw);
-      formulasCache = (data.categories || []).map(cat => ({
+      const methodCategories = (data.categories || []).map(cat => ({
         id: cat.id,
         name: cat.name,
         name_en: cat.name_en,
+        level: CATEGORY_LEVEL[cat.id] || 'matura_podstawowa',
+        type: 'methods',
         methods: (cat.methods || []).map(m => ({
           id: m.id,
           name: m.name,
@@ -154,12 +183,40 @@ app.get('/api/formulas', (req, res) => {
           } : null,
         })),
       }));
+
+      // Load CKE matura formula reference (matura-formulas.json)
+      const ckeRaw = readFileSync(join(__dirname, 'docs', 'matura-formulas.json'), 'utf8');
+      const ckeData = JSON.parse(ckeRaw);
+      const ckeCategories = (ckeData.sections || []).map(sec => ({
+        id: sec.id,
+        name: sec.name,
+        name_en: '',
+        level: sec.level,
+        type: 'formulas',
+        methods: (sec.formulas || []).map(f => ({
+          id: f.id,
+          name: f.name,
+          description: f.latex ? `$${f.latex}$` : '',
+          sympy_functions: [],
+          when_to_use: '',
+          worked_example: null,
+          latex: f.latex || '',
+        })),
+      }));
+
+      const allCategories = [...ckeCategories, ...methodCategories];
+
+      formulasCache = LEVEL_ORDER.map(level => ({
+        level,
+        label: LEVEL_LABELS[level],
+        categories: allCategories.filter(c => c.level === level),
+      }));
     } catch (err) {
       console.error('[formulas] Failed to load:', err.message);
       return res.status(500).json({ error: 'Failed to load formulas' });
     }
   }
-  res.json({ categories: formulasCache });
+  res.json({ levels: formulasCache });
 });
 
 // ── Server-side solve pipeline (SSE) ──────────────────────────────────
