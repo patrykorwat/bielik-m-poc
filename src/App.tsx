@@ -376,12 +376,20 @@ function App() {
 
   const handleShare = async () => {
     if (messages.length === 0 || shareStatus === 'saving') return;
-    const shareId = orchestratorRef.current?.lastShareId;
-    if (!shareId) return;
     setShareStatus('saving');
     try {
-      const res = await fetch(`/api/share/${shareId}/extend`, { method: 'POST' });
-      if (!res.ok) throw new Error('extend failed');
+      // Share the full conversation
+      const shareMessages = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+        agentName: (m as any).agentName || undefined,
+      }));
+      const res = await fetch('/api/share/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: shareMessages }),
+      });
+      if (!res.ok) throw new Error('share failed');
       const { url } = await res.json();
       const fullUrl = `${window.location.origin}${url}`;
       await navigator.clipboard.writeText(fullUrl);
@@ -828,7 +836,7 @@ function App() {
               <span>Agenci pracują nad odpowiedzią...</span>
             </div>
           )}
-          {messages.length > 0 && !isProcessing && orchestratorRef.current?.lastShareId && (
+          {messages.length > 0 && !isProcessing && (
             <div className="share-bar">
               <button
                 className="share-btn"
@@ -838,7 +846,7 @@ function App() {
                 {shareStatus === 'saving' ? 'Zapisuję...' :
                  shareStatus === 'done' ? 'Link skopiowany!' :
                  shareStatus === 'error' ? 'Nie udało się' :
-                 'Udostępnij rozwiązanie'}
+                 'Udostępnij konwersację'}
               </button>
               {shareStatus === 'done' && shareUrl && (
                 <span className="share-expiry">Link ważny przez 60 dni</span>

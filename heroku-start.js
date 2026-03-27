@@ -407,6 +407,46 @@ app.post('/api/share/:id/extend', async (req, res) => {
   }
 });
 
+// Share full conversation from a session
+const shareSessionParser = express.json({ limit: '200kb' });
+app.post('/api/share/session', shareSessionParser, async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Sharing not available' });
+  const { sessionId, messages: clientMessages } = req.body || {};
+  if (!sessionId && !clientMessages) {
+    return res.status(400).json({ error: 'sessionId or messages required' });
+  }
+
+  try {
+    // Use client-provided messages (the full rendered conversation from the UI)
+    const conversationMessages = Array.isArray(clientMessages)
+      ? clientMessages.map(m => ({
+          role: String(m.role || 'user'),
+          content: String(m.content || ''),
+          agentName: m.agentName || undefined,
+        })).filter(m => m.content)
+      : [];
+
+    if (conversationMessages.length === 0) {
+      return res.status(400).json({ error: 'No messages to share' });
+    }
+
+    const shareId = randomUUID().replace(/-/g, '').slice(0, 8);
+    const firstUserMsg = conversationMessages.find(m => m.role === 'user');
+    const question = firstUserMsg ? firstUserMsg.content.slice(0, 200) : 'Konwersacja';
+
+    await pool.query(
+      `INSERT INTO shares (id, question, messages, expires_at)
+       VALUES ($1, $2, $3, NOW() + INTERVAL '${SHARE_EXTENDED_TTL_DAYS} days')`,
+      [shareId, question, JSON.stringify(conversationMessages)]
+    );
+
+    res.json({ url: `/s/${shareId}` });
+  } catch (err) {
+    console.error('[shares] Session share error:', err.message);
+    res.status(500).json({ error: 'Failed to share' });
+  }
+});
+
 // Fetch a shared solution
 app.get('/api/share/:id', async (req, res) => {
   if (!pool) return res.status(503).json({ error: 'Sharing not available' });
