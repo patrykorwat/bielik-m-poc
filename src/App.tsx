@@ -642,7 +642,7 @@ function App() {
                 <div className="chip-grid">
                   {[
                     { label: 'Trygonometria', query: 'Daj mi 5 zadań z trygonometrii' },
-                    { label: 'Zadania tekstowe kl. 7', query: 'Wymyśl 5 zadań tekstowych z równaniami dla klasy 7' },
+                    { label: 'Zadania maturalne', query: 'Daj mi 5 zadań z matury rozszerzonej z analizy matematycznej' },
                     { label: 'Co to jest pochodna?', query: 'Co to jest pochodna funkcji?' },
                   ].map((ex) => (
                     <button
