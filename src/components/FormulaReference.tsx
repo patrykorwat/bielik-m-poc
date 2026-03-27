@@ -183,7 +183,7 @@ export function FormulaReference({ onSubmitQuery, onNavigateToChat }: FormulaRef
             </button>
             {expandedCategory === cat.id && (
               <div className="formula-methods">
-                {cat.type === 'formulas' ? (
+                {(cat.type === 'formulas' || cat.methods.some(m => m.latex)) ? (
                   /* CKE formula cards: show LaTeX directly, no expand needed */
                   cat.methods.map(formula => (
                     <div key={formula.id} className="formula-card">

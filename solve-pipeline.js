@@ -1171,11 +1171,21 @@ function getDiagramPrompt(diagramType) {
 
 // ── Guardrail ─────────────────────────────────────────────────────────
 
-async function checkGuardrail(userMessage) {
+async function checkGuardrail(userMessage, chatHistory = []) {
   return llmobs.trace({ kind: 'task', name: 'guardrail' }, async () => {
-    const raw = await llmCall('guardrail', prompts.guardrail, [
-      { role: 'user', content: userMessage },
-    ], {
+    // Build messages with conversation context so follow-ups are understood
+    const messages = [];
+    if (chatHistory.length > 0) {
+      // Add a condensed context summary so the guardrail can understand follow-ups
+      const contextLines = chatHistory.slice(-4).map(m =>
+        `${m.role === 'user' ? 'Uczeń' : 'System'}: ${m.content.slice(0, 150)}`
+      ).join('\n');
+      messages.push({ role: 'user', content: `Kontekst rozmowy:\n${contextLines}\n\nNowa wiadomość do oceny:\n${userMessage}` });
+    } else {
+      messages.push({ role: 'user', content: userMessage });
+    }
+
+    const raw = await llmCall('guardrail', prompts.guardrail, messages, {
       maxTokens: prompts.agents.guardrail.max_tokens,
       temperature: prompts.agents.guardrail.temperature,
     });
@@ -1606,7 +1616,7 @@ function tryArithmeticScheme(message) {
 // Main solve function
 // =====================================================================
 
-export async function solve(userMessage, sessionId, onStep) {
+export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
   const send = (step, agentName, content, extra = {}) => {
     if (onStep) onStep({ step, agentName, content, ...extra });
   };
@@ -1617,7 +1627,7 @@ export async function solve(userMessage, sessionId, onStep) {
 
     send('guardrail', 'Guardrail', 'Sprawdzam zapytanie...');
 
-    const guardrailResult = await checkGuardrail(userMessage);
+    const guardrailResult = await checkGuardrail(userMessage, chatHistory);
 
     if (!guardrailResult.valid) {
       send('guardrail_done', 'Guardrail', guardrailResult.reason, { blocked: true });
@@ -1647,8 +1657,12 @@ export async function solve(userMessage, sessionId, onStep) {
         if (generatorIntent.needsLLM) {
           send('generator', 'Generator Zadań', 'Tworzę zadania...');
 
+          // Include conversation context for follow-up requests
+          const genUserContent = chatHistory.length > 0
+            ? `Kontekst rozmowy:\n${chatHistory.slice(-4).map(m => `${m.role === 'user' ? 'Uczeń' : 'System'}: ${m.content.slice(0, 200)}`).join('\n')}\n\nProśba:\n${userMessage}`
+            : userMessage;
           const genRaw = await llmCall('generator_llm', GENERATOR_LLM_SYSTEM_PROMPT, [
-            { role: 'user', content: userMessage },
+            { role: 'user', content: genUserContent },
           ], { maxTokens: 2000, temperature: 0.7 });
 
           const content = stripThink(genRaw);
@@ -1670,8 +1684,11 @@ export async function solve(userMessage, sessionId, onStep) {
           // Pool empty for this topic: fall back to LLM generation
           send('generator', 'Generator Zadań', 'Brak zadań w bazie, tworzę nowe...');
 
+          const genFallbackContent = chatHistory.length > 0
+            ? `Kontekst rozmowy:\n${chatHistory.slice(-4).map(m => `${m.role === 'user' ? 'Uczeń' : 'System'}: ${m.content.slice(0, 200)}`).join('\n')}\n\nProśba:\n${userMessage}`
+            : userMessage;
           const genRaw = await llmCall('generator_llm', GENERATOR_LLM_SYSTEM_PROMPT, [
-            { role: 'user', content: userMessage },
+            { role: 'user', content: genFallbackContent },
           ], { maxTokens: 2000, temperature: 0.7 });
 
           const content = stripThink(genRaw);
@@ -1836,9 +1853,18 @@ export async function solve(userMessage, sessionId, onStep) {
 
     send('classifier', 'Klasyfikator', 'Klasyfikuję zadanie...');
 
-    const classifierRaw = await llmCall('classifier', prompts.classifier, [
-      { role: 'user', content: userMessage },
-    ], {
+    // Build classifier messages with conversation context for follow-ups
+    const classifierMessages = [];
+    if (chatHistory.length > 0) {
+      const contextLines = chatHistory.slice(-4).map(m =>
+        `${m.role === 'user' ? 'Uczeń' : 'System'}: ${m.content.slice(0, 200)}`
+      ).join('\n');
+      classifierMessages.push({ role: 'user', content: `Kontekst rozmowy:\n${contextLines}\n\nZadanie do klasyfikacji:\n${userMessage}` });
+    } else {
+      classifierMessages.push({ role: 'user', content: userMessage });
+    }
+
+    const classifierRaw = await llmCall('classifier', prompts.classifier, classifierMessages, {
       maxTokens: prompts.agents.classifier.max_tokens,
       temperature: prompts.agents.classifier.temperature,
     });

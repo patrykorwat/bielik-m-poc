@@ -144,10 +144,14 @@ export class ThreeAgentOrchestrator {
   // Server-side solve via /api/solve (SSE, includes guardrail + generator + arithmetic)
   // ═══════════════════════════════════════════════════════════════════
 
-  private static SOLVE_SESSION_ID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
+  private static generateSessionId(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+    });
+  }
+
+  private solveSessionId = ThreeAgentOrchestrator.generateSessionId();
 
   private async tryServerSolve(
     userMessage: string,
@@ -166,7 +170,7 @@ export class ThreeAgentOrchestrator {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage,
-          sessionId: ThreeAgentOrchestrator.SOLVE_SESSION_ID,
+          sessionId: this.solveSessionId,
         }),
         signal: combinedSignal,
       });
@@ -351,6 +355,7 @@ export class ThreeAgentOrchestrator {
    */
   clearHistory(): void {
     this.conversationHistory = [];
+    this.solveSessionId = ThreeAgentOrchestrator.generateSessionId();
   }
 
   /**

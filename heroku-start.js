@@ -223,6 +223,42 @@ app.get('/api/formulas', (req, res) => {
 
 import { solve } from './solve-pipeline.js';
 
+// In-memory session store: keeps last N messages per sessionId
+// Entries expire after 12 hours of inactivity
+const sessionStore = new Map(); // sessionId -> { messages: [{role, content}], lastAccess: Date }
+const SESSION_MAX_MESSAGES = 10;
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+
+function getSessionHistory(sessionId) {
+  const session = sessionStore.get(sessionId);
+  if (!session) return [];
+  session.lastAccess = Date.now();
+  return session.messages.slice(-SESSION_MAX_MESSAGES);
+}
+
+function addToSession(sessionId, role, content) {
+  if (!sessionStore.has(sessionId)) {
+    sessionStore.set(sessionId, { messages: [], lastAccess: Date.now() });
+  }
+  const session = sessionStore.get(sessionId);
+  session.lastAccess = Date.now();
+  session.messages.push({ role, content });
+  // Keep only the last N messages
+  if (session.messages.length > SESSION_MAX_MESSAGES * 2) {
+    session.messages = session.messages.slice(-SESSION_MAX_MESSAGES);
+  }
+}
+
+// Clean up expired sessions every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, session] of sessionStore) {
+    if (now - session.lastAccess > SESSION_TTL_MS) {
+      sessionStore.delete(id);
+    }
+  }
+}, 10 * 60 * 1000);
+
 const solveJsonParser = express.json({ limit: '50kb' });
 
 app.post('/api/solve', solveJsonParser, async (req, res) => {
@@ -231,6 +267,10 @@ app.post('/api/solve', solveJsonParser, async (req, res) => {
     return res.status(400).json({ error: 'message is required' });
   }
   const sessionId = clientSessionId || randomUUID();
+
+  // Get conversation history for this session, then record user message
+  const chatHistory = getSessionHistory(sessionId);
+  addToSession(sessionId, 'user', message);
   const shareId = randomUUID().replace(/-/g, '').slice(0, 8);
 
   // SSE headers
@@ -252,10 +292,17 @@ app.post('/api/solve', solveJsonParser, async (req, res) => {
     const result = await solve(message, sessionId, (step) => {
       collectedSteps.push(step);
       sendSSE('step', step);
-    });
+    }, chatHistory);
 
     // Include shareId in the done event so the client can reference it
     sendSSE('done', { ...result, shareId });
+
+    // Record a short summary of the response in session history
+    const summaryStep = collectedSteps.find(s => s.step === 'summary_done' && s.content);
+    if (summaryStep) {
+      // Keep only first 300 chars to avoid bloating session memory
+      addToSession(sessionId, 'assistant', summaryStep.content.slice(0, 300));
+    }
 
     // Save to Postgres (fire and forget, don't block SSE close)
     const shareMessages = collectedSteps
