@@ -22,11 +22,11 @@ interface Category {
 }
 
 interface FormulaReferenceProps {
-  onClose: () => void;
   onSubmitQuery: (query: string) => void;
+  onNavigateToChat: () => void;
 }
 
-export function FormulaReference({ onClose, onSubmitQuery }: FormulaReferenceProps) {
+export function FormulaReference({ onSubmitQuery, onNavigateToChat }: FormulaReferenceProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,13 +64,11 @@ export function FormulaReference({ onClose, onSubmitQuery }: FormulaReferencePro
   const totalMethods = categories.reduce((sum, c) => sum + c.methods.length, 0);
 
   return (
-    <div className="formula-reference-overlay" onClick={onClose}>
-      <div className="formula-reference-panel" onClick={e => e.stopPropagation()}>
-        <div className="formula-header">
-          <h2>Baza wzorów i metod</h2>
-          <span className="formula-count">{totalMethods} metod w {categories.length} kategoriach</span>
-          <button className="formula-close" onClick={onClose} aria-label="Zamknij">✕</button>
-        </div>
+    <div className="formula-reference-inline">
+      <div className="formula-header">
+        <h2>Baza wzorów i metod</h2>
+        <span className="formula-count">{totalMethods} metod w {categories.length} kategoriach</span>
+      </div>
 
         <div className="formula-search">
           <input
@@ -141,7 +139,7 @@ export function FormulaReference({ onClose, onSubmitQuery }: FormulaReferencePro
                             className="formula-try-btn"
                             onClick={() => {
                               onSubmitQuery(method.worked_example?.problem || `Rozwiąż zadanie z: ${method.name}`);
-                              onClose();
+                              onNavigateToChat();
                             }}
                           >
                             Wypróbuj to zadanie
@@ -155,7 +153,6 @@ export function FormulaReference({ onClose, onSubmitQuery }: FormulaReferencePro
             </div>
           ))}
         </div>
-      </div>
     </div>
   );
 }

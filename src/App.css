@@ -442,7 +442,38 @@ body::after {
   font-family: inherit;
 }
 
-.formulas-button,
+/* ===== PAGE TABS ===== */
+.page-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--glass-bg);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+
+.page-tab {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 2px);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.page-tab:hover {
+  color: var(--text-primary);
+}
+
+.page-tab.active {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+}
+
 .history-button,
 .export-button {
   padding: 8px 14px;
@@ -455,15 +486,6 @@ body::after {
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   white-space: nowrap;
   font-family: inherit;
-}
-
-.formulas-button {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-}
-
-.formulas-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
 }
 
 .history-button {

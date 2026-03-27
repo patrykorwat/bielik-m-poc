@@ -79,7 +79,10 @@ function App() {
   const [orchestratorReady, setOrchestratorReady] = useState(false);
   const [, setMcpConnected] = useState(false);
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
-  const [showFormulas, setShowFormulas] = useState(false);
+  const [activePage, setActivePage] = useState<'chat' | 'formulas'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('p') === 'formulas' ? 'formulas' : 'chat';
+  });
   const [shareStatus, setShareStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
@@ -101,6 +104,12 @@ function App() {
   }, []);
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+
+  const navigateTo = (page: 'chat' | 'formulas') => {
+    setActivePage(page);
+    const url = page === 'formulas' ? '?p=formulas' : window.location.pathname;
+    window.history.replaceState({}, '', url);
+  };
 
   const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -598,9 +607,14 @@ function App() {
               </svg>
             )}
           </button>
-          <button onClick={() => setShowFormulas(true)} className="formulas-button" title="Baza wzorów">
-            <Icon type="books" /> Wzory
-          </button>
+          <div className="page-tabs">
+            <button className={`page-tab ${activePage === 'chat' ? 'active' : ''}`} onClick={() => navigateTo('chat')}>
+              Czat
+            </button>
+            <button className={`page-tab ${activePage === 'formulas' ? 'active' : ''}`} onClick={() => navigateTo('formulas')}>
+              Wzory
+            </button>
+          </div>
           <button onClick={() => setShowHistory(true)} className="history-button">
             <Icon type="books" /> Historia
           </button>
@@ -613,6 +627,14 @@ function App() {
         </div>
       </header>
 
+      {activePage === 'formulas' ? (
+        <div className="chat-container">
+          <FormulaReference
+            onSubmitQuery={(q) => { submitQuery(q); navigateTo('chat'); }}
+            onNavigateToChat={() => navigateTo('chat')}
+          />
+        </div>
+      ) : (
       <div className="chat-container">
         <div className="messages-container">
           {messages.length === 0 ? (
@@ -845,6 +867,7 @@ function App() {
           </button>
         </div>
       </div>
+      )}
 
       <footer className="app-footer">
         <span>
@@ -860,13 +883,6 @@ function App() {
           <a href="https://huggingface.co/speakleash/Bielik-11B-v3.0-Instruct" target="_blank" rel="noopener noreferrer">Bielik v3 11B</a>
         </span>
       </footer>
-
-      {showFormulas && (
-        <FormulaReference
-          onClose={() => setShowFormulas(false)}
-          onSubmitQuery={submitQuery}
-        />
-      )}
 
       {showHistory && (
         <ChatHistorySidebar
