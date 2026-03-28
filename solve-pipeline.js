@@ -1365,6 +1365,7 @@ const TOPIC_ONLY_PATTERNS = [
   'funkcj', 'odwrotn', 'dziedzin', 'złożeni', 'zlozeni',
   'silni', 'dwumian', 'newton', 'skróconego', 'skroconego', 'nierównoś', 'nierownosc',
   'rachunek prawdopodobień', 'rachunek prawdopodobien',
+  'analiz', 'optymalizacj', 'algebr',
 ];
 
 function matchTopicName(lower) {
@@ -1392,6 +1393,9 @@ function matchTopicName(lower) {
     'wzory skróconego mnożenia': ['skróconego', 'skroconego'],
     'silnia i dwumian Newtona': ['silni', 'dwumian', 'newton'],
     'nierówności': ['nierównoś', 'nierownosc'],
+    'analiza matematyczna': ['analiz matematyczn', 'analizy matematyczn', 'analiza mat'],
+    'optymalizacja': ['optymalizacj'],
+    'algebra': ['algebr'],
   };
   for (const [topic, keywords] of Object.entries(topicMap)) {
     if (keywords.some(kw => lower.includes(kw))) {
@@ -1496,6 +1500,12 @@ Przyklady ROZWIAZ: "oblicz 2+2", "rozwiaz rownanie x^2=4", "ile wynosi sin(30)",
 
 // ── Generator: task filtering ─────────────────────────────────────────
 
+// Umbrella topics that expand to multiple sub-topics for task filtering
+const UMBRELLA_TOPICS = {
+  'analiza matematyczna': ['pochodne', 'granice', 'całki', 'ekstr', 'monotonicz', 'asympto', 'przebieg', 'styczn', 'optymali'],
+  'algebra': ['równania', 'logarytmy', 'potęgi', 'wielomiany', 'nierówności'],
+};
+
 function filterTasks({ topic, level, count = 5, year } = {}) {
   let pool = [...allTasks];
 
@@ -1503,10 +1513,20 @@ function filterTasks({ topic, level, count = 5, year } = {}) {
   if (year) pool = pool.filter(t => t.year === parseInt(year));
   if (topic) {
     const topicLower = topic.toLowerCase();
-    const topicMatched = pool.filter(t =>
-      t.topics.some(tp => tp.toLowerCase().includes(topicLower)) ||
-      t.question.toLowerCase().includes(topicLower)
-    );
+    const subTopics = UMBRELLA_TOPICS[topicLower];
+    let topicMatched;
+    if (subTopics) {
+      // Umbrella topic: match any sub-topic in task topics or question text
+      topicMatched = pool.filter(t =>
+        t.topics.some(tp => subTopics.some(st => tp.toLowerCase().includes(st))) ||
+        subTopics.some(st => t.question.toLowerCase().includes(st))
+      );
+    } else {
+      topicMatched = pool.filter(t =>
+        t.topics.some(tp => tp.toLowerCase().includes(topicLower)) ||
+        t.question.toLowerCase().includes(topicLower)
+      );
+    }
     if (topicMatched.length > 0) pool = topicMatched;
   }
 
