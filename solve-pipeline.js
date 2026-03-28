@@ -1331,7 +1331,7 @@ const GENERATOR_KEYWORDS = [
   'zadaj mi', 'zadaj pytani', 'zadawaj',
   'arkusz', 'zestaw zadań', 'zestaw zadan',
   'ćwiczeni', 'cwiczeni', 'trening', 'praktyk',
-  'daj mi zadani', 'podaj zadani', 'pokaż zadani', 'pokaz zadani',
+  'daj mi zadani', 'daj mi zadanie z', 'podaj zadani', 'pokaż zadani', 'pokaz zadani',
   'przygotuj zadani', 'kilka zadań', 'kilka zadan',
   'poszukaj mi zadani', 'poszukaj zadani', 'znajdź mi zadani', 'znajdz mi zadani',
   'znajdź zadani', 'znajdz zadani', 'wyszukaj zadani', 'wyszukaj mi zadani',
@@ -1361,6 +1361,8 @@ const TOPIC_ONLY_PATTERNS = [
   'granic', 'całk', 'calk', 'stereometri', 'planimetri', 'wielomian',
   'procent', 'statystyk', 'wektor', 'bezwzględn', 'bezwzgledn',
   'funkcj', 'odwrotn', 'dziedzin', 'złożeni', 'zlozeni',
+  'silni', 'dwumian', 'newton', 'skróconego', 'skroconego', 'nierównoś', 'nierownosc',
+  'rachunek prawdopodobień', 'rachunek prawdopodobien',
 ];
 
 function matchTopicName(lower) {
@@ -1368,7 +1370,7 @@ function matchTopicName(lower) {
     'funkcja kwadratowa': ['kwadrat', 'parabo', 'wierzchoł'],
     'trygonometria': ['trygonometri', 'sin', 'cos', 'tg', 'ctg'],
     'ciągi': ['ciąg', 'ciag', 'arytmetycz', 'geometrycz'],
-    'geometria analityczna': ['geometri analityczn', 'współrzędn', 'wspolrzedn'],
+    'geometria analityczna': ['geometria analityczn', 'geometri analityczn', 'współrzędn', 'wspolrzedn'],
     'prawdopodobieństwo': ['prawdopodobień', 'prawdopodobien', 'losow'],
     'kombinatoryka': ['kombinatoryk', 'permutacj', 'wariacj'],
     'pochodne': ['pochodn', 'ekstr', 'monotonicz'],
@@ -1385,6 +1387,9 @@ function matchTopicName(lower) {
     'wartość bezwzględna': ['bezwzględn', 'bezwzgledn', 'moduł', 'modul'],
     'funkcja liniowa': ['liniow', 'współczynnik kierunkow', 'wspolczynnik kierunkow', 'prosta'],
     'funkcje': ['funkcj', 'dziedzin', 'przeciwdziedzin', 'postać funkcj', 'postac funkcj', 'zamian postaci', 'odwrotn', 'złożeni funkcj', 'zlozeni funkcj'],
+    'wzory skróconego mnożenia': ['skróconego', 'skroconego'],
+    'silnia i dwumian Newtona': ['silni', 'dwumian', 'newton'],
+    'nierówności': ['nierównoś', 'nierownosc'],
   };
   for (const [topic, keywords] of Object.entries(topicMap)) {
     if (keywords.some(kw => lower.includes(kw))) {

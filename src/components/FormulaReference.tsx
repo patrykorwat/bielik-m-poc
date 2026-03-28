@@ -192,7 +192,7 @@ export function FormulaReference({ onSubmitQuery, onNavigateToChat }: FormulaRef
                         <button
                           className="formula-card-link"
                           onClick={() => {
-                            onSubmitQuery(`Zadanie z: ${formula.name}`);
+                            onSubmitQuery(`Daj mi zadanie z: ${formula.name}`);
                             onNavigateToChat();
                           }}
                           title="Rozwiąż zadanie wymagające tego wzoru"
@@ -269,7 +269,7 @@ export function FormulaReference({ onSubmitQuery, onNavigateToChat }: FormulaRef
                           <button
                             className="formula-try-btn"
                             onClick={() => {
-                              onSubmitQuery(method.worked_example?.problem || `Rozwiąż zadanie z: ${method.name}`);
+                              onSubmitQuery(method.worked_example?.problem || `Daj mi zadanie z: ${method.name}`);
                               onNavigateToChat();
                             }}
                           >
