@@ -1341,6 +1341,8 @@ const GENERATOR_KEYWORDS = [
   'pokaż przykład', 'pokaz przyklad', 'podaj przykład', 'podaj przyklad',
   'potrzebuję zadań', 'potrzebuje zadan',
   'jakieś zadani', 'jakies zadani', 'pare zadań', 'pare zadan',
+  'przyklady z', 'przykłady z', 'cwiczen z', 'ćwiczeń z',
+  'potrzebuje cwiczen', 'potrzebuję ćwicze',
 ];
 
 const TUTORIAL_KEYWORDS = [
@@ -1399,18 +1401,30 @@ function matchTopicName(lower) {
   return undefined;
 }
 
+// Normalize Polish diacritics: ą→a, ć→c, ę→e, ł→l, ń→n, ó→o, ś→s, ź→z, ż→z
+function stripDiacritics(str) {
+  return str
+    .replace(/[ąà]/g, 'a').replace(/[ćč]/g, 'c').replace(/[ęè]/g, 'e')
+    .replace(/ł/g, 'l').replace(/ń/g, 'n').replace(/ó/g, 'o')
+    .replace(/[śš]/g, 's').replace(/[źż]/g, 'z');
+}
+
 function detectGeneratorIntent(message) {
   const lower = message.toLowerCase().trim();
+  const norm = stripDiacritics(lower);
 
-  const hasKeyword = GENERATOR_KEYWORDS.some(kw => lower.includes(kw));
+  const hasKeyword = GENERATOR_KEYWORDS.some(kw => norm.includes(kw) || lower.includes(kw));
 
-  if (hasKeyword) {
+  // Also trigger on "N zadań/zadania/zadanie/ćwiczeń" pattern (e.g. "daj mi 5 zadań z trygonometrii")
+  const hasCountPattern = /\d+\s*(zadan|zadani|zadanie|cwiczen|przyklad)/i.test(norm);
+
+  if (hasKeyword || hasCountPattern) {
     let level;
     if (lower.includes('podstawow')) level = 'podstawowa';
     else if (lower.includes('rozszerzon')) level = 'rozszerzona';
 
     let count;
-    const countMatch = lower.match(/(\d+)\s*(zadań|zadan|zadani|pytań|pytan)/);
+    const countMatch = norm.match(/(\d+)\s*(zadan|zadani|zadanie|pytan|cwiczen|przyklad)/);
     if (countMatch) count = parseInt(countMatch[1]);
 
     let topic;
@@ -1459,8 +1473,26 @@ function detectGeneratorIntent(message) {
     }
   }
 
-  return { isTrigger: false };
+  // If the message doesn't look like a concrete math problem, mark as uncertain
+  // so the solver can do a quick LLM intent check before proceeding
+  const looksLikeProblem = /[=+\-*/^√∫∑]|\d{2,}|oblicz|wyznacz|rozwiąż|rozwiaz|udowodnij|ile wynosi|jaki jest|który/.test(lower);
+  if (!looksLikeProblem) {
+    return { isTrigger: false, uncertain: true };
+  }
+
+  return { isTrigger: false, uncertain: false };
 }
+
+// ── Generator: LLM intent classification (lightweight) ────────────────
+
+const INTENT_CLASSIFIER_PROMPT = `Czy uzytkownik prosi o WYGENEROWANIE/ZNALEZIENIE zadan lub cwiczen do rozwiazania, czy chce ROZWIAZAC konkretne zadanie matematyczne?
+
+Odpowiedz JEDNYM slowem:
+GENERUJ - jesli uzytkownik prosi o zadania, cwiczenia, przyklady do procwiczenia tematu
+ROZWIAZ - jesli uzytkownik podaje konkretne zadanie do rozwiazania
+
+Przyklady GENERUJ: "daj mi zadania z trygonometrii", "potrzebuje cwiczen z logarytmow", "przygotuj arkusz z geometrii", "zadania z: potegi i pierwiastki"
+Przyklady ROZWIAZ: "oblicz 2+2", "rozwiaz rownanie x^2=4", "ile wynosi sin(30)", "znajdz pochodna f(x)=x^3"`;
 
 // ── Generator: task filtering ─────────────────────────────────────────
 
@@ -1647,7 +1679,32 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
 
     // ── Step 0.5: Generator intent ────────────────────────────────
 
-    const generatorIntent = detectGeneratorIntent(userMessage);
+    let generatorIntent = detectGeneratorIntent(userMessage);
+
+    // If regex-based detection is uncertain, ask a lightweight LLM
+    if (!generatorIntent.isTrigger && generatorIntent.uncertain) {
+      try {
+        const intentRaw = await llmCall('intent_classifier', INTENT_CLASSIFIER_PROMPT, [
+          { role: 'user', content: userMessage },
+        ], { maxTokens: 10, temperature: 0.1 });
+        const intentWord = stripThink(intentRaw).trim().toUpperCase();
+        if (intentWord.includes('GENERUJ')) {
+          const lower = userMessage.toLowerCase();
+          const norm = stripDiacritics(lower);
+          const topic = matchTopicName(lower) || matchTopicName(norm);
+          let level;
+          if (lower.includes('podstawow')) level = 'podstawowa';
+          else if (lower.includes('rozszerzon')) level = 'rozszerzona';
+          let count;
+          const countMatch = norm.match(/(\d+)\s*(zadan|zadani|zadanie|pytan|cwiczen|przyklad)/);
+          if (countMatch) count = parseInt(countMatch[1]);
+          generatorIntent = { isTrigger: true, topic, level, count, needsLLM: true, rawMessage: userMessage };
+        }
+      } catch (err) {
+        // LLM intent check failed, fall through to solver
+        console.warn('[intent_classifier] Error:', err.message);
+      }
+    }
 
     if (generatorIntent.isTrigger) {
       return llmobs.trace({ kind: 'task', name: 'generator' }, async () => {

@@ -2,7 +2,7 @@
 
 **Darmowy asystent matematyczny po polsku, oparty na modelu Bielik.**
 
-Rozwiązuje zadania krok po kroku i tłumaczy sposób rozwiązywania. Zakres: matura rozszerzona z matematyki oraz zadania akademickie (teoria liczb, równania diofantyczne, optymalizacja, dowody, algebra).
+Rozwiązuje zadania krok po kroku i tłumaczy sposób rozwiązywania. Zakres: od szkoły podstawowej, przez maturę podstawową i rozszerzoną, po zadania akademickie (teoria liczb, równania diofantyczne, optymalizacja, dowody, algebra).
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Website](https://img.shields.io/badge/Website-formulo.pl-667eea)](https://formulo.pl)
@@ -19,6 +19,9 @@ Aplikacja webowa z wieloetapowym pipeline AI:
 - diagramy SVG (geometria, wykresy funkcji, bryły 3D)
 - generuje zadania na zamówienie (dowolny poziom, format, temat)
 - wyjaśnia pojęcia matematyczne (tryb definicji)
+- referencja wzorów CKE z podziałem na maturę podstawową i rozszerzoną
+- kontekst konwersacji (rozumie pytania nawiązujące do poprzednich wiadomości)
+- udostępnianie konwersacji przez link
 - po polsku, za darmo
 
 ## Architektura
@@ -51,14 +54,16 @@ Każdy krok wysyła status przez SSE do przeglądarki.
 Pytanie użytkownika
       |
       v
- 0  Guardrail
+ 0  Guardrail (z kontekstem konwersacji)
     Walidacja: czy to matematyka? Odrzuca spam/injection.
+    Uwzględnia historię sesji przy ocenie wiadomości follow-up.
       |
       v
- 0.5 Generator Intent
-    "daj mi zadania z trygonometrii" → losuje z datasetu CKE.
-    Niestandardowe prośby (inna klasa, format, poziom trudności)
-    → LLM generuje zadania od zera.
+ 0.5 Generator Intent (dwuwarstwowy)
+    Warstwa 1: regex/keyword z normalizacją polskich znaków diakrytycznych.
+    Warstwa 2: LLM intent classifier (uruchamiany tylko gdy warstwa 1
+    nie jest pewna i wiadomość nie wygląda na konkretne zadanie).
+    Trigger → losuje z datasetu CKE lub LLM generuje zadania od zera.
       |
       v
  0.55 Definition
@@ -82,7 +87,7 @@ Pytanie użytkownika
     Dowód → LLM formalizuje w Lean 4 → leanVerify → return.
       |
       v
- 1   Classifier
+ 1   Classifier (z kontekstem konwersacji)
     LLM klasyfikuje typ zadania (JSON): problemType, confidence, mc_options.
       |
       v
@@ -98,10 +103,12 @@ Pytanie użytkownika
  3   Agent Wykonawczy (max 3 próby)
     LLM → kod SymPy → sanitizeGeneratedCode → callSymPy.
     isOutputSuspicious wymusza retry. Retry prompt zawiera retryHint z RAG.
+    Osobny prompt MC dla pytań wielokrotnego wyboru (executor_sympy_mc).
+    Zadania optymalizacyjne: wymusza wartość symboliczną + numeryczną + wymiary.
       |
       v
  3.5 Decomposition Fallback
-    Po 3 nieudanych próbach: LLM rozbija problem na 2-4 pod-zadań.
+    Po 3 nieudanych próbach: LLM rozbija problem na 2-4 pod-zadania.
       |
       v
  3.7 Brute-force Verification
@@ -110,6 +117,7 @@ Pytanie użytkownika
       v
  4   Agent Podsumowujący
     Krok po kroku wyjaśnienie + odpowiedź.
+    Wartości symboliczne zawsze z przybliżeniem dziesiętnym.
       |
       v
  5   Lean Post-Solve Verification (dowody)
@@ -121,6 +129,30 @@ Pytanie użytkownika
     bryła 3D, układ współrzędnych, wykres funkcji). LLM generuje
     kod Python → SVG → callSymPyPlot. Retry z kontekstem błędu.
 ```
+
+## Referencja wzorów
+
+Zakładka "Wzory" zawiera 128 wzorów z oficjalnego arkusza CKE, podzielonych na 4 poziomy:
+
+| Poziom | Opis | Sekcje |
+|---|---|---|
+| Szkoła podstawowa | Planimetria podstawowa | 1 |
+| Matura podstawowa | Wartość bezwzględna, potęgi, logarytmy, wzory skróconego mnożenia, funkcja kwadratowa, ciągi, trygonometria, planimetria | 8 |
+| Matura rozszerzona | Silnia/dwumian, wzór Newtona, ciągi rozszerzone, trygonometria rozszerzona, planimetria rozszerzona, geometria analityczna, stereometria, kombinatoryka, rachunek prawdopodobieństwa, statystyka, pochodna | 11 |
+| Studia | Metody zaawansowane (SymPy) | zmienna |
+
+Każdy wzór ma przycisk "Rozwiąż zadanie" generujący zadania wymagające danego wzoru.
+Wzory renderowane w KaTeX (display mode). Źródło: `docs/matura-formulas.json`.
+
+## Sesje i kontekst konwersacji
+
+Serwer utrzymuje historię konwersacji w pamięci (Map) dla każdej sesji.
+
+- TTL sesji: 12 godzin braku aktywności
+- Maksymalnie 10 wiadomości w historii
+- Historia przekazywana do guardrail, klasyfikatora i generatora LLM
+- Przycisk "Nowy czat" regeneruje sessionId (izolacja kontekstu)
+- Przycisk "Udostępnij" publikuje całą konwersację (Postgres, 60 dni TTL)
 
 ## Zakres tematyczny
 
@@ -191,13 +223,20 @@ Znajdź minimalną odległość od startu i maksymalną prędkość.
 **Optymalizacja:**
 
 ```
-Znajdź minimum funkcji f(x) = x⁴ + 0.5(2x+1)⁴
+Z blachy o wymiarach 20cm x 30cm wycinamy kwadraty z rogów
+i zaginamy boki tworząc pudełko. Jakie wymiary dają maksymalną objętość?
 ```
 
 **Dowody formalne:**
 
 ```
 Udowodnij, że funkcja f(x) = 3x/(x+1) jest rosnąca na przedziale (-1, +∞)
+```
+
+**Generowanie zadań:**
+
+```
+Daj mi 5 zadań z trygonometrii z matury rozszerzonej
 ```
 
 ## Narzędzia SymPy
@@ -212,15 +251,21 @@ formulo/
 ├── extraction-templates.js        # 45 szablonów ekstrakcji (keyword → JSON → SymPy)
 ├── deterministic-solvers.js       # 4 deterministyczne solvery (regex, zero LLM)
 ├── decomposer.js                  # Dekompozycja na pod-zadania z formułami
-├── heroku-start.js                # HTTP server, SSE endpoint /api/solve
+├── heroku-start.js                # HTTP server, SSE endpoint, session store, share API
 ├── mcp-proxy-server.js            # Proxy HTTP → MCP stdio (port 3001)
 ├── lean-proxy-server.js           # Lean 4 proxy (port 3002)
 ├── mcp-sympy-server/              # Serwer SymPy (MCP, 10 narzędzi)
 ├── rag_service/                   # Baza wiedzy (FastAPI + TF-IDF, port 3003)
 ├── datasets/                      # Zadania maturalne CKE (JSON)
+├── docs/
+│   └── matura-formulas.json       # 128 wzorów CKE (LaTeX), 19 sekcji, 4 poziomy
 ├── prompts.json                   # Prompty dla agentów
-├── src/services/
-│   └── threeAgentSystem.ts        # Thin client: wywołuje POST /api/solve (SSE)
+├── src/
+│   ├── App.tsx                    # Główny komponent, share, session management
+│   ├── components/
+│   │   └── FormulaReference.tsx   # Referencja wzorów z KaTeX i generowaniem zadań
+│   └── services/
+│       └── threeAgentSystem.ts    # Thin client: wywołuje POST /api/solve (SSE)
 └── start.sh                       # Uruchamianie lokalne
 ```
 
@@ -238,8 +283,10 @@ Dwie warstwy, obie uruchamiane przed wykonaniem kodu (executor i diagram):
 - speakleash/Bielik-11B-v3.0-Instruct (polski model LLM)
 - SymPy (obliczenia symboliczne)
 - Lean 4 + Mathlib (formalne dowody)
+- KaTeX (renderowanie wzorów LaTeX)
 - FastAPI + scikit-learn (RAG Service, TF-IDF)
 - MCP (Model Context Protocol)
+- PostgreSQL (udostępnione konwersacje)
 - dd-trace / LLM Observability (Datadog)
 - Heroku (deployment, jeden dyno)
 
