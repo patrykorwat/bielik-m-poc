@@ -11,6 +11,14 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './App.css';
 
+// Google Analytics / Ads conversion tracking
+declare global {
+  interface Window { gtag?: (...args: unknown[]) => void; }
+}
+function trackEvent(name: string, params?: Record<string, unknown>) {
+  if (window.gtag) window.gtag('event', name, params);
+}
+
 // Icon component - uses inline SVG for cross-browser compatibility (no emoji dependency)
 const Icon = ({ type, label }: { type: string; label?: string }) => {
   const icons: Record<string, { svg: string; color: string }> = {
@@ -272,6 +280,7 @@ function App() {
     setIsProcessing(true);
     const userInput = inputMessage;
     setInputMessage('');
+    trackEvent('solve_started', { query_length: userInput.length });
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -293,12 +302,13 @@ function App() {
         },
         { classifierMode, abortSignal: controller.signal }
       );
+      trackEvent('solve_completed');
     } catch (error) {
       if (controller.signal.aborted) {
-        // Aborted intentionally, not an error
         return;
       }
       console.error('Blad podczas przetwarzania:', error);
+      trackEvent('solve_error');
       alert('Wystapil blad podczas komunikacji z agentem. Sprawdz klucz API i polaczenie.');
     } finally {
       if (abortControllerRef.current === controller) {
@@ -315,6 +325,7 @@ function App() {
     }
     setInputMessage('');
     setIsProcessing(true);
+    trackEvent('solve_started', { query_length: query.length, source: 'formula_card' });
     const controller = new AbortController();
     abortControllerRef.current = controller;
     orchestratorRef.current.processMessage(
@@ -328,9 +339,12 @@ function App() {
         });
       },
       { classifierMode, abortSignal: controller.signal }
-    ).catch((error) => {
+    ).then(() => {
+      trackEvent('solve_completed', { source: 'formula_card' });
+    }).catch((error) => {
       if (!controller.signal.aborted) {
         console.error('Blad podczas przetwarzania:', error);
+        trackEvent('solve_error');
       }
     }).finally(() => {
       if (abortControllerRef.current === controller) {
@@ -395,6 +409,7 @@ function App() {
       await navigator.clipboard.writeText(fullUrl);
       setShareUrl(fullUrl);
       setShareStatus('done');
+      trackEvent('conversation_shared', { message_count: messages.length });
       setTimeout(() => { setShareStatus('idle'); setShareUrl(null); }, 8000);
     } catch {
       setShareStatus('error');
