@@ -1,6 +1,13 @@
 # Stage 1: Build frontend + server
 FROM node:20-slim AS builder
 
+# Build tools needed by native npm packages (node-gyp, etc.)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Install dependencies first (cacheable layer)
@@ -27,15 +34,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install elan (Lean version manager) and Lean 4 stable
-ENV ELAN_HOME=/usr/local/elan
-ENV PATH="${ELAN_HOME}/bin:${PATH}"
+# elan installs to ~/.elan by default; we keep it there and add to PATH
+ENV PATH="/root/.elan/bin:${PATH}"
 
 RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:stable --no-modify-path \
-    && mv /root/.elan ${ELAN_HOME} \
-    && chmod -R a+rx ${ELAN_HOME}
-
-# Verify lean is available
-RUN lean --version
+    && ls -la /root/.elan/bin/ \
+    && lean --version
 
 WORKDIR /app
 
