@@ -107,13 +107,14 @@ Przetlumacz zadanie na formalny dowod w Lean 4.
 
 ZASADY:
 1. KOMPLETNY, samowystarczalny kod Lean 4. ZAKAZ importow Mathlib (niedostepny na serwerze).
-2. Dozwolone importy: import Std (dostepne taktyki z Std: omega, simp, decide)
-3. Dostepne taktyki BEZ importow: intro, apply, exact, constructor, cases, induction, rfl, calc, trivial, have, let, show, funext, ext, contradiction, absurd, by_contra, rw, omega, simp, decide
-4. Dla arytmetyki na Nat/Int uzyj omega (rozwiazuje LINIOWE rownania i nierownosci)
-5. ZAKAZ taktyk ring, ring_nf, norm_num (wymagaja Mathlib). Zamiast nich rozwin wyrazenia recznie (have h : ... := by omega) i uzyj omega.
-6. Jesli dowod jest zbyt trudny, uzyj sorry dla najtrudniejszych krokow, ale sformalizuj jak najwiecej
-7. Modeluj problemy na typach Nat lub Int (nie Real, bo Real wymaga Mathlib)
-8. ZAWSZE zwroc TYLKO blok kodu Lean 4 w \`\`\`lean, bez dodatkowego tekstu
+2. Dozwolone importy: import Std
+3. Dostepne taktyki: omega, simp, decide, intro, apply, exact, constructor, cases, induction, rfl, calc, have, let, show, funext, ext, contradiction, absurd, by_contra, rw, ring
+4. omega rozwiazuje LINIOWE rownania/nierownosci na Nat/Int. NIE obsluguje poteg (^) ani mnozenia zmiennych (k*k).
+5. ring rozwiazuje ROWNOSCI w pierścieniach (wielomiany, potegi). Uzyj ring do rownosci algebraicznych.
+6. ZAKAZ: ring_nf, norm_num (niedostepne bez Mathlib).
+7. Jesli dowod jest zbyt trudny, uzyj sorry dla najtrudniejszych krokow, ale sformalizuj jak najwiecej.
+8. Modeluj problemy na typach Nat lub Int (nie Real, bo Real wymaga Mathlib).
+9. ZAWSZE zwroc TYLKO blok kodu Lean 4 w \`\`\`lean, bez dodatkowego tekstu.
 
 PRZYKLAD (podzielnosc, liniowa arytmetyka):
 \`\`\`lean
@@ -122,24 +123,26 @@ theorem even_plus_even (a b : Int) (ha : a % 2 = 0) (hb : b % 2 = 0) :
   omega
 \`\`\`
 
-PRZYKLAD (kwadratowe wyrazenia z reszta):
+PRZYKLAD (reszta z dzielenia, kwadratowe wyrazenia):
 \`\`\`lean
-theorem sq_odd_mod2 (k : Int) :
-    (2 * k + 1) * (2 * k + 1) % 2 = 1 := by
-  have h : (2 * k + 1) * (2 * k + 1) = 4 * k * k + 4 * k + 1 := by omega
+theorem sum_sq_odd_mod4 (k : Int) :
+    ((2 * k + 1)^2 + (2 * k + 3)^2) % 4 = 2 := by
+  have h : (2 * k + 1)^2 + (2 * k + 3)^2 = 8 * k^2 + 16 * k + 10 := by ring
   rw [h]
   omega
 \`\`\`
 
 PRZYKLAD (indukcja na Nat):
 \`\`\`lean
-theorem sum_first_n (n : Nat) : 2 * (List.range (n + 1)).sum = n * (n + 1) := by
-  induction n with
-  | zero => simp
-  | succ k ih => simp [List.range_succ, Nat.mul_succ]; omega
+theorem add_comm_nat (a b : Nat) : a + b = b + a := by
+  omega
 \`\`\`
 
-WAZNE: omega rozwiazuje LINIOWE rownania/nierownosci na Nat/Int. Dla kwadratow NAJPIERW rozwin recznie (have h : expr = expanded := by omega), potem uzyj omega na liniowym wyniku.
+STRATEGIA dla dowodow z potegami/mnozeniem:
+1. Uzyj ring do uproszczenia/rozwinieecia wyrazen algebraicznych (rownosci wielomianowe)
+2. Uzyj rw [h] zeby podstawic wynik
+3. Uzyj omega na liniowym wyniku (reszty, porownania, nierownosci)
+Wzorzec: have h : expr = uproszczone := by ring; rw [h]; omega
 `;
 
 function extractLeanCode(response) {
@@ -2317,22 +2320,43 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             ? `Zadanie:\n${userMessage}\n\nRozwiązanie:\n${sympyResult}\n\nSformalizuj dowód w Lean 4.`
             : `Zadanie:\n${userMessage}\n\nPlan rozwiązania:\n${analyticalPlan}\n\nSformalizuj dowód w Lean 4.`;
 
-          const verifyCodeRaw = await llmCall('lean_post_verify', LEAN_FORMALIZATION_PROMPT, [
-            { role: 'user', content: leanInput },
-          ], { maxTokens: 800, temperature: 0.2 });
+          const MAX_LEAN_ATTEMPTS = 2;
+          let leanErrors = null;
 
-          const verifyCode = extractLeanCode(stripThink(verifyCodeRaw));
-          send('lean_verify_code', 'Lean Prover', verifyCode);
+          for (let leanAttempt = 1; leanAttempt <= MAX_LEAN_ATTEMPTS; leanAttempt++) {
+            const messages = [{ role: 'user', content: leanInput }];
 
-          const verifyResult = await leanVerify(verifyCode);
+            if (leanAttempt > 1 && leanErrors) {
+              messages.push({
+                role: 'assistant',
+                content: '```lean\n' + verifyCode + '\n```',
+              });
+              messages.push({
+                role: 'user',
+                content: `Lean zwrocil bledy:\n${leanErrors}\n\nPopraw kod. Pamietaj: ring_nf i norm_num sa NIEDOSTEPNE. Uzyj ring do rownosci algebraicznych, omega do liniowej arytmetyki. Wzorzec: have h : ... := by ring; rw [h]; omega`,
+              });
+            }
 
-          if (verifyResult.success && verifyResult.verificationDetails?.verified) {
-            leanVerified = true;
-            send('lean_verify_done', 'Lean Prover', 'Dowód zweryfikowany formalnie przez Lean 4 ✓');
-          } else {
-            leanVerified = false;
-            const errors = verifyResult.verificationDetails?.errors?.join('; ') || 'verification failed';
-            send('lean_verify_fail', 'Lean Prover', `Lean nie zweryfikował dowodu: ${errors}`);
+            var verifyCodeRaw = await llmCall(`lean_post_verify_attempt${leanAttempt}`, LEAN_FORMALIZATION_PROMPT, messages, { maxTokens: 800, temperature: 0.2 });
+
+            var verifyCode = extractLeanCode(stripThink(verifyCodeRaw));
+            send('lean_verify_code', 'Lean Prover', verifyCode);
+
+            const verifyResult = await leanVerify(verifyCode);
+
+            if (verifyResult.success && verifyResult.verificationDetails?.verified) {
+              leanVerified = true;
+              send('lean_verify_done', 'Lean Prover', 'Dowód zweryfikowany formalnie przez Lean 4 ✓');
+              break;
+            } else {
+              leanErrors = verifyResult.verificationDetails?.errors?.join('; ') || 'verification failed';
+              if (leanAttempt >= MAX_LEAN_ATTEMPTS) {
+                leanVerified = false;
+                send('lean_verify_fail', 'Lean Prover', `Lean nie zweryfikował dowodu: ${leanErrors}`);
+              } else {
+                send('lean_verify', 'Lean Prover', 'Pierwsza próba nieudana, poprawiam kod Lean...');
+              }
+            }
           }
         } catch (err) {
           leanVerified = false;
