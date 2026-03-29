@@ -1,4 +1,4 @@
-# ── Stage 1: Lean 4 base (cached unless Dockerfile changes) ──────────
+# ── Stage 1: Lean 4 + Mathlib (cached unless Dockerfile changes) ─────
 FROM node:20-slim AS lean-base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -8,14 +8,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV HOME=/root
 ENV ELAN_HOME=/root/.elan
 ENV PATH="/root/.elan/bin:${PATH}"
+
+# Install elan and Lean 4
 RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
     | sh -s -- -y --default-toolchain leanprover/lean4:stable --no-modify-path \
-    && echo "=== elan installed, checking paths ===" \
-    && ls -la /root/.elan/bin/ 2>/dev/null || echo "/root/.elan/bin not found" \
-    && ls -la $HOME/.elan/bin/ 2>/dev/null || echo "HOME/.elan/bin not found" \
-    && which elan 2>/dev/null || echo "elan not in PATH" \
     && elan show \
     && lean --version
+
+# Create Lean project with Mathlib dependency and download pre-compiled oleans
+WORKDIR /root/lean-project
+RUN lake init formulo_verify math \
+    && lake update \
+    && lake exe cache get \
+    && echo "=== Mathlib cache downloaded ==="
 
 # ── Stage 2: Build frontend + TypeScript ─────────────────────────────
 FROM node:20-slim AS builder

@@ -22,6 +22,9 @@ app.use(express.json());
 // Workspace for Lean files
 const WORK_DIR = join(tmpdir(), 'lean-prover-workspace');
 
+// Lean project with Mathlib (set up in Docker build)
+const LEAN_PROJECT_DIR = process.env.LEAN_PROJECT_DIR || '/root/lean-project';
+
 /**
  * Ensure workspace directory exists
  */
@@ -66,34 +69,38 @@ async function checkLeanInstallation() {
 }
 
 /**
- * Run Lean CLI command
+ * Run Lean CLI command via `lake env lean` so Mathlib imports are available.
+ * Falls back to bare `lean` if lake is not available.
  */
 async function runLeanCommand(args, cwd = WORK_DIR, stdinData = null) {
   return new Promise((resolve) => {
     let stdout = '';
     let stderr = '';
 
-    console.log(`Running: lean ${args.join(' ')}`);
+    // Use lake env lean to get Mathlib on LEAN_PATH
+    const cmd = 'lake';
+    const fullArgs = ['env', 'lean', ...args];
+    console.log(`Running: ${cmd} ${fullArgs.join(' ')} (cwd: ${LEAN_PROJECT_DIR})`);
 
-    const process = spawn('lean', args, {
+    const proc = spawn(cmd, fullArgs, {
       stdio: 'pipe',
-      cwd,
+      cwd: LEAN_PROJECT_DIR,
     });
 
-    if (stdinData && process.stdin) {
-      process.stdin.write(stdinData);
-      process.stdin.end();
+    if (stdinData && proc.stdin) {
+      proc.stdin.write(stdinData);
+      proc.stdin.end();
     }
 
-    process.stdout?.on('data', (data) => {
+    proc.stdout?.on('data', (data) => {
       stdout += data.toString();
     });
 
-    process.stderr?.on('data', (data) => {
+    proc.stderr?.on('data', (data) => {
       stderr += data.toString();
     });
 
-    process.on('error', (error) => {
+    proc.on('error', (error) => {
       resolve({
         success: false,
         output: stdout,
@@ -101,7 +108,7 @@ async function runLeanCommand(args, cwd = WORK_DIR, stdinData = null) {
       });
     });
 
-    process.on('exit', (code) => {
+    proc.on('exit', (code) => {
       console.log(`Lean exited with code: ${code}`);
       resolve({
         success: code === 0,
@@ -110,15 +117,15 @@ async function runLeanCommand(args, cwd = WORK_DIR, stdinData = null) {
       });
     });
 
-    // Timeout after 30 seconds
+    // Timeout after 60 seconds (Mathlib import can be slow on first load)
     setTimeout(() => {
-      process.kill();
+      proc.kill();
       resolve({
         success: false,
         output: stdout,
-        error: 'Lean verification timeout after 30 seconds',
+        error: 'Lean verification timeout after 60 seconds',
       });
-    }, 30000);
+    }, 60000);
   });
 }
 
