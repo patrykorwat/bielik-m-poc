@@ -147,7 +147,13 @@ async function waitForLean(maxAttempts = 10, intervalMs = 5000) {
   return false;
 }
 
-await waitForLean();
+// 👇 NEW: Wrap the blocking code so it runs in the background
+(async () => {
+  // Give child processes a moment to start
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await waitForLean();
+})();
+// 👆
 
 // Periodic lean health monitoring (every 60s)
 setInterval(async () => {
