@@ -117,7 +117,7 @@ if (process.env.DISCORD_TOKEN) {
 }
 
 // Give child processes a moment to start
-await new Promise((resolve) => setTimeout(resolve, 3000));
+await new Promise((resolve) => setTimeout(resolve, 5000));
 
 // ── Lean health check (critical service) ────────────────────────────
 
