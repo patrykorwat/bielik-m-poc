@@ -5,9 +5,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git ca-certificates python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
+ENV HOME=/root
+ENV ELAN_HOME=/root/.elan
 ENV PATH="/root/.elan/bin:${PATH}"
 RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
     | sh -s -- -y --default-toolchain leanprover/lean4:stable --no-modify-path \
+    && echo "=== elan installed, checking paths ===" \
+    && ls -la /root/.elan/bin/ 2>/dev/null || echo "/root/.elan/bin not found" \
+    && ls -la $HOME/.elan/bin/ 2>/dev/null || echo "HOME/.elan/bin not found" \
+    && which elan 2>/dev/null || echo "elan not in PATH" \
+    && elan show \
     && lean --version
 
 # ── Stage 2: Build frontend + TypeScript ─────────────────────────────
