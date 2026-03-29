@@ -217,7 +217,7 @@ export class ThreeAgentOrchestrator {
                 const { step, agentName, content } = data;
 
                 // Show intermediate steps as messages
-                if ((step.endsWith('_done') || step === 'lean_verify_fail' || step === 'lean_verify_code') && !data.blocked && agentName !== 'Guardrail' && agentName !== 'Klasyfikator') {
+                if ((step.endsWith('_done') || step === 'lean_verify_fail' || step === 'lean_verify_code' || step === 'lean_verify_wait') && !data.blocked && agentName !== 'Guardrail' && agentName !== 'Klasyfikator') {
                   const icon = agentIcons[agentName] || '📋';
                   const msg: Message = {
                     id: crypto.randomUUID(),

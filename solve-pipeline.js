@@ -2349,9 +2349,15 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             var verifyCodeRaw = await llmCall(`lean_post_verify_attempt${leanAttempt}`, LEAN_FORMALIZATION_PROMPT, messages, { maxTokens: 800, temperature: 0.2 });
 
             var verifyCode = extractLeanCode(stripThink(verifyCodeRaw));
-            send('lean_verify_code', 'Lean Prover', verifyCode);
+            send('lean_verify_code', 'Lean Prover', 'Waiting for a response');
+
+            const keepAliveLeanCheck = setInterval(() => {
+                send('lean_verify_wait', 'Lean Prover'); // SSE comment, ignored by the client
+            }, 15000);
 
             const verifyResult = await leanVerify(verifyCode);
+
+            clearInterval(keepAliveLeanCheck);
 
             if (verifyResult.success && verifyResult.verificationDetails?.verified) {
               leanVerified = true;
