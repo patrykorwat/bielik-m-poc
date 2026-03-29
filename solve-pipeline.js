@@ -1413,6 +1413,34 @@ function stripDiacritics(str) {
     .replace(/[śš]/g, 's').replace(/[źż]/g, 'z');
 }
 
+/**
+ * Convert raw SymPy notation to proper mathematical notation.
+ * e.g. Interval(-2, 2) → [-2, 2], Union(...) → ... u ..., oo → +∞
+ */
+function formatSymPyNotation(text) {
+  if (!text) return text;
+  return text
+    // Interval.open(a, b) → (a, b)
+    .replace(/Interval\.open\(([^,]+),\s*([^)]+)\)/g, '($1, $2)')
+    // Interval.Lopen(a, b) → (a, b]
+    .replace(/Interval\.Lopen\(([^,]+),\s*([^)]+)\)/g, '($1, $2]')
+    // Interval.Ropen(a, b) → [a, b)
+    .replace(/Interval\.Ropen\(([^,]+),\s*([^)]+)\)/g, '[$1, $2)')
+    // Interval(a, b) → [a, b]
+    .replace(/Interval\(([^,]+),\s*([^)]+)\)/g, '[$1, $2]')
+    // Union(X, Y) → X u Y
+    .replace(/Union\(([^)]+)\)/g, (_, inner) => inner.split(/,\s*/).join(' u '))
+    // EmptySet or EmptySet() → zbiór pusty
+    .replace(/EmptySet\(\)/g, 'zbiór pusty')
+    .replace(/EmptySet/g, 'zbiór pusty')
+    // FiniteSet(a, b, c) → {a, b, c}
+    .replace(/FiniteSet\(([^)]+)\)/g, '{$1}')
+    // oo → +∞, -oo → -∞
+    .replace(/\boo\b/g, '∞')
+    .replace(/-∞/g, '-∞')
+    .replace(/\+∞/g, '+∞');
+}
+
 function detectGeneratorIntent(message) {
   const lower = message.toLowerCase().trim();
   const norm = stripDiacritics(lower);
@@ -2115,7 +2143,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
     }
 
     let hasResult = !!sympyResult;
-    send('executor_done', 'Agent Wykonawczy', sympyResult || executorOutput || 'Brak wyniku', {
+    send('executor_done', 'Agent Wykonawczy', formatSymPyNotation(sympyResult || executorOutput || 'Brak wyniku'), {
       hasResult,
     });
 
@@ -2167,6 +2195,11 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
     }
 
     // ── Step 4: Summary Agent ──────────────────────────────────────
+
+    // Clean up SymPy notation before summary
+    if (sympyResult) {
+      sympyResult = formatSymPyNotation(sympyResult);
+    }
 
     send('summary', 'Agent Podsumowujący', 'Tworzę wyjaśnienie...');
 
