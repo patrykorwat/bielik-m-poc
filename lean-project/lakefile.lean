@@ -4,4 +4,4 @@ open Lake DSL
 package «formulo_verify» where
   leanOptions := #[]
 
-require "leanprover-community" / "mathlib" @ git "v4.29.0"
+require mathlib from git "https://github.com/leanprover-community/mathlib" @ "v4.29.0" 
