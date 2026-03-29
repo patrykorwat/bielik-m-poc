@@ -1,31 +1,17 @@
-# ── Stage 1: Lean 4 + Mathlib (cached unless Dockerfile changes) ─────
+# ── Stage 1: Lean 4 (no Mathlib, saves ~2GB RAM) ─────────────────────
 FROM node:20-slim AS lean-base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git ca-certificates python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-# ZMIANA: Instalujemy środowisko Elan w /opt/elan zamiast /root
 ENV ELAN_HOME=/opt/elan
 ENV PATH="/opt/elan/bin:${PATH}"
 
 RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
     | sh -s -- -y --default-toolchain leanprover/lean4:stable --no-modify-path \
     && elan show \
-    && lean --version
-
-# ZMIANA: Przenosimy projekt z /root do standardowego katalogu /app
-WORKDIR /app/lean-project
-COPY lean-project/lakefile.lean lean-project/lean-toolchain ./
-
-# ZMIANA: Dodajemy `lake build` oraz zmieniamy uprawnienia katalogów na 777
-RUN cat lakefile.lean \
-    && lake update \
-    && lake exe cache get \
-    && lake build \
-    && echo "=== Mathlib cache downloaded and built ===" \
-    && rm -rf .lake/packages/*/.git \
-    && chmod -R 777 /app/lean-project \
+    && lean --version \
     && chmod -R 777 /opt/elan
 
 # ── Stage 2: Build frontend + TypeScript ─────────────────────────────

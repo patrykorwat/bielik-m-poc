@@ -102,23 +102,23 @@ function isProofProblem(text) {
   return PROOF_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-const LEAN_FORMALIZATION_PROMPT = `Jestes ekspertem od formalizacji matematycznych dowodow w Lean 4 z Mathlib.
+const LEAN_FORMALIZATION_PROMPT = `Jestes ekspertem od formalizacji matematycznych dowodow w Lean 4.
 Przetlumacz zadanie na formalny dowod w Lean 4.
 
 ZASADY:
-1. KOMPLETNY, samowystarczalny kod Lean 4. Mathlib jest DOSTEPNY na serwerze.
-2. Importy: import Mathlib.Tactic (daje ring, norm_num, omega, linarith, nlinarith, simp, decide i wiele innych)
-3. Dostepne taktyki: ring, ring_nf, norm_num, omega, linarith, nlinarith, simp, decide, intro, apply, exact, constructor, cases, induction, rfl, calc, have, let, show, funext, ext, contradiction, absurd, by_contra, rw, field_simp, positivity, gcongr, polyrith
-4. ring: rownosci w pierścieniach (wielomiany, potegi). Uzyj do rownosci algebraicznych.
-5. omega: LINIOWE rownania/nierownosci na Nat/Int.
-6. norm_num: obliczenia numeryczne (np. 2^10 = 1024).
-7. linarith/nlinarith: liniowe/nieliniowe nierownosci.
-8. Preferuj typy Nat/Int. Uzywaj Real tylko jesli konieczne (import Mathlib.Analysis.SpecialFunctions.Pow.Real).
+1. KOMPLETNY, samowystarczalny kod Lean 4. ZAKAZ importow Mathlib (niedostepny na serwerze).
+2. Dozwolone importy: import Std
+3. Dostepne taktyki: omega, simp, decide, intro, apply, exact, constructor, cases, induction, rfl, calc, have, let, show, funext, ext, contradiction, absurd, by_contra, rw
+4. ZAKAZ taktyk: ring, ring_nf, norm_num (wszystkie wymagaja Mathlib, NIEDOSTEPNE).
+5. omega rozwiazuje TYLKO LINIOWE rownania/nierownosci na Nat/Int.
+6. Dla rownosci wielomianowych (np. (2k+1)^2 = 4k^2+4k+1) uzyj sorry. To jest oczekiwane zachowanie bez Mathlib.
+7. Po sorry dla kroku algebraicznego, uzyj omega lub simp na liniowym wyniku.
+8. Modeluj problemy na typach Nat lub Int (nie Real, bo Real wymaga Mathlib).
 9. ZAWSZE zwroc TYLKO blok kodu Lean 4 w \`\`\`lean, bez dodatkowego tekstu.
 
 PRZYKLAD (podzielnosc, liniowa arytmetyka):
 \`\`\`lean
-import Mathlib.Tactic
+import Std
 
 theorem even_plus_even (a b : Int) (ha : a % 2 = 0) (hb : b % 2 = 0) :
     (a + b) % 2 = 0 := by
@@ -127,31 +127,21 @@ theorem even_plus_even (a b : Int) (ha : a % 2 = 0) (hb : b % 2 = 0) :
 
 PRZYKLAD (reszta z dzielenia, kwadratowe wyrazenia):
 \`\`\`lean
-import Mathlib.Tactic
+import Std
 
 theorem sum_sq_odd_mod4 (k : Int) :
     ((2 * k + 1)^2 + (2 * k + 3)^2) % 4 = 2 := by
-  have h : (2 * k + 1)^2 + (2 * k + 3)^2 = 8 * k^2 + 16 * k + 10 := by ring
+  have h : (2 * k + 1)^2 + (2 * k + 3)^2 = 8 * k^2 + 16 * k + 10 := by sorry
   rw [h]
   omega
 \`\`\`
 
-PRZYKLAD (indukcja na Nat):
-\`\`\`lean
-import Mathlib.Tactic
-
-theorem sum_first_n (n : Nat) : 2 * (Finset.range (n + 1)).sum id = n * (n + 1) := by
-  induction n with
-  | zero => simp
-  | succ k ih => simp [Finset.sum_range_succ]; omega
-\`\`\`
-
 STRATEGIA:
-1. Dla rownosci algebraicznych uzyj ring (rozwiazuje automatycznie)
-2. Dla modularnej arytmetyki: have h := by ring; rw [h]; omega
-3. Dla nierownosci: linarith lub nlinarith
-4. Dla obliczen: norm_num
-5. ZAWSZE zaczynaj od: import Mathlib.Tactic
+1. Zapisz twierdzenie z poprawna teza
+2. have h : wyrazenie_wielomianowe = rozwiniety_wynik := by sorry (krok algebraiczny)
+3. rw [h] zeby podstawic uproszczony wynik
+4. omega na liniowym wyniku (reszty, porownania, nierownosci)
+5. ZAWSZE zaczynaj od: import Std
 `;
 
 function extractLeanCode(response) {
@@ -177,15 +167,20 @@ async function leanHealthy() {
   } catch { return false; }
 }
 
-async function leanVerify(theoremContent) {
+async function leanVerify(code) {
   const res = await fetch(`${LEAN_PROXY_URL}/verify`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ theoremContent, filename: `proof_${Date.now()}.lean` }),
+    body: JSON.stringify({ code }),
     signal: AbortSignal.timeout(65000),
   });
-  if (!res.ok) throw new Error(`Lean proxy returned ${res.status}`);
-  return res.json();
+  const data = await res.json();
+  // Normalize response to match what the pipeline expects
+  if (res.ok && data.status === 'success') {
+    return { success: true, verificationDetails: { verified: true, warnings: data.output ? [data.output] : undefined } };
+  }
+  const errors = data.error ? data.error.split('\n').filter(l => l.includes('error:')) : ['verification failed'];
+  return { success: false, verificationDetails: { verified: false, errors: errors.length > 0 ? errors : ['verification failed'] } };
 }
 
 // ── Helper: strip <think> blocks ──────────────────────────────────────
@@ -2342,7 +2337,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
               });
               messages.push({
                 role: 'user',
-                content: `Lean zwrocil bledy:\n${leanErrors}\n\nPopraw kod. Mathlib jest dostepny. Uzyj: import Mathlib.Tactic. Dla rownosci algebraicznych uzyj ring. Dla liniowej arytmetyki omega. Dla modularnej arytmetyki: have h := by ring; rw [h]; omega. Dla nierownosci: linarith lub nlinarith.`,
+                content: `Lean zwrocil bledy:\n${leanErrors}\n\nPopraw kod. KRYTYCZNE: ring, ring_nf, norm_num sa NIEDOSTEPNE (wymagaja Mathlib). Uzyj import Std. Dla rownosci wielomianowych uzyj sorry. Dla liniowej arytmetyki uzyj omega. Wzorzec: have h : ... := by sorry; rw [h]; omega`,
               });
             }
 

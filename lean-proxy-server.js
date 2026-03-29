@@ -89,11 +89,11 @@ app.post('/verify', async (req, res) => {
     // Write code to temporary file
     await writeFile(filepath, code);
     console.log(`[lean-proxy] Verifying theorem: ${filename}`);
-    console.log(`[lean-proxy] Running: lake env lean --stdin (cwd: ${LEAN_PROJECT_DIR})`);
+    console.log(`[lean-proxy] Running: lean --stdin`);
 
-    // Verify using Lean CLI via Lake to load mathlib
-    const process = spawn('lake', ['env', 'lean', '--stdin'], {
-      cwd: LEAN_PROJECT_DIR,
+    // Verify using bare Lean CLI (no Mathlib)
+    const process = spawn('lean', ['--stdin'], {
+      cwd: WORK_DIR,
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
