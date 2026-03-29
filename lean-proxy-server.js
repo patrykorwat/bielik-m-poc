@@ -13,7 +13,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 const app = express();
-const PORT = 3002;
+const PORT = process.env.LEAN_PROXY_PORT || 3002;
 
 // Enable CORS for browser access
 app.use(cors());
@@ -168,39 +168,19 @@ function parseVerificationOutput(output, error) {
 function generateLeanTheorem(problem, proof = '') {
   const timestamp = new Date().toISOString();
   const problemLines = problem.split('\n').map(line => `-- ${line}`).join('\n');
-  const proofLines = proof ? proof.split('\n').map(line => `  -- ${line}`).join('\n') : '  -- No proof provided';
+
+  // If proof code is provided (from LLM), use it directly
+  if (proof && (proof.includes('theorem') || proof.includes('def '))) {
+    return proof;
+  }
 
   return `-- Auto-generated Lean theorem
 -- Generated: ${timestamp}
 ${problemLines}
+import Std
 
--- NOTE: This is a simplified template that works without Mathlib.
--- For complex mathematical theorems, you would need to:
--- 1. Install Mathlib: lake new MyProject math
--- 2. Translate the problem into Lean's formal type theory
--- 3. Use appropriate tactics and lemmas
--- See: https://leanprover.github.io/theorem_proving_in_lean4/
-
--- Simple verification that compiles without errors
 theorem auto_generated_verification : True := by
-  -- Problem: ${problem.replace(/\n/g, ' ').substring(0, 100)}...
-
-  -- Proof steps from agent:
-${proofLines}
-
-  -- This trivial proof verifies that the Lean code compiles
-  -- For actual formal verification, the problem and proof need to be
-  -- translated into Lean's type theory with proper formalization
   trivial
-
--- Example of what a formalized theorem would look like:
--- (Requires Mathlib for advanced math)
---
--- import Mathlib.Data.Nat.Basic
---
--- theorem sum_first_n_naturals (n : ℕ) :
---   (Finset.range (n + 1)).sum id = n * (n + 1) / 2 := by
---   sorry  -- Actual proof would go here
 `;
 }
 

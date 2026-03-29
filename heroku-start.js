@@ -28,6 +28,7 @@ const __dirname = dirname(__filename);
 
 const PORT = process.env.PORT || 5000;
 const MCP_PORT = process.env.MCP_PORT || 3001;
+const LEAN_PORT = process.env.LEAN_PROXY_PORT || 3002;
 const RAG_PORT = process.env.RAG_PORT || 3003;
 
 const app = express();
@@ -78,6 +79,13 @@ spawnChild('mcp-proxy', 'node', ['--import', 'dd-trace/initialize.mjs', 'mcp-pro
   DD_SERVICE: 'formulo-mcp-proxy',
 });
 
+// Start Lean proxy
+console.log(`Starting Lean proxy on localhost:${LEAN_PORT}...`);
+spawnChild('lean-proxy', 'node', ['lean-proxy-server.js'], {
+  LEAN_PROXY_PORT: String(LEAN_PORT),
+  DD_SERVICE: 'formulo-lean-proxy',
+});
+
 // Start RAG service
 console.log(`Starting RAG service on localhost:${RAG_PORT}...`);
 const pythonCmd = existsSync(join(__dirname, 'rag_service', 'venv', 'bin', 'python3'))
@@ -119,6 +127,7 @@ app.get('/health', (req, res) => {
     status: 'ok',
     services: {
       mcp: `http://127.0.0.1:${MCP_PORT}`,
+      lean: `http://127.0.0.1:${LEAN_PORT}`,
       rag: `http://127.0.0.1:${RAG_PORT}`,
     },
     bot: {

@@ -102,14 +102,34 @@ function isProofProblem(text) {
   return PROOF_KEYWORDS.some(kw => lower.includes(kw));
 }
 
-const LEAN_FORMALIZATION_PROMPT = `Jesteś ekspertem od formalizacji matematycznych dowodów w Lean 4.
-Twoim zadaniem jest przetłumaczenie polskiego zadania maturalnego na formalny dowód w Lean 4.
+const LEAN_FORMALIZATION_PROMPT = `Jestes ekspertem od formalizacji matematycznych dowodow w Lean 4.
+Przetlumacz zadanie na formalny dowod w Lean 4.
 
 ZASADY:
-1. Napisz KOMPLETNY, samowystarczalny kod Lean 4 (bez importów Mathlib)
-2. Użyj podstawowych taktyk: intro, apply, exact, simp, ring, omega, linarith, norm_num, nlinarith, positivity, field_simp, constructor, cases, induction, rfl, calc
-3. Jeśli dowód jest zbyt trudny do pełnej formalizacji, użyj sorry dla najtrudniejszych kroków, ale sformalizuj jak najwięcej
-4. ZAWSZE zwróć TYLKO blok kodu Lean 4, bez dodatkowego tekstu`;
+1. KOMPLETNY, samowystarczalny kod Lean 4. ZAKAZ importow Mathlib (niedostepny na serwerze).
+2. Dozwolone importy: import Std (dostepne taktyki z Std: omega, simp, ring, norm_num, decide)
+3. Dostepne taktyki BEZ importow: intro, apply, exact, constructor, cases, induction, rfl, calc, trivial, rfl, have, let, show, funext, ext, contradiction, absurd, by_contra
+4. Dla arytmetyki na Nat/Int uzyj omega (rozwiazuje rownania i nierownosci liniowe)
+5. Dla dowodow algebraicznych uzyj ring (pierscienie) lub norm_num (obliczenia numeryczne)
+6. Jesli dowod jest zbyt trudny, uzyj sorry dla najtrudniejszych krokow, ale sformalizuj jak najwiecej
+7. Modeluj problemy na typach Nat lub Int (nie Real, bo Real wymaga Mathlib)
+8. ZAWSZE zwroc TYLKO blok kodu Lean 4 w \`\`\`lean, bez dodatkowego tekstu
+
+PRZYKLAD (podzielnosc):
+\`\`\`lean
+theorem sum_sq_odd_mod4 (k : Int) :
+    ((2 * k + 1)^2 + (2 * k + 3)^2) % 4 = 2 := by
+  ring_nf
+  omega
+\`\`\`
+
+PRZYKLAD (indukcja):
+\`\`\`lean
+theorem sum_first_n (n : Nat) :
+    2 * (Finset.range (n + 1)).sum id = n * (n + 1) := by
+  sorry -- wymaga Mathlib.Data.Finset
+\`\`\`
+`;
 
 function extractLeanCode(response) {
   const leanMatch = /```lean\s*\n([\s\S]*?)\n```/.exec(response);
@@ -2101,6 +2121,13 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
 
       // ── Step 3: Executor Agent (SymPy code generation + execution)
 
+      // Skip SymPy executor for proof problems — proofs need algebraic reasoning, not computation
+      let hasResult = false;
+      if (proofProblem) {
+        send('executor_done', 'Agent Wykonawczy', 'Zadanie dowodowe — rozwiązuję analitycznie.', { hasResult: false });
+        // Jump straight to summary with analytical plan only
+      } else {
+
       send('executor', 'Agent Wykonawczy', 'Generuję kod SymPy...');
 
       const executorPrompt = isMultipleChoice
@@ -2180,7 +2207,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
       }
     }
 
-    let hasResult = !!sympyResult;
+    hasResult = !!sympyResult;
     send('executor_done', 'Agent Wykonawczy', formatSymPyNotation(sympyResult || executorOutput || 'Brak wyniku'), {
       hasResult,
     });
@@ -2232,6 +2259,8 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
       }
     }
 
+    } // end: else (non-proof) executor block
+
     // ── Step 4: Summary Agent ──────────────────────────────────────
 
     // Clean up SymPy notation before summary
@@ -2255,7 +2284,9 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
     } else {
       summaryContext.push({
         role: 'user',
-        content: 'Kod SymPy nie zadziałał. Rozwiąż zadanie analitycznie i wytłumacz krok po kroku.',
+        content: proofProblem
+          ? 'To jest zadanie dowodowe. Przeprowadź dowód krok po kroku i wytłumacz każdy krok.'
+          : 'Kod SymPy nie zadziałał. Rozwiąż zadanie analitycznie i wytłumacz krok po kroku.',
       });
     }
 

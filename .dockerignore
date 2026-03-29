@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+*.log
+logs/
+rag_service/venv
+rag_service/__pycache__
+mcp-sympy-server/node_modules
+dist
+.DS_Store
