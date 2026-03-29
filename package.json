@@ -18,7 +18,8 @@
     "start:all": "concurrently \"npm run dev\" \"npm run mcp-proxy\" \"npm run lean-proxy\" \"npm run rag-service\"",
     "build:server": "tsc --project tsconfig.server.json",
     "generate:seo": "node seo/generate.js",
-    "heroku-postbuild": "npm run build && npm run build:server && npm run generate:seo && cd mcp-sympy-server && npm install && npm run build"
+    "heroku-postbuild": "npm run build && npm run build:server && npm run generate:seo && cd mcp-sympy-server && npm install && npm run build",
+    "start:heroku": "node heroku-start.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
