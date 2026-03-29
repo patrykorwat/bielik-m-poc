@@ -21,7 +21,9 @@ WORKDIR /root/lean-project
 RUN cat lakefile.lean \
     && lake update \
     && lake exe cache get \
-    && echo "=== Mathlib cache downloaded ==="
+    && echo "=== Mathlib cache downloaded ===" \
+    ## NEW: Remove the massive .git histories from downloaded lean packages
+    && rm -rf .lake/packages/*/.git
 
 # ── Stage 2: Build frontend + TypeScript ─────────────────────────────
 FROM node:20-slim AS builder
@@ -34,14 +36,16 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 RUN npm run build && npm run build:server && npm run generate:seo \
-    && cd mcp-sympy-server && npm install && npm run build
+    && cd mcp-sympy-server && npm install && npm run build \
+    ## NEW: Remove all devDependencies before we copy node_modules to prod
+    && cd /app && npm prune --omit=dev
 
 # ── Stage 3: Production ──────────────────────────────────────────────
 FROM lean-base
 
 WORKDIR /app
 
-# node_modules from builder (changes when package-lock changes)
+# node_modules from builder (now strictly production modules)
 COPY --from=builder /app/node_modules ./node_modules
 
 # Built artifacts (changes on code changes)
@@ -58,9 +62,9 @@ COPY docs ./docs
 # RAG Python environment
 COPY rag_service ./rag_service
 COPY requirements.txt ./
+## NEW: Added --no-cache-dir to prevent pip from storing useless zip files
 RUN python3 -m venv rag_service/venv \
-    && rag_service/venv/bin/pip install --no-cache-dir \
-       -r rag_service/requirements.txt -r requirements.txt
+    && rag_service/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 5000
-CMD ["node", "--import", "dd-trace/initialize.mjs", "heroku-start.js"]
+# Start command
+CMD ["npm", "run", "start:heroku"]

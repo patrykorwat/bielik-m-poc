@@ -36,6 +36,7 @@ jobs:
           tags: registry.heroku.com/formulopl/web
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: false
 
       # 4. Tell Heroku to deploy the image we just pushed
       - name: Release to Heroku
