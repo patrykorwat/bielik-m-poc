@@ -2052,6 +2052,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
     let executorCode = null;
     let sympyResult = null;
     let executorOutput = null;
+    let hasResult = false;
 
     // ── Step 1.5: Try extraction template ──────────────────────────
 
@@ -2122,11 +2123,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
       // ── Step 3: Executor Agent (SymPy code generation + execution)
 
       // Skip SymPy executor for proof problems — proofs need algebraic reasoning, not computation
-      let hasResult = false;
-      if (proofProblem) {
-        send('executor_done', 'Agent Wykonawczy', 'Zadanie dowodowe — rozwiązuję analitycznie.', { hasResult: false });
-        // Jump straight to summary with analytical plan only
-      } else {
+      if (!proofProblem) { // begin: non-proof executor block
 
       send('executor', 'Agent Wykonawczy', 'Generuję kod SymPy...');
 
@@ -2259,7 +2256,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
       }
     }
 
-    } // end: else (non-proof) executor block
+    } // end: non-proof executor block
 
     // ── Step 4: Summary Agent ──────────────────────────────────────
 
