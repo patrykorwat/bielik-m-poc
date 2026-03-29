@@ -1686,7 +1686,45 @@ function buildMultiplicationScheme(a, b) {
   return lines.join('\n');
 }
 
+/**
+ * Try to evaluate simple arithmetic expressions directly (e.g. "2+2", "15/3", "7*8+2").
+ * Returns a string answer or null if the message isn't pure arithmetic.
+ */
+function trySimpleArithmetic(message) {
+  // Strip Polish question words: "ile to", "oblicz", "policz", "ile jest", "ile wynosi"
+  let expr = message
+    .replace(/ile\s+(to|jest|wynosi)\s*/gi, '')
+    .replace(/oblicz\s*/gi, '')
+    .replace(/policz\s*/gi, '')
+    .replace(/[=?]/g, '')
+    .trim();
+
+  // Only allow digits, operators, parentheses, dots, spaces
+  if (!/^[\d+\-*/().,%^ ]+$/.test(expr)) return null;
+  // Must contain at least one operator
+  if (!/[+\-*/^%]/.test(expr)) return null;
+  // Replace ^ with ** for JS eval
+  expr = expr.replace(/\^/g, '**');
+  // Reject if too complex (safety: no long strings)
+  if (expr.length > 100) return null;
+
+  try {
+    // Use Function constructor instead of eval for slightly safer evaluation
+    const result = new Function(`"use strict"; return (${expr})`)();
+    if (typeof result !== 'number' || !isFinite(result)) return null;
+    // Format: avoid floating point noise (e.g. 0.1+0.2=0.30000000000000004)
+    const formatted = Number.isInteger(result) ? result.toString() : parseFloat(result.toPrecision(12)).toString();
+    return formatted;
+  } catch {
+    return null;
+  }
+}
+
 function tryArithmeticScheme(message) {
+  // First try simple arithmetic (2+2, 15*3, etc.)
+  const simple = trySimpleArithmetic(message);
+  if (simple !== null) return `ODPOWIEDZ: ${simple}`;
+
   const cleaned = message.replace(/\s/g, '');
   const match = cleaned.match(/(\d{2,})\s*[*×·]\s*(\d{2,})/);
   if (!match) {
