@@ -15,10 +15,10 @@ RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init
     && elan show \
     && lean --version
 
-# Create Lean project with Mathlib dependency from git
+# Create Lean project with Mathlib dependency (no lake init, manual setup)
 WORKDIR /root/lean-project
-RUN lake init formulo_verify \
-    && echo 'require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.29.0"' >> lakefile.lean \
+RUN printf '[package]\nname = "formulo_verify"\n\n[[require]]\nname = "mathlib"\ngit = "https://github.com/leanprover-community/mathlib4"\nrev = "v4.29.0"\n' > lakefile.toml \
+    && echo 'leanprover/lean4:v4.29.0' > lean-toolchain \
     && lake update \
     && lake exe cache get \
     && echo "=== Mathlib cache downloaded ==="
