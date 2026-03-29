@@ -1966,56 +1966,9 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
       }
     }
 
-    // ── Step 0.8: Lean proof solver (for proof tasks) ──────────────
+    // ── Detect proof problems (Lean verification happens after summary) ──
 
     const proofProblem = isProofProblem(userMessage);
-    if (proofProblem && await leanHealthy()) {
-      send('lean_proof', 'Lean Prover', 'Formalizuję dowód w Lean 4...');
-      try {
-        const leanCodeRaw = await llmCall('lean_formalization', LEAN_FORMALIZATION_PROMPT, [
-          { role: 'user', content: `Zadanie do formalizacji w Lean 4:\n${userMessage}` },
-        ], { maxTokens: 800, temperature: 0.2 });
-
-        const leanCode = extractLeanCode(stripThink(leanCodeRaw));
-        send('lean_proof_code', 'Lean Prover', leanCode);
-
-        const verifyResult = await leanVerify(leanCode);
-
-        if (verifyResult.success && verifyResult.verificationDetails?.verified) {
-          send('lean_proof_done', 'Lean Prover', 'Dowód zweryfikowany przez Lean 4.');
-
-          // Summary for the verified proof
-          send('summary', 'Agent Podsumowujący', 'Tworzę wyjaśnienie...');
-          const summaryContext = [
-            { role: 'user', content: userMessage },
-            { role: 'assistant', content: 'Dowód został sformalizowany i zweryfikowany w Lean 4.' },
-            { role: 'user', content: `Kod Lean 4:\n\`\`\`lean\n${leanCode}\n\`\`\`` },
-            { role: 'user', content: 'Wyjaśnij dowód krok po kroku po polsku.' },
-          ];
-          const summaryRaw = await llmCall('summary', prompts.summary, summaryContext, {
-            maxTokens: prompts.agents.summary.max_tokens,
-            temperature: prompts.agents.summary.temperature,
-          });
-          const summary = stripThink(summaryRaw);
-          send('summary_done', 'Agent Podsumowujący', summary);
-
-          return {
-            success: true,
-            type: 'solve',
-            classification: { type: 'proof', confidence: 1.0 },
-            analyticalPlan: 'Lean 4 formalization',
-            executorCode: leanCode,
-            sympyResult: verifyResult.output || 'Verified',
-            summary,
-            leanVerified: true,
-          };
-        }
-        // Verification failed, fall through to normal pipeline
-        send('lean_proof_fail', 'Lean Prover', 'Formalna weryfikacja nie powiodła się, kontynuuję standardową ścieżką.');
-      } catch (err) {
-        // Lean unavailable or error, continue with normal pipeline
-      }
-    }
 
     // ── Step 1: Classifier ─────────────────────────────────────────
 
@@ -2295,31 +2248,42 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
     const summary = stripThink(summaryRaw);
     send('summary_done', 'Agent Podsumowujący', summary);
 
-    // ── Step 5: Lean post-solve verification (proof problems only) ──
+    // ── Step 5: Lean verification (proof problems) ──────────────────
 
     let leanVerified = null;
-    if (proofProblem && hasResult && await leanHealthy()) {
-      send('lean_verify', 'Lean Prover', 'Weryfikuję rozwiązanie...');
-      try {
-        // Ask LLM to formalize the solution into Lean 4
-        const verifyCodeRaw = await llmCall('lean_post_verify', LEAN_FORMALIZATION_PROMPT, [
-          { role: 'user', content: `Zadanie:\n${userMessage}\n\nRozwiązanie SymPy:\n${sympyResult}\n\nSformalizuj dowód w Lean 4.` },
-        ], { maxTokens: 800, temperature: 0.2 });
+    if (proofProblem) {
+      const leanUp = await leanHealthy();
+      if (!leanUp) {
+        send('lean_verify_fail', 'Lean Prover', 'Lean Prover niedostępny. Weryfikacja formalna wyłączona.');
+        leanVerified = false;
+      } else {
+        send('lean_verify', 'Lean Prover', 'Formalizuję i weryfikuję dowód w Lean 4...');
+        try {
+          const leanInput = hasResult
+            ? `Zadanie:\n${userMessage}\n\nRozwiązanie:\n${sympyResult}\n\nSformalizuj dowód w Lean 4.`
+            : `Zadanie:\n${userMessage}\n\nPlan rozwiązania:\n${analyticalPlan}\n\nSformalizuj dowód w Lean 4.`;
 
-        const verifyCode = extractLeanCode(stripThink(verifyCodeRaw));
-        const verifyResult = await leanVerify(verifyCode);
+          const verifyCodeRaw = await llmCall('lean_post_verify', LEAN_FORMALIZATION_PROMPT, [
+            { role: 'user', content: leanInput },
+          ], { maxTokens: 800, temperature: 0.2 });
 
-        if (verifyResult.success && verifyResult.verificationDetails?.verified) {
-          leanVerified = true;
-          send('lean_verify_done', 'Lean Prover', 'Rozwiązanie zweryfikowane formalnie przez Lean 4.');
-        } else {
+          const verifyCode = extractLeanCode(stripThink(verifyCodeRaw));
+          send('lean_verify_code', 'Lean Prover', verifyCode);
+
+          const verifyResult = await leanVerify(verifyCode);
+
+          if (verifyResult.success && verifyResult.verificationDetails?.verified) {
+            leanVerified = true;
+            send('lean_verify_done', 'Lean Prover', 'Dowód zweryfikowany formalnie przez Lean 4 ✓');
+          } else {
+            leanVerified = false;
+            const errors = verifyResult.verificationDetails?.errors?.join('; ') || 'verification failed';
+            send('lean_verify_fail', 'Lean Prover', `Lean nie zweryfikował dowodu: ${errors}`);
+          }
+        } catch (err) {
           leanVerified = false;
-          const errors = verifyResult.verificationDetails?.errors?.join('; ') || 'verification failed';
-          send('lean_verify_fail', 'Lean Prover', `Formalna weryfikacja nie powiodła się: ${errors}`);
+          send('lean_verify_fail', 'Lean Prover', `Błąd weryfikacji Lean: ${err.message}`);
         }
-      } catch (err) {
-        // Lean verification is optional, don't block the result
-        send('lean_verify_fail', 'Lean Prover', 'Lean Prover niedostępny.');
       }
     }
 

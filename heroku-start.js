@@ -119,12 +119,53 @@ if (process.env.DISCORD_TOKEN) {
 // Give child processes a moment to start
 await new Promise((resolve) => setTimeout(resolve, 3000));
 
+// ── Lean health check (critical service) ────────────────────────────
+
+let leanHealthy = false;
+
+async function checkLeanHealth() {
+  try {
+    const res = await fetch(`http://127.0.0.1:${LEAN_PORT}/health`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return data.leanInstalled === true;
+  } catch { return false; }
+}
+
+// Check lean on startup with retries (lean toolchain download can be slow)
+async function waitForLean(maxAttempts = 10, intervalMs = 5000) {
+  for (let i = 1; i <= maxAttempts; i++) {
+    leanHealthy = await checkLeanHealth();
+    if (leanHealthy) {
+      console.log('✓ Lean 4 is healthy and ready');
+      return true;
+    }
+    console.log(`⏳ Lean health check ${i}/${maxAttempts} failed, retrying in ${intervalMs / 1000}s...`);
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+  console.error('✗ Lean 4 is NOT available. Proof verification will be unavailable.');
+  return false;
+}
+
+await waitForLean();
+
+// Periodic lean health monitoring (every 60s)
+setInterval(async () => {
+  const was = leanHealthy;
+  leanHealthy = await checkLeanHealth();
+  if (was && !leanHealthy) console.error('✗ Lean 4 became unhealthy!');
+  if (!was && leanHealthy) console.log('✓ Lean 4 recovered');
+}, 60000);
+
 // ── Routes (MCP + RAG are internal only, accessed via localhost) ────────
 
 // Health endpoint
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
+  const status = leanHealthy ? 'ok' : 'degraded';
+  const httpCode = leanHealthy ? 200 : 503;
+  res.status(httpCode).json({
+    status,
+    leanHealthy,
     services: {
       mcp: `http://127.0.0.1:${MCP_PORT}`,
       lean: `http://127.0.0.1:${LEAN_PORT}`,
