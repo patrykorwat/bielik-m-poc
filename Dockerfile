@@ -5,25 +5,28 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git ca-certificates python3 python3-pip python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-ENV HOME=/root
-ENV ELAN_HOME=/root/.elan
-ENV PATH="/root/.elan/bin:${PATH}"
+# ZMIANA: Instalujemy środowisko Elan w /opt/elan zamiast /root
+ENV ELAN_HOME=/opt/elan
+ENV PATH="/opt/elan/bin:${PATH}"
 
-# Install elan and Lean 4
 RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
     | sh -s -- -y --default-toolchain leanprover/lean4:stable --no-modify-path \
     && elan show \
     && lean --version
 
-# Copy Lean project files from repo and fetch Mathlib cache
-COPY lean-project/lakefile.lean lean-project/lean-toolchain /root/lean-project/
-WORKDIR /root/lean-project
+# ZMIANA: Przenosimy projekt z /root do standardowego katalogu /app
+WORKDIR /app/lean-project
+COPY lean-project/lakefile.lean lean-project/lean-toolchain ./
+
+# ZMIANA: Dodajemy `lake build` oraz zmieniamy uprawnienia katalogów na 777
 RUN cat lakefile.lean \
     && lake update \
     && lake exe cache get \
-    && echo "=== Mathlib cache downloaded ===" \
-    ## NEW: Remove the massive .git histories from downloaded lean packages
-    && rm -rf .lake/packages/*/.git
+    && lake build \
+    && echo "=== Mathlib cache downloaded and built ===" \
+    && rm -rf .lake/packages/*/.git \
+    && chmod -R 777 /app/lean-project \
+    && chmod -R 777 /opt/elan
 
 # ── Stage 2: Build frontend + TypeScript ─────────────────────────────
 FROM node:20-slim AS builder

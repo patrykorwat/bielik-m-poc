@@ -151,7 +151,25 @@ async function waitForLean(maxAttempts = 10, intervalMs = 5000) {
 (async () => {
   // Give child processes a moment to start
   await new Promise((resolve) => setTimeout(resolve, 3000));
-  await waitForLean();
+  // Wait for the Lean proxy to report healthy
+  const isLeanReady = await waitForLean();
+  
+  if (isLeanReady) {
+    console.log("🔥 Pre-warming Lean toolchain in the background...");
+    try {
+      // Send a microscopic, valid Lean program to force the toolchain to boot
+      // and unpack the Mathlib caches into RAM immediately.
+      await fetch(`http://127.0.0.1:${LEAN_PORT}/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: "def prewarm := true" })
+      });
+      console.log("✅ Lean pre-warming complete! Ready for instant user queries.");
+    } catch (err) {
+      console.error("⚠️ Pre-warm ping failed:", err.message);
+    }
+  }
+
 })();
 // 👆
 

@@ -22,8 +22,8 @@ app.use(express.json());
 // Workspace for Lean files
 const WORK_DIR = join(tmpdir(), 'lean-prover-workspace');
 
-// Lean project with Mathlib (set up in Docker build)
-const LEAN_PROJECT_DIR = process.env.LEAN_PROJECT_DIR || '/root/lean-project';
+// 👇 ZMIANA TUTAJ: Zmieniono /root/lean-project na /app/lean-project
+const LEAN_PROJECT_DIR = process.env.LEAN_PROJECT_DIR || '/app/lean-project';
 
 /**
  * Ensure workspace directory exists
@@ -52,7 +52,7 @@ async function checkLeanInstallation() {
       resolve(false);
     });
 
-    process.on('exit', (code) => {
+    process.on('close', (code) => {
       if (code === 0) {
         console.log('✓ Lean CLI is installed');
         resolve(true);
@@ -60,261 +60,119 @@ async function checkLeanInstallation() {
         resolve(false);
       }
     });
-
-    setTimeout(() => {
-      process.kill();
-      resolve(false);
-    }, 5000);
   });
 }
 
-/**
- * Run Lean CLI command via `lake env lean` so Mathlib imports are available.
- * Falls back to bare `lean` if lake is not available.
- */
-async function runLeanCommand(args, cwd = WORK_DIR, stdinData = null) {
-  return new Promise((resolve) => {
+// ── Endpoints ─────────────────────────────────────────────────────────
+
+app.get('/health', async (req, res) => {
+  const isInstalled = await checkLeanInstallation();
+  res.json({
+    status: 'ok',
+    leanInstalled: isInstalled,
+    workspace: WORK_DIR,
+    projectDir: LEAN_PROJECT_DIR,
+  });
+});
+
+app.post('/verify', async (req, res) => {
+  const { code } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: 'No Lean code provided' });
+  }
+
+  const filename = `proof_${Date.now()}.lean`;
+  const filepath = join(WORK_DIR, filename);
+
+  try {
+    // Write code to temporary file
+    await writeFile(filepath, code);
+    console.log(`[lean-proxy] Verifying theorem: ${filename}`);
+    console.log(`[lean-proxy] Running: lake env lean --stdin (cwd: ${LEAN_PROJECT_DIR})`);
+
+    // Verify using Lean CLI via Lake to load mathlib
+    const process = spawn('lake', ['env', 'lean', '--stdin'], {
+      cwd: LEAN_PROJECT_DIR,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
     let stdout = '';
     let stderr = '';
 
-    // Use lake env lean to get Mathlib on LEAN_PATH
-    const cmd = 'lake';
-    const fullArgs = ['env', 'lean', ...args];
-    console.log(`Running: ${cmd} ${fullArgs.join(' ')} (cwd: ${LEAN_PROJECT_DIR})`);
-
-    const proc = spawn(cmd, fullArgs, {
-      stdio: 'pipe',
-      cwd: LEAN_PROJECT_DIR,
-    });
-
-    if (stdinData && proc.stdin) {
-      proc.stdin.write(stdinData);
-      proc.stdin.end();
-    }
-
-    proc.stdout?.on('data', (data) => {
+    process.stdout.on('data', (data) => {
       stdout += data.toString();
     });
 
-    proc.stderr?.on('data', (data) => {
+    process.stderr.on('data', (data) => {
       stderr += data.toString();
     });
 
-    proc.on('error', (error) => {
-      resolve({
-        success: false,
+    // Write code to stdin
+    process.stdin.write(code);
+    process.stdin.end();
+
+    process.on('close', async (exitCode) => {
+      // Clean up file
+      await unlink(filepath).catch(console.error);
+
+      if (exitCode !== 0) {
+        console.error(`[lean-proxy] Lean exited with code: ${exitCode}`);
+        return res.status(400).json({
+          status: 'error',
+          error: stderr || stdout || 'Unknown verification error',
+        });
+      }
+
+      console.log(`[lean-proxy] Verification successful: ${filename}`);
+      res.json({
+        status: 'success',
         output: stdout,
-        error: error.message,
       });
     });
 
-    proc.on('exit', (code) => {
-      console.log(`Lean exited with code: ${code}`);
-      resolve({
-        success: code === 0,
-        output: stdout,
-        error: stderr || undefined,
-      });
+    process.on('error', async (error) => {
+      await unlink(filepath).catch(console.error);
+      console.error('[lean-proxy] Process error:', error);
+      res.status(500).json({ error: 'Failed to run Lean CLI' });
     });
 
-    // Timeout after 60 seconds (Mathlib import can be slow on first load)
-    setTimeout(() => {
-      proc.kill();
-      resolve({
-        success: false,
-        output: stdout,
-        error: 'Lean verification timeout after 60 seconds',
-      });
-    }, 60000);
-  });
-}
-
-/**
- * Parse Lean verification output
- */
-function parseVerificationOutput(output, error) {
-  const errors = [];
-  const warnings = [];
-  let verified = true;
-
-  const allOutput = (output + '\n' + (error || '')).split('\n');
-
-  for (const line of allOutput) {
-    // Lean errors
-    if (line.includes('error:')) {
-      verified = false;
-      errors.push(line.trim());
-    }
-
-    // Lean warnings
-    if (line.includes('warning:')) {
-      warnings.push(line.trim());
-    }
-
-    // Success indicators
-    if (line.includes('No errors found') || line.includes('All goals completed')) {
-      verified = true;
-    }
-  }
-
-  // If no errors and no output, consider it verified
-  if (!error && errors.length === 0 && output.trim() === '') {
-    verified = true;
-  }
-
-  return {
-    verified: verified && errors.length === 0,
-    errors: errors.length > 0 ? errors : undefined,
-    warnings: warnings.length > 0 ? warnings : undefined,
-  };
-}
-
-/**
- * Generate Lean theorem from problem description
- */
-function generateLeanTheorem(problem, proof = '') {
-  const timestamp = new Date().toISOString();
-  const problemLines = problem.split('\n').map(line => `-- ${line}`).join('\n');
-
-  // If proof code is provided (from LLM), use it directly
-  if (proof && (proof.includes('theorem') || proof.includes('def '))) {
-    return proof;
-  }
-
-  return `-- Auto-generated Lean theorem
--- Generated: ${timestamp}
-${problemLines}
-import Std
-
-theorem auto_generated_verification : True := by
-  trivial
-`;
-}
-
-// API Routes
-
-/**
- * GET /health - Health check
- */
-app.get('/health', async (req, res) => {
-  const leanInstalled = await checkLeanInstallation();
-  res.json({
-    status: 'ok',
-    leanInstalled,
-    workspace: WORK_DIR,
-  });
-});
-
-/**
- * POST /verify - Verify Lean theorem
- * Body: { theoremContent: string, filename?: string }
- */
-app.post('/verify', async (req, res) => {
-  try {
-    const { theoremContent, filename = `theorem_${Date.now()}.lean` } = req.body;
-
-    if (!theoremContent) {
-      return res.status(400).json({ error: 'theoremContent is required' });
-    }
-
-    console.log(`Verifying theorem: ${filename}`);
-
-    // Write theorem to file
-    const filePath = join(WORK_DIR, filename);
-    await writeFile(filePath, theoremContent, 'utf-8');
-
-    // Run verification using --stdin for simpler checking
-    const result = await runLeanCommand(['--stdin'], WORK_DIR, theoremContent);
-
-    // Parse output
-    const verificationDetails = parseVerificationOutput(result.output, result.error);
-
-    res.json({
-      success: result.success,
-      output: result.output,
-      error: result.error,
-      verificationDetails,
-      filename,
-    });
-
-    // Cleanup file after verification (optional)
-    // await unlink(filePath).catch(() => {});
   } catch (error) {
-    console.error('Verification error:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Verification failed',
-    });
+    console.error('[lean-proxy] Verification failed:', error);
+    res.status(500).json({ error: 'Server error during verification' });
   }
 });
 
-/**
- * POST /prove - Generate and verify theorem from problem
- * Body: { problem: string, proof?: string }
- */
 app.post('/prove', async (req, res) => {
-  try {
-    const { problem, proof = '' } = req.body;
+  const { problem, language = 'pl' } = req.body;
 
-    if (!problem) {
-      return res.status(400).json({ error: 'problem is required' });
-    }
-
-    console.log(`Generating Lean theorem for problem: ${problem.substring(0, 50)}...`);
-
-    // Generate theorem
-    const theoremContent = generateLeanTheorem(problem, proof);
-    const filename = `problem_${Date.now()}.lean`;
-    const filePath = join(WORK_DIR, filename);
-
-    await writeFile(filePath, theoremContent, 'utf-8');
-
-    // Run verification
-    const result = await runLeanCommand(['--stdin'], WORK_DIR, theoremContent);
-
-    // Parse output
-    const verificationDetails = parseVerificationOutput(result.output, result.error);
-
-    res.json({
-      success: result.success,
-      output: result.output,
-      error: result.error,
-      verificationDetails,
-      theoremContent,
-      filename,
-    });
-  } catch (error) {
-    console.error('Prove error:', error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Proof generation failed',
-    });
+  if (!problem) {
+    return res.status(400).json({ error: 'No problem provided' });
   }
+
+  // TODO: Add AI generation step here
+  // For now, this is a placeholder
+  res.json({
+    status: 'pending',
+    message: 'Theorem generation not yet implemented in proxy. Use client-side LLM.',
+  });
 });
 
-/**
- * GET /workspace - List files in workspace
- */
 app.get('/workspace', async (req, res) => {
   try {
     const files = await readdir(WORK_DIR);
-    res.json({ files, workspace: WORK_DIR });
+    res.json({ files });
   } catch (error) {
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to read workspace',
-    });
+    res.status(500).json({ error: 'Failed to read workspace' });
   }
 });
 
-/**
- * GET /install - Get installation instructions
- */
 app.get('/install', (req, res) => {
   res.json({
     instructions: `
-To use Lean Prover, you need to install it:
+To use the Lean prover proxy, Lean 4 must be installed on your system.
 
-macOS (via Homebrew):
+macOS:
   brew install elan-init
   elan default leanprover/lean4:stable
 
@@ -357,7 +215,7 @@ After installation, restart this server.
     console.log('  POST /prove      - Generate and verify from problem');
     console.log('  GET  /workspace  - List workspace files');
     console.log('  GET  /install    - Installation instructions');
-    console.log('\nWorkspace:', WORK_DIR);
-    console.log('');
+    console.log(`Workspace: ${WORK_DIR}`);
+    console.log(`Project:   ${LEAN_PROJECT_DIR}`);
   });
 })();
