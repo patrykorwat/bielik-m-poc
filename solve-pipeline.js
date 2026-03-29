@@ -107,28 +107,39 @@ Przetlumacz zadanie na formalny dowod w Lean 4.
 
 ZASADY:
 1. KOMPLETNY, samowystarczalny kod Lean 4. ZAKAZ importow Mathlib (niedostepny na serwerze).
-2. Dozwolone importy: import Std (dostepne taktyki z Std: omega, simp, ring, norm_num, decide)
-3. Dostepne taktyki BEZ importow: intro, apply, exact, constructor, cases, induction, rfl, calc, trivial, rfl, have, let, show, funext, ext, contradiction, absurd, by_contra
-4. Dla arytmetyki na Nat/Int uzyj omega (rozwiazuje rownania i nierownosci liniowe)
-5. Dla dowodow algebraicznych uzyj ring (pierscienie) lub norm_num (obliczenia numeryczne)
+2. Dozwolone importy: import Std (dostepne taktyki z Std: omega, simp, decide)
+3. Dostepne taktyki BEZ importow: intro, apply, exact, constructor, cases, induction, rfl, calc, trivial, have, let, show, funext, ext, contradiction, absurd, by_contra, rw, omega, simp, decide
+4. Dla arytmetyki na Nat/Int uzyj omega (rozwiazuje LINIOWE rownania i nierownosci)
+5. ZAKAZ taktyk ring, ring_nf, norm_num (wymagaja Mathlib). Zamiast nich rozwin wyrazenia recznie (have h : ... := by omega) i uzyj omega.
 6. Jesli dowod jest zbyt trudny, uzyj sorry dla najtrudniejszych krokow, ale sformalizuj jak najwiecej
 7. Modeluj problemy na typach Nat lub Int (nie Real, bo Real wymaga Mathlib)
 8. ZAWSZE zwroc TYLKO blok kodu Lean 4 w \`\`\`lean, bez dodatkowego tekstu
 
-PRZYKLAD (podzielnosc):
+PRZYKLAD (podzielnosc, liniowa arytmetyka):
 \`\`\`lean
-theorem sum_sq_odd_mod4 (k : Int) :
-    ((2 * k + 1)^2 + (2 * k + 3)^2) % 4 = 2 := by
-  ring_nf
+theorem even_plus_even (a b : Int) (ha : a % 2 = 0) (hb : b % 2 = 0) :
+    (a + b) % 2 = 0 := by
   omega
 \`\`\`
 
-PRZYKLAD (indukcja):
+PRZYKLAD (kwadratowe wyrazenia z reszta):
 \`\`\`lean
-theorem sum_first_n (n : Nat) :
-    2 * (Finset.range (n + 1)).sum id = n * (n + 1) := by
-  sorry -- wymaga Mathlib.Data.Finset
+theorem sq_odd_mod2 (k : Int) :
+    (2 * k + 1) * (2 * k + 1) % 2 = 1 := by
+  have h : (2 * k + 1) * (2 * k + 1) = 4 * k * k + 4 * k + 1 := by omega
+  rw [h]
+  omega
 \`\`\`
+
+PRZYKLAD (indukcja na Nat):
+\`\`\`lean
+theorem sum_first_n (n : Nat) : 2 * (List.range (n + 1)).sum = n * (n + 1) := by
+  induction n with
+  | zero => simp
+  | succ k ih => simp [List.range_succ, Nat.mul_succ]; omega
+\`\`\`
+
+WAZNE: omega rozwiazuje LINIOWE rownania/nierownosci na Nat/Int. Dla kwadratow NAJPIERW rozwin recznie (have h : expr = expanded := by omega), potem uzyj omega na liniowym wyniku.
 `;
 
 function extractLeanCode(response) {
@@ -1461,6 +1472,49 @@ function formatSymPyNotation(text) {
     .replace(/\+∞/g, '+∞');
 }
 
+/**
+ * Strip LaTeX markup from LLM output that ignores the "no LaTeX" prompt rule.
+ * Converts $...$ wrapped expressions to plain text and removes common LaTeX commands.
+ */
+function stripLatex(text) {
+  if (!text) return text;
+  return text
+    // Remove $ delimiters (both inline $...$ and display $$...$$)
+    .replace(/\$\$([^$]+)\$\$/g, '$1')
+    .replace(/\$([^$]+)\$/g, '$1')
+    // \frac{a}{b} → a/b
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
+    // \sqrt{x} → sqrt(x)
+    .replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)')
+    // \left and \right → remove
+    .replace(/\\left/g, '')
+    .replace(/\\right/g, '')
+    // \geq, \leq, \neq, \approx → symbols
+    .replace(/\\geq/g, '>=')
+    .replace(/\\leq/g, '<=')
+    .replace(/\\neq/g, '!=')
+    .replace(/\\approx/g, '≈')
+    .replace(/\\cdot/g, '*')
+    .replace(/\\cdots/g, '...')
+    .replace(/\\ldots/g, '...')
+    .replace(/\\times/g, '×')
+    .replace(/\\pm/g, '±')
+    .replace(/\\infty/g, '∞')
+    // \sum_{i=1}^{n} → sum(i=1..n)
+    .replace(/\\sum_\{([^}]*)\}\^\{([^}]*)\}/g, 'sum($1..$2)')
+    .replace(/\\sum/g, 'sum')
+    // \text{...} → content
+    .replace(/\\text\{([^}]+)\}/g, '$1')
+    // \mathbf, \mathrm, \mathit → content
+    .replace(/\\math[a-z]+\{([^}]+)\}/g, '$1')
+    // \quad, \, \; \! → space
+    .replace(/\\(?:quad|,|;|!)/g, ' ')
+    // Remaining backslash commands like \alpha, \beta → just the word
+    .replace(/\\([a-zA-Z]+)/g, '$1')
+    // Clean up extra spaces
+    .replace(/  +/g, ' ');
+}
+
 function detectGeneratorIntent(message) {
   const lower = message.toLowerCase().trim();
   const norm = stripDiacritics(lower);
@@ -1949,7 +2003,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             maxTokens: prompts.agents.summary.max_tokens,
             temperature: prompts.agents.summary.temperature,
           });
-          const summary = stripThink(summaryRaw);
+          const summary = stripLatex(stripThink(summaryRaw));
           send('summary_done', 'Agent Podsumowujący', summary);
           return {
             success: true,
@@ -2245,7 +2299,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
       temperature: prompts.agents.summary.temperature,
     });
 
-    const summary = stripThink(summaryRaw);
+    const summary = stripLatex(stripThink(summaryRaw));
     send('summary_done', 'Agent Podsumowujący', summary);
 
     // ── Step 5: Lean verification (proof problems) ──────────────────
