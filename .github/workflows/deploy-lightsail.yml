@@ -1,0 +1,25 @@
+name: Deploy to Lightsail
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ubuntu
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          script_stop: true
+          script: |
+            cd /opt/formulo
+            git pull origin main
+            docker compose up -d --build
+            sleep 5
+            docker compose ps
+            curl -sf http://localhost:80/health | python3 -m json.tool || echo "Health check pending, app may still be starting..."
