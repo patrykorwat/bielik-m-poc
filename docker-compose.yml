@@ -8,8 +8,30 @@ services:
     environment:
       - PORT=5000
       - NODE_ENV=production
+      - DATABASE_URL=postgres://formulo:${POSTGRES_PASSWORD}@db:5432/formulo
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     deploy:
       resources:
         limits:
           memory: 3500M
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=formulo
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=formulo
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formulo"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  pgdata:

@@ -412,7 +412,12 @@ const SHARE_SHORT_TTL_HOURS = 24;
 const SHARE_EXTENDED_TTL_DAYS = 60;
 
 const pool = process.env.DATABASE_URL
-  ? new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  ? new pg.Pool({
+      connectionString: process.env.DATABASE_URL,
+      ...(process.env.DATABASE_URL.includes('localhost') || process.env.DATABASE_URL.includes('@db:')
+        ? {}
+        : { ssl: { rejectUnauthorized: false } })
+    })
   : null;
 
 if (pool) {
