@@ -2,8 +2,7 @@ services:
   formulo:
     build: .
     ports:
-      - "80:5000"
-      - "443:5000"
+      - "127.0.0.1:5000:5000"
     env_file:
       - .env
     environment:
