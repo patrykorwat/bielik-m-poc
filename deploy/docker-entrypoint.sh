@@ -22,6 +22,8 @@ if [ -n "$DD_API_KEY" ]; then
 api_key: ${DD_API_KEY}
 site: ${DD_SITE}
 hostname: formulo-heroku
+expvar_port: 5010
+cmd_port: 5011
 apm_config:
   enabled: true
   apm_non_local_traffic: false
