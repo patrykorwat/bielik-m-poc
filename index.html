@@ -28,11 +28,48 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://formulo.pl/og-image.png" />
 
-    <!-- Google Analytics + Ads -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3H9NVJWHJQ"></script>
+    <!-- Cookie consent + conditional GA/AdSense -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
+
+      // Default: deny analytics and ads until user consents
+      gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied'
+      });
+
+      // Check if user already consented
+      (function(){
+        var consent = localStorage.getItem('formulo-cookie-consent');
+        if (consent === 'all') {
+          gtag('consent', 'update', {
+            'analytics_storage': 'granted',
+            'ad_storage': 'granted',
+            'ad_user_data': 'granted',
+            'ad_personalization': 'granted'
+          });
+        } else if (consent === 'necessary') {
+          // keep denied
+        }
+      })();
+
+      window.formuloGrantConsent = function(level) {
+        localStorage.setItem('formulo-cookie-consent', level);
+        if (level === 'all') {
+          gtag('consent', 'update', {
+            'analytics_storage': 'granted',
+            'ad_storage': 'granted',
+            'ad_user_data': 'granted',
+            'ad_personalization': 'granted'
+          });
+        }
+      };
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3H9NVJWHJQ"></script>
+    <script>
       gtag('js', new Date());
       gtag('config', 'G-3H9NVJWHJQ');
     </script>

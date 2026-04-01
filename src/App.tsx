@@ -4,6 +4,7 @@ import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
 import { FormulaReference } from './components/FormulaReference';
+import { CookieConsent } from './components/CookieConsent';
 import './components/FormulaReference.css';
 import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
@@ -908,7 +909,8 @@ function App() {
         <span className="footer-legal">
           <a href="/regulamin">Regulamin</a>{' · '}
           <a href="/polityka-prywatnosci">Prywatność</a>{' · '}
-          <a href="/cookies">Cookies</a>
+          <a href="/cookies">Cookies</a>{' · '}
+          <a href="#" onClick={(e) => { e.preventDefault(); localStorage.removeItem('formulo-cookie-consent'); window.location.reload(); }}>Ustawienia cookies</a>
         </span>
       </footer>
 
@@ -922,6 +924,7 @@ function App() {
           onClose={() => setShowHistory(false)}
         />
       )}
+      <CookieConsent />
     </div>
   );
 }
