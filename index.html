@@ -33,15 +33,18 @@
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
 
-      // Default: deny analytics and ads until user consents
+      // Default: deny analytics and ads until consent is given.
+      // When Google Funding Choices (CMP) loads, it manages consent via TCF.
+      // When our fallback banner is used, we update consent manually.
       gtag('consent', 'default', {
         'analytics_storage': 'denied',
         'ad_storage': 'denied',
         'ad_user_data': 'denied',
-        'ad_personalization': 'denied'
+        'ad_personalization': 'denied',
+        'wait_for_update': 1500
       });
 
-      // Check if user already consented
+      // If user already gave consent via our fallback banner, apply it immediately
       (function(){
         var consent = localStorage.getItem('formulo-cookie-consent');
         if (consent === 'all') {
@@ -51,11 +54,13 @@
             'ad_user_data': 'granted',
             'ad_personalization': 'granted'
           });
-        } else if (consent === 'necessary') {
-          // keep denied
         }
+        // If consent === 'necessary', keep denied
+        // If no consent stored and Google CMP (FCCDCF cookie) handled it,
+        // Google reads TCF signals automatically, no manual update needed
       })();
 
+      // Called by our fallback CookieConsent component
       window.formuloGrantConsent = function(level) {
         localStorage.setItem('formulo-cookie-consent', level);
         if (level === 'all') {

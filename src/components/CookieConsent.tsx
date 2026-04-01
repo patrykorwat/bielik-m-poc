@@ -1,17 +1,41 @@
 import { useState, useEffect } from 'react';
 
 declare global {
-  interface Window { formuloGrantConsent?: (level: string) => void; }
+  interface Window {
+    formuloGrantConsent?: (level: string) => void;
+    __tcfapi?: (...args: unknown[]) => void;
+  }
+}
+
+function hasGoogleCMP(): boolean {
+  return typeof window.__tcfapi === 'function';
+}
+
+function hasExistingConsent(): boolean {
+  // Google Funding Choices stores consent in FCCDCF cookie
+  if (document.cookie.split(';').some(c => c.trim().startsWith('FCCDCF='))) return true;
+  // Our own fallback consent
+  if (localStorage.getItem('formulo-cookie-consent')) return true;
+  return false;
 }
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem('formulo-cookie-consent');
-    if (!consent) {
+    if (hasExistingConsent()) return;
+
+    // First check: Google CMP might already be loaded
+    if (hasGoogleCMP()) return;
+
+    // Wait 1.5s for Google Funding Choices to potentially load
+    const timer = setTimeout(() => {
+      if (hasGoogleCMP() || hasExistingConsent()) return;
+      // Google CMP did not load, show our fallback banner
       setVisible(true);
-    }
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const accept = (level: string) => {
