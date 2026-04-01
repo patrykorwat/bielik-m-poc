@@ -65,6 +65,10 @@ COPY requirements.txt ./
 RUN python3 -m venv rag_service/venv \
     && rag_service/venv/bin/pip install --no-cache-dir -r requirements.txt
 
+# MCP SymPy server venv (sympy must be importable from mcp-sympy-server/venv/bin/python3)
+RUN python3 -m venv mcp-sympy-server/venv \
+    && mcp-sympy-server/venv/bin/pip install --no-cache-dir sympy
+
 # Start entrypoint: launch Datadog agent then the app
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
