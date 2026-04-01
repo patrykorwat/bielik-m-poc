@@ -1029,6 +1029,7 @@ body::after {
   font-size: 12px;
   color: var(--text-muted);
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .app-footer a {

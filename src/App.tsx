@@ -905,6 +905,11 @@ function App() {
           Powered by{' '}
           <a href="https://huggingface.co/speakleash/Bielik-11B-v3.0-Instruct" target="_blank" rel="noopener noreferrer">Bielik v3 11B</a>
         </span>
+        <span className="footer-legal">
+          <a href="/regulamin">Regulamin</a>{' · '}
+          <a href="/polityka-prywatnosci">Prywatność</a>{' · '}
+          <a href="/cookies">Cookies</a>
+        </span>
       </footer>
 
       {showHistory && (

@@ -436,6 +436,13 @@ app.post('/api/solve', rateLimitSolve, solveJsonParser, async (req, res) => {
 const seoPath = join(__dirname, 'seo', 'pages');
 app.use('/zadania', express.static(join(seoPath, 'zadania'), { extensions: ['html'] }));
 app.use('/tematy', express.static(join(seoPath, 'tematy'), { extensions: ['html'] }));
+
+// Legal pages
+const legalPath = join(seoPath, 'legal');
+app.get('/polityka-prywatnosci', (_req, res) => res.sendFile(join(legalPath, 'polityka-prywatnosci.html')));
+app.get('/cookies', (_req, res) => res.sendFile(join(legalPath, 'cookies.html')));
+app.get('/regulamin', (_req, res) => res.sendFile(join(legalPath, 'regulamin.html')));
+
 app.get('/sitemap.xml', (_req, res) => {
   res.sendFile(join(__dirname, 'seo', 'sitemap.xml'));
 });
