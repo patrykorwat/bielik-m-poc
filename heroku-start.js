@@ -335,7 +335,44 @@ setInterval(() => {
 
 const solveJsonParser = express.json({ limit: '50kb' });
 
-app.post('/api/solve', solveJsonParser, async (req, res) => {
+// ── Rate limiting for /api/solve ────────────────────────────────────────
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const RATE_LIMIT_MAX = parseInt(process.env.RATE_LIMIT_MAX || '20', 10);
+const rateLimitStore = new Map();
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitStore) {
+    if (now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+      rateLimitStore.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+
+function rateLimitSolve(req, res, next) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+  const now = Date.now();
+  let entry = rateLimitStore.get(ip);
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    entry = { windowStart: now, count: 0 };
+    rateLimitStore.set(ip, entry);
+  }
+
+  entry.count++;
+  res.setHeader('X-RateLimit-Limit', RATE_LIMIT_MAX);
+  res.setHeader('X-RateLimit-Remaining', Math.max(0, RATE_LIMIT_MAX - entry.count));
+
+  if (entry.count > RATE_LIMIT_MAX) {
+    return res.status(429).json({
+      error: 'Przekroczono limit zapytań. Spróbuj ponownie za godzinę.',
+      retryAfter: Math.ceil((entry.windowStart + RATE_LIMIT_WINDOW_MS - now) / 1000)
+    });
+  }
+  next();
+}
+
+app.post('/api/solve', rateLimitSolve, solveJsonParser, async (req, res) => {
   const { message, sessionId: clientSessionId } = req.body || {};
   if (!message) {
     return res.status(400).json({ error: 'message is required' });

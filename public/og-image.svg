@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="0" y="590" width="1200" height="40" fill="url(#accent)"/>
+  <!-- Icon -->
+  <rect x="60" y="180" width="120" height="120" rx="24" ry="24" fill="url(#accent)"/>
+  <text x="85" y="280" font-family="Georgia, serif" font-size="90" font-weight="bold" fill="white">&#x222B;f</text>
+  <!-- Title -->
+  <text x="210" y="250" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="bold" fill="white">Formulo</text>
+  <text x="210" y="300" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#a0aec0">Asystent Matematyczny</text>
+  <!-- Tagline -->
+  <text x="60" y="420" font-family="system-ui, -apple-system, sans-serif" font-size="36" fill="#e2e8f0">Rozwiazuj zadania maturalne krok po kroku</text>
+  <text x="60" y="470" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#718096">Pochodne  ·  Calki  ·  Rownania  ·  Granice  ·  Dowody</text>
+  <!-- URL -->
+  <text x="60" y="560" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#667eea">formulo.pl</text>
+</svg>
