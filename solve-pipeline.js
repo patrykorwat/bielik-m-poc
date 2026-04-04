@@ -1486,40 +1486,58 @@ function formatSymPyNotation(text) {
 function stripLatex(text) {
   if (!text) return text;
   return text
-    // Remove $ delimiters (both inline $...$ and display $$...$$)
-    .replace(/\$\$([^$]+)\$\$/g, '$1')
-    .replace(/\$([^$]+)\$/g, '$1')
-    // \frac{a}{b} → a/b
+    // Remove display math $$...$$ (non-greedy, across lines)
+    .replace(/\$\$([\s\S]*?)\$\$/g, '$1')
+    // Remove inline math $...$ (handles single chars like $1$, $n$)
+    .replace(/\$([^$]*?)\$/g, '$1')
+    // \frac{a}{b} => a/b
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
-    // \sqrt{x} → sqrt(x)
+    // \sqrt{x} => sqrt(x)
     .replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)')
-    // \left and \right → remove
+    // \left and \right => remove
     .replace(/\\left/g, '')
     .replace(/\\right/g, '')
-    // \geq, \leq, \neq, \approx → symbols
+    // \equiv => congruence symbol
+    .replace(/\\equiv/g, '\u2261')
+    // \pmod{n} => (mod n)
+    .replace(/\\pmod\{([^}]+)\}/g, '(mod $1)')
+    // \bmod and \mod => mod
+    .replace(/\\bmod/g, 'mod')
+    .replace(/\\mod/g, 'mod')
+    // \geq, \leq, \neq, \approx => symbols
     .replace(/\\geq/g, '>=')
     .replace(/\\leq/g, '<=')
     .replace(/\\neq/g, '!=')
-    .replace(/\\approx/g, '≈')
+    .replace(/\\approx/g, '\u2248')
     .replace(/\\cdot/g, '*')
     .replace(/\\cdots/g, '...')
     .replace(/\\ldots/g, '...')
-    .replace(/\\times/g, '×')
-    .replace(/\\pm/g, '±')
-    .replace(/\\infty/g, '∞')
-    // \sum_{i=1}^{n} → sum(i=1..n)
+    .replace(/\\times/g, '\u00d7')
+    .replace(/\\pm/g, '\u00b1')
+    .replace(/\\infty/g, '\u221e')
+    // \sum_{i=1}^{n} => sum(i=1..n)
     .replace(/\\sum_\{([^}]*)\}\^\{([^}]*)\}/g, 'sum($1..$2)')
     .replace(/\\sum/g, 'sum')
-    // \text{...} → content
+    // \overline{x} => x
+    .replace(/\\overline\{([^}]+)\}/g, '$1')
+    // \text{...} => content
     .replace(/\\text\{([^}]+)\}/g, '$1')
-    // \mathbf, \mathrm, \mathit → content
+    // \mathbf, \mathrm, \mathit => content
     .replace(/\\math[a-z]+\{([^}]+)\}/g, '$1')
-    // \quad, \, \; \! → space
-    .replace(/\\(?:quad|,|;|!)/g, ' ')
-    // Remaining backslash commands like \alpha, \beta → just the word
+    // Superscript/subscript braces: ^{2} => ^2, _{i} => _i
+    .replace(/\^\{([^}]+)\}/g, '^$1')
+    .replace(/_\{([^}]+)\}/g, '_$1')
+    // \\ (line break) => space
+    .replace(/\\\\/g, ' ')
+    // \quad, \qquad, \, \; \! \: => space
+    .replace(/\\(?:qquad|quad|,|;|!|:)/g, ' ')
+    // Remaining backslash commands like \alpha, \beta => just the word
     .replace(/\\([a-zA-Z]+)/g, '$1')
+    // Remove leftover curly braces
+    .replace(/[{}]/g, '')
     // Clean up extra spaces
-    .replace(/  +/g, ' ');
+    .replace(/  +/g, ' ')
+    .trim();
 }
 
 function detectGeneratorIntent(message) {

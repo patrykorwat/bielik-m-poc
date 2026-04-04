@@ -28,14 +28,13 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://formulo.pl/og-image.png" />
 
-    <!-- Cookie consent + conditional GA/AdSense -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3H9NVJWHJQ"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
 
-      // Default: deny analytics and ads until consent is given.
-      // When Google Funding Choices (CMP) loads, it manages consent via TCF.
-      // When our fallback banner is used, we update consent manually.
+      // Default: deny analytics and ads until consent is given
       gtag('consent', 'default', {
         'analytics_storage': 'denied',
         'ad_storage': 'denied',
@@ -55,10 +54,10 @@
             'ad_personalization': 'granted'
           });
         }
-        // If consent === 'necessary', keep denied
-        // If no consent stored and Google CMP (FCCDCF cookie) handled it,
-        // Google reads TCF signals automatically, no manual update needed
       })();
+
+      gtag('js', new Date());
+      gtag('config', 'G-3H9NVJWHJQ');
 
       // Called by our fallback CookieConsent component
       window.formuloGrantConsent = function(level) {
@@ -72,11 +71,6 @@
           });
         }
       };
-    </script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3H9NVJWHJQ"></script>
-    <script>
-      gtag('js', new Date());
-      gtag('config', 'G-3H9NVJWHJQ');
     </script>
     <!-- Google AdSense -->
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1616606963057752" crossorigin="anonymous"></script>
