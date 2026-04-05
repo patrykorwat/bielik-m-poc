@@ -586,9 +586,28 @@ function sanitizeCode(code: string): string {
     lines = lines.filter(l => !['import math', 'from math import *'].includes(l.trim()));
   }
 
+  // Fix "import sympy" → "from sympy import *" (Bielik generates bare "import sympy"
+  // but then uses unqualified names like solve(), symbols(), etc.)
+  codeText = lines.join('\n');
+  lines = lines.map(line => {
+    const t = line.trim();
+    if (t === 'import sympy' || t === 'import sympy as sp') {
+      return 'from sympy import *';
+    }
+    return line;
+  });
+  // Also replace sympy.X(...) and sp.X(...) calls with bare X(...)
+  lines = lines.map(line => {
+    const t = line.trim();
+    if (t.startsWith('#') || t.startsWith('"') || t.startsWith("'")) return line;
+    line = line.replace(/\bsympy\.(\w)/g, '$1');
+    line = line.replace(/\bsp\.(\w)/g, '$1');
+    return line;
+  });
+
   // Ensure sympy import exists
   codeText = lines.join('\n');
-  if (!codeText.includes('from sympy') && !codeText.includes('import sympy')) {
+  if (!codeText.includes('from sympy')) {
     lines.unshift('from sympy import *');
   }
 
