@@ -2,12 +2,12 @@
 
 .quiz-screen {
   width: 100%;
-  min-height: 100vh;
+  flex: 1;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 20px;
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%);
+  overflow-y: auto;
 }
 
 .quiz-container {
