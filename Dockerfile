@@ -32,6 +32,11 @@ RUN npm run build && npm run build:server && npm run generate:seo \
 # ── Stage 3: Production ──────────────────────────────────────────────
 FROM lean-base
 
+# Install Tesseract OCR for image-to-text (math problems from photos)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-pol \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Install Datadog agent (container stack has no buildpack)
 ENV DD_INSTALL_ONLY=true
 RUN apt-get update \

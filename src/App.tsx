@@ -5,7 +5,13 @@ import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
 import { FormulaReference } from './components/FormulaReference';
 import { CookieConsent } from './components/CookieConsent';
+import DailyChallenge from './components/DailyChallenge';
+import { QuizMode } from './components/QuizMode';
+import ImageUpload from './components/ImageUpload';
 import './components/FormulaReference.css';
+import './components/DailyChallenge.css';
+import './components/QuizMode.css';
+import './components/ImageUpload.css';
 import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -88,9 +94,12 @@ function App() {
   const [orchestratorReady, setOrchestratorReady] = useState(false);
   const [, setMcpConnected] = useState(false);
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
-  const [activePage, setActivePage] = useState<'chat' | 'formulas'>(() => {
+  const [activePage, setActivePage] = useState<'chat' | 'formulas' | 'quiz'>(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get('p') === 'formulas' ? 'formulas' : 'chat';
+    const p = params.get('p');
+    if (p === 'formulas') return 'formulas';
+    if (p === 'quiz') return 'quiz';
+    return 'chat';
   });
   const [shareStatus, setShareStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -114,9 +123,9 @@ function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
-  const navigateTo = (page: 'chat' | 'formulas') => {
+  const navigateTo = (page: 'chat' | 'formulas' | 'quiz') => {
     setActivePage(page);
-    const url = page === 'formulas' ? '?p=formulas' : window.location.pathname;
+    const url = page === 'formulas' ? '?p=formulas' : page === 'quiz' ? '?p=quiz' : window.location.pathname;
     window.history.replaceState({}, '', url);
   };
 
@@ -635,6 +644,9 @@ function App() {
             <button className={`page-tab ${activePage === 'chat' ? 'active' : ''}`} onClick={() => navigateTo('chat')}>
               Czat
             </button>
+            <button className={`page-tab ${activePage === 'quiz' ? 'active' : ''}`} onClick={() => navigateTo('quiz')}>
+              Sprawdź się
+            </button>
             <button className={`page-tab ${activePage === 'formulas' ? 'active' : ''}`} onClick={() => navigateTo('formulas')}>
               Wzory
             </button>
@@ -658,12 +670,24 @@ function App() {
             onNavigateToChat={() => navigateTo('chat')}
           />
         </div>
+      ) : activePage === 'quiz' ? (
+        <div className="chat-container">
+          <QuizMode
+            onSubmitQuery={(q) => { submitQuery(q); navigateTo('chat'); }}
+            onNavigateToChat={() => navigateTo('chat')}
+          />
+        </div>
       ) : (
       <div className="chat-container">
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="empty-state">
-              <p><Icon type="wave" /> Witaj! Wklej zadanie z matematyki, a rozwiążę je krok po kroku.</p>
+              <DailyChallenge onSolveInChat={(q: string) => submitQuery(q)} />
+
+              <div className="landing-section">
+                <p className="landing-headline">Wklej zadanie z matematyki, a rozwiążę je krok po kroku.</p>
+              </div>
+
               <div className="example-chips">
                 <p className="example-section-label">Spróbuj:</p>
                 <div className="chip-grid">
@@ -675,11 +699,7 @@ function App() {
                     { label: 'Optymalizacja', query: 'Z blachy o wymiarach 20cm x 30cm wycinamy kwadraty z rogów i zginamy, tworząc pudełko. Jakie wymiary dają największą objętość?' },
                     { label: 'Dowód formalny', query: 'Udowodnij, że suma kwadratów dwóch kolejnych liczb nieparzystych daje resztę 2 z dzielenia przez 4' },
                   ].map((ex) => (
-                    <button
-                      key={ex.label}
-                      className="example-chip"
-                      onClick={() => submitQuery(ex.query)}
-                    >
+                    <button key={ex.label} className="example-chip" onClick={() => submitQuery(ex.query)}>
                       {ex.label}
                     </button>
                   ))}
@@ -691,13 +711,27 @@ function App() {
                     { label: 'Zadania maturalne', query: 'Daj mi 5 zadań z matury rozszerzonej z analizy matematycznej' },
                     { label: 'Co to jest pochodna?', query: 'Co to jest pochodna funkcji?' },
                   ].map((ex) => (
-                    <button
-                      key={ex.label}
-                      className="example-chip example-chip-secondary"
-                      onClick={() => submitQuery(ex.query)}
-                    >
+                    <button key={ex.label} className="example-chip example-chip-secondary" onClick={() => submitQuery(ex.query)}>
                       {ex.label}
                     </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="landing-topics">
+                <p className="example-section-label">Popularne tematy:</p>
+                <div className="chip-grid">
+                  {[
+                    { label: 'Logarytmy', path: '/tematy/rownania' },
+                    { label: 'Trygonometria', path: '/tematy/trygonometria' },
+                    { label: 'Ciągi', path: '/tematy/ciagi' },
+                    { label: 'Pochodne', path: '/tematy/pochodne' },
+                    { label: 'Geometria analityczna', path: '/tematy/geometria-analityczna' },
+                    { label: 'Funkcja kwadratowa', path: '/tematy/funkcja-kwadratowa' },
+                  ].map((t) => (
+                    <a key={t.label} href={t.path} className="example-chip example-chip-topic">
+                      {t.label}
+                    </a>
                   ))}
                 </div>
               </div>
@@ -873,6 +907,10 @@ function App() {
         </div>
 
         <div className="input-container">
+          <ImageUpload
+            onTextExtracted={(text) => setInputMessage(prev => prev ? prev + '\n' + text : text)}
+            disabled={isProcessing}
+          />
           <textarea
             ref={textareaRef}
             value={inputMessage}

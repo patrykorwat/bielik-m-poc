@@ -1,0 +1,223 @@
+/* Image Upload Button */
+.image-upload-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.15));
+  color: var(--text-primary, #ffffff);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.image-upload-btn:hover:not(:disabled) {
+  background: var(--glass-bg, rgba(255, 255, 255, 0.12));
+  border-color: var(--glass-border, rgba(255, 255, 255, 0.25));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.image-upload-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.image-upload-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.image-upload-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+}
+
+/* Preview Container */
+.image-upload-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.15));
+  border-radius: 8px;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Thumbnail */
+.image-upload-thumbnail {
+  position: relative;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.15));
+}
+
+.image-upload-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Action Buttons Container */
+.image-upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+/* Recognize Text Button */
+.image-upload-recognize-btn {
+  flex-grow: 1;
+  min-width: 120px;
+  padding: 8px 12px;
+  background: var(--primary, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  gap: 6px;
+}
+
+.image-upload-recognize-btn:hover:not(:disabled) {
+  background: var(--primary-dark, #4f46e5);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+.image-upload-recognize-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.2);
+}
+
+.image-upload-recognize-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Cancel Button */
+.image-upload-cancel-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(255, 59, 48, 0.1);
+  color: var(--text-secondary, #ef4444);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-weight: 600;
+}
+
+.image-upload-cancel-btn:hover:not(:disabled) {
+  background: rgba(255, 59, 48, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.image-upload-cancel-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.image-upload-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading Spinner */
+.image-upload-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error Message */
+.image-upload-error {
+  position: absolute;
+  bottom: -28px;
+  left: 0;
+  right: 0;
+  padding: 6px 10px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  animation: errorFlash 0.3s ease;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+@keyframes errorFlash {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive: Stack on smaller screens */
+@media (max-width: 640px) {
+  .image-upload-preview {
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .image-upload-actions {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .image-upload-recognize-btn {
+    min-width: auto;
+    flex: 1;
+  }
+}

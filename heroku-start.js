@@ -20,8 +20,13 @@ import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { promisify } from 'node:util';
 import pg from 'pg';
+
+const execFileAsync = promisify(execFile);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -429,6 +434,335 @@ app.post('/api/solve', rateLimitSolve, solveJsonParser, async (req, res) => {
   }
 
   res.end();
+});
+
+// ── CKE Quiz API (daily challenge, quiz, and checking) ──────────────────
+
+// Helper: simple day-based hash function for consistent daily seeding
+function dayHash(dateStr) {
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = ((hash << 5) - hash) + dateStr.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+// In-memory cache for loaded datasets
+let quizCache = {
+  podstawowa: null,
+  rozszerzona: null,
+};
+
+// Load all JSON files from a dataset directory
+function loadDataset(level) {
+  if (quizCache[level]) return quizCache[level];
+
+  const datasetPath = join(__dirname, 'datasets', level);
+  const questions = [];
+
+  try {
+    const files = readdirSync(datasetPath).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+      const raw = readFileSync(join(datasetPath, file), 'utf8');
+      const data = JSON.parse(raw);
+      questions.push(...data);
+    }
+    quizCache[level] = questions;
+    return questions;
+  } catch (err) {
+    console.error(`[quiz] Failed to load ${level} dataset:`, err.message);
+    return [];
+  }
+}
+
+// Topic keyword mapping for filtering
+const TOPIC_KEYWORDS = {
+  logarytmy: ['log', 'logarytm'],
+  potegi: ['potęg', 'poteg', 'wykładni', 'wykladni'],
+  rownania: ['równan', 'rownan', 'rozwiąż', 'rozwiaz'],
+  nierownosci: ['nierównoś', 'nierownosc'],
+  trygonometria: ['sin', 'cos', 'tg', 'trygonometr', 'kąt', 'kat'],
+  ciagi: ['ciąg', 'ciag', 'arytmetycz', 'geometrycz'],
+  prawdopodobienstwo: ['prawdopodobień', 'prawdopodobien', 'losow'],
+  geometria: ['trójkąt', 'trojkat', 'okrąg', 'okrag', 'pole', 'obwód', 'obwod', 'prostokąt', 'prostopadło'],
+  funkcje: ['funkcj', 'dziedzin', 'przebieg', 'monotoniczno'],
+  pochodne: ['pochodn', 'sty czn', 'ekstremu'],
+};
+
+// Check if question text matches a topic (case-insensitive, diacritics-aware)
+function matchesTopic(questionText, topic) {
+  const keywords = TOPIC_KEYWORDS[topic];
+  if (!keywords) return false;
+  const lowerText = questionText.toLowerCase();
+  return keywords.some(keyword => lowerText.includes(keyword));
+}
+
+// ── GET /api/daily-challenge
+app.get('/api/daily-challenge', (req, res) => {
+  try {
+    const questions = loadDataset('podstawowa');
+
+    // Filter to only MC questions (that have options)
+    const mcQuestions = questions.filter(q => q.options !== null && q.options !== undefined);
+
+    if (mcQuestions.length === 0) {
+      return res.status(404).json({ error: 'No multiple-choice questions available' });
+    }
+
+    // Get today's date for seeding
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const seed = dayHash(today);
+
+    // Pick one question deterministically
+    const question = mcQuestions[seed % mcQuestions.length];
+
+    // Generate a simple hint based on the question
+    let hint = 'Przeczytaj pytanie uważnie i sprawdź wszystkie opcje odpo wiedzi.';
+    if (question.question.toLowerCase().includes('log')) {
+      hint = 'Wspomnienie: log_a(b) = c oznacza a^c = b';
+    } else if (question.question.toLowerCase().includes('sin') || question.question.toLowerCase().includes('cos')) {
+      hint = 'Zastosuj wzory trygonometryczne.';
+    }
+
+    res.json({
+      question: question.question,
+      options: question.options,
+      metadata: {
+        year: question.metadata.year,
+        level: question.metadata.level,
+        task_number: question.metadata.task_number,
+      },
+      hint,
+    });
+  } catch (err) {
+    console.error('[daily-challenge] Error:', err.message);
+    res.status(500).json({ error: 'Failed to load daily challenge' });
+  }
+});
+
+// ── GET /api/quiz
+app.get('/api/quiz', (req, res) => {
+  try {
+    const level = (req.query.level || 'podstawowa').toLowerCase();
+    const count = Math.min(parseInt(req.query.count || '5', 10), 10);
+    const topic = req.query.topic ? req.query.topic.toLowerCase() : null;
+
+    if (level !== 'podstawowa' && level !== 'rozszerzona') {
+      return res.status(400).json({ error: 'level must be "podstawowa" or "rozszerzona"' });
+    }
+
+    const questions = loadDataset(level);
+
+    if (questions.length === 0) {
+      return res.status(404).json({ error: `No questions found for level ${level}` });
+    }
+
+    // Filter based on level type
+    let filtered = questions;
+    if (level === 'podstawowa') {
+      filtered = filtered.filter(q => q.options !== null && q.options !== undefined);
+    }
+
+    // Filter by topic if specified
+    if (topic) {
+      filtered = filtered.filter(q => matchesTopic(q.question, topic));
+      if (filtered.length === 0) {
+        return res.status(404).json({ error: `No questions found for topic "${topic}"` });
+      }
+    }
+
+    // Shuffle using a simple seeded random
+    const seed = Math.random();
+    filtered.sort(() => 0.5 - seed);
+
+    // Take the requested count
+    const selected = filtered.slice(0, count);
+
+    // Generate unique IDs and prepare response
+    const responseQuestions = selected.map((q, idx) => ({
+      id: idx,
+      question: q.question,
+      options: q.options,
+      metadata: {
+        year: q.metadata.year,
+        level: q.metadata.level,
+        task_number: q.metadata.task_number,
+      },
+    }));
+
+    // Collect all available topics from the dataset
+    const availableTopics = Object.keys(TOPIC_KEYWORDS).filter(topic =>
+      questions.some(q => matchesTopic(q.question, topic))
+    );
+
+    res.json({
+      questions: responseQuestions,
+      availableTopics,
+    });
+  } catch (err) {
+    console.error('[quiz] Error:', err.message);
+    res.status(500).json({ error: 'Failed to load quiz' });
+  }
+});
+
+// ── POST /api/quiz/check
+const quizCheckParser = express.json({ limit: '10kb' });
+app.post('/api/quiz/check', quizCheckParser, (req, res) => {
+  try {
+    const { answers } = req.body || {};
+
+    if (!Array.isArray(answers)) {
+      return res.status(400).json({ error: 'answers must be an array' });
+    }
+
+    const results = [];
+    let score = 0;
+
+    for (const submission of answers) {
+      const { year, level, task_number, answer: userAnswer } = submission;
+
+      // Find matching question in dataset
+      const dataset = loadDataset(level === 1 ? 'podstawowa' : 'rozszerzona');
+      const question = dataset.find(
+        q => q.metadata.year === year && q.metadata.task_number === task_number
+      );
+
+      if (!question) {
+        results.push({
+          correct: false,
+          correctAnswer: null,
+          question: `Question not found (year: ${year}, task: ${task_number})`,
+        });
+        continue;
+      }
+
+      // Compare answers (case-insensitive)
+      const isCorrect = userAnswer.toLowerCase() === question.answer.toLowerCase();
+      if (isCorrect) score++;
+
+      results.push({
+        correct: isCorrect,
+        correctAnswer: question.answer,
+        question: question.question,
+      });
+    }
+
+    res.json({
+      results,
+      score,
+      total: answers.length,
+    });
+  } catch (err) {
+    console.error('[quiz/check] Error:', err.message);
+    res.status(500).json({ error: 'Failed to check answers' });
+  }
+});
+
+// ── POST /api/ocr (Tesseract OCR + LLM cleanup) ───────────────────────
+
+const ocrJsonParser = express.json({ limit: '5mb' });
+app.post('/api/ocr', rateLimitSolve, ocrJsonParser, async (req, res) => {
+  const tmpBase = join(tmpdir(), `formulo-ocr-${Date.now()}`);
+  const tmpImg = `${tmpBase}.img`;
+
+  try {
+    const { image: base64Input } = req.body || {};
+
+    if (!base64Input) {
+      return res.status(400).json({ error: 'image is required' });
+    }
+
+    // Strip data URI prefix if present (e.g., "data:image/png;base64,")
+    let base64Data = base64Input;
+    const dataUriMatch = base64Input.match(/^data:[a-zA-Z0-9/+-]+;base64,(.+)$/);
+    if (dataUriMatch) {
+      base64Data = dataUriMatch[1];
+    }
+
+    // Write image to temp file
+    const imgBuffer = Buffer.from(base64Data, 'base64');
+    writeFileSync(tmpImg, imgBuffer);
+
+    // Run Tesseract OCR (pol + eng, math-friendly PSM 6)
+    let rawText = '';
+    try {
+      const { stdout } = await execFileAsync('tesseract', [
+        tmpImg, 'stdout',
+        '-l', 'pol+eng',
+        '--psm', '6',
+        '--oem', '1',
+      ], { timeout: 30000 });
+      rawText = stdout.trim();
+    } catch (tessErr) {
+      console.error('[ocr] Tesseract failed:', tessErr.message);
+      // Check if tesseract is installed
+      if (tessErr.code === 'ENOENT') {
+        return res.status(503).json({
+          error: 'Tesseract OCR nie jest zainstalowany. Dodaj buildpack heroku-community/apt z pakietem tesseract-ocr tesseract-ocr-pol.',
+        });
+      }
+      return res.status(500).json({ error: 'OCR failed' });
+    }
+
+    if (!rawText) {
+      return res.status(422).json({ error: 'Nie udało się odczytać tekstu ze zdjęcia. Spróbuj lepszego zdjęcia.' });
+    }
+
+    // Pass raw OCR text through the existing LLM to clean up math notation
+    const LLM_BASE = process.env.LLM_API_URL
+      ? `${process.env.LLM_API_URL}/v1`
+      : 'http://localhost:8011/v1';
+    const LLM_KEY = process.env.LLM_API_KEY || 'no-key';
+    const LLM_MODEL = process.env.LLM_MODEL || 'speakleash/Bielik-11B-v3.0-Instruct';
+
+    try {
+      const llmRes = await fetch(`${LLM_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${LLM_KEY}`,
+        },
+        body: JSON.stringify({
+          model: LLM_MODEL,
+          temperature: 0.1,
+          max_tokens: 800,
+          messages: [
+            {
+              role: 'system',
+              content: 'Jestes korektorem tekstu matematycznego. Dostajesz surowy tekst z OCR (Tesseract). Popraw bledy rozpoznawania, przywroc poprawna notacje matematyczna. Nie dodawaj komentarzy. Zwroc TYLKO poprawiony tekst zadania.',
+            },
+            {
+              role: 'user',
+              content: `Popraw ten tekst z OCR:\n\n${rawText}`,
+            },
+          ],
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (llmRes.ok) {
+        const llmData = await llmRes.json();
+        const cleaned = llmData.choices?.[0]?.message?.content?.trim();
+        if (cleaned) {
+          return res.json({ text: cleaned });
+        }
+      }
+      // If LLM cleanup fails, return raw Tesseract output
+      console.warn('[ocr] LLM cleanup failed, returning raw OCR text');
+    } catch (llmErr) {
+      console.warn('[ocr] LLM cleanup unavailable:', llmErr.message);
+    }
+
+    // Fallback: return raw Tesseract text without LLM cleanup
+    return res.json({ text: rawText });
+  } catch (err) {
+    console.error('[ocr] Unexpected error:', err.message);
+    res.status(500).json({ error: 'OCR processing failed' });
+  } finally {
+    // Cleanup temp file
+    try { unlinkSync(tmpImg); } catch { /* ignore */ }
+  }
 });
 
 // ── SEO static pages (served before SPA fallback) ─────────────────────
