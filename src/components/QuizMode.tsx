@@ -6,6 +6,7 @@ import './QuizMode.css';
 interface QuizModeProps {
   onSubmitQuery: (query: string) => void;
   onNavigateToChat: () => void;
+  onQuizComplete?: (score: number, total: number) => void;
 }
 
 interface QuizQuestion {
@@ -69,7 +70,7 @@ function renderLatex(text: string): string {
   return result;
 }
 
-export function QuizMode({ onSubmitQuery, onNavigateToChat }: QuizModeProps) {
+export function QuizMode({ onSubmitQuery, onNavigateToChat, onQuizComplete }: QuizModeProps) {
   const [screen, setScreen] = useState<Screen>('topic_selection');
   const [selectedTopic, setSelectedTopic] = useState<string>('');
   const [selectedLevel, setSelectedLevel] = useState<string>('podstawowa');
@@ -194,6 +195,9 @@ export function QuizMode({ onSubmitQuery, onNavigateToChat }: QuizModeProps) {
         wrongQuestions,
       });
       setScreen('results');
+      if (onQuizComplete) {
+        onQuizComplete(correct, questions.length);
+      }
     } catch (error) {
       console.error('Error checking answers:', error);
       alert('Nie udało się sprawdzić odpowiedzi.');

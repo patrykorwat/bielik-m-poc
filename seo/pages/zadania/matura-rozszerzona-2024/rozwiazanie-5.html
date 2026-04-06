@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matura Rozszerzona 2024 matematyka zadanie 5 - rozwiązanie | Formulo</title>
+  <meta name="description" content="Matura rozszerzona 2024, zadanie 5 (3 pkt). Pełne rozwiązanie z odpowiedzią i wyjaśnieniami. Rozwiąż to zadanie krok po kroku z darmowym asystentem AI Formulo.">
+  <link rel="canonical" href="https://formulo.pl/zadania/matura-rozszerzona-2024/rozwiazanie-5">
+  <meta property="og:title" content="Matura Rozszerzona 2024 matematyka zadanie 5 - rozwiązanie | Formulo">
+  <meta property="og:description" content="Matura rozszerzona 2024, zadanie 5 (3 pkt). Pełne rozwiązanie z odpowiedzią i wyjaśnieniami. Rozwiąż to zadanie krok po kroku z darmowym asystentem AI Formulo.">
+  <meta property="og:url" content="https://formulo.pl/zadania/matura-rozszerzona-2024/rozwiazanie-5">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Formulo">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem 2rem; }
+    .header a { color: white; text-decoration: none; font-size: 1.5rem; font-weight: 700; }
+    .header .subtitle { font-size: 0.9rem; opacity: 0.85; margin-top: 0.25rem; }
+    .container { max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; }
+    h1 { font-size: 1.6rem; margin-bottom: 1rem; color: #1a1a2e; }
+    h2 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; color: #333; }
+    h3 { font-size: 1rem; margin: 1rem 0 0.5rem; color: #333; }
+    .breadcrumb { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #667eea; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .task-card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .task-card h3 { font-size: 1rem; color: #667eea; margin-bottom: 0.75rem; }
+    .task-content { font-size: 0.95rem; line-height: 1.8; }
+    .task-question { font-size: 0.95rem; line-height: 1.8; margin-bottom: 1rem; }
+    .task-options { margin-top: 1rem; padding: 1rem; background: #f5f7ff; border-radius: 6px; }
+    .task-option { margin: 0.5rem 0; padding: 0.5rem 0; border-bottom: 1px solid rgba(102, 126, 234, 0.1); }
+    .task-option:last-child { border-bottom: none; }
+    .task-option.correct { background: #e8f5e9; padding: 0.75rem; border-radius: 4px; border-left: 3px solid #4caf50; margin-bottom: 0.5rem; font-weight: 500; }
+    .task-answer { margin-top: 1rem; padding: 0.75rem 1rem; background: #c8e6c9; border-left: 3px solid #4caf50; border-radius: 4px; font-weight: 500; }
+    .task-answer-label { font-size: 0.85rem; color: #2e7d32; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cta-button { display: inline-block; padding: 0.9rem 1.8rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1rem; margin: 1.5rem 0; transition: opacity 0.2s; }
+    .cta-button:hover { opacity: 0.9; }
+    .nav-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e0e0e0; }
+    .nav-section h3 { color: #666; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; }
+    .related-tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
+    .related-task-link { padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #e0e0e0; text-decoration: none; color: #667eea; font-size: 0.9rem; text-align: center; transition: all 0.2s; }
+    .related-task-link:hover { border-color: #667eea; background: #f5f7ff; }
+    .related-task-link.current { background: #667eea; color: white; font-weight: 600; cursor: default; }
+    .navigation { margin-top: 2rem; display: flex; justify-content: space-between; gap: 1rem; }
+    .nav-link { flex: 1; padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #e0e0e0; text-decoration: none; color: #667eea; text-align: center; font-size: 0.9rem; transition: all 0.2s; }
+    .nav-link:hover { border-color: #667eea; background: #f5f7ff; }
+    .nav-link.disabled { opacity: 0.3; cursor: default; }
+    .nav-link.disabled:hover { border-color: #e0e0e0; background: white; }
+    .year-card { display: block; background: white; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-decoration: none; color: #1a1a2e; transition: transform 0.15s; }
+    .year-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .year-card .meta { font-size: 0.85rem; color: #888; margin-top: 0.25rem; }
+    .cta { display: inline-block; margin-top: 2rem; padding: 0.85rem 2rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1rem; }
+    .cta:hover { opacity: 0.9; }
+    .footer { text-align: center; padding: 2rem; color: #999; font-size: 0.8rem; margin-top: 2rem; }
+    .footer a { color: #667eea; text-decoration: none; }
+    .katex-display { margin: 1rem 0; overflow-x: auto; }
+    @media (max-width: 600px) {
+      .container { padding: 0 1rem; }
+      h1 { font-size: 1.3rem; }
+      .related-tasks { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+      .navigation { flex-direction: column; }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalResource",
+  "name": "Zadanie 5 - Matura Rozszerzona 2024 - Matematyka",
+  "description": "Matura rozszerzona 2024, zadanie 5 (3 pkt). Pełne rozwiązanie z odpowiedzią i wyjaśnieniami. Rozwiąż to zadanie krok po kroku z darmowym asystentem AI Formulo.",
+  "url": "https://formulo.pl/zadania/matura-rozszerzona-2024/rozwiazanie-5",
+  "educationalLevel": "Extended",
+  "isPartOf": {
+    "@type": "Course",
+    "name": "Matura Matematyka Rozszerzona 2024",
+    "url": "https://formulo.pl/zadania/matura-rozszerzona-2024/"
+  },
+  "answer": {
+    "@type": "Answer",
+    "text": "Dowód (wykazanie tożsamości $\\log_{12} 80 = \\frac{2a+1}{a(1+b)}$)."
+  }
+}
+</script>
+  </head>
+<body>
+  <div class="header">
+    <a href="/">Formulo</a>
+    <div class="subtitle">Darmowy asystent matematyczny AI po polsku</div>
+  </div>
+  <div class="container">
+    
+      <div class="breadcrumb">
+        <a href="/">Formulo</a> &rsaquo;
+        <a href="/zadania/">Zadania</a> &rsaquo;
+        <a href="/zadania/matura-rozszerzona-2024/">Matura Rozszerzona 2024</a> &rsaquo;
+        Zadanie 5
+      </div>
+
+      <h1>Matura Rozszerzona 2024 – Zadanie 5</h1>
+      <p style="color: #666; margin-bottom: 1.5rem;">
+        <strong>Punkty: 3</strong> &middot; 
+        <strong>Rozwiązanie</strong>
+      </p>
+
+      <div class="task-card">
+        <h2>Treść zadania</h2>
+        <div class="task-question">Wykaż, że jeżeli $\log_5 4 = a$ oraz $\log_4 3 = b$, to
+$$\log_{12} 80 = \frac{2a + 1}{a \cdot (1 + b)}$$</div>
+      </div>
+
+      
+      <div class="task-answer">
+          <div class="task-answer-label">Odpowiedź</div>
+          Dowód (wykazanie tożsamości $\log_{12} 80 = \frac{2a+1}{a(1+b)}$).
+        </div>
+
+      <a href="/?q=Wyka%C5%BC%2C%20%C5%BCe%20je%C5%BCeli%20%20oraz%20%2C%20to%0A" class="cta-button">→ Rozwiąż to zadanie w Formulo</a>
+
+      <div class="nav-section">
+        <h3>Inne zadania z tego roku</h3>
+        <div class="related-tasks">
+          <a href="/zadania/matura-rozszerzona-2024/rozwiazanie-1" class="related-task-link">Zadanie 1</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-2" class="related-task-link">Zadanie 2</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-3" class="related-task-link">Zadanie 3</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-4" class="related-task-link">Zadanie 4</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-5" class="related-task-link current">Zadanie 5</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-6" class="related-task-link">Zadanie 6</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-7" class="related-task-link">Zadanie 7</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-8" class="related-task-link">Zadanie 8</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-9" class="related-task-link">Zadanie 9</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-10" class="related-task-link">Zadanie 10</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-11" class="related-task-link">Zadanie 11</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-12" class="related-task-link">Zadanie 12</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-13.1" class="related-task-link">Zadanie 13.1</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-13.2" class="related-task-link">Zadanie 13.2</a>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="navigation"><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-4" class="nav-link">← Zadanie 4</a><a href="/zadania/matura-rozszerzona-2024/rozwiazanie-6" class="nav-link">Zadanie 6 →</a></div>
+      </div>
+    
+  </div>
+  <div class="footer">
+    <a href="/">formulo.pl</a> &middot; Darmowy asystent matematyczny oparty na modelu Bielik
+  </div>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+</body>
+</html>

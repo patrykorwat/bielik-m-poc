@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matura Podstawowa 2018 matematyka zadanie 5 - rozwiązanie | Formulo</title>
+  <meta name="description" content="Matura podstawowa 2018, zadanie 5 (1 pkt). Pełne rozwiązanie z odpowiedzią i wyjaśnieniami. Rozwiąż to zadanie krok po kroku z darmowym asystentem AI Formulo.">
+  <link rel="canonical" href="https://formulo.pl/zadania/matura-podstawowa-2018/rozwiazanie-5">
+  <meta property="og:title" content="Matura Podstawowa 2018 matematyka zadanie 5 - rozwiązanie | Formulo">
+  <meta property="og:description" content="Matura podstawowa 2018, zadanie 5 (1 pkt). Pełne rozwiązanie z odpowiedzią i wyjaśnieniami. Rozwiąż to zadanie krok po kroku z darmowym asystentem AI Formulo.">
+  <meta property="og:url" content="https://formulo.pl/zadania/matura-podstawowa-2018/rozwiazanie-5">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Formulo">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem 2rem; }
+    .header a { color: white; text-decoration: none; font-size: 1.5rem; font-weight: 700; }
+    .header .subtitle { font-size: 0.9rem; opacity: 0.85; margin-top: 0.25rem; }
+    .container { max-width: 800px; margin: 2rem auto; padding: 0 1.5rem; }
+    h1 { font-size: 1.6rem; margin-bottom: 1rem; color: #1a1a2e; }
+    h2 { font-size: 1.2rem; margin: 1.5rem 0 0.75rem; color: #333; }
+    h3 { font-size: 1rem; margin: 1rem 0 0.5rem; color: #333; }
+    .breadcrumb { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+    .breadcrumb a { color: #667eea; text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .task-card { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .task-card h3 { font-size: 1rem; color: #667eea; margin-bottom: 0.75rem; }
+    .task-content { font-size: 0.95rem; line-height: 1.8; }
+    .task-question { font-size: 0.95rem; line-height: 1.8; margin-bottom: 1rem; }
+    .task-options { margin-top: 1rem; padding: 1rem; background: #f5f7ff; border-radius: 6px; }
+    .task-option { margin: 0.5rem 0; padding: 0.5rem 0; border-bottom: 1px solid rgba(102, 126, 234, 0.1); }
+    .task-option:last-child { border-bottom: none; }
+    .task-option.correct { background: #e8f5e9; padding: 0.75rem; border-radius: 4px; border-left: 3px solid #4caf50; margin-bottom: 0.5rem; font-weight: 500; }
+    .task-answer { margin-top: 1rem; padding: 0.75rem 1rem; background: #c8e6c9; border-left: 3px solid #4caf50; border-radius: 4px; font-weight: 500; }
+    .task-answer-label { font-size: 0.85rem; color: #2e7d32; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cta-button { display: inline-block; padding: 0.9rem 1.8rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1rem; margin: 1.5rem 0; transition: opacity 0.2s; }
+    .cta-button:hover { opacity: 0.9; }
+    .nav-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #e0e0e0; }
+    .nav-section h3 { color: #666; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1rem; }
+    .related-tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
+    .related-task-link { padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #e0e0e0; text-decoration: none; color: #667eea; font-size: 0.9rem; text-align: center; transition: all 0.2s; }
+    .related-task-link:hover { border-color: #667eea; background: #f5f7ff; }
+    .related-task-link.current { background: #667eea; color: white; font-weight: 600; cursor: default; }
+    .navigation { margin-top: 2rem; display: flex; justify-content: space-between; gap: 1rem; }
+    .nav-link { flex: 1; padding: 0.75rem; background: white; border-radius: 6px; border: 1px solid #e0e0e0; text-decoration: none; color: #667eea; text-align: center; font-size: 0.9rem; transition: all 0.2s; }
+    .nav-link:hover { border-color: #667eea; background: #f5f7ff; }
+    .nav-link.disabled { opacity: 0.3; cursor: default; }
+    .nav-link.disabled:hover { border-color: #e0e0e0; background: white; }
+    .year-card { display: block; background: white; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-decoration: none; color: #1a1a2e; transition: transform 0.15s; }
+    .year-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .year-card .meta { font-size: 0.85rem; color: #888; margin-top: 0.25rem; }
+    .cta { display: inline-block; margin-top: 2rem; padding: 0.85rem 2rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 1rem; }
+    .cta:hover { opacity: 0.9; }
+    .footer { text-align: center; padding: 2rem; color: #999; font-size: 0.8rem; margin-top: 2rem; }
+    .footer a { color: #667eea; text-decoration: none; }
+    .katex-display { margin: 1rem 0; overflow-x: auto; }
+    @media (max-width: 600px) {
+      .container { padding: 0 1rem; }
+      h1 { font-size: 1.3rem; }
+      .related-tasks { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+      .navigation { flex-direction: column; }
+    }
+  </style>
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "EducationalResource",
+  "name": "Zadanie 5 - Matura Podstawowa 2018 - Matematyka",
+  "description": "Matura podstawowa 2018, zadanie 5 (1 pkt). Pełne rozwiązanie z odpowiedzią i wyjaśnieniami. Rozwiąż to zadanie krok po kroku z darmowym asystentem AI Formulo.",
+  "url": "https://formulo.pl/zadania/matura-podstawowa-2018/rozwiazanie-5",
+  "educationalLevel": "Standard",
+  "isPartOf": {
+    "@type": "Course",
+    "name": "Matura Matematyka Podstawowa 2018",
+    "url": "https://formulo.pl/zadania/matura-podstawowa-2018/"
+  },
+  "answer": {
+    "@type": "Answer",
+    "text": "A"
+  }
+}
+</script>
+  </head>
+<body>
+  <div class="header">
+    <a href="/">Formulo</a>
+    <div class="subtitle">Darmowy asystent matematyczny AI po polsku</div>
+  </div>
+  <div class="container">
+    
+      <div class="breadcrumb">
+        <a href="/">Formulo</a> &rsaquo;
+        <a href="/zadania/">Zadania</a> &rsaquo;
+        <a href="/zadania/matura-podstawowa-2018/">Matura Podstawowa 2018</a> &rsaquo;
+        Zadanie 5
+      </div>
+
+      <h1>Matura Podstawowa 2018 – Zadanie 5</h1>
+      <p style="color: #666; margin-bottom: 1.5rem;">
+        <strong>Punkty: 1</strong> &middot; 
+        <strong>Rozwiązanie</strong>
+      </p>
+
+      <div class="task-card">
+        <h2>Treść zadania</h2>
+        <div class="task-question">Zbiorem wszystkich rozwiązań nierówności $\\frac{1-2x}{2} > \\frac{1}{3}$ jest przedział</div>
+      </div>
+
+      <h3>Opcje odpowiedzi</h3><div class="task-options"><div class="task-option correct">
+              <div class="task-answer-label">✓ Prawidłowa odpowiedź</div>
+              <strong>A.</strong> \\left(-\\infty, \\frac{1}{6}\\right)
+            </div><div class="task-option">
+              <strong>B.</strong> \\left(-\\infty, \\frac{2}{3}\\right)
+            </div><div class="task-option">
+              <strong>C.</strong> \\left(\\frac{1}{6}, +\\infty\\right)
+            </div><div class="task-option">
+              <strong>D.</strong> \\left(\\frac{2}{3}, +\\infty\\right)
+            </div></div>
+      
+
+      <a href="/?q=Zbiorem%20wszystkich%20rozwi%C4%85za%C5%84%20nier%C3%B3wno%C5%9Bci%20%20jest%20przedzia%C5%82" class="cta-button">→ Rozwiąż to zadanie w Formulo</a>
+
+      <div class="nav-section">
+        <h3>Inne zadania z tego roku</h3>
+        <div class="related-tasks">
+          <a href="/zadania/matura-podstawowa-2018/rozwiazanie-1" class="related-task-link">Zadanie 1</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-2" class="related-task-link">Zadanie 2</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-3" class="related-task-link">Zadanie 3</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-4" class="related-task-link">Zadanie 4</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-5" class="related-task-link current">Zadanie 5</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-6" class="related-task-link">Zadanie 6</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-7" class="related-task-link">Zadanie 7</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-8" class="related-task-link">Zadanie 8</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-9" class="related-task-link">Zadanie 9</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-10" class="related-task-link">Zadanie 10</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-11" class="related-task-link">Zadanie 11</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-12" class="related-task-link">Zadanie 12</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-13" class="related-task-link">Zadanie 13</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-14" class="related-task-link">Zadanie 14</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-15" class="related-task-link">Zadanie 15</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-16" class="related-task-link">Zadanie 16</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-17" class="related-task-link">Zadanie 17</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-18" class="related-task-link">Zadanie 18</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-19" class="related-task-link">Zadanie 19</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-20" class="related-task-link">Zadanie 20</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-21" class="related-task-link">Zadanie 21</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-22" class="related-task-link">Zadanie 22</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-23" class="related-task-link">Zadanie 23</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-24" class="related-task-link">Zadanie 24</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-25" class="related-task-link">Zadanie 25</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-26" class="related-task-link">Zadanie 26</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-27" class="related-task-link">Zadanie 27</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-28" class="related-task-link">Zadanie 28</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-29" class="related-task-link">Zadanie 29</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-30" class="related-task-link">Zadanie 30</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-31" class="related-task-link">Zadanie 31</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-32" class="related-task-link">Zadanie 32</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-33" class="related-task-link">Zadanie 33</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-34" class="related-task-link">Zadanie 34</a>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="navigation"><a href="/zadania/matura-podstawowa-2018/rozwiazanie-4" class="nav-link">← Zadanie 4</a><a href="/zadania/matura-podstawowa-2018/rozwiazanie-6" class="nav-link">Zadanie 6 →</a></div>
+      </div>
+    
+  </div>
+  <div class="footer">
+    <a href="/">formulo.pl</a> &middot; Darmowy asystent matematyczny oparty na modelu Bielik
+  </div>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
+</body>
+</html>

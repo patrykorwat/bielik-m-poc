@@ -1,0 +1,580 @@
+/* ===== Formulo Gamification Widget Styles ===== */
+
+/* Main widget container */
+.gamification-widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(var(--blur));
+  box-shadow: var(--shadow);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--text-primary);
+}
+
+.gamification-widget.compact {
+  flex-direction: row;
+  gap: 20px;
+  padding: 12px 16px;
+  width: fit-content;
+}
+
+/* Widget section */
+.widget-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Section header */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.section-header svg {
+  width: 16px;
+  height: 16px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.section-title {
+  flex: 1;
+}
+
+/* Section content */
+.section-content {
+  padding: 0 4px;
+}
+
+/* ===== Streak Section ===== */
+.streak-section {
+}
+
+.streak-display {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.streak-current,
+.streak-longest {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--glass-bg-light);
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.streak-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.streak-value {
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Flame icon styling */
+.flame-icon {
+  width: 20px;
+  height: 20px;
+  color: #ff6b35;
+  animation: flicker 2s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+/* ===== Level Section ===== */
+.level-section {
+}
+
+.level-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.level-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.level-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.level-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.level-main .level-number {
+  margin-right: 8px;
+}
+
+.level-main .level-text {
+  flex: 1;
+}
+
+.level-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* XP Progress bar */
+.xp-bar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.xp-bar-background {
+  width: 100%;
+  height: 8px;
+  background: var(--glass-bg-light);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  position: relative;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.4s ease;
+  border-radius: var(--radius-xs);
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.4);
+}
+
+.xp-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Star icon */
+.star-icon {
+  width: 16px;
+  height: 16px;
+  color: #fbbf24;
+}
+
+/* ===== Stats Section ===== */
+.stats-section {
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px;
+  background: var(--glass-bg-light);
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Trophy icon */
+.trophy-icon {
+  width: 16px;
+  height: 16px;
+  color: #fbbf24;
+}
+
+/* ===== Badges Section ===== */
+.badges-section {
+}
+
+.badges-display {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recent-badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.badge-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.badge-circle {
+  width: 48px;
+  height: 48px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  animation: badgePopIn 0.3s ease;
+}
+
+.badge-circle:hover {
+  transform: scale(1.1);
+}
+
+@keyframes badgePopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.badge-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  transition: filter 0.2s ease;
+}
+
+.badge-circle:hover .badge-svg {
+  filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.4));
+}
+
+/* Badge tooltip */
+.badge-tooltip {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  padding: 8px 10px;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-primary);
+  backdrop-filter: blur(var(--blur));
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+
+.badge-tooltip-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.badge-tooltip-desc {
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: normal;
+  max-width: 120px;
+}
+
+.no-badges {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--glass-bg-light);
+  border-radius: var(--radius-xs);
+  border: 1px dashed rgba(102, 126, 234, 0.2);
+}
+
+.view-all-badges-btn {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.view-all-badges-btn:hover {
+  background: var(--glass-bg-strong);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.view-all-badges-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== Badges Modal ===== */
+.badges-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.badges-modal {
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(var(--blur));
+  box-shadow: var(--shadow);
+  max-width: 400px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  font-family: inherit;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-content {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.badges-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.badge-card {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ===== Compact Mode ===== */
+.gamification-widget.compact {
+  align-items: center;
+}
+
+.gamification-widget.compact .widget-streak,
+.gamification-widget.compact .widget-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--glass-bg-light);
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.gamification-widget.compact .widget-streak {
+  padding: 6px 10px;
+}
+
+.gamification-widget.compact .streak-count {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.gamification-widget.compact .widget-level {
+  padding: 6px 12px;
+}
+
+.gamification-widget.compact .level-number {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  padding: 0;
+  margin: 0;
+}
+
+.gamification-widget.compact .level-name {
+  font-size: 12px;
+  margin: 0;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 640px) {
+  .gamification-widget {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .badges-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .badge-circle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .badges-modal {
+    max-width: 90vw;
+    max-height: 80vh;
+    border-radius: var(--radius-sm);
+  }
+
+  .gamification-widget.compact {
+    flex-direction: row;
+    gap: 12px;
+  }
+}
+
+/* ===== Dark/Light Theme Transitions ===== */
+.gamification-widget {
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.section-header {
+  transition: color 0.3s ease;
+}
+
+.xp-bar-fill {
+  background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+}
+
+.badge-circle:hover {
+  opacity: 0.9;
+}
+
+/* Scrollbar styling in modal */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

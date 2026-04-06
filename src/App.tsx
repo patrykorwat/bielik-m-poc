@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ThreeAgentOrchestrator, Message, MLXConfig, LLMProvider } from './services/threeAgentSystem';
 import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
@@ -8,10 +8,17 @@ import { CookieConsent } from './components/CookieConsent';
 import DailyChallenge from './components/DailyChallenge';
 import { QuizMode } from './components/QuizMode';
 import ImageUpload from './components/ImageUpload';
+import WelcomeLanding from './components/WelcomeLanding';
+import { GamificationWidget } from './components/GamificationWidget';
+import StudyPlan from './components/StudyPlan';
+import { loadGamificationState, recordSolve, recordQuiz, GamificationState } from './services/gamificationService';
 import './components/FormulaReference.css';
 import './components/DailyChallenge.css';
 import './components/QuizMode.css';
 import './components/ImageUpload.css';
+import './components/WelcomeLanding.css';
+import './components/GamificationWidget.css';
+import './components/StudyPlan.css';
 import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -94,13 +101,15 @@ function App() {
   const [orchestratorReady, setOrchestratorReady] = useState(false);
   const [, setMcpConnected] = useState(false);
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
-  const [activePage, setActivePage] = useState<'chat' | 'formulas' | 'quiz'>(() => {
+  const [activePage, setActivePage] = useState<'chat' | 'formulas' | 'quiz' | 'plan'>(() => {
     const params = new URLSearchParams(window.location.search);
     const p = params.get('p');
     if (p === 'formulas') return 'formulas';
     if (p === 'quiz') return 'quiz';
+    if (p === 'plan') return 'plan';
     return 'chat';
   });
+  const [gamificationState, setGamificationState] = useState<GamificationState>(loadGamificationState);
   const [shareStatus, setShareStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
@@ -123,11 +132,16 @@ function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
-  const navigateTo = (page: 'chat' | 'formulas' | 'quiz') => {
+  const navigateTo = (page: 'chat' | 'formulas' | 'quiz' | 'plan') => {
     setActivePage(page);
-    const url = page === 'formulas' ? '?p=formulas' : page === 'quiz' ? '?p=quiz' : window.location.pathname;
+    const url = page === 'chat' ? window.location.pathname : `?p=${page}`;
     window.history.replaceState({}, '', url);
   };
+
+  // Refresh gamification state after actions
+  const refreshGamification = useCallback(() => {
+    setGamificationState(loadGamificationState());
+  }, []);
 
   const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -313,6 +327,8 @@ function App() {
         { classifierMode, abortSignal: controller.signal }
       );
       trackEvent('solve_completed');
+      recordSolve();
+      refreshGamification();
     } catch (error) {
       if (controller.signal.aborted) {
         return;
@@ -351,6 +367,8 @@ function App() {
       { classifierMode, abortSignal: controller.signal }
     ).then(() => {
       trackEvent('solve_completed', { source: 'formula_card' });
+      recordSolve();
+      refreshGamification();
     }).catch((error) => {
       if (!controller.signal.aborted) {
         console.error('Blad podczas przetwarzania:', error);
@@ -644,6 +662,9 @@ function App() {
             <button className={`page-tab ${activePage === 'chat' ? 'active' : ''}`} onClick={() => navigateTo('chat')}>
               Czat
             </button>
+            <button className={`page-tab ${activePage === 'plan' ? 'active' : ''}`} onClick={() => navigateTo('plan')}>
+              Plan nauki
+            </button>
             <button className={`page-tab ${activePage === 'quiz' ? 'active' : ''}`} onClick={() => navigateTo('quiz')}>
               Sprawdź się
             </button>
@@ -651,6 +672,7 @@ function App() {
               Wzory
             </button>
           </div>
+          <GamificationWidget state={gamificationState} compact={true} />
           <button onClick={() => setShowHistory(true)} className="history-button">
             <Icon type="books" /> Historia
           </button>
@@ -673,6 +695,20 @@ function App() {
       ) : activePage === 'quiz' ? (
         <div className="chat-container">
           <QuizMode
+            onSubmitQuery={(q) => {
+              submitQuery(q);
+              navigateTo('chat');
+            }}
+            onNavigateToChat={() => navigateTo('chat')}
+            onQuizComplete={(score, total) => {
+              recordQuiz(score, total);
+              refreshGamification();
+            }}
+          />
+        </div>
+      ) : activePage === 'plan' ? (
+        <div className="chat-container">
+          <StudyPlan
             onSubmitQuery={(q) => { submitQuery(q); navigateTo('chat'); }}
             onNavigateToChat={() => navigateTo('chat')}
           />
@@ -682,59 +718,10 @@ function App() {
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="empty-state">
-              <DailyChallenge onSolveInChat={(q: string) => submitQuery(q)} />
-
-              <div className="landing-section">
-                <p className="landing-headline">Wklej zadanie z matematyki, a rozwiążę je krok po kroku.</p>
-              </div>
-
-              <div className="example-chips">
-                <p className="example-section-label">Spróbuj:</p>
-                <div className="chip-grid">
-                  {[
-                    { label: 'Nierówność kwadratowa', query: 'Rozwiąż nierówność x² - 5x + 6 > 0' },
-                    { label: 'Dziedzina funkcji', query: 'Wyznacz dziedzinę funkcji f(x) = sqrt(4 - x²)' },
-                    { label: 'Układ równań z parametrem', query: 'Rozwiąż układ równań z parametrem m:\nmx + y = m²\n4x + my = 8\nDla jakich wartości m układ ma dokładnie jedno rozwiązanie?' },
-                    { label: 'Przebieg zmienności', query: 'Zbadaj przebieg zmienności funkcji f(x) = (x² - 1) / (x + 2)' },
-                    { label: 'Optymalizacja', query: 'Z blachy o wymiarach 20cm x 30cm wycinamy kwadraty z rogów i zginamy, tworząc pudełko. Jakie wymiary dają największą objętość?' },
-                    { label: 'Dowód formalny', query: 'Udowodnij, że suma kwadratów dwóch kolejnych liczb nieparzystych daje resztę 2 z dzielenia przez 4' },
-                  ].map((ex) => (
-                    <button key={ex.label} className="example-chip" onClick={() => submitQuery(ex.query)}>
-                      {ex.label}
-                    </button>
-                  ))}
-                </div>
-                <p className="example-section-label" style={{ marginTop: '16px' }}>Lub wygeneruj zadania:</p>
-                <div className="chip-grid">
-                  {[
-                    { label: 'Trygonometria', query: 'Daj mi 5 zadań z trygonometrii' },
-                    { label: 'Zadania maturalne', query: 'Daj mi 5 zadań z matury rozszerzonej z analizy matematycznej' },
-                    { label: 'Co to jest pochodna?', query: 'Co to jest pochodna funkcji?' },
-                  ].map((ex) => (
-                    <button key={ex.label} className="example-chip example-chip-secondary" onClick={() => submitQuery(ex.query)}>
-                      {ex.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="landing-topics">
-                <p className="example-section-label">Popularne tematy:</p>
-                <div className="chip-grid">
-                  {[
-                    { label: 'Logarytmy', path: '/tematy/rownania' },
-                    { label: 'Trygonometria', path: '/tematy/trygonometria' },
-                    { label: 'Ciągi', path: '/tematy/ciagi' },
-                    { label: 'Pochodne', path: '/tematy/pochodne' },
-                    { label: 'Geometria analityczna', path: '/tematy/geometria-analityczna' },
-                    { label: 'Funkcja kwadratowa', path: '/tematy/funkcja-kwadratowa' },
-                  ].map((t) => (
-                    <a key={t.label} href={t.path} className="example-chip example-chip-topic">
-                      {t.label}
-                    </a>
-                  ))}
-                </div>
-              </div>
+              <WelcomeLanding
+                onSubmitQuery={submitQuery}
+                dailyChallengeSlot={<DailyChallenge onSolveInChat={(q: string) => submitQuery(q)} />}
+              />
             </div>
           ) : (
             messages
