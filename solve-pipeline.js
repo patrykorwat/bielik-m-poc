@@ -1365,7 +1365,8 @@ function detectCustomGeneratorConstraints(lower) {
 // ── Generator: intent detection ───────────────────────────────────────
 
 const GENERATOR_KEYWORDS = [
-  'wymyśl', 'wymysl', 'wygeneruj', 'generuj', 'losuj',
+  'wymyśl', 'wymysl', 'wygeneruj', 'generuj',
+  'losuj mi', 'losuj zadani', 'losuj przyklad', 'losuj przyklad', 'wylosuj zadani', 'wylosuj mi',
   'zadaj mi', 'zadaj pytani', 'zadawaj',
   'arkusz', 'zestaw zadań', 'zestaw zadan',
   'ćwiczeni', 'cwiczeni', 'trening', 'praktyk',
@@ -1594,26 +1595,37 @@ function detectGeneratorIntent(message) {
   const hasCountPattern = /\d+\s*(zadan|zadani|zadanie|cwiczen|przyklad)/i.test(norm);
 
   if (hasKeyword || hasCountPattern) {
-    let level;
-    if (lower.includes('podstawow')) level = 'podstawowa';
-    else if (lower.includes('rozszerzon')) level = 'rozszerzona';
+    // Guard: if the message looks like a concrete solve request (has question words
+    // asking for a specific numerical/logical answer AND contains numbers or math ops),
+    // treat it as a solve request, not a generator request.
+    const solveSignals = /(?:jakie? jest|ile wynosi|ile jest|oblicz|wyznacz|rozwiąż|rozwiaz|udowodnij|znajd[źz]|jaka jest|ile|jaki)/i.test(lower);
+    const hasMathContent = /[=+\-*/^√∫∑]|\d/.test(lower);
+    const isLongProblem = lower.split(/\s+/).length >= 8;
+    if (solveSignals && hasMathContent && isLongProblem) {
+      // This looks like a word problem to solve, not a "generate me problems" request.
+      // Fall through to the solve path instead.
+    } else {
+      let level;
+      if (lower.includes('podstawow')) level = 'podstawowa';
+      else if (lower.includes('rozszerzon')) level = 'rozszerzona';
 
-    let count;
-    const countMatch = norm.match(/(\d+)\s*(zadan|zadani|zadanie|pytan|cwiczen|przyklad)/);
-    if (countMatch) count = parseInt(countMatch[1]);
+      let count;
+      const countMatch = norm.match(/(\d+)\s*(zadan|zadani|zadanie|pytan|cwiczen|przyklad)/);
+      if (countMatch) count = parseInt(countMatch[1]);
 
-    let topic;
-    for (const tp of TOPIC_ONLY_PATTERNS) {
-      if (lower.includes(tp)) {
-        topic = matchTopicName(lower);
-        break;
+      let topic;
+      for (const tp of TOPIC_ONLY_PATTERNS) {
+        if (lower.includes(tp)) {
+          topic = matchTopicName(lower);
+          break;
+        }
       }
+
+      // Detect if this needs LLM generation (custom constraints the pool can't serve)
+      const needsLLM = detectCustomGeneratorConstraints(lower);
+
+      return { isTrigger: true, topic, level, count, needsLLM, rawMessage: message };
     }
-
-    // Detect if this needs LLM generation (custom constraints the pool can't serve)
-    const needsLLM = detectCustomGeneratorConstraints(lower);
-
-    return { isTrigger: true, topic, level, count, needsLLM, rawMessage: message };
   }
 
   // Single topic name (1-3 words)
@@ -1640,7 +1652,7 @@ function detectGeneratorIntent(message) {
   // Level keyword without a real math problem
   const hasLevelWord = lower.includes('podstawow') || lower.includes('rozszerzon');
   if (hasLevelWord) {
-    const looksLikeProblem = /[=+\-*/^√∫∑]|\d{2,}|oblicz|wyznacz|rozwiąż|rozwiaz|udowodnij|ile|jaki|który/.test(lower);
+    const looksLikeProblem = /[=+\-*/^√∫∑]|\d{2,}|oblicz|wyznacz|rozwiąż|rozwiaz|udowodnij|ile|jakie?|który|znajd[źz]/.test(lower);
     if (!looksLikeProblem) {
       const level = lower.includes('podstawow') ? 'podstawowa' : 'rozszerzona';
       const topic = matchTopicName(lower);
@@ -1650,7 +1662,7 @@ function detectGeneratorIntent(message) {
 
   // If the message doesn't look like a concrete math problem, mark as uncertain
   // so the solver can do a quick LLM intent check before proceeding
-  const looksLikeProblem = /[=+\-*/^√∫∑]|\d{2,}|oblicz|wyznacz|rozwiąż|rozwiaz|udowodnij|ile wynosi|jaki jest|który/.test(lower);
+  const looksLikeProblem = /[=+\-*/^√∫∑]|\d{2,}|oblicz|wyznacz|rozwiąż|rozwiaz|udowodnij|ile wynosi|ile jest|jakie? jest|który|znajd[źz]/.test(lower);
   if (!looksLikeProblem) {
     return { isTrigger: false, uncertain: true };
   }
