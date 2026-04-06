@@ -93,24 +93,6 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
     },
   ];
 
-  const testimonials = [
-    {
-      quote:
-        'Nareszcie rozumiem logarytmy! Wyjaśnienia krok po kroku to jest to, czego brakowało.',
-      author: 'Uczeń, 2 klasa liceum',
-    },
-    {
-      quote:
-        'Używam do sprawdzania zadań z analizy. SymPy nie kłamie.',
-      author: 'Student, Politechnika',
-    },
-    {
-      quote:
-        'Lepsze niż korepetycje za 80zł/h, a za darmo.',
-      author: 'Maturzysta 2026',
-    },
-  ];
-
   const topics = [
     'Równania i nierówności',
     'Funkcje',
@@ -239,18 +221,6 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="testimonials-section">
-        <h2 className="section-title">Co mówią użytkownicy</h2>
-        <div className="testimonials-grid">
-          {testimonials.map((testimonial, idx) => (
-            <div key={idx} className="testimonial-card">
-              <div className="testimonial-quote">"{testimonial.quote}"</div>
-              <div className="testimonial-author">— {testimonial.author}</div>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 };

@@ -1492,7 +1492,8 @@ function stripLatex(text) {
     .replace(/\$([^$]*?)\$/g, '$1')
     // \frac{a}{b} => a/b
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
-    // \sqrt{x} => sqrt(x)
+    // \sqrt[n]{x} => n-th root(x), \sqrt{x} => sqrt(x)
+    .replace(/\\sqrt\[([^\]]+)\]\{([^}]+)\}/g, '$1-th root($2)')
     .replace(/\\sqrt\{([^}]+)\}/g, 'sqrt($1)')
     // \left and \right => remove
     .replace(/\\left/g, '')
@@ -1535,6 +1536,8 @@ function stripLatex(text) {
     .replace(/\\([a-zA-Z]+)/g, '$1')
     // Remove leftover curly braces
     .replace(/[{}]/g, '')
+    // Remove leftover dollar signs (from malformed LaTeX like $$expr$ with odd count)
+    .replace(/\$/g, '')
     // Clean up extra spaces
     .replace(/  +/g, ' ')
     .trim();
@@ -1912,7 +1915,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             { role: 'user', content: genUserContent },
           ], { maxTokens: 2000, temperature: 0.7 });
 
-          const content = stripThink(genRaw);
+          const content = stripLatex(stripThink(genRaw));
           llmobs.annotate({ outputData: content });
           send('generator_done', 'Generator Zadań', content);
           return { success: true, type: 'generator', content };
@@ -1938,7 +1941,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             { role: 'user', content: genFallbackContent },
           ], { maxTokens: 2000, temperature: 0.7 });
 
-          const content = stripThink(genRaw);
+          const content = stripLatex(stripThink(genRaw));
           llmobs.annotate({ outputData: content });
           send('generator_done', 'Generator Zadań', content);
           return { success: true, type: 'generator', content };
