@@ -1498,6 +1498,11 @@ function stripLatex(text) {
     // \left and \right => remove
     .replace(/\\left/g, '')
     .replace(/\\right/g, '')
+    // ^\circ => degree symbol (must come before generic ^ handling)
+    .replace(/\^\\circ/g, '\u00b0')
+    .replace(/\\circ/g, '\u00b0')
+    // \angle => angle symbol
+    .replace(/\\angle/g, '\u2220')
     // \equiv => congruence symbol
     .replace(/\\equiv/g, '\u2261')
     // \pmod{n} => (mod n)
@@ -1510,15 +1515,32 @@ function stripLatex(text) {
     .replace(/\\leq/g, '<=')
     .replace(/\\neq/g, '!=')
     .replace(/\\approx/g, '\u2248')
-    .replace(/\\cdot/g, '*')
+    .replace(/\\cdot/g, '\u00b7')
     .replace(/\\cdots/g, '...')
     .replace(/\\ldots/g, '...')
     .replace(/\\times/g, '\u00d7')
     .replace(/\\pm/g, '\u00b1')
+    .replace(/\\mp/g, '\u2213')
     .replace(/\\infty/g, '\u221e')
+    .replace(/\\to/g, '\u2192')
+    .replace(/\\rightarrow/g, '\u2192')
+    .replace(/\\leftarrow/g, '\u2190')
+    .replace(/\\Rightarrow/g, '\u21d2')
+    .replace(/\\Leftarrow/g, '\u21d0')
+    .replace(/\\forall/g, '\u2200')
+    .replace(/\\exists/g, '\u2203')
+    .replace(/\\in /g, '\u2208 ')
+    .replace(/\\subset/g, '\u2282')
+    .replace(/\\cup/g, '\u222a')
+    .replace(/\\cap/g, '\u2229')
+    .replace(/\\neg/g, '\u00ac')
+    .replace(/\\land/g, '\u2227')
+    .replace(/\\lor/g, '\u2228')
     // \sum_{i=1}^{n} => sum(i=1..n)
     .replace(/\\sum_\{([^}]*)\}\^\{([^}]*)\}/g, 'sum($1..$2)')
     .replace(/\\sum/g, 'sum')
+    // \int => integral symbol
+    .replace(/\\int/g, '\u222b')
     // \overline{x} => x
     .replace(/\\overline\{([^}]+)\}/g, '$1')
     // \text{...} => content
@@ -1540,6 +1562,25 @@ function stripLatex(text) {
     .replace(/\$/g, '')
     // Clean up extra spaces
     .replace(/  +/g, ' ')
+    .trim();
+}
+
+// Strip markdown formatting from LLM output
+function stripMarkdown(text) {
+  if (!text) return text;
+  return text
+    // Remove headings: ### Title => Title
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold: **text** => text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    // Remove italic: *text* => text (but not ** which is already handled)
+    .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '$1')
+    // Remove horizontal rules: --- or *** or ___ on their own line
+    .replace(/^\s*[-*_]{3,}\s*$/gm, '')
+    // Remove inline code backticks: `code` => code
+    .replace(/`([^`]+)`/g, '$1')
+    // Clean up empty lines left by removed elements
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
@@ -1915,7 +1956,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             { role: 'user', content: genUserContent },
           ], { maxTokens: 2000, temperature: 0.7 });
 
-          const content = stripLatex(stripThink(genRaw));
+          const content = stripMarkdown(stripLatex(stripThink(genRaw)));
           llmobs.annotate({ outputData: content });
           send('generator_done', 'Generator Zadań', content);
           return { success: true, type: 'generator', content };
@@ -1941,7 +1982,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             { role: 'user', content: genFallbackContent },
           ], { maxTokens: 2000, temperature: 0.7 });
 
-          const content = stripLatex(stripThink(genRaw));
+          const content = stripMarkdown(stripLatex(stripThink(genRaw)));
           llmobs.annotate({ outputData: content });
           send('generator_done', 'Generator Zadań', content);
           return { success: true, type: 'generator', content };
@@ -2031,7 +2072,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             maxTokens: prompts.agents.summary.max_tokens,
             temperature: prompts.agents.summary.temperature,
           });
-          const summary = stripLatex(stripThink(summaryRaw));
+          const summary = stripMarkdown(stripLatex(stripThink(summaryRaw)));
           send('summary_done', 'Agent Podsumowujący', summary);
           return {
             success: true,
@@ -2327,7 +2368,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
       temperature: prompts.agents.summary.temperature,
     });
 
-    const summary = stripLatex(stripThink(summaryRaw));
+    const summary = stripMarkdown(stripLatex(stripThink(summaryRaw)));
     send('summary_done', 'Agent Podsumowujący', summary);
 
     // ── Step 5: Lean verification (proof problems) ──────────────────
