@@ -11,6 +11,7 @@ import ImageUpload from './components/ImageUpload';
 import WelcomeLanding from './components/WelcomeLanding';
 import { GamificationWidget } from './components/GamificationWidget';
 import StudyPlan from './components/StudyPlan';
+import MathKeyboard from './components/MathKeyboard';
 import { loadGamificationState, recordSolve, recordQuiz, GamificationState } from './services/gamificationService';
 import './components/FormulaReference.css';
 import './components/DailyChallenge.css';
@@ -19,6 +20,7 @@ import './components/ImageUpload.css';
 import './components/WelcomeLanding.css';
 import './components/GamificationWidget.css';
 import './components/StudyPlan.css';
+import './components/MathKeyboard.css';
 import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -493,6 +495,27 @@ function App() {
     }
   };
 
+  // Wstawia tekst z klawiatury matematycznej w pozycji kursora
+  const handleMathInsert = useCallback((text: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setInputMessage(prev => prev + text);
+      return;
+    }
+    const start = textarea.selectionStart ?? inputMessage.length;
+    const end = textarea.selectionEnd ?? inputMessage.length;
+    const before = inputMessage.slice(0, start);
+    const after = inputMessage.slice(end);
+    const newValue = before + text + after;
+    setInputMessage(newValue);
+
+    // Ustaw kursor za wstawionym tekstem
+    requestAnimationFrame(() => {
+      const newPos = start + text.length;
+      textarea.setSelectionRange(newPos, newPos);
+      textarea.focus();
+    });
+  }, [inputMessage]);
 
   const handleExportToPNG = async () => {
     const messagesContainer = document.querySelector('.messages-container');
@@ -898,6 +921,7 @@ function App() {
             onTextExtracted={(text) => setInputMessage(prev => prev ? prev + '\n' + text : text)}
             disabled={isProcessing}
           />
+          <MathKeyboard onInsert={handleMathInsert} textareaRef={textareaRef} />
           <textarea
             ref={textareaRef}
             value={inputMessage}

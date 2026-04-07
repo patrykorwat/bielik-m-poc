@@ -1,0 +1,167 @@
+/* ===== MATH KEYBOARD ===== */
+
+.math-keyboard-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.math-keyboard-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-light);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.math-keyboard-toggle:hover,
+.math-keyboard-toggle.active {
+  background: var(--glass-bg-strong);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.math-keyboard-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 340px;
+  max-width: 420px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 100;
+  overflow: hidden;
+  animation: mathKbSlideUp 0.15s ease-out;
+}
+
+@keyframes mathKbSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.math-keyboard-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 6px 6px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.math-keyboard-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.math-keyboard-tab {
+  padding: 6px 10px;
+  border: none;
+  border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.math-keyboard-tab:hover {
+  background: var(--glass-bg-light);
+  color: var(--text-primary);
+}
+
+.math-keyboard-tab.active {
+  background: var(--glass-bg-strong);
+  color: var(--primary);
+}
+
+.math-keyboard-symbols {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+  gap: 4px;
+  padding: 8px;
+}
+
+.math-symbol-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  min-width: 40px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  background: var(--glass-bg-light);
+  color: var(--text-primary);
+  font-size: 16px;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  cursor: pointer;
+  transition: background 0.12s, transform 0.1s, border-color 0.12s;
+  user-select: none;
+}
+
+.math-symbol-btn:hover {
+  background: var(--glass-bg-strong);
+  border-color: var(--primary);
+  transform: scale(1.08);
+}
+
+.math-symbol-btn:active {
+  transform: scale(0.95);
+}
+
+/* Szersze przyciski dla dłuższych etykiet */
+.math-symbol-btn[title="Logarytm"],
+.math-symbol-btn[title="Logarytm naturalny"],
+.math-symbol-btn[title="Logarytm o podstawie 2"],
+.math-symbol-btn[title="Logarytm dziesiętny"],
+.math-symbol-btn[title="Granica"] {
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .math-keyboard-panel {
+    position: fixed;
+    bottom: 70px;
+    left: 8px;
+    right: 8px;
+    min-width: unset;
+    max-width: unset;
+  }
+
+  .math-keyboard-symbols {
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: 3px;
+    padding: 6px;
+  }
+
+  .math-symbol-btn {
+    height: 38px;
+    font-size: 15px;
+  }
+
+  .math-keyboard-tab {
+    font-size: 11px;
+    padding: 5px 8px;
+  }
+}
