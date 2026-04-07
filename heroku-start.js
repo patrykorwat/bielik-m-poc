@@ -378,11 +378,12 @@ function rateLimitSolve(req, res, next) {
 }
 
 app.post('/api/solve', rateLimitSolve, solveJsonParser, async (req, res) => {
-  const { message, sessionId: clientSessionId } = req.body || {};
+  const { message, sessionId: clientSessionId, consent } = req.body || {};
   if (!message) {
     return res.status(400).json({ error: 'message is required' });
   }
   const sessionId = clientSessionId || randomUUID();
+  const hasConsent = consent === 'all';
 
   // Get conversation history for this session, then record user message
   const chatHistory = getSessionHistory(sessionId);
@@ -427,6 +428,11 @@ app.post('/api/solve', rateLimitSolve, solveJsonParser, async (req, res) => {
     if (shareMessages.length > 0) {
       shareMessages.unshift({ role: 'user', content: message });
       saveShare(shareId, message, shareMessages);
+    }
+
+    // Persist full session to database if user consented to cookies
+    if (hasConsent) {
+      persistSession(sessionId);
     }
   } catch (err) {
     console.error('[solve] Pipeline error:', err);
@@ -827,8 +833,49 @@ if (pool) {
   };
   setTimeout(cleanupExpired, 5000);
   setInterval(cleanupExpired, 3600000);
+  // ── Consent events table ────────────────────────────────────────────
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS consent_events (
+      id SERIAL PRIMARY KEY,
+      choice TEXT NOT NULL,
+      user_agent TEXT,
+      referrer TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).then(() => {
+    console.log('[consent] Postgres table ready');
+  }).catch(err => console.error('[consent] Table init error:', err.message));
+
+  // ── Persistent sessions table (saved when user accepts cookies) ────
+  pool.query(`
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).then(() => {
+    console.log('[sessions] Postgres table ready');
+  }).catch(err => console.error('[sessions] Table init error:', err.message));
 } else {
   console.warn('[shares] DATABASE_URL not set, permalink sharing disabled');
+}
+
+// Persist session to Postgres (called after each successful solve if user consented)
+async function persistSession(sessionId) {
+  if (!pool) return;
+  const session = sessionStore.get(sessionId);
+  if (!session || session.messages.length === 0) return;
+  try {
+    await pool.query(
+      `INSERT INTO sessions (id, messages, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (id) DO UPDATE SET messages = $2, updated_at = NOW()`,
+      [sessionId.slice(0, 64), JSON.stringify(session.messages)]
+    );
+  } catch (err) {
+    console.error('[sessions] Persist error:', err.message);
+  }
 }
 
 // Called by the solve pipeline after a successful response
@@ -923,6 +970,51 @@ app.get('/api/share/:id', async (req, res) => {
   } catch (err) {
     console.error('[shares] Get error:', err.message);
     res.status(500).json({ error: 'Failed to load' });
+  }
+});
+
+// ── Consent tracking ───────────────────────────────────────────────────
+
+const consentParser = express.json({ limit: '10kb' });
+
+app.post('/api/consent', consentParser, async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not available' });
+  const { choice } = req.body || {};
+  if (!choice || !['all', 'necessary'].includes(choice)) {
+    return res.status(400).json({ error: 'choice must be "all" or "necessary"' });
+  }
+  try {
+    await pool.query(
+      `INSERT INTO consent_events (choice, user_agent, referrer) VALUES ($1, $2, $3)`,
+      [choice, (req.headers['user-agent'] || '').slice(0, 500), (req.headers['referer'] || '').slice(0, 500)]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[consent] Save error:', err.message);
+    res.status(500).json({ error: 'Failed to save consent' });
+  }
+});
+
+// ── Retrieve a persisted session ────────────────────────────────────────
+
+app.get('/api/session/:id', async (req, res) => {
+  if (!pool) return res.status(503).json({ error: 'Database not available' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT messages, created_at, updated_at FROM sessions WHERE id = $1',
+      [req.params.id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+    res.json({
+      messages: rows[0].messages,
+      createdAt: rows[0].created_at,
+      updatedAt: rows[0].updated_at,
+    });
+  } catch (err) {
+    console.error('[sessions] Get error:', err.message);
+    res.status(500).json({ error: 'Failed to load session' });
   }
 });
 

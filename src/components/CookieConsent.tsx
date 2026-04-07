@@ -42,6 +42,12 @@ export function CookieConsent() {
     if (window.formuloGrantConsent) {
       window.formuloGrantConsent(level);
     }
+    // Save consent choice to database (fire and forget)
+    fetch('/api/consent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choice: level }),
+    }).catch(() => {});
     setVisible(false);
   };
 

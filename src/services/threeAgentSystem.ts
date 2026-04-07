@@ -171,6 +171,7 @@ export class ThreeAgentOrchestrator {
         body: JSON.stringify({
           message: userMessage,
           sessionId: this.solveSessionId,
+          consent: localStorage.getItem('formulo-cookie-consent') || 'none',
         }),
         signal: combinedSignal,
       });
