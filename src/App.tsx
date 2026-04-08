@@ -13,6 +13,8 @@ import { GamificationWidget } from './components/GamificationWidget';
 import StudyPlan from './components/StudyPlan';
 import MathKeyboard from './components/MathKeyboard';
 import PracticeSuggestions from './components/PracticeSuggestions';
+import MathNotebook from './components/MathNotebook';
+import { addEntry, isBookmarked, countEntries } from './services/notebookService';
 import { loadGamificationState, recordSolve, recordQuiz, GamificationState } from './services/gamificationService';
 import './components/FormulaReference.css';
 import './components/DailyChallenge.css';
@@ -23,6 +25,7 @@ import './components/GamificationWidget.css';
 import './components/StudyPlan.css';
 import './components/MathKeyboard.css';
 import './components/PracticeSuggestions.css';
+import './components/MathNotebook.css';
 import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -105,14 +108,19 @@ function App() {
   const [orchestratorReady, setOrchestratorReady] = useState(false);
   const [, setMcpConnected] = useState(false);
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
-  const [activePage, setActivePage] = useState<'chat' | 'formulas' | 'quiz' | 'plan'>(() => {
+  const [activePage, setActivePage] = useState<'chat' | 'formulas' | 'quiz' | 'plan' | 'notebook'>(() => {
     const params = new URLSearchParams(window.location.search);
     const p = params.get('p');
     if (p === 'formulas') return 'formulas';
     if (p === 'quiz') return 'quiz';
     if (p === 'plan') return 'plan';
+    if (p === 'notebook') return 'notebook';
     return 'chat';
   });
+  // Stan licznika notatnika (do odświeżania badge)
+  const [notebookCount, setNotebookCount] = useState<number>(() => countEntries());
+  // Śledzenie zaznaczonej przez użytkownika wiadomości (do bookmarku)
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [gamificationState, setGamificationState] = useState<GamificationState>(loadGamificationState);
   const [shareStatus, setShareStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -136,9 +144,9 @@ function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
-  const navigateTo = (page: 'chat' | 'formulas' | 'quiz' | 'plan') => {
+  const navigateTo = (page: 'chat' | 'formulas' | 'quiz' | 'plan' | 'notebook') => {
     setActivePage(page);
-    const url = page === 'chat' ? window.location.pathname : `?p=${page}`;
+    const url = (page === 'chat') ? window.location.pathname : `?p=${page}`;
     window.history.replaceState({}, '', url);
   };
 
@@ -147,11 +155,27 @@ function App() {
     setGamificationState(loadGamificationState());
   }, []);
 
+  // Zapisz wiadomość AI do notatnika
+  const handleBookmark = useCallback((msg: Message) => {
+    const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content);
+    // Znajdź poprzednią wiadomość użytkownika jako pytanie (przez ref do aktualnych wiadomości)
+    const currentMessages = messagesRef.current;
+    const idx = currentMessages.findIndex(m => m.id === msg.id);
+    const userMsg = idx > 0 ? currentMessages[idx - 1] : null;
+    const questionText = userMsg && typeof userMsg.content === 'string' ? userMsg.content : undefined;
+    addEntry(content, { questionText });
+    setNotebookCount(countEntries());
+    setBookmarkedIds(ids => new Set([...ids, msg.id]));
+  }, []);
+
   const orchestratorRef = useRef<ThreeAgentOrchestrator | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const urlQueryHandled = useRef(false);
+  // Ref do bieżących wiadomości (używany przez handleBookmark bez dodawania messages do dep)
+  const messagesRef = useRef<Message[]>(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -696,6 +720,12 @@ function App() {
             <button className={`page-tab ${activePage === 'formulas' ? 'active' : ''}`} onClick={() => navigateTo('formulas')}>
               Wzory
             </button>
+            <button className={`page-tab ${activePage === 'notebook' ? 'active' : ''}`} onClick={() => navigateTo('notebook')} title="Notatnik Matematyczny">
+              📒 Notatnik
+              {notebookCount > 0 && (
+                <span className="notebook-tab-badge">{notebookCount}</span>
+              )}
+            </button>
           </div>
           <GamificationWidget state={gamificationState} compact={true} />
           <button onClick={() => setShowHistory(true)} className="history-button">
@@ -738,6 +768,13 @@ function App() {
             onNavigateToChat={() => navigateTo('chat')}
           />
         </div>
+      ) : activePage === 'notebook' ? (
+        <div className="chat-container">
+          <MathNotebook
+            onSolveInChat={(q) => { submitQuery(q); navigateTo('chat'); }}
+            onNavigateToChat={() => navigateTo('chat')}
+          />
+        </div>
       ) : (
       <div className="chat-container">
         <div className="messages-container">
@@ -773,6 +810,19 @@ function App() {
                         msg.agentName === 'Agent Weryfikujący' ? 'target' :
                         msg.agentName === 'Agent Formalizujący' ? 'microscope' : 'robot'
                       } /> {msg.agentName || 'Agent'}
+                      {/* Przycisk zapisz do notatnika */}
+                      {typeof msg.content === 'string' && msg.content.length > 20 && (
+                        <button
+                          className={`bookmark-btn ${bookmarkedIds.has(msg.id) || (typeof msg.content === 'string' && isBookmarked(msg.content)) ? 'bookmarked' : ''}`}
+                          onClick={(e) => { e.stopPropagation(); handleBookmark(msg); }}
+                          title="Zapisz do Notatnika Matematycznego"
+                          disabled={bookmarkedIds.has(msg.id) || (typeof msg.content === 'string' && isBookmarked(msg.content))}
+                        >
+                          {bookmarkedIds.has(msg.id) || (typeof msg.content === 'string' && isBookmarked(msg.content))
+                            ? '🔖 Zapisano'
+                            : '🔖 Zapisz'}
+                        </button>
+                      )}
                     </div>
                   )}
                   <div className="message-content">
