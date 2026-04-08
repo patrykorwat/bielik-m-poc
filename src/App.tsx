@@ -12,6 +12,7 @@ import WelcomeLanding from './components/WelcomeLanding';
 import { GamificationWidget } from './components/GamificationWidget';
 import StudyPlan from './components/StudyPlan';
 import MathKeyboard from './components/MathKeyboard';
+import PracticeSuggestions from './components/PracticeSuggestions';
 import { loadGamificationState, recordSolve, recordQuiz, GamificationState } from './services/gamificationService';
 import './components/FormulaReference.css';
 import './components/DailyChallenge.css';
@@ -21,6 +22,7 @@ import './components/WelcomeLanding.css';
 import './components/GamificationWidget.css';
 import './components/StudyPlan.css';
 import './components/MathKeyboard.css';
+import './components/PracticeSuggestions.css';
 import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -912,6 +914,17 @@ function App() {
                 <span className="share-expiry">Link ważny przez 60 dni</span>
               )}
             </div>
+          )}
+          {messages.length > 0 && !isProcessing && messages.some(m => m.role === 'assistant') && (
+            <PracticeSuggestions
+              conversationText={
+                messages
+                  .filter(m => typeof m.content === 'string')
+                  .map(m => m.content as string)
+                  .join(' ')
+              }
+              onSolve={(query) => submitQuery(query)}
+            />
           )}
           <div ref={messagesEndRef} />
         </div>

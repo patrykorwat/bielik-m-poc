@@ -1,0 +1,223 @@
+/* ===== Practice Suggestions — "Ćwicz dalej" after solution ===== */
+
+.practice-suggestions {
+  margin: 16px 0;
+  padding: 16px 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(var(--blur));
+  animation: practice-fade-in 0.4s ease-out;
+}
+
+@keyframes practice-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.practice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.practice-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.practice-title svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.practice-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.practice-refresh-btn,
+.practice-dismiss-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.practice-refresh-btn:hover,
+.practice-dismiss-btn:hover {
+  background: var(--glass-bg-light);
+  color: var(--text-primary);
+}
+
+.practice-refresh-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Loading dots */
+.practice-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 20px 0;
+}
+
+.practice-loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.4;
+  animation: practice-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.practice-loading-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.practice-loading-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes practice-dot-pulse {
+  0%, 80%, 100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Problem cards */
+.practice-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.practice-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--glass-bg-light);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: inherit;
+  width: 100%;
+}
+
+.practice-card:hover {
+  background: var(--glass-bg-strong);
+  border-color: var(--primary);
+  transform: translateX(2px);
+}
+
+.practice-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.practice-card-meta {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.practice-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: rgba(102, 126, 234, 0.15);
+  color: var(--primary);
+}
+
+.practice-badge-level {
+  background: rgba(118, 75, 162, 0.15);
+  color: var(--accent);
+}
+
+.practice-card-question {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* Ensure KaTeX inside cards doesn't overflow */
+.practice-card-question .katex-display {
+  margin: 4px 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.practice-card-question p {
+  margin: 0;
+}
+
+.practice-card-arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color 0.2s, transform 0.2s;
+}
+
+.practice-card:hover .practice-card-arrow {
+  color: var(--primary);
+  transform: translateX(3px);
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .practice-suggestions {
+    margin: 12px 0;
+    padding: 12px 14px;
+  }
+
+  .practice-card {
+    padding: 10px 12px;
+  }
+
+  .practice-card-question {
+    font-size: 0.82rem;
+  }
+
+  .practice-title {
+    font-size: 0.88rem;
+  }
+}

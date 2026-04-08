@@ -665,6 +665,60 @@ app.post('/api/quiz/check', quizCheckParser, (req, res) => {
   }
 });
 
+// ── GET /api/practice — suggest similar CKE problems based on topic ────
+app.get('/api/practice', (req, res) => {
+  try {
+    const topic = (req.query.topic || '').toLowerCase();
+    const count = Math.min(parseInt(req.query.count || '3', 10), 5);
+    const excludeText = (req.query.exclude || '').toLowerCase();
+
+    // Load both datasets
+    const podstawowa = loadDataset('podstawowa');
+    const rozszerzona = loadDataset('rozszerzona');
+    const all = [...podstawowa, ...rozszerzona];
+
+    // Filter by topic if provided
+    let pool = all;
+    if (topic && TOPIC_KEYWORDS[topic]) {
+      const topicMatched = all.filter(q => matchesTopic(q.question, topic));
+      if (topicMatched.length >= count) {
+        pool = topicMatched;
+      }
+    }
+
+    // Only MC questions (with options)
+    pool = pool.filter(q => q.options != null);
+
+    // Exclude questions too similar to the original
+    if (excludeText) {
+      const excludeWords = new Set(excludeText.split(/\s+/).filter(w => w.length > 4));
+      pool = pool.filter(q => {
+        const qWords = q.question.toLowerCase().split(/\s+/).filter(w => w.length > 4);
+        const overlap = qWords.filter(w => excludeWords.has(w)).length;
+        return qWords.length === 0 || overlap / qWords.length < 0.5;
+      });
+    }
+
+    // Shuffle
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+
+    const selected = pool.slice(0, count).map(q => ({
+      question: q.question,
+      options: q.options,
+      answer: q.answer,
+      metadata: q.metadata,
+    }));
+
+    res.json({ topic, problems: selected });
+  } catch (err) {
+    console.error('[practice] Error:', err.message);
+    res.status(500).json({ error: 'Failed to load practice suggestions' });
+  }
+});
+
 // ── POST /api/ocr (Tesseract OCR + LLM cleanup) ───────────────────────
 
 const ocrJsonParser = express.json({ limit: '5mb' });
