@@ -27,6 +27,8 @@ interface MathNotebookProps {
   onSolveInChat: (query: string) => void;
   /** Wywoływane żeby wrócić do czatu */
   onNavigateToChat: () => void;
+  /** Wywoływane po usunięciu notatki (aktualizacja licznika w App) */
+  onEntryDeleted?: () => void;
 }
 
 // ── Ikony SVG ────────────────────────────────────────────────────────────
@@ -290,7 +292,7 @@ function EntryCard({ entry, onDelete, onUpdate, onSolveInChat }: EntryCardProps)
 
 // ── Strona notatnika ──────────────────────────────────────────────────────
 
-const MathNotebook: React.FC<MathNotebookProps> = ({ onSolveInChat, onNavigateToChat }) => {
+const MathNotebook: React.FC<MathNotebookProps> = ({ onSolveInChat, onNavigateToChat, onEntryDeleted }) => {
   const [entries, setEntries] = useState<NotebookEntry[]>([]);
   const [topics, setTopics] = useState<string[]>([]);
   const [filterTopic, setFilterTopic] = useState<string>('');
@@ -308,6 +310,7 @@ const MathNotebook: React.FC<MathNotebookProps> = ({ onSolveInChat, onNavigateTo
   const handleDelete = (id: string) => {
     removeEntry(id);
     reload();
+    onEntryDeleted?.();
   };
 
   const handleUpdate = (id: string, patch: Partial<Pick<NotebookEntry, 'note' | 'tags' | 'title'>>) => {
@@ -355,6 +358,7 @@ const MathNotebook: React.FC<MathNotebookProps> = ({ onSolveInChat, onNavigateTo
   }
 
   return (
+    <div className="notebook-wrapper">
     <div className="notebook-container">
       {/* Nagłówek */}
       <div className="notebook-header">
@@ -433,6 +437,7 @@ const MathNotebook: React.FC<MathNotebookProps> = ({ onSolveInChat, onNavigateTo
       <div className="notebook-footer">
         <p>💡 Wskazówka: Kliknij na kartę żeby rozwinąć pełne rozwiązanie i dodać własne notatki.</p>
       </div>
+    </div>
     </div>
   );
 };

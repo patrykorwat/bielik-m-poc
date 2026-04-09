@@ -779,6 +779,7 @@ function App() {
           <MathNotebook
             onSolveInChat={(q) => { submitQuery(q); navigateTo('chat'); }}
             onNavigateToChat={() => navigateTo('chat')}
+            onEntryDeleted={() => setNotebookCount(countEntries())}
           />
         </div>
       ) : activePage === 'stats' ? (
