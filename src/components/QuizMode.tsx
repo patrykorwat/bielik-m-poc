@@ -153,17 +153,14 @@ export function QuizMode({ onSubmitQuery, onNavigateToChat, onQuizComplete }: Qu
    * Submit answer and check if correct
    */
   const submitAnswer = async () => {
-    if (!currentAnswer && currentQuestion.type === 'multiple_choice') {
-      alert('Proszę wybrać odpowiedź');
-      return;
-    }
-    if (!currentAnswer && currentQuestion.type === 'open_ended') {
-      alert('Proszę wpisać odpowiedź');
+    if (!currentAnswer) {
+      alert('Proszę wybrać lub wpisać odpowiedź');
       return;
     }
 
     setAnswered(true);
-    if (currentQuestion.type === 'open_ended') {
+    const hasOptions = normalizeOptions(currentQuestion.options).length > 0;
+    if (!hasOptions) {
       // Pytania otwarte — nie porównujemy tekstu, pokazujemy odpowiedź modelową
       setIsCorrect(null);
     } else {
@@ -282,6 +279,7 @@ export function QuizMode({ onSubmitQuery, onNavigateToChat, onQuizComplete }: Qu
       onNextQuestion={nextQuestion}
       answered={answered}
       isCorrect={isCorrect}
+      onSolveInChat={(query: string) => { onSubmitQuery(query); onNavigateToChat(); }}
     />;
   }
 
@@ -385,6 +383,7 @@ function QuizScreen({
   onNextQuestion,
   answered,
   isCorrect,
+  onSolveInChat,
 }: {
   question: QuizQuestion;
   questionNumber: number;
@@ -395,6 +394,7 @@ function QuizScreen({
   onNextQuestion: () => void;
   answered: boolean;
   isCorrect: boolean | null;
+  onSolveInChat: (query: string) => void;
 }) {
   const progressPercentage = (questionNumber / totalQuestions) * 100;
   const renderedQuestion = useMemo(() => renderLatex(question.question), [question.question]);
@@ -419,7 +419,7 @@ function QuizScreen({
             />
           </div>
 
-          {question.type === 'multiple_choice' ? (
+          {normalizeOptions(question.options).length > 0 ? (
             <div className="options-container">
               {normalizeOptions(question.options).map((option, idx) => {
                 const label = String.fromCharCode(65 + idx); // A, B, C, D
@@ -464,10 +464,10 @@ function QuizScreen({
 
           {answered && (
             <div className={`feedback ${
-              question.type === 'open_ended' ? 'open-feedback'
+              normalizeOptions(question.options).length === 0 ? 'open-feedback'
               : isCorrect ? 'correct-feedback' : 'incorrect-feedback'
             }`}>
-              {question.type === 'open_ended' ? (
+              {normalizeOptions(question.options).length === 0 ? (
                 <>
                   <span className="feedback-icon">📚</span>
                   <div className="feedback-open">
