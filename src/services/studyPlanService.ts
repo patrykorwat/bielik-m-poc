@@ -336,7 +336,14 @@ export function loadStudyPlan(): StudyPlan | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const plan: StudyPlan = JSON.parse(stored);
+      // Napraw datę matury jeśli jest nieaktualna (np. z poprzedniego roku szkolnego)
+      const correctDate = getDefaultExamDate();
+      if (plan.examDate !== correctDate) {
+        plan.examDate = correctDate;
+        saveStudyPlan(plan);
+      }
+      return plan;
     }
   } catch (error) {
     console.warn('Failed to load study plan:', error);
