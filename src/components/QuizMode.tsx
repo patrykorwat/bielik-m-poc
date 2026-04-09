@@ -15,8 +15,16 @@ interface QuizQuestion {
   task_number: number;
   question: string;
   type: 'multiple_choice' | 'open_ended';
-  options?: string[];
+  options?: string[] | Record<string, string>;
   correct_answer: string;
+}
+
+// Normalizuje options do tablicy ["tekst A", "tekst B", ...] niezależnie od formatu API
+function normalizeOptions(options: string[] | Record<string, string> | undefined): string[] {
+  if (!options) return [];
+  if (Array.isArray(options)) return options;
+  // Obiekt {a: '...', b: '...', c: '...', d: '...'} — sortujemy klucze alfabetycznie
+  return Object.keys(options).sort().map(k => (options as Record<string, string>)[k]);
 }
 
 interface AnswerRecord {
@@ -99,7 +107,15 @@ export function QuizMode({ onSubmitQuery, onNavigateToChat, onQuizComplete }: Qu
       const response = await fetch(`/api/quiz?level=${selectedLevel}&count=5&topic=${topic}`);
       if (!response.ok) throw new Error('Failed to fetch quiz');
       const data = await response.json();
-      setQuestions(data.questions || []);
+      // Normalizuj pytania z API — dodaj type i sprłastuj metadata
+      const normalized = (data.questions || []).map((q: Record<string, unknown>) => ({
+        ...q,
+        type: q.options ? 'multiple_choice' : 'open_ended',
+        year: (q.metadata as Record<string, unknown>)?.year ?? q.year,
+        level: (q.metadata as Record<string, unknown>)?.level ?? q.level,
+        task_number: (q.metadata as Record<string, unknown>)?.task_number ?? q.task_number,
+      }));
+      setQuestions(normalized);
       setCurrentQuestionIndex(0);
       setUserAnswers(new Map());
       setAnswered(false);
@@ -147,7 +163,12 @@ export function QuizMode({ onSubmitQuery, onNavigateToChat, onQuizComplete }: Qu
     }
 
     setAnswered(true);
-    setIsCorrect(currentAnswer === currentQuestion.correct_answer);
+    if (currentQuestion.type === 'open_ended') {
+      // Pytania otwarte — nie porównujemy tekstu, pokazujemy odpowiedź modelową
+      setIsCorrect(null);
+    } else {
+      setIsCorrect(currentAnswer === currentQuestion.correct_answer);
+    }
   };
 
   /**
@@ -400,10 +421,10 @@ function QuizScreen({
 
           {question.type === 'multiple_choice' ? (
             <div className="options-container">
-              {question.options?.map((option, idx) => {
+              {normalizeOptions(question.options).map((option, idx) => {
                 const label = String.fromCharCode(65 + idx); // A, B, C, D
                 const isSelected = userAnswer === label;
-                const renderedOption = useMemo(() => renderLatex(option), [option]);
+                const renderedOption = renderLatex(option);
                 return (
                   <button
                     key={idx}
@@ -442,8 +463,30 @@ function QuizScreen({
           )}
 
           {answered && (
-            <div className={`feedback ${isCorrect ? 'correct-feedback' : 'incorrect-feedback'}`}>
-              {isCorrect ? (
+            <div className={`feedback ${
+              question.type === 'open_ended' ? 'open-feedback'
+              : isCorrect ? 'correct-feedback' : 'incorrect-feedback'
+            }`}>
+              {question.type === 'open_ended' ? (
+                <>
+                  <span className="feedback-icon">📚</span>
+                  <div className="feedback-open">
+                    <span className="feedback-text"><strong>Odpowiedź modelowa:</strong></span>
+                    <span
+                      className="feedback-model-answer"
+                      dangerouslySetInnerHTML={{ __html: renderLatex(question.correct_answer) }}
+                    />
+                    <button
+                      className="feedback-solve-btn"
+                      onClick={() => onSolveInChat(
+                        `${question.question}\n\nMoja odpowiedź: ${userAnswer}\n\nCzy moja odpowiedź jest poprawna? Pokaż pełne rozwiązanie.`
+                      )}
+                    >
+                      Sprawdź w Formulo →
+                    </button>
+                  </div>
+                </>
+              ) : isCorrect ? (
                 <>
                   <span className="feedback-icon">✓</span>
                   <span className="feedback-text">Poprawnie!</span>
@@ -451,7 +494,15 @@ function QuizScreen({
               ) : (
                 <>
                   <span className="feedback-icon">✗</span>
-                  <span className="feedback-text">Niepoprawnie. Prawidłowa odpowiedź: {question.correct_answer}</span>
+                  <span className="feedback-text">
+                    Niepoprawnie. Prawidłowa odpowiedź: <strong>{question.correct_answer}</strong>
+                    {(() => {
+                      const opts = normalizeOptions(question.options);
+                      const idx = question.correct_answer.charCodeAt(0) - 65;
+                      const text = opts[idx];
+                      return text ? <span dangerouslySetInnerHTML={{ __html: ` (${renderLatex(text)})` }} /> : null;
+                    })()}
+                  </span>
                 </>
               )}
             </div>
