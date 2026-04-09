@@ -15,6 +15,8 @@ export interface GamificationState {
   topicStats: Record<string, number>;  // topic -> count of solved tasks
   badges: string[];             // earned badge IDs
   xp: number;                   // experience points
+  dailyLog: Record<string, number>;   // data (YYYY-MM-DD) -> liczba aktywności
+  xpLog: Record<string, number>;      // data (YYYY-MM-DD) -> XP zdobyte tego dnia
 }
 
 export interface Badge {
@@ -143,7 +145,7 @@ export function loadGamificationState(): GamificationState {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      return migrateState(JSON.parse(stored));
     }
   } catch (error) {
     console.warn('Failed to load gamification state:', error);
@@ -160,6 +162,19 @@ export function loadGamificationState(): GamificationState {
     topicStats: {},
     badges: [],
     xp: 0,
+    dailyLog: {},
+    xpLog: {},
+  };
+}
+
+/**
+ * Uzupełnia brakujące pola w załadowanym stanie (dla wstecznej kompatybilności)
+ */
+function migrateState(state: GamificationState): GamificationState {
+  return {
+    ...state,
+    dailyLog: state.dailyLog ?? {},
+    xpLog: state.xpLog ?? {},
   };
 }
 
@@ -228,10 +243,13 @@ export function recordSolve(topic?: string): GamificationState {
 
   // Increment counters
   state.totalSolved += 1;
-  state.xp += 10; // +10 XP per solve
+  const xpGained = 10 + Math.min(state.currentStreak, 7) * 5;
+  state.xp += xpGained;
 
-  // Add daily streak bonus (for each day in current streak)
-  state.xp += Math.min(state.currentStreak, 7) * 5; // max +35 XP for streak
+  // Zapisz w dziennym logu aktywności
+  const today = getTodayISO();
+  state.dailyLog = { ...state.dailyLog, [today]: (state.dailyLog[today] || 0) + 1 };
+  state.xpLog = { ...state.xpLog, [today]: (state.xpLog[today] || 0) + xpGained };
 
   // Update topic stats
   if (topic) {
@@ -257,13 +275,19 @@ export function recordQuiz(score: number, total: number): GamificationState {
   state.totalQuizzes += 1;
 
   // Add XP for correct answers (5 XP per correct)
-  state.xp += score * 5;
+  let xpGained = score * 5;
 
   // Check for perfect quiz
   if (score === total) {
     state.perfectQuizzes += 1;
-    state.xp += 25; // +25 XP bonus for perfect quiz
+    xpGained += 25; // +25 XP bonus for perfect quiz
   }
+  state.xp += xpGained;
+
+  // Zapisz w dziennym logu aktywności (quiz = 1 aktywność)
+  const today = getTodayISO();
+  state.dailyLog = { ...state.dailyLog, [today]: (state.dailyLog[today] || 0) + 1 };
+  state.xpLog = { ...state.xpLog, [today]: (state.xpLog[today] || 0) + xpGained };
 
   saveGamificationState(state);
   return state;
@@ -346,4 +370,43 @@ export function getEarnedBadges(state: GamificationState): Badge[] {
 export function getRecentBadges(state: GamificationState, count: number = 3): Badge[] {
   const earned = getEarnedBadges(state);
   return earned.slice(-count);
+}
+
+/**
+ * Generuje dane heatmapy dla ostatnich `days` dni.
+ * Zwrócona tablica ma wpisy dla każdego dnia (od najstarszego do dziś).
+ */
+export interface HeatmapDay {
+  date: string;      // YYYY-MM-DD
+  count: number;     // liczba aktywności
+  xp: number;        // XP zdobyte tego dnia
+  weekday: number;   // 0=niedzieła, 1=poniedziałek … 6=sobota
+}
+
+export function getHeatmapData(state: GamificationState, days: number = 84): HeatmapDay[] {
+  const result: HeatmapDay[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    result.push({
+      date: dateStr,
+      count: state.dailyLog[dateStr] || 0,
+      xp: state.xpLog[dateStr] || 0,
+      weekday: d.getDay(),
+    });
+  }
+  return result;
+}
+
+/**
+ * Zwraca nazwę miesiąca po polsku dla skróconej wersji
+ */
+export function getShortMonthPL(dateStr: string): string {
+  const months = ['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+  const m = parseInt(dateStr.split('-')[1], 10) - 1;
+  return months[m] ?? '';
 }

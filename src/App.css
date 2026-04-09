@@ -415,12 +415,16 @@ body::after {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .header-controls {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .header-controls label {
@@ -452,7 +456,7 @@ body::after {
 }
 
 .page-tab {
-  padding: 6px 16px;
+  padding: 6px 10px;
   font-size: 13px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;

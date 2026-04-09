@@ -14,6 +14,7 @@ import StudyPlan from './components/StudyPlan';
 import MathKeyboard from './components/MathKeyboard';
 import PracticeSuggestions from './components/PracticeSuggestions';
 import MathNotebook from './components/MathNotebook';
+import StatsPanel from './components/StatsPanel';
 import { addEntry, isBookmarked, countEntries } from './services/notebookService';
 import { loadGamificationState, recordSolve, recordQuiz, GamificationState } from './services/gamificationService';
 import './components/FormulaReference.css';
@@ -26,6 +27,7 @@ import './components/StudyPlan.css';
 import './components/MathKeyboard.css';
 import './components/PracticeSuggestions.css';
 import './components/MathNotebook.css';
+import './components/StatsPanel.css';
 import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -108,13 +110,14 @@ function App() {
   const [orchestratorReady, setOrchestratorReady] = useState(false);
   const [, setMcpConnected] = useState(false);
   const [theme, setTheme] = useState<Theme>(getInitialTheme);
-  const [activePage, setActivePage] = useState<'chat' | 'formulas' | 'quiz' | 'plan' | 'notebook'>(() => {
+  const [activePage, setActivePage] = useState<'chat' | 'formulas' | 'quiz' | 'plan' | 'notebook' | 'stats'>(() => {
     const params = new URLSearchParams(window.location.search);
     const p = params.get('p');
     if (p === 'formulas') return 'formulas';
     if (p === 'quiz') return 'quiz';
     if (p === 'plan') return 'plan';
     if (p === 'notebook') return 'notebook';
+    if (p === 'stats') return 'stats';
     return 'chat';
   });
   // Stan licznika notatnika (do odświeżania badge)
@@ -144,7 +147,7 @@ function App() {
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
-  const navigateTo = (page: 'chat' | 'formulas' | 'quiz' | 'plan' | 'notebook') => {
+  const navigateTo = (page: 'chat' | 'formulas' | 'quiz' | 'plan' | 'notebook' | 'stats') => {
     setActivePage(page);
     const url = (page === 'chat') ? window.location.pathname : `?p=${page}`;
     window.history.replaceState({}, '', url);
@@ -726,6 +729,9 @@ function App() {
                 <span className="notebook-tab-badge">{notebookCount}</span>
               )}
             </button>
+            <button className={`page-tab ${activePage === 'stats' ? 'active' : ''}`} onClick={() => navigateTo('stats')} title="Moje Statystyki">
+              📊 Statystyki
+            </button>
           </div>
           <GamificationWidget state={gamificationState} compact={true} />
           <button onClick={() => setShowHistory(true)} className="history-button">
@@ -772,6 +778,13 @@ function App() {
         <div className="chat-container">
           <MathNotebook
             onSolveInChat={(q) => { submitQuery(q); navigateTo('chat'); }}
+            onNavigateToChat={() => navigateTo('chat')}
+          />
+        </div>
+      ) : activePage === 'stats' ? (
+        <div className="chat-container">
+          <StatsPanel
+            state={gamificationState}
             onNavigateToChat={() => navigateTo('chat')}
           />
         </div>
