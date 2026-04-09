@@ -59,6 +59,7 @@ const LEVELS = [
  * Supports $...$ for inline math and $$...$$ for display math
  */
 function renderLatex(text: string): string {
+  if (!text) return text;
   // Replace $$...$$ with display math
   let result = text.replace(/\$\$(.+?)\$\$/gs, (_m, tex) => {
     try {
@@ -75,6 +76,15 @@ function renderLatex(text: string): string {
       return tex;
     }
   });
+  // Jeśli tekst nie zawiera$ ale wygląda jak LaTeX (np. opcje CKE bez dolarów)
+  // próbujemy wyrenderować całość jako inline math
+  if (result === text && /[\\{}^_]/.test(text)) {
+    try {
+      return katex.renderToString(text.trim(), { displayMode: false, throwOnError: false });
+    } catch {
+      return text;
+    }
+  }
   return result;
 }
 

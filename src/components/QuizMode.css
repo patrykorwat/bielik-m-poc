@@ -271,24 +271,27 @@
 /* ===== Multiple Choice Options ===== */
 
 .options-container {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .option-button {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 16px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
   background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
   text-align: left;
   font-size: 14px;
   color: var(--text-primary);
+  width: 100%;
 }
 
 .option-button:hover:not(:disabled) {
@@ -321,13 +324,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  width: 32px;
-  height: 32px;
+  min-width: 26px;
+  width: 26px;
+  height: 26px;
   background: rgba(102, 126, 234, 0.2);
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 13px;
   color: var(--primary);
+  flex-shrink: 0;
 }
 
 .option-button.correct-answer .option-label {
