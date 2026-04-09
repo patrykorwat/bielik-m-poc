@@ -62,6 +62,7 @@ COPY package.json heroku-start.js solve-pipeline.js mcp-proxy-server.js \
      lean-proxy-server.js prompts.json extraction-templates.js \
      deterministic-solvers.js decomposer.js discord-bot.js ./
 COPY docs ./docs
+COPY datasets ./datasets
 
 # RAG Python environment
 COPY rag_service ./rag_service
