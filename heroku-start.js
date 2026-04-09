@@ -487,13 +487,13 @@ const TOPIC_KEYWORDS = {
   logarytmy: ['log', 'logarytm'],
   potegi: ['potęg', 'poteg', 'wykładni', 'wykladni'],
   rownania: ['równan', 'rownan', 'rozwiąż', 'rozwiaz'],
-  nierownosci: ['nierównoś', 'nierownosc'],
-  trygonometria: ['sin', 'cos', 'tg', 'trygonometr', 'kąt', 'kat'],
+  nierownosci: ['nierównoś', 'nierownosc', 'nierówno'],
+  trygonometria: ['sin', 'cos', 'tg', 'ctg', 'trygonometr', 'sinusa', 'cosinusa'],
   ciagi: ['ciąg', 'ciag', 'arytmetycz', 'geometrycz'],
-  prawdopodobienstwo: ['prawdopodobień', 'prawdopodobien', 'losow'],
-  geometria: ['trójkąt', 'trojkat', 'okrąg', 'okrag', 'pole', 'obwód', 'obwod', 'prostokąt', 'prostopadło'],
-  funkcje: ['funkcj', 'dziedzin', 'przebieg', 'monotoniczno'],
-  pochodne: ['pochodn', 'sty czn', 'ekstremu'],
+  prawdopodobienstwo: ['prawdopodobień', 'prawdopodobien', 'losow', 'losowania'],
+  geometria: ['trójkąt', 'trojkat', 'okrąg', 'okrag', 'pole', 'obwód', 'obwod', 'prostokąt', 'prostopadło', 'graniastosłup', 'ostrosłup', 'walec', 'stożek'],
+  funkcje: ['funkcj', 'dziedzin', 'przebieg', 'monotoniczno', 'wartość funkcji'],
+  pochodne: ['pochodn', 'stycznej', 'ekstremu', 'ekstremum', 'minimum funkcji', 'maximum funkcji'],
 };
 
 // Check if question text matches a topic (case-insensitive, diacritics-aware)
@@ -571,11 +571,13 @@ app.get('/api/quiz', (req, res) => {
     }
 
     // Filter by topic if specified
-    if (topic) {
-      filtered = filtered.filter(q => matchesTopic(q.question, topic));
-      if (filtered.length === 0) {
-        return res.status(404).json({ error: `No questions found for topic "${topic}"` });
+    if (topic && topic !== 'wszystkie tematy') {
+      const byTopic = filtered.filter(q => matchesTopic(q.question, topic));
+      if (byTopic.length > 0) {
+        filtered = byTopic;
       }
+      // Jeśli brak pytań dla tematu w tym poziomie, zwróć losowe pytania z całego poziomu
+      // (nie 404 — lepszy UX niż błąd)
     }
 
     // Shuffle using a simple seeded random
@@ -602,9 +604,15 @@ app.get('/api/quiz', (req, res) => {
       questions.some(q => matchesTopic(q.question, topic))
     );
 
+    // Sprawdź czy temat był dostępny w tym poziomie
+    const topicKey = topic ? topic.toLowerCase() : null;
+    const topicAvailable = !topicKey || topicKey === 'wszystkie tematy' ||
+      questions.some(q => matchesTopic(q.question, topicKey));
+
     res.json({
       questions: responseQuestions,
       availableTopics,
+      topicAvailable,
     });
   } catch (err) {
     console.error('[quiz] Error:', err.message);
