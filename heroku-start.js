@@ -592,6 +592,7 @@ app.get('/api/quiz', (req, res) => {
       id: idx,
       question: q.question,
       options: q.options,
+      correct_answer: q.answer,
       metadata: {
         year: q.metadata.year,
         level: q.metadata.level,
