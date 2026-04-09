@@ -421,10 +421,10 @@ body::after {
 
 .header-controls {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  flex-wrap: wrap;
   min-width: 0;
+  overflow: hidden;
 }
 
 .header-controls label {
@@ -456,8 +456,8 @@ body::after {
 }
 
 .page-tab {
-  padding: 6px 10px;
-  font-size: 13px;
+  padding: 6px 8px;
+  font-size: 12px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
   color: var(--text-secondary);
@@ -480,11 +480,11 @@ body::after {
 
 .history-button,
 .export-button {
-  padding: 8px 14px;
+  padding: 7px 10px;
   color: white;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
@@ -519,15 +519,16 @@ body::after {
 }
 
 .clear-button {
-  padding: 8px 14px;
+  padding: 7px 10px;
   background: var(--clear-btn-bg);
   color: var(--clear-btn-color);
   border: 1px solid var(--clear-btn-border);
   border-radius: var(--radius-sm);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
+  white-space: nowrap;
   font-family: inherit;
 }
 
