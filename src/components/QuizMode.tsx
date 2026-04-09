@@ -321,16 +321,21 @@ function TopicSelectionScreen({
           </div>
         </div>
 
-        <div className="topics-grid">
+        <div className="topic-radio-list">
           {['Wszystkie tematy', ...TOPICS].map(topic => (
-            <button
+            <label
               key={topic}
-              className={`topic-card ${selectedTopic === topic ? 'selected' : ''}`}
-              onClick={() => onTopicChange(topic)}
+              className={`topic-radio-item ${selectedTopic === topic ? 'selected' : ''}`}
             >
-              <span className="topic-icon">📚</span>
-              <span className="topic-name">{topic}</span>
-            </button>
+              <input
+                type="radio"
+                name="topic"
+                value={topic}
+                checked={selectedTopic === topic}
+                onChange={() => onTopicChange(topic)}
+              />
+              <span className="topic-radio-label">{topic}</span>
+            </label>
           ))}
         </div>
 
