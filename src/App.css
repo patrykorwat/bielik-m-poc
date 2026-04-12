@@ -1144,11 +1144,25 @@ body::after {
   .header-controls {
     gap: 6px;
     flex-wrap: wrap;
+    overflow: visible;
+    width: 100%;
   }
 
   .header-controls button {
     padding: 6px 10px;
     font-size: 12px;
+  }
+
+  .page-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .page-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .message {
