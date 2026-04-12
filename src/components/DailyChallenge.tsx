@@ -21,6 +21,19 @@ interface DailyChallengeData {
   taskNumber: number;
 }
 
+/**
+ * Wraps bare LaTeX strings in $...$ so renderLatex can process them.
+ * Leaves plain text (no backslashes or special LaTeX chars) untouched.
+ */
+function wrapLatex(text: string): string {
+  if (!text) return text;
+  // Already has delimiters
+  if (text.includes('$')) return text;
+  // Contains LaTeX control sequences
+  if (/[\\{}^_]/.test(text)) return `$${text}$`;
+  return text;
+}
+
 /** Transform raw API response into the shape DailyChallenge expects */
 function normalizeChallenge(data: any): DailyChallengeData | null {
   if (!data || !data.question || !data.options) return null;
@@ -36,7 +49,7 @@ function normalizeChallenge(data: any): DailyChallengeData | null {
       .filter(([key]) => labelMap[key])
       .map(([key, content]) => ({
         label: labelMap[key],
-        content: String(content),
+        content: wrapLatex(String(content)),
         isCorrect: false,
       }));
     if (options.length === 0) return null;

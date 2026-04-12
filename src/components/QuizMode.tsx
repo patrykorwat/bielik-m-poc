@@ -90,7 +90,7 @@ function renderLatex(text: string): string {
 
 export function QuizMode({ onSubmitQuery, onNavigateToChat, onQuizComplete }: QuizModeProps) {
   const [screen, setScreen] = useState<Screen>('topic_selection');
-  const [selectedTopic, setSelectedTopic] = useState<string>('');
+  const [selectedTopic, setSelectedTopic] = useState<string>('Wszystkie tematy');
   const [selectedLevel, setSelectedLevel] = useState<string>('podstawowa');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
