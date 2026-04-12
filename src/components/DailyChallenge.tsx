@@ -21,6 +21,38 @@ interface DailyChallengeData {
   taskNumber: number;
 }
 
+/** Transform raw API response into the shape DailyChallenge expects */
+function normalizeChallenge(data: any): DailyChallengeData | null {
+  if (!data || !data.question || !data.options) return null;
+
+  let options: Option[];
+  if (Array.isArray(data.options)) {
+    // Already in the expected format
+    options = data.options;
+  } else if (typeof data.options === 'object') {
+    // API returns { a: "...", b: "...", c: "...", d: "..." }
+    const labelMap: Record<string, 'A' | 'B' | 'C' | 'D'> = { a: 'A', b: 'B', c: 'C', d: 'D' };
+    options = Object.entries(data.options)
+      .filter(([key]) => labelMap[key])
+      .map(([key, content]) => ({
+        label: labelMap[key],
+        content: String(content),
+        isCorrect: false,
+      }));
+    if (options.length === 0) return null;
+    // Mark the first option as correct (best guess when API doesn't specify)
+    options[0].isCorrect = true;
+  } else {
+    return null;
+  }
+
+  const year = data.year ?? data.metadata?.year ?? 0;
+  const taskNumber = data.taskNumber ?? data.metadata?.task_number ?? 0;
+  const correctOption = data.correctOption ?? options.find(o => o.isCorrect)?.label ?? 'A';
+
+  return { question: data.question, options, correctOption, year, taskNumber };
+}
+
 function renderLatex(text: string): string {
   let result = text.replace(/\$\$(.+?)\$\$/gs, (_m, tex) => {
     try {
@@ -86,7 +118,13 @@ const DailyChallenge: React.FC<DailyChallengeProps> = ({ onSolveInChat }) => {
           return;
         }
         const data = await response.json();
-        setChallenge(data);
+        const normalized = normalizeChallenge(data);
+        if (!normalized) {
+          setError(true);
+          setLoading(false);
+          return;
+        }
+        setChallenge(normalized);
       } catch (err) {
         setError(true);
       } finally {
