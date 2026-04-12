@@ -252,6 +252,15 @@ async function executePythonSymPy(code: string): Promise<string> {
  * Matches threeAgentSystem.sanitizeCode() — single source of truth.
  */
 function sanitizeCode(code: string): string {
+  // 0. Replace literal \n (backslash + n) with actual newlines.
+  //    LLM sometimes encodes newlines as the two-character sequence \n instead of a real newline,
+  //    which causes adjacent lines to merge (e.g. "from sympy import symbolsx, y = symbols(...)").
+  code = code.replace(/\\n/g, '\n');
+
+  // 0b. Strip markdown code fences (```python ... ``` or ``` ... ```)
+  //     LLM occasionally wraps the code block in backtick fences, causing SyntaxError.
+  code = code.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/g, '');
+
   let lines = code.split('\n');
 
   // 1. Remove assert statements
@@ -1355,8 +1364,11 @@ async function executeWithSanitizeAndRetry(rawCode: string, maxRetries: number =
   // Sanitize first
   let currentCode = sanitizeCode(rawCode);
 
-  // Remove duplicate base imports since we prepend them
-  currentCode = currentCode.replace(/^from sympy import \*\s*$/gm, '');
+  // Remove all sympy imports — we prepend `from sympy import *` in baseImports,
+  // so any `from sympy import <anything>` the LLM generates is redundant and
+  // occasionally malformed (e.g. two lines merged into one).
+  currentCode = currentCode.replace(/^from sympy import .*$/gm, '');
+  currentCode = currentCode.replace(/^import sympy.*$/gm, '');
   currentCode = currentCode.replace(/^import sys\s*$/gm, '');
   currentCode = currentCode.replace(/^sys\.set_int_max_str_digits\(\d+\)\s*$/gm, '');
 
