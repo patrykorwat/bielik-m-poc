@@ -32,6 +32,7 @@ import { toPng } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
 // Google Analytics / Ads conversion tracking
@@ -748,13 +749,16 @@ function App() {
 
       {activePage === 'formulas' ? (
         <div className="chat-container">
+          <ErrorBoundary sectionName="Wzory">
           <FormulaReference
             onSubmitQuery={(q) => { submitQuery(q); navigateTo('chat'); }}
             onNavigateToChat={() => navigateTo('chat')}
           />
+          </ErrorBoundary>
         </div>
       ) : activePage === 'quiz' ? (
         <div className="chat-container">
+          <ErrorBoundary sectionName="Quiz">
           <QuizMode
             onSubmitQuery={(q) => {
               submitQuery(q);
@@ -766,38 +770,51 @@ function App() {
               refreshGamification();
             }}
           />
+          </ErrorBoundary>
         </div>
       ) : activePage === 'plan' ? (
         <div className="chat-container">
+          <ErrorBoundary sectionName="Plan nauki">
           <StudyPlan
             onSubmitQuery={(q) => { submitQuery(q); navigateTo('chat'); }}
             onNavigateToChat={() => navigateTo('chat')}
           />
+          </ErrorBoundary>
         </div>
       ) : activePage === 'notebook' ? (
         <div className="chat-container">
+          <ErrorBoundary sectionName="Notatnik">
           <MathNotebook
             onSolveInChat={(q) => { submitQuery(q); navigateTo('chat'); }}
             onNavigateToChat={() => navigateTo('chat')}
             onEntryDeleted={() => setNotebookCount(countEntries())}
           />
+          </ErrorBoundary>
         </div>
       ) : activePage === 'stats' ? (
         <div className="chat-container">
+          <ErrorBoundary sectionName="Statystyki">
           <StatsPanel
             state={gamificationState}
             onNavigateToChat={() => navigateTo('chat')}
           />
+          </ErrorBoundary>
         </div>
       ) : (
       <div className="chat-container">
         <div className="messages-container">
           {messages.length === 0 ? (
             <div className="empty-state">
+              <ErrorBoundary sectionName="Strona główna">
               <WelcomeLanding
                 onSubmitQuery={submitQuery}
-                dailyChallengeSlot={<DailyChallenge onSolveInChat={(q: string) => submitQuery(q)} />}
+                dailyChallengeSlot={
+                  <ErrorBoundary sectionName="Zadanie dnia">
+                    <DailyChallenge onSolveInChat={(q: string) => submitQuery(q)} />
+                  </ErrorBoundary>
+                }
               />
+              </ErrorBoundary>
             </div>
           ) : (
             messages
