@@ -340,6 +340,15 @@ export function loadStudyPlan(): StudyPlan | null {
         plan.examDate = correctDate;
         saveStudyPlan(plan);
       }
+      // Migracja: odblokuj tematy ze statusem 'locked' (stara mechanika blokowania usunięta)
+      let migrated = false;
+      for (const topicId of plan.topicOrder) {
+        if (plan.progress[topicId]?.status === 'locked') {
+          plan.progress[topicId].status = 'available';
+          migrated = true;
+        }
+      }
+      if (migrated) saveStudyPlan(plan);
       return plan;
     }
   } catch (error) {
