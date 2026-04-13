@@ -303,13 +303,10 @@ export function createStudyPlan(
   const progress: Record<string, TopicProgress> = {};
 
   // Initialize progress for all topics
-  topicOrder.forEach((topicId, index) => {
-    const isFirst = index === 0;
-    const status = isFirst ? 'available' : 'locked';
-
+  topicOrder.forEach((topicId) => {
     progress[topicId] = {
       topicId,
-      status,
+      status: 'available',
       tasksCompleted: 0,
       tasksTotal: 5,
       quizScore: null,
@@ -395,26 +392,6 @@ export function updateTopicProgress(
     ...update,
     lastPracticed: new Date().toISOString().split('T')[0],
   };
-
-  // Update prerequisites unlock status
-  const topics = getTopicsByLevel(plan.level);
-  const topicIndex = plan.topicOrder.indexOf(topicId);
-
-  // If topic is completed, unlock next topic
-  if (update.status === 'completed' && topicIndex < plan.topicOrder.length - 1) {
-    const nextTopicId = plan.topicOrder[topicIndex + 1];
-    const nextTopic = topics.find((t) => t.id === nextTopicId);
-
-    if (nextTopic) {
-      const prerequisitesCompleted = nextTopic.prerequisiteIds.every(
-        (prereqId) => plan.progress[prereqId]?.status === 'completed'
-      );
-
-      if (prerequisitesCompleted) {
-        plan.progress[nextTopicId].status = 'available';
-      }
-    }
-  }
 
   saveStudyPlan(plan);
   return plan;
