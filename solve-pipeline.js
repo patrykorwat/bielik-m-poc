@@ -2084,7 +2084,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             maxTokens: prompts.agents.summary.max_tokens,
             temperature: prompts.agents.summary.temperature,
           });
-          const summary = stripMarkdown(stripLatex(stripThink(summaryRaw)));
+          const summary = stripMarkdown(stripThink(summaryRaw));
           send('summary_done', 'Agent Podsumowujący', summary);
           return {
             success: true,
@@ -2380,7 +2380,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
       temperature: prompts.agents.summary.temperature,
     });
 
-    const summary = stripMarkdown(stripLatex(stripThink(summaryRaw)));
+    const summary = stripMarkdown(stripThink(summaryRaw));
     send('summary_done', 'Agent Podsumowujący', summary);
 
     // ── Step 5: Lean verification (proof problems) ──────────────────

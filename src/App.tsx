@@ -758,6 +758,7 @@ function App() {
         </div>
       ) : activePage === 'quiz' ? (
         <div className="chat-container">
+          <div className="page-scroll-container">
           <ErrorBoundary sectionName="Quiz">
           <QuizMode
             onSubmitQuery={(q) => {
@@ -771,18 +772,22 @@ function App() {
             }}
           />
           </ErrorBoundary>
+          </div>
         </div>
       ) : activePage === 'plan' ? (
         <div className="chat-container">
+          <div className="page-scroll-container">
           <ErrorBoundary sectionName="Plan nauki">
           <StudyPlan
             onSubmitQuery={(q) => { submitQuery(q); navigateTo('chat'); }}
             onNavigateToChat={() => navigateTo('chat')}
           />
           </ErrorBoundary>
+          </div>
         </div>
       ) : activePage === 'notebook' ? (
         <div className="chat-container">
+          <div className="page-scroll-container">
           <ErrorBoundary sectionName="Notatnik">
           <MathNotebook
             onSolveInChat={(q) => { submitQuery(q); navigateTo('chat'); }}
@@ -790,15 +795,18 @@ function App() {
             onEntryDeleted={() => setNotebookCount(countEntries())}
           />
           </ErrorBoundary>
+          </div>
         </div>
       ) : activePage === 'stats' ? (
         <div className="chat-container">
+          <div className="page-scroll-container">
           <ErrorBoundary sectionName="Statystyki">
           <StatsPanel
             state={gamificationState}
             onNavigateToChat={() => navigateTo('chat')}
           />
           </ErrorBoundary>
+          </div>
         </div>
       ) : (
       <div className="chat-container">

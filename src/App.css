@@ -563,6 +563,28 @@ body::after {
   scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
+/* Scrollable wrapper for non-chat pages (Plan, Quiz, Notebook, Stats) */
+.page-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.page-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.page-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 3px;
+}
+
+.page-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .messages-container::-webkit-scrollbar {
   width: 6px;
 }
