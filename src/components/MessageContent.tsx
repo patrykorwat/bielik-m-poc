@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import 'katex/dist/katex.min.css';
 import katex from 'katex';
 
@@ -190,18 +190,23 @@ export function MessageContent({ content }: MessageContentProps) {
         }
         // Check for inline math $...$
         else if (normalized[i] === '$') {
-          // Find closing $
+          // Find closing $ — allow at most one newline inside inline math
+          // (Bielik sometimes wraps "1. $equation$\n" where closing $ is before \n)
           let end = i + 1;
           let found = false;
-          // Don't match across newlines for inline math
-          while (end < normalized.length && normalized[end] !== '\n') {
+          let newlineCount = 0;
+          while (end < normalized.length) {
+            if (normalized[end] === '\n') {
+              newlineCount++;
+              if (newlineCount > 1) break; // give up after second newline
+            }
             if (normalized[end] === '$') {
               const mathContent = normalized.substring(i + 1, end);
               // Ensure it's not empty and doesn't contain another $
               if (mathContent.length > 0 && !mathContent.includes('$')) {
                 segments.push({
                   type: 'inline-math',
-                  content: mathContent,
+                  content: mathContent.trim(),
                 });
                 i = end + 1;
                 found = true;
@@ -211,8 +216,7 @@ export function MessageContent({ content }: MessageContentProps) {
             end++;
           }
           if (!found) {
-            // Unclosed $, treat as text
-            segments.push({ type: 'text', content: '$' });
+            // Unclosed $, treat as text (don't show $ — strip it)
             i++;
           }
         }
@@ -605,6 +609,7 @@ export function MessageContent({ content }: MessageContentProps) {
                 <div
                   key={key++}
                   dangerouslySetInnerHTML={{ __html: html }}
+                  data-math-tex={`$$${mathContent}$$`}
                   style={{ margin: '1em 0', textAlign: 'center' }}
                 />
               );
@@ -613,15 +618,17 @@ export function MessageContent({ content }: MessageContentProps) {
                 <span
                   key={key++}
                   dangerouslySetInnerHTML={{ __html: html }}
+                  data-math-tex={`$${mathContent}$`}
                   style={{ display: 'inline-block', margin: '0 2px' }}
                 />
               );
             }
           } catch (error) {
+            // KaTeX failed — show source LaTeX as plain text so it's at least readable
             if (isDisplay) {
-              parts.push(<div key={key++} style={{ color: 'red' }}>Error rendering: $${segment.content}$$</div>);
+              parts.push(<div key={key++} style={{ fontFamily: 'monospace', opacity: 0.8 }}>{`$$${mathContent}$$`}</div>);
             } else {
-              parts.push(<span key={key++} style={{ color: 'red' }}>Error: ${segment.content}$</span>);
+              parts.push(<span key={key++} style={{ fontFamily: 'monospace', opacity: 0.8 }}>{`$${mathContent}$`}</span>);
             }
           }
         }
@@ -631,9 +638,32 @@ export function MessageContent({ content }: MessageContentProps) {
     }
   }, [content, copiedIndex, copyToClipboard]);
 
+  // Fix copy-paste: KaTeX renders fractions as stacked HTML — when the user copies,
+  // the browser concatenates numerator + denominator without "/", e.g. \frac{1}{3b} → "13b".
+  // This handler intercepts copy events, finds [data-math-tex] nodes in the selection,
+  // and replaces them with the original LaTeX source text.
+  const handleCopy = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+
+    const range = selection.getRangeAt(0);
+    const container = document.createElement('div');
+    container.appendChild(range.cloneContents());
+
+    // Replace each KaTeX-rendered element with its LaTeX source
+    container.querySelectorAll<HTMLElement>('[data-math-tex]').forEach(el => {
+      const tex = el.getAttribute('data-math-tex') ?? '';
+      el.replaceWith(document.createTextNode(tex));
+    });
+
+    const plainText = container.textContent ?? '';
+    e.clipboardData?.setData('text/plain', plainText);
+    e.preventDefault();
+  }, []);
+
   if (renderedContent === null) {
     return null;
   }
 
-  return <>{renderedContent}</>;
+  return <div onCopy={handleCopy} style={{ display: 'contents' }}>{renderedContent}</div>;
 }
