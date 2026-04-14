@@ -845,6 +845,7 @@ const legalPath = join(seoPath, 'legal');
 app.get('/polityka-prywatnosci', (_req, res) => res.sendFile(join(legalPath, 'polityka-prywatnosci.html')));
 app.get('/cookies', (_req, res) => res.sendFile(join(legalPath, 'cookies.html')));
 app.get('/regulamin', (_req, res) => res.sendFile(join(legalPath, 'regulamin.html')));
+app.get('/o-nas', (_req, res) => res.sendFile(join(seoPath, 'o-nas.html')));
 
 app.get('/sitemap.xml', (_req, res) => {
   res.sendFile(join(__dirname, 'seo', 'sitemap.xml'));
