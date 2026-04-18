@@ -1148,72 +1148,148 @@ body::after {
   transform: translateY(-1px);
 }
 
-/* ===== RESPONSIVE ===== */
+/* ===== MOBILE-FIRST RESPONSIVE ===== */
+
+/*
+ * Mobile layout strategy:
+ *   Row 1: [Logo] .............. [theme toggle] [nowy czat]
+ *   Row 2: [Czat | Plan nauki | Sprawdź się | Wzory | ...] (scrollable)
+ *
+ * Hidden on mobile: gamification, historia, eksport
+ * (historia is accessible from sidebar, eksport is a desktop convenience)
+ */
+
 @media (max-width: 768px) {
   .app-container {
-    padding: 4px;
+    padding: 0;
   }
 
+  /* ---- Header: stacked vertically, two tight rows ---- */
   .app-header {
-    padding: 12px 14px;
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    padding: 6px 10px;
+    border-radius: 0;
+    gap: 4px;
+    flex-direction: column;
+    align-items: stretch;
+    position: relative;
   }
 
   .app-header h1 {
     font-size: 16px;
+    padding-right: 100px; /* room for absolute-positioned buttons */
   }
 
   .header-controls {
-    gap: 6px;
-    flex-wrap: wrap;
-    overflow: visible;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
     width: 100%;
+    align-items: center;
+    overflow: visible;
   }
 
-  .header-controls button {
-    padding: 6px 10px;
-    font-size: 12px;
+  /* Theme toggle: absolute, top-right, same row as logo */
+  .theme-toggle {
+    position: absolute;
+    right: 90px;
+    top: 6px;
+    padding: 4px 6px;
+    z-index: 2;
   }
 
+  .theme-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* New chat button: absolute, top-right corner */
+  .clear-button {
+    position: absolute;
+    right: 10px;
+    top: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    z-index: 2;
+  }
+
+  /* Page tabs: full-width scrollable strip */
   .page-tabs {
+    width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    width: 100%;
     flex-shrink: 0;
+    padding: 2px;
   }
 
   .page-tabs::-webkit-scrollbar {
     display: none;
   }
 
+  .page-tab {
+    padding: 5px 8px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+
+  /* Hide non-essential controls on mobile */
+  .header-controls .gamification-widget,
+  .header-controls .gamification-widget.compact {
+    display: none;
+  }
+
+  .history-button {
+    display: none;
+  }
+
+  .export-button {
+    display: none;
+  }
+
+  /* ---- Footer: single compact line ---- */
+  .app-footer {
+    padding: 6px 10px;
+    gap: 6px;
+    font-size: 10px;
+    margin-top: 0;
+  }
+
+  .app-footer .footer-legal {
+    display: none;
+  }
+
+  .app-footer .github-link {
+    display: none;
+  }
+
+  /* ---- Content area ---- */
   .message {
     max-width: 95%;
-    padding: 10px 14px;
-  }
-
-  .messages-container {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .input-container {
-    padding: 10px;
-    gap: 8px;
-  }
-
-  .message-input {
-    font-size: 16px;
     padding: 10px 12px;
   }
 
+  .messages-container {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .input-container {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .message-input {
+    font-size: 16px; /* prevents iOS zoom on focus */
+    padding: 8px 10px;
+  }
+
   .send-button {
-    padding: 10px 16px;
-    font-size: 14px;
+    padding: 8px 14px;
+    font-size: 13px;
   }
 
   .empty-state {
-    padding: 20px 10px;
+    padding: 8px 6px;
   }
 
   .empty-state p {
@@ -1254,5 +1330,50 @@ body::after {
 
   .tool-call pre {
     font-size: 0.78em;
+  }
+}
+
+/* Extra-small screens (iPhone SE, old phones ~320px) */
+@media (max-width: 400px) {
+  .app-header {
+    padding: 4px 8px;
+  }
+
+  .app-header h1 {
+    font-size: 14px;
+    padding-right: 80px;
+  }
+
+  .page-tab {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  .clear-button {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .theme-toggle {
+    right: 72px;
+  }
+
+  .input-container {
+    padding: 4px 6px;
+  }
+
+  .send-button {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .input-container {
+    padding: 6px;
+    gap: 4px;
+  }
+
+  .send-button {
+    padding: 8px 12px;
+    font-size: 12px;
   }
 }

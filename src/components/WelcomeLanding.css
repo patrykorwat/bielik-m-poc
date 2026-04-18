@@ -377,20 +377,20 @@
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
   .welcome-landing {
-    gap: 36px;
-    padding: 32px 16px;
+    gap: 20px;
+    padding: 16px 10px;
   }
 
   .hero-section {
-    padding: 40px 24px;
+    padding: 20px 16px;
   }
 
   .hero-headline {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .hero-subheadline {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .feature-pills {
@@ -464,44 +464,83 @@
 
 @media (max-width: 480px) {
   .welcome-landing {
-    gap: 24px;
-    padding: 24px 12px;
+    gap: 16px;
+    padding: 12px 8px;
   }
 
   .hero-section {
-    padding: 28px 16px;
+    padding: 16px 12px;
   }
 
   .hero-headline {
-    font-size: 22px;
-  }
-
-  .hero-subheadline {
-    font-size: 14px;
-  }
-
-  .feature-pills {
-    flex-direction: column;
-  }
-
-  .feature-pill {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .section-title {
     font-size: 20px;
   }
 
+  .hero-subheadline {
+    font-size: 13px;
+  }
+
+  .feature-pills {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .feature-pill {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+
+  .how-it-works-section {
+    display: none;
+  }
+
   .stats-section {
-    padding: 20px 16px;
+    padding: 14px 10px;
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
   }
 
   .stat-card {
-    padding: 12px;
+    padding: 10px 6px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+  }
+
+  .daily-challenge-section {
+    margin: 0;
+  }
+
+  .topics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .topic-link {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+
+  .examples-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .example-chip {
+    padding: 6px 8px;
+    font-size: 11px;
   }
 }
