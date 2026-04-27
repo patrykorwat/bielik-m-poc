@@ -163,12 +163,14 @@ function extractLeanCode(response) {
   const plainMatch = /```\s*\n([\s\S]*?)\n```/.exec(response);
   if (plainMatch) {
     const code = plainMatch[1].trim();
-    if (code.includes('theorem') || code.includes('lemma') || code.includes('def ')) return code;
+    if (/\b(theorem|lemma|def)\s/.test(code)) return code;
   }
   const lines = response.split('\n');
   const start = lines.findIndex(l => /^\s*(theorem|lemma|def)\s/.test(l));
   if (start >= 0) return lines.slice(start).join('\n').trim();
-  return response.trim();
+  // Brak code fence i brak slow kluczowych Lean. Bielik zwrocil prose.
+  // Nie wpadamy w fallback "wyslij wszystko do Lean" bo to gwarantowany syntax error.
+  return null;
 }
 
 async function leanHealthy() {
@@ -2444,6 +2446,15 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             var verifyCodeRaw = await llmCall(`lean_post_verify_attempt${leanAttempt}`, LEAN_FORMALIZATION_PROMPT, messages, { maxTokens: 800, temperature: 0.2 });
 
             var verifyCode = extractLeanCode(stripThink(verifyCodeRaw));
+            if (!verifyCode) {
+              if (leanAttempt >= MAX_LEAN_ATTEMPTS) {
+                leanVerified = false;
+                send('lean_verify_fail', 'Lean Prover', 'Model nie wygenerował kodu Lean (pominięto formalną weryfikację).');
+                break;
+              }
+              // Retry — niech LLM jeszcze raz sprobuje
+              continue;
+            }
             send('lean_verify_code', 'Lean Prover', 'Waiting for a response');
 
             const keepAliveLeanCheck = setInterval(() => {

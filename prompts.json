@@ -10,15 +10,15 @@
   "agents": {
     "analytical": {
       "max_tokens": 500,
-      "temperature": 0.2
+      "temperature": 0.1
     },
     "executor": {
       "max_tokens": 900,
-      "temperature": 0.15
+      "temperature": 0.1
     },
     "summary": {
       "max_tokens": 4000,
-      "temperature": 0.2
+      "temperature": 0.1
     },
     "formalizer": {
       "max_tokens": 1500,
