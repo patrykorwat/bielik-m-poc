@@ -159,18 +159,41 @@ STRATEGIA:
 
 function extractLeanCode(response) {
   const leanMatch = /```lean\s*\n([\s\S]*?)\n```/.exec(response);
-  if (leanMatch) return leanMatch[1].trim();
+  if (leanMatch) return sanitizeLeanCode(leanMatch[1].trim());
   const plainMatch = /```\s*\n([\s\S]*?)\n```/.exec(response);
   if (plainMatch) {
     const code = plainMatch[1].trim();
-    if (/\b(theorem|lemma|def)\s/.test(code)) return code;
+    if (/\b(theorem|lemma|def)\s/.test(code)) return sanitizeLeanCode(code);
   }
   const lines = response.split('\n');
   const start = lines.findIndex(l => /^\s*(theorem|lemma|def)\s/.test(l));
-  if (start >= 0) return lines.slice(start).join('\n').trim();
+  if (start >= 0) return sanitizeLeanCode(lines.slice(start).join('\n').trim());
   // Brak code fence i brak slow kluczowych Lean. Bielik zwrocil prose.
   // Nie wpadamy w fallback "wyslij wszystko do Lean" bo to gwarantowany syntax error.
   return null;
+}
+
+// Bielik wpisuje matematyke jak czlowiek (x², 4x), Lean parser tego nie kuma.
+// Normalizujemy do skladni Lean 4.
+function sanitizeLeanCode(code) {
+  // Unicode superscripts -> ^N
+  const supMap = {
+    '⁰': '^0', '¹': '^1', '²': '^2', '³': '^3', '⁴': '^4',
+    '⁵': '^5', '⁶': '^6', '⁷': '^7', '⁸': '^8', '⁹': '^9',
+  };
+  code = code.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g, ch => supMap[ch] || ch);
+
+  // Implicit multiplication: 4x -> 4 * x, 2(x-1) -> 2 * (x-1).
+  // Lookbehind zapewnia ze cyfra jest na poczatku albo po spacji/operatorze,
+  // a nie w srodku identyfikatora typu x_squared_minus_4x_plus_5_ge_1
+  // (gdzie 4 jest po _ i NIE chcemy tam mnozenia).
+  code = code.replace(/(?<=^|[\s+\-*/(=,;:])(\d+)\s*([a-zA-Z(])/g, '$1 * $2');
+
+  // Czasem Bielik wpisuje "·" (U+00B7) zamiast "*" jako mnozenie
+  code = code.replace(/·/g, '*');
+
+  // Nie tlumaczymy ≥, ≤, ≠ - Lean 4 to natywnie wspiera
+  return code;
 }
 
 async function leanHealthy() {
