@@ -2445,8 +2445,13 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
 
             var verifyCodeRaw = await llmCall(`lean_post_verify_attempt${leanAttempt}`, LEAN_FORMALIZATION_PROMPT, messages, { maxTokens: 800, temperature: 0.2 });
 
+            console.log(`[lean] ── attempt ${leanAttempt}, raw LLM output (${(verifyCodeRaw || '').length} chars) ──`);
+            console.log(verifyCodeRaw);
+            console.log(`[lean] ── raw end ──`);
+
             var verifyCode = extractLeanCode(stripThink(verifyCodeRaw));
             if (!verifyCode) {
+              console.log(`[lean] extractLeanCode zwrocil null - brak slow kluczowych Lean w odpowiedzi`);
               if (leanAttempt >= MAX_LEAN_ATTEMPTS) {
                 leanVerified = false;
                 send('lean_verify_fail', 'Lean Prover', 'Model nie wygenerował kodu Lean (pominięto formalną weryfikację).');
@@ -2455,6 +2460,11 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
               // Retry — niech LLM jeszcze raz sprobuje
               continue;
             }
+
+            console.log(`[lean] ── extracted verifyCode (${verifyCode.length} chars) ──`);
+            console.log(verifyCode);
+            console.log(`[lean] ── extracted end ──`);
+
             send('lean_verify_code', 'Lean Prover', 'Waiting for a response');
 
             const keepAliveLeanCheck = setInterval(() => {

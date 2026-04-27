@@ -90,6 +90,9 @@ app.post('/verify', async (req, res) => {
     await writeFile(filepath, code);
     console.log(`[lean-proxy] Verifying theorem: ${filename}`);
     console.log(`[lean-proxy] Running: lean --stdin`);
+    console.log(`[lean-proxy] ── code begin (${code.length} chars) ──`);
+    console.log(code);
+    console.log(`[lean-proxy] ── code end ──`);
 
     // Verify using bare Lean CLI (no Mathlib)
     const process = spawn('lean', ['--stdin'], {
@@ -118,6 +121,12 @@ app.post('/verify', async (req, res) => {
 
       if (exitCode !== 0) {
         console.error(`[lean-proxy] Lean exited with code: ${exitCode}`);
+        console.error(`[lean-proxy] ── stderr begin ──`);
+        console.error(stderr || '(empty)');
+        console.error(`[lean-proxy] ── stderr end ──`);
+        console.error(`[lean-proxy] ── stdout begin ──`);
+        console.error(stdout || '(empty)');
+        console.error(`[lean-proxy] ── stdout end ──`);
         return res.status(400).json({
           status: 'error',
           error: stderr || stdout || 'Unknown verification error',

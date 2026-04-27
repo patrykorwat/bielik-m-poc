@@ -91,6 +91,12 @@ export function MessageContent({ content }: MessageContentProps) {
         (_match, _lang, code) => `__CODE_BLOCK_${codeBlocks.findIndex(cb => cb.code === code)}__`
       );
 
+      // Bielik 11B v3 czesto wypluwa formule dwa razy obok siebie
+      // (\[X\]\[X\], \(X\)\(X\), albo \[X\]X plus unicode-plaintext duplikat).
+      // Dedupujemy zanim przekonwertujemy delimitery na $...$.
+      normalized = normalized.replace(/(\\\[[\s\S]*?\\\])\s*\1/g, '$1');
+      normalized = normalized.replace(/(\\\([\s\S]*?\\\))\s*\1/g, '$1');
+
       // Now normalize LaTeX delimiters: convert \[...\] to $$...$$ and \(...\) to $...$
 
       // Convert display math: \[...\] to $$...$$
@@ -99,6 +105,10 @@ export function MessageContent({ content }: MessageContentProps) {
 
       // Convert inline math: \(...\) to $...$
       normalized = normalized.replace(/\\\((.*?)\\\)/g, (_m, c) => `$${c}$`);
+
+      // Po normalizacji delimiterow tez moze wystapic duplikat (np. $X$$X$).
+      normalized = normalized.replace(/(\$\$[\s\S]*?\$\$)\s*\1/g, '$1');
+      normalized = normalized.replace(/(\$[^$\n]{1,200}\$)\s*\1/g, '$1');
 
       // Convert standalone \boxed{...} to $\boxed{...}$ (if not already in math mode)
       // Need to handle nested braces properly
