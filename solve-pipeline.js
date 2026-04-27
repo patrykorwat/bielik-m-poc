@@ -209,8 +209,21 @@ function extractPythonCode(text) {
   if (fenceMatch) return sanitizeGeneratedCode(fenceMatch[1].trim());
   const plainMatch = text.match(/```\s*([\s\S]*?)```/);
   if (plainMatch) return sanitizeGeneratedCode(plainMatch[1].trim());
+  // Brak code fence, ale jest sympy. Bielik czesto prepend'uje preamble po polsku
+  // ("Oto poprawiony kod Python..."), wiec scinamy wszystko przed pierwsza
+  // sensowna linia Pythona (import/from/komentarz).
   if (text.includes('from sympy') || text.includes('import sympy')) {
-    return sanitizeGeneratedCode(text.trim());
+    const lines = text.split('\n');
+    let startIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const t = lines[i].trim();
+      if (/^(from\s+\w+|import\s+\w+)/.test(t)) {
+        startIdx = i;
+        break;
+      }
+    }
+    if (startIdx === -1) return null;
+    return sanitizeGeneratedCode(lines.slice(startIdx).join('\n').trim());
   }
   return null;
 }
