@@ -1,4 +1,4 @@
-# ── Stage 1: Lean 4 (no Mathlib, saves ~2GB RAM) ─────────────────────
+# ── Stage 1: Lean 4 + Mathlib (pre-compiled cache, ~5GB) ─────────────
 FROM node:20-slim AS lean-base
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -8,11 +8,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV ELAN_HOME=/opt/elan
 ENV PATH="/opt/elan/bin:${PATH}"
 
+# Instalacja elan (pozwoli automatycznie pobrac toolchain wymagany przez lean-project)
 RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
-    | sh -s -- -y --default-toolchain leanprover/lean4:stable --no-modify-path \
-    && elan show \
-    && lean --version \
+    | sh -s -- -y --default-toolchain none --no-modify-path \
     && chmod -R 777 /opt/elan
+
+# Lean project + Mathlib pre-compiled. Toolchain wybierany przez lean-toolchain
+# z lean-project/, mathlib pobierany jako pre-built olean cache (lake exe cache get).
+COPY lean-project /app/lean-project
+WORKDIR /app/lean-project
+RUN elan toolchain install $(cat lean-toolchain) \
+    && lean --version \
+    && lake update \
+    && lake exe cache get \
+    && chmod -R 755 /opt/elan
+WORKDIR /app
 
 # ── Stage 2: Build frontend + TypeScript ─────────────────────────────
 FROM node:20-slim AS builder

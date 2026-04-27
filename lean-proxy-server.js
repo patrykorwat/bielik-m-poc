@@ -94,9 +94,10 @@ app.post('/verify', async (req, res) => {
     console.log(code);
     console.log(`[lean-proxy] ── code end ──`);
 
-    // Verify using bare Lean CLI (no Mathlib)
-    const process = spawn('lean', ['--stdin'], {
-      cwd: WORK_DIR,
+    // Verify via `lake env lean --stdin` z katalogu lean-project, zeby
+    // Mathlib (i caly graf zaleznosci) byl widoczny dla parsera.
+    const process = spawn('lake', ['env', 'lean', '--stdin'], {
+      cwd: LEAN_PROJECT_DIR,
       stdio: ['pipe', 'pipe', 'pipe']
     });
 

@@ -116,45 +116,53 @@ function isProofProblem(text) {
 }
 
 const LEAN_FORMALIZATION_PROMPT = `Jestes ekspertem od formalizacji matematycznych dowodow w Lean 4.
-Przetlumacz zadanie na formalny dowod w Lean 4.
+Przetlumacz zadanie na formalny dowod w Lean 4 z biblioteka Mathlib.
 
 ZASADY:
-1. KOMPLETNY, samowystarczalny kod Lean 4. ZAKAZ importow Mathlib (niedostepny na serwerze).
-2. Dozwolone importy: import Std
-3. Dostepne taktyki: omega, simp, decide, intro, apply, exact, constructor, cases, induction, rfl, calc, have, let, show, funext, ext, contradiction, absurd, by_contra, rw
-4. ZAKAZ taktyk: ring, ring_nf, norm_num (wszystkie wymagaja Mathlib, NIEDOSTEPNE).
-5. omega rozwiazuje TYLKO LINIOWE rownania/nierownosci na Nat/Int.
-6. Dla rownosci wielomianowych (np. (2k+1)^2 = 4k^2+4k+1) uzyj sorry. To jest oczekiwane zachowanie bez Mathlib.
-7. Po sorry dla kroku algebraicznego, uzyj omega lub simp na liniowym wyniku.
-8. Modeluj problemy na typach Nat lub Int (nie Real, bo Real wymaga Mathlib).
-9. ZAWSZE zwroc TYLKO blok kodu Lean 4 w \`\`\`lean, bez dodatkowego tekstu.
+1. KOMPLETNY, samowystarczalny kod Lean 4. Mathlib JEST DOSTEPNY.
+2. ZAWSZE zaczynaj od: import Mathlib
+3. Dla nierownosci wielomianowych: nlinarith [sq_nonneg ...] albo polyrith
+4. Dla rownosci wielomianowych: ring
+5. Dla liczb konkretnych: norm_num
+6. Dla liniowej arytmetyki: linarith albo omega (omega tylko dla Nat/Int)
+7. Dla nieujemnosci kwadratu: sq_nonneg, mul_self_nonneg
+8. Modeluj problemy na typach Real, Int, Nat - jak pasuje do zadania.
+9. UZYWAJ ASCII: pisz x^2 a nie x², 4 * x a nie 4x, * jako mnozenie a nie ·.
+10. ZAWSZE zwroc TYLKO blok kodu Lean 4 w \`\`\`lean, bez dodatkowego tekstu.
+
+PRZYKLAD (nierownosc kwadratowa):
+\`\`\`lean
+import Mathlib
+
+theorem ex (x : Real) : x^2 - 4 * x + 5 ≥ 1 := by
+  nlinarith [sq_nonneg (x - 2)]
+\`\`\`
+
+PRZYKLAD (rownosc wielomianowa):
+\`\`\`lean
+import Mathlib
+
+theorem ex (a b : Real) : (a + b)^2 = a^2 + 2 * a * b + b^2 := by
+  ring
+\`\`\`
 
 PRZYKLAD (podzielnosc, liniowa arytmetyka):
 \`\`\`lean
-import Std
+import Mathlib
 
 theorem even_plus_even (a b : Int) (ha : a % 2 = 0) (hb : b % 2 = 0) :
     (a + b) % 2 = 0 := by
   omega
 \`\`\`
 
-PRZYKLAD (reszta z dzielenia, kwadratowe wyrazenia):
-\`\`\`lean
-import Std
-
-theorem sum_sq_odd_mod4 (k : Int) :
-    ((2 * k + 1)^2 + (2 * k + 3)^2) % 4 = 2 := by
-  have h : (2 * k + 1)^2 + (2 * k + 3)^2 = 8 * k^2 + 16 * k + 10 := by sorry
-  rw [h]
-  omega
-\`\`\`
-
 STRATEGIA:
-1. Zapisz twierdzenie z poprawna teza
-2. have h : wyrazenie_wielomianowe = rozwiniety_wynik := by sorry (krok algebraiczny)
-3. rw [h] zeby podstawic uproszczony wynik
-4. omega na liniowym wyniku (reszty, porownania, nierownosci)
-5. ZAWSZE zaczynaj od: import Std
+1. Zapisz twierdzenie z poprawna teza i typami matematycznymi (Real dla nierownosci ciaglych)
+2. Wybierz taktyke dopasowana do natury problemu:
+   - nieliniowe nierownosci -> nlinarith z hintami sq_nonneg
+   - rownosci algebraiczne -> ring
+   - arytmetyka liniowa Int/Nat -> omega
+   - konkretne liczby -> norm_num
+3. ZAWSZE zaczynaj od: import Mathlib
 `;
 
 function extractLeanCode(response) {
@@ -192,7 +200,8 @@ function sanitizeLeanCode(code) {
   // Czasem Bielik wpisuje "·" (U+00B7) zamiast "*" jako mnozenie
   code = code.replace(/·/g, '*');
 
-  // Nie tlumaczymy ≥, ≤, ≠ - Lean 4 to natywnie wspiera
+  // Mathlib jest dostepny - nie trzeba juz zamieniac taktyk na sorry.
+  // Nie tlumaczymy ≥, ≤, ≠ - Lean 4 to natywnie wspiera.
   return code;
 }
 
@@ -2488,7 +2497,7 @@ export async function solve(userMessage, sessionId, onStep, chatHistory = []) {
             console.log(verifyCode);
             console.log(`[lean] ── extracted end ──`);
 
-            send('lean_verify_code', 'Lean Prover', 'Waiting for a response');
+            send('lean_verify_code', 'Lean Prover', 'Czekanie na odpowiedź');
 
             const keepAliveLeanCheck = setInterval(() => {
                 send('lean_verify_wait', 'Lean Prover'); // SSE comment, ignored by the client
