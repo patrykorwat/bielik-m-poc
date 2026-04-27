@@ -1,0 +1,7 @@
+model-cache/
+.imported_model_arn
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.tfvars

@@ -11,7 +11,7 @@
  */
 
 import tracer from 'dd-trace';
-import OpenAI from 'openai';
+import { createLLMClient } from './bedrock-bielik/llm-client.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -38,8 +38,21 @@ const LLM_BASE_URL = process.env.LLM_API_URL
 const LLM_API_KEY = process.env.LLM_API_KEY || 'no-key';
 const MODEL = process.env.LLM_MODEL || prompts.model?.default || 'speakleash/Bielik-11B-v3.0-Instruct';
 
+// Backend wybierany po env:
+//   BEDROCK_MODEL_ARN ustawiony  -> AWS Bedrock Custom Model Import
+//   inaczej                       -> OpenAI compatible (vLLM, Together itp.)
+const BEDROCK_MODEL_ARN = process.env.BEDROCK_MODEL_ARN || '';
+const BEDROCK_REGION = process.env.BEDROCK_REGION || 'us-east-1';
+const LLM_PROVIDER = BEDROCK_MODEL_ARN ? 'aws_bedrock' : 'vllm';
+
 function createClient() {
-  return new OpenAI({ apiKey: LLM_API_KEY, baseURL: LLM_BASE_URL });
+  return createLLMClient({
+    baseURL: LLM_BASE_URL,
+    apiKey: LLM_API_KEY,
+    bedrockRegion: BEDROCK_REGION,
+    bedrockModelArn: BEDROCK_MODEL_ARN,
+    defaultModelName: MODEL,
+  });
 }
 
 // ── Helper: call LLM inside an llmobs span ────────────────────────────
@@ -51,7 +64,7 @@ async function llmCall(name, systemPrompt, messages, opts = {}) {
     kind: 'llm',
     name,
     modelName: MODEL,
-    modelProvider: 'vllm',
+    modelProvider: LLM_PROVIDER,
   }, async () => {
     const allMessages = [
       { role: 'system', content: systemPrompt },
