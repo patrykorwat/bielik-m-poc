@@ -94,10 +94,11 @@ export function MessageContent({ content }: MessageContentProps) {
       // Now normalize LaTeX delimiters: convert \[...\] to $$...$$ and \(...\) to $...$
 
       // Convert display math: \[...\] to $$...$$
-      normalized = normalized.replace(/\\\[([\s\S]*?)\\\]/g, '$$$$1$$');
+      // Uzywamy funkcji-replacementa zeby unikac patologi parsowania $$ w replace string.
+      normalized = normalized.replace(/\\\[([\s\S]*?)\\\]/g, (_m, c) => `$$${c}$$`);
 
       // Convert inline math: \(...\) to $...$
-      normalized = normalized.replace(/\\\((.*?)\\\)/g, '$$$1$$');
+      normalized = normalized.replace(/\\\((.*?)\\\)/g, (_m, c) => `$${c}$`);
 
       // Convert standalone \boxed{...} to $\boxed{...}$ (if not already in math mode)
       // Need to handle nested braces properly
