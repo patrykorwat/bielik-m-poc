@@ -5,7 +5,6 @@
  * Allows browser clients to communicate with MCP servers
  */
 
-import tracer from 'dd-trace';
 import express from 'express';
 import cors from 'cors';
 import { spawn } from 'child_process';
@@ -17,6 +16,16 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// dd-trace stub (Datadog wycofany), zachowujemy API span'a
+const noopSpan = {
+  setTag: () => {},
+  finish: () => {},
+};
+const tracer = {
+  startSpan: () => noopSpan,
+  scope: () => ({ active: () => null }),
+  llmobs: { trace: (_o, fn) => (typeof fn === 'function' ? fn() : undefined), annotate: () => {} },
+};
 const llmobs = tracer.llmobs;
 
 const app = express();

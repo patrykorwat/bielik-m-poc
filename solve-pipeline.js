@@ -4,13 +4,9 @@
  * Single entry point for ALL user requests. Routes through:
  *   guardrail → generator intent → arithmetic scheme → LLM solve pipeline
  *
- * Runs in one process so dd-trace / LLM Observability sees a single
- * workflow span containing every LLM call as a nested child span.
- *
  * Streams progress back via SSE.
  */
 
-import tracer from 'dd-trace';
 import { createLLMClient } from './bedrock-bielik/llm-client.mjs';
 import http from 'node:http';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
@@ -23,7 +19,12 @@ import { decompose } from './decomposer.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const llmobs = tracer.llmobs;
+// llmobs stub (Datadog wycofany). Zachowuje to samo API
+// (.trace(), .annotate()) zeby nie ruszac kazdej linii w pipeline.
+const llmobs = {
+  trace: (_opts, fn) => (typeof fn === 'function' ? fn() : undefined),
+  annotate: () => {},
+};
 
 // ── Load prompts ──────────────────────────────────────────────────────
 

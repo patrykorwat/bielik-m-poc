@@ -1,1 +1,1 @@
-web: node --import dd-trace/initialize.mjs heroku-start.js
+web: node heroku-start.js

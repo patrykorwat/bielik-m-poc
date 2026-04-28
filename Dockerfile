@@ -47,16 +47,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-pol \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Datadog agent (container stack has no buildpack)
-ENV DD_INSTALL_ONLY=true
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends gpg apt-transport-https \
-    && curl -fsL https://keys.datadoghq.com/DATADOG_APT_KEY_CURRENT.public | gpg --dearmor -o /usr/share/keyrings/datadog-archive-keyring.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/datadog-archive-keyring.gpg] https://apt.datadoghq.com/ stable 7" > /etc/apt/sources.list.d/datadog.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends datadog-agent \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 # node_modules from builder (now strictly production modules)

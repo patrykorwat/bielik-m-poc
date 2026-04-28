@@ -13,7 +13,6 @@
  * Uses only built-in Node modules + express (already a dependency).
  */
 
-import tracer from 'dd-trace';
 import express from 'express';
 
 import { spawn } from 'node:child_process';
@@ -79,16 +78,14 @@ function spawnChild(label, command, args, env = {}) {
 
 // Start MCP proxy
 console.log(`Starting MCP proxy on localhost:${MCP_PORT}...`);
-spawnChild('mcp-proxy', 'node', ['--import', 'dd-trace/initialize.mjs', 'mcp-proxy-server.js'], {
+spawnChild('mcp-proxy', 'node', ['mcp-proxy-server.js'], {
   MCP_PORT: String(MCP_PORT),
-  DD_SERVICE: 'formulo-mcp-proxy',
 });
 
 // Start Lean proxy
 console.log(`Starting Lean proxy on localhost:${LEAN_PORT}...`);
 spawnChild('lean-proxy', 'node', ['lean-proxy-server.js'], {
   LEAN_PROXY_PORT: String(LEAN_PORT),
-  DD_SERVICE: 'formulo-lean-proxy',
 });
 
 // Start RAG service
