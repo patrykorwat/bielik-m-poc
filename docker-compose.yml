@@ -1,5 +1,9 @@
 services:
   formulo:
+    # Obraz pre-built przez GitHub Actions, push do GHCR.
+    # Lightsail tylko pull, bez budowania (4 GB / 2 vCPU za slabe na build z Mathlib).
+    # Build fallback przez `docker compose up --build` jesli ktos chce lokalnie.
+    image: ghcr.io/formulopl/formulopl:latest
     build: .
     ports:
       - "127.0.0.1:5000:5000"

@@ -1,8 +1,10 @@
-name: Deploy to Lightsail
+name: Deploy to Lightsail (legacy, build on Lightsail)
 
+# Stary workflow ktory budowal obraz BEZPOSREDNIO na Lightsailu.
+# Dzialal ale wolny i ryzykowny (build z Mathlib na 4 GB pudle 30+ min).
+# Domyslnie deploy idzie przez build-and-deploy.yml (build w CI, push do GHCR,
+# pull na Lightsailu). Ten workflow zostaje jako manual fallback.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:

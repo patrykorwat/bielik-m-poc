@@ -1,0 +1,105 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      # Ubuntu-latest runner ma ~14 GB free po pre-installed .NET, Android SDK,
+      # CodeQL, Boost itd. Build obrazu z Mathlibem (~8 GB) + warstwy nie miesci sie.
+      # Wycinamy zbedne narzedzia, zwalnia ~30-40 GB.
+      - name: Free disk space on runner
+        run: |
+          echo "=== before ==="
+          df -h /
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf /usr/local/share/powershell
+          sudo rm -rf /usr/share/swift
+          sudo apt-get clean
+          docker image prune -af 2>/dev/null || true
+          echo "=== after ==="
+          df -h /
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image tag
+        id: meta
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          # Buildx cache w GitHub Actions cache, zeby kolejne buildy
+          # nie pobieraly Mathlib od zera.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.meta.outputs.tag }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ubuntu
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          # Sam pull plus restart - bez build na serwerze.
+          # 10 min wystarcza, zostawiamy zapas.
+          command_timeout: 15m
+          timeout: 15m
+          script: |
+            set -e
+            cd /opt/formulo/formulopl
+            git pull origin main
+
+            # Sprzatanie ZANIM ciagniemy nowy obraz, zeby zwolnic miejsce.
+            # Stare obrazy z Mathlibem (~8 GB kazdy) szybko zapchaja 80 GB dysk.
+            # NIE uzywamy --volumes zeby nie zniszczyc postgres pgdata.
+            echo "=== disk before cleanup ==="
+            df -h /
+            docker image prune -af
+            docker builder prune -af
+            docker container prune -f
+            echo "=== disk after cleanup ==="
+            df -h /
+
+            docker pull ghcr.io/formulopl/formulopl:latest
+            docker compose up -d
+            sleep 5
+            docker compose ps
