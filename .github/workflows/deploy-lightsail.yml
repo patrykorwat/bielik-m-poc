@@ -15,8 +15,12 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ubuntu
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          script_stop: true
+          # Build z Mathlibem trwa duzo (download ~5GB pre-built olean + export 8GB image).
+          # Default 10min timeout to za malo, podnosimy oba do 60 min.
+          command_timeout: 60m
+          timeout: 60m
           script: |
+            set -e
             cd /opt/formulo/formulopl
             git pull origin main
             docker compose up -d --build
