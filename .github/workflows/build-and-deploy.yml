@@ -75,10 +75,15 @@ jobs:
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
         with:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ubuntu
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          # Przekaz token do remote shell zeby docker login mial dostep.
+          envs: GHCR_TOKEN,GHCR_USER
           # Sam pull plus restart - bez build na serwerze.
           # 10 min wystarcza, zostawiamy zapas.
           command_timeout: 15m
@@ -98,6 +103,10 @@ jobs:
             docker container prune -f
             echo "=== disk after cleanup ==="
             df -h /
+
+            # Login do GHCR przez GITHUB_TOKEN przekazany z workflow.
+            # Jesli zrobisz package public w GitHub UI, te dwie linijki sa zbedne.
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
 
             docker pull ghcr.io/formulopl/formulopl:latest
             docker compose up -d

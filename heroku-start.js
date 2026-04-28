@@ -149,15 +149,24 @@ async function waitForLean(maxAttempts = 10, intervalMs = 5000) {
   return false;
 }
 
+// Stan pre-warm dwoch ciezkich zaleznosci, expose przez /api/status zeby UI
+// moglo pokazac banner "model sie rozkreca" podczas cold startu.
+const warmState = {
+  lean: { status: 'cold', startedAt: null, readyAt: null, durationSec: null },
+  bedrock: { status: 'cold', startedAt: null, readyAt: null, durationSec: null },
+};
+
 // 👇 NEW: Wrap the blocking code so it runs in the background
 (async () => {
   // Give child processes a moment to start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   // Wait for the Lean proxy to report healthy
   const isLeanReady = await waitForLean();
-  
+
   if (isLeanReady) {
     console.log("🔥 Pre-warming Lean toolchain + Mathlib.Tactic (loaduje olean files do OS cache)...");
+    warmState.lean.status = 'warming';
+    warmState.lean.startedAt = Date.now();
     try {
       // Wczytujemy import Mathlib.Tactic w tle zaraz po starcie kontenera.
       // Pierwszy realny request uzytkownika juz nie ladowal bedzie olean files
@@ -177,12 +186,75 @@ async function waitForLean(maxAttempts = 10, intervalMs = 5000) {
         signal: AbortSignal.timeout(360000),
       });
       const prewarmSec = Math.round((Date.now() - prewarmStart) / 1000);
+      warmState.lean.status = 'warm';
+      warmState.lean.readyAt = Date.now();
+      warmState.lean.durationSec = prewarmSec;
       console.log(`✅ Lean pre-warming z Mathlib.Tactic gotowe w ${prewarmSec}s.`);
     } catch (err) {
-      console.error("⚠️ Pre-warm ping failed:", err.message);
+      console.error("⚠️ Lean pre-warm ping failed:", err.message);
+      warmState.lean.status = 'cold';
     }
   }
+})();
 
+// Bedrock pre-warm i keep-alive (osobny background task niezalezny od Lean)
+(async () => {
+  if (!process.env.BEDROCK_MODEL_ARN) {
+    console.log("ℹ️ BEDROCK_MODEL_ARN nieustawiony, pomijam Bedrock pre-warm.");
+    warmState.bedrock.status = 'disabled';
+    return;
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  const { createLLMClient } = await import('./bedrock-bielik/llm-client.mjs');
+  const client = createLLMClient({
+    bedrockModelArn: process.env.BEDROCK_MODEL_ARN,
+    bedrockRegion: process.env.BEDROCK_REGION || 'us-east-1',
+    defaultModelName: 'speakleash/Bielik-11B-v3.0-Instruct',
+  });
+
+  async function pingBedrock() {
+    return client.chat.completions.create({
+      messages: [{ role: 'user', content: '1' }],
+      max_tokens: 5,
+      temperature: 0.1,
+    });
+  }
+
+  console.log("🔥 Pre-warming Bedrock model (cold start moze trwac 5-10 min, retry shim ogarnia)...");
+  warmState.bedrock.status = 'warming';
+  warmState.bedrock.startedAt = Date.now();
+  try {
+    const start = Date.now();
+    await pingBedrock();
+    const sec = Math.round((Date.now() - start) / 1000);
+    warmState.bedrock.status = 'warm';
+    warmState.bedrock.readyAt = Date.now();
+    warmState.bedrock.durationSec = sec;
+    console.log(`✅ Bedrock pre-warming gotowe w ${sec}s.`);
+  } catch (err) {
+    console.error("⚠️ Bedrock pre-warm failed:", err?.message);
+    warmState.bedrock.status = 'cold';
+  }
+
+  // Keep-alive co 4 min zeby model nie wpadal w idle podczas demo.
+  // Bedrock CMI wyladowuje model po ~5 min bezczynnosci, wiec 4 min zapewnia warm.
+  setInterval(async () => {
+    try {
+      await pingBedrock();
+      if (warmState.bedrock.status !== 'warm') {
+        warmState.bedrock.status = 'warm';
+        warmState.bedrock.readyAt = Date.now();
+        console.log('✅ Bedrock keep-alive: model warm');
+      }
+    } catch (err) {
+      if (warmState.bedrock.status === 'warm') {
+        console.warn('⚠️ Bedrock keep-alive failed, model moze byc cold:', err?.message);
+        warmState.bedrock.status = 'cold';
+      }
+    }
+  }, 4 * 60 * 1000);
 })();
 // 👆
 
@@ -212,6 +284,26 @@ app.get('/health', (req, res) => {
       active: bot_active,
       status: bot_status,
       pid: bot_pid,
+    },
+  });
+});
+
+// Status endpoint dla UI - mowi czy ciezkie zaleznosci sa juz warm.
+// Frontend pokaze banner "model sie rozkreca" podczas warming.
+app.get('/api/status', (req, res) => {
+  const elapsed = (s) => s.startedAt && !s.readyAt
+    ? Math.round((Date.now() - s.startedAt) / 1000)
+    : null;
+  res.json({
+    lean: {
+      status: warmState.lean.status,
+      durationSec: warmState.lean.durationSec,
+      elapsedSec: elapsed(warmState.lean),
+    },
+    bedrock: {
+      status: warmState.bedrock.status,
+      durationSec: warmState.bedrock.durationSec,
+      elapsedSec: elapsed(warmState.bedrock),
     },
   });
 });

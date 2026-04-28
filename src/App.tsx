@@ -129,6 +129,34 @@ function App() {
   const [shareStatus, setShareStatus] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
+  // Warm-up status (Bedrock + Lean) — pollujemy /api/status zeby pokazac
+  // banner uzytkownikowi gdy ciezkie zaleznosci sie rozkrecaja po starcie kontenera.
+  type WarmComponent = { status: 'cold' | 'warming' | 'warm' | 'disabled'; durationSec: number | null; elapsedSec: number | null };
+  const [warmStatus, setWarmStatus] = useState<{ lean: WarmComponent; bedrock: WarmComponent } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setWarmStatus(data);
+      } catch {
+        // ignore network errors
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 15000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
+  const showWarmupBanner = warmStatus && (
+    warmStatus.bedrock.status === 'warming' ||
+    warmStatus.bedrock.status === 'cold' && !warmStatus.bedrock.durationSec ||
+    warmStatus.lean.status === 'warming'
+  );
+
   // Apply theme on mount and when it changes
   useEffect(() => {
     applyTheme(theme);
@@ -676,6 +704,24 @@ function App() {
 
   return (
     <div className="app-container">
+      {showWarmupBanner && (
+        <div style={{
+          background: 'linear-gradient(90deg, #fef3c7 0%, #fde68a 100%)',
+          color: '#78350f',
+          padding: '10px 16px',
+          fontSize: '14px',
+          textAlign: 'center',
+          borderBottom: '1px solid #f59e0b',
+          lineHeight: 1.4,
+        }}>
+          <strong>⏳ Model się rozkręca</strong>
+          {warmStatus?.bedrock.status === 'warming' && warmStatus.bedrock.elapsedSec != null && (
+            <> ({warmStatus.bedrock.elapsedSec}s)</>
+          )}
+          . Pierwsze zapytanie po dłuższej przerwie może potrwać 5-10 minut.
+          Kolejne będą szybkie. Bedrock CMI ładuje 11B parametrów Bielika do GPU.
+        </div>
+      )}
       <header className="app-header">
         <h1>
           <svg viewBox="0 0 32 32" width="28" height="28" style={{ flexShrink: 0 }}>

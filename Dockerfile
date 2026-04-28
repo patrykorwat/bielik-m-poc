@@ -71,13 +71,22 @@ COPY bedrock-bielik/llm-client.mjs ./bedrock-bielik/llm-client.mjs
 # RAG Python environment
 COPY rag_service ./rag_service
 COPY requirements.txt ./
-## NEW: Added --no-cache-dir to prevent pip from storing useless zip files
 RUN python3 -m venv rag_service/venv \
     && rag_service/venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# MCP SymPy server venv (sympy must be importable from mcp-sympy-server/venv/bin/python3)
+# MCP SymPy server venv (sympy must be importable z mcp-sympy-server/venv/bin/python3)
 RUN python3 -m venv mcp-sympy-server/venv \
     && mcp-sympy-server/venv/bin/pip install --no-cache-dir sympy
+
+# Slim Python venvs: usuwamy testy paczek (numpy/scipy/sklearn pakuja kompletne
+# suity testowe, ~500 MB w sumie), bytecode cache, dist-info docs.
+RUN find /app -type d \( \
+        -name 'tests' -o -name 'test' -o -name '__pycache__' \
+    \) -prune -exec rm -rf {} + 2>/dev/null || true \
+    && find /app -type d -name '*.dist-info' \
+        -exec sh -c 'rm -rf "$1"/RECORD "$1"/INSTALLER "$1"/REQUESTED' _ {} \; 2>/dev/null || true \
+    && find /app -name '*.pyc' -delete 2>/dev/null || true \
+    && find /app -name '*.pyo' -delete 2>/dev/null || true
 
 # Start entrypoint: launch Datadog agent then the app
 COPY deploy/docker-entrypoint.sh /docker-entrypoint.sh
