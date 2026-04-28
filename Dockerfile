@@ -18,6 +18,7 @@ RUN curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init
 COPY lean-project /app/lean-project
 WORKDIR /app/lean-project
 RUN elan toolchain install $(cat lean-toolchain) \
+    && elan default $(cat lean-toolchain) \
     && lean --version \
     && lake update \
     && lake exe cache get \

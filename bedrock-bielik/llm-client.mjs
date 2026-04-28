@@ -75,7 +75,35 @@ class BedrockChatShim {
       body,
     });
 
-    const resp = await this.client.send(cmd);
+    // Bedrock CMI cold start: po ~5 min bezczynnosci model jest wyladowany,
+    // pierwszy invoke zwraca ModelNotReadyException (HTTP 429). Cold start
+    // potrafi trwac do 5 min przy pierwszym uruchomieniu po dlugim idle.
+    // Retry'ujemy 10 razy ze wzrastajacym backoffem do ~5 minut total.
+    console.log('[bedrock] invoke start, modelArn=' + this.modelArn);
+    let resp;
+    const maxAttempts = 10;
+    const delays = [3000, 5000, 8000, 12000, 18000, 25000, 35000, 50000, 60000, 60000];
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        resp = await this.client.send(cmd);
+        if (attempt > 0) {
+          console.log(`[bedrock] invoke OK po ${attempt + 1} probach`);
+        }
+        break;
+      } catch (err) {
+        const isColdStart = err?.name === 'ModelNotReadyException'
+          || err?.$metadata?.httpStatusCode === 429;
+        console.log(`[bedrock] attempt ${attempt + 1}/${maxAttempts} blad: name=${err?.name} status=${err?.$metadata?.httpStatusCode} coldStart=${isColdStart}`);
+        if (isColdStart && attempt < maxAttempts - 1) {
+          const delay = delays[attempt];
+          console.log(`[bedrock] ModelNotReady, czekam ${delay}ms i retry`);
+          await new Promise(r => setTimeout(r, delay));
+          continue;
+        }
+        throw err;
+      }
+    }
+
     const text = new TextDecoder('utf-8').decode(resp.body);
     const parsed = JSON.parse(text);
 

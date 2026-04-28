@@ -220,7 +220,9 @@ async function leanVerify(code) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code }),
-    signal: AbortSignal.timeout(65000),
+    // import Mathlib + nlinarith potrafi trwac 60-120s zanim Lean zwroci wynik.
+    // 65s bylo za malo, dajemy 3 minuty.
+    signal: AbortSignal.timeout(180000),
   });
   const data = await res.json();
   // Normalize response to match what the pipeline expects
