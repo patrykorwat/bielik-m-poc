@@ -157,16 +157,27 @@ async function waitForLean(maxAttempts = 10, intervalMs = 5000) {
   const isLeanReady = await waitForLean();
   
   if (isLeanReady) {
-    console.log("🔥 Pre-warming Lean toolchain in the background...");
+    console.log("🔥 Pre-warming Lean toolchain + Mathlib.Tactic (loaduje olean files do OS cache)...");
     try {
-      // Send a microscopic, valid Lean program to force the toolchain to boot
-      // and unpack the Mathlib caches into RAM immediately.
+      // Wczytujemy import Mathlib.Tactic w tle zaraz po starcie kontenera.
+      // Pierwszy realny request uzytkownika juz nie ladowal bedzie olean files
+      // z dysku (sa w OS file cache po pre-warm).
+      const prewarmCode = [
+        'import Mathlib.Tactic',
+        '',
+        'theorem _prewarm (x : Real) : x^2 - 4 * x + 5 ≥ 1 := by',
+        '  nlinarith [sq_nonneg (x - 2)]'
+      ].join('\n');
+
+      const prewarmStart = Date.now();
       await fetch(`http://127.0.0.1:${LEAN_PORT}/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: "def prewarm := true" })
+        body: JSON.stringify({ code: prewarmCode }),
+        signal: AbortSignal.timeout(360000),
       });
-      console.log("✅ Lean pre-warming complete! Ready for instant user queries.");
+      const prewarmSec = Math.round((Date.now() - prewarmStart) / 1000);
+      console.log(`✅ Lean pre-warming z Mathlib.Tactic gotowe w ${prewarmSec}s.`);
     } catch (err) {
       console.error("⚠️ Pre-warm ping failed:", err.message);
     }

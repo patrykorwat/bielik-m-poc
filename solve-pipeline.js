@@ -121,7 +121,9 @@ Przetlumacz zadanie na formalny dowod w Lean 4 z biblioteka Mathlib.
 
 ZASADY:
 1. KOMPLETNY, samowystarczalny kod Lean 4. Mathlib JEST DOSTEPNY.
-2. ZAWSZE zaczynaj od: import Mathlib
+2. ZAWSZE zaczynaj od: import Mathlib.Tactic
+   (NIE pisz "import Mathlib" - cala biblioteka ladowalaby kilka minut.
+    "import Mathlib.Tactic" daje wszystkie potrzebne taktyki w 5x krotszym czasie.)
 3. Dla nierownosci wielomianowych: nlinarith [sq_nonneg ...] albo polyrith
 4. Dla rownosci wielomianowych: ring
 5. Dla liczb konkretnych: norm_num
@@ -133,7 +135,7 @@ ZASADY:
 
 PRZYKLAD (nierownosc kwadratowa):
 \`\`\`lean
-import Mathlib
+import Mathlib.Tactic
 
 theorem ex (x : Real) : x^2 - 4 * x + 5 ≥ 1 := by
   nlinarith [sq_nonneg (x - 2)]
@@ -141,7 +143,7 @@ theorem ex (x : Real) : x^2 - 4 * x + 5 ≥ 1 := by
 
 PRZYKLAD (rownosc wielomianowa):
 \`\`\`lean
-import Mathlib
+import Mathlib.Tactic
 
 theorem ex (a b : Real) : (a + b)^2 = a^2 + 2 * a * b + b^2 := by
   ring
@@ -149,7 +151,7 @@ theorem ex (a b : Real) : (a + b)^2 = a^2 + 2 * a * b + b^2 := by
 
 PRZYKLAD (podzielnosc, liniowa arytmetyka):
 \`\`\`lean
-import Mathlib
+import Mathlib.Tactic
 
 theorem even_plus_even (a b : Int) (ha : a % 2 = 0) (hb : b % 2 = 0) :
     (a + b) % 2 = 0 := by
@@ -163,7 +165,7 @@ STRATEGIA:
    - rownosci algebraiczne -> ring
    - arytmetyka liniowa Int/Nat -> omega
    - konkretne liczby -> norm_num
-3. ZAWSZE zaczynaj od: import Mathlib
+3. ZAWSZE zaczynaj od: import Mathlib.Tactic
 `;
 
 function extractLeanCode(response) {
@@ -220,9 +222,10 @@ async function leanVerify(code) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code }),
-    // import Mathlib + nlinarith potrafi trwac 60-120s zanim Lean zwroci wynik.
-    // 65s bylo za malo, dajemy 3 minuty.
-    signal: AbortSignal.timeout(180000),
+    // import Mathlib (caly) + nlinarith na 4 GB / 2 vCPU Lightsailu trwa
+    // 3-5 min ze swap'owaniem. Damy 6 min zapasu. W idealu prompt zmusza
+    // Bielika do `import Mathlib.Tactic` (tylko taktyki, ~10x mniejszy load).
+    signal: AbortSignal.timeout(360000),
   });
   const data = await res.json();
   // Normalize response to match what the pipeline expects
