@@ -238,23 +238,6 @@ const warmState = {
     warmState.bedrock.status = 'cold';
   }
 
-  // Keep-alive co 4 min zeby model nie wpadal w idle podczas demo.
-  // Bedrock CMI wyladowuje model po ~5 min bezczynnosci, wiec 4 min zapewnia warm.
-  setInterval(async () => {
-    try {
-      await pingBedrock();
-      if (warmState.bedrock.status !== 'warm') {
-        warmState.bedrock.status = 'warm';
-        warmState.bedrock.readyAt = Date.now();
-        console.log('✅ Bedrock keep-alive: model warm');
-      }
-    } catch (err) {
-      if (warmState.bedrock.status === 'warm') {
-        console.warn('⚠️ Bedrock keep-alive failed, model moze byc cold:', err?.message);
-        warmState.bedrock.status = 'cold';
-      }
-    }
-  }, 4 * 60 * 1000);
 })();
 // 👆
 
