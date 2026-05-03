@@ -704,17 +704,6 @@ function App() {
 
   return (
     <div className="app-container">
-      <div style={{
-        background: 'linear-gradient(90deg, #fee2e2 0%, #fecaca 100%)',
-        color: '#991b1b',
-        padding: '12px 16px',
-        fontSize: '14px',
-        textAlign: 'center',
-        borderBottom: '1px solid #f87171',
-        lineHeight: 1.5,
-      }}>
-        <strong>⚠️ Usługa czasowo wyłączona</strong> — z powodu zwiększonych kosztów AWS Bedrock wstrzymujemy działanie serwisu do odwołania.
-      </div>
       {showWarmupBanner && (
         <div style={{
           background: 'linear-gradient(90deg, #fef3c7 0%, #fde68a 100%)',
