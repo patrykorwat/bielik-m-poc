@@ -65,8 +65,9 @@ COPY package.json heroku-start.js solve-pipeline.js mcp-proxy-server.js \
 COPY docs ./docs
 COPY datasets ./datasets
 
-# Bedrock client shim (uzywany przez solve-pipeline.js gdy BEDROCK_MODEL_ARN ustawione)
-COPY bedrock-bielik/llm-client.mjs ./bedrock-bielik/llm-client.mjs
+# Bedrock client shim plus shared state (oba uzywane przez solve-pipeline.js
+# i heroku-start.js gdy BEDROCK_MODEL_ARN ustawione)
+COPY bedrock-bielik/llm-client.mjs bedrock-bielik/state.mjs ./bedrock-bielik/
 
 # RAG Python environment
 COPY rag_service ./rag_service

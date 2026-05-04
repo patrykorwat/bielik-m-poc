@@ -130,9 +130,18 @@ function App() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // Warm-up status (Bedrock + Lean) — pollujemy /api/status zeby pokazac
-  // banner uzytkownikowi gdy ciezkie zaleznosci sie rozkrecaja po starcie kontenera.
-  type WarmComponent = { status: 'cold' | 'warming' | 'warm' | 'disabled'; durationSec: number | null; elapsedSec: number | null };
-  const [warmStatus, setWarmStatus] = useState<{ lean: WarmComponent; bedrock: WarmComponent } | null>(null);
+  // banner uzytkownikowi gdy ciezkie zaleznosci sie rozkrecaja.
+  // Bedrock status liczony z faktow: warming gdy retry trwa, warm gdy ostatni
+  // success <4 min temu, cold inaczej.
+  type LeanComponent = { status: 'cold' | 'warming' | 'warm' | 'disabled'; durationSec: number | null; elapsedSec: number | null };
+  type BedrockComponent = {
+    status: 'cold' | 'warming' | 'warm' | 'disabled';
+    warmingForSec: number | null;
+    sinceLastSuccessSec: number | null;
+    totalInvokes?: number;
+    totalRetries?: number;
+  };
+  const [warmStatus, setWarmStatus] = useState<{ lean: LeanComponent; bedrock: BedrockComponent } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,13 +156,14 @@ function App() {
       }
     };
     poll();
-    const interval = setInterval(poll, 15000);
+    // 5s polling zeby banner pokazal sie szybko gdy user wysle zapytanie i
+    // model jest cold (cold start trwa do 5 min, chcemy info od razu)
+    const interval = setInterval(poll, 5000);
     return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
   const showWarmupBanner = warmStatus && (
     warmStatus.bedrock.status === 'warming' ||
-    warmStatus.bedrock.status === 'cold' && !warmStatus.bedrock.durationSec ||
     warmStatus.lean.status === 'warming'
   );
 
@@ -715,8 +725,8 @@ function App() {
           lineHeight: 1.4,
         }}>
           <strong>⏳ Model się rozkręca</strong>
-          {warmStatus?.bedrock.status === 'warming' && warmStatus.bedrock.elapsedSec != null && (
-            <> ({warmStatus.bedrock.elapsedSec}s)</>
+          {warmStatus?.bedrock.status === 'warming' && warmStatus.bedrock.warmingForSec != null && (
+            <> ({warmStatus.bedrock.warmingForSec}s)</>
           )}
           . Pierwsze zapytanie po dłuższej przerwie może potrwać 5-10 minut.
           Kolejne będą szybkie. Bedrock CMI ładuje 11B parametrów Bielika do GPU.

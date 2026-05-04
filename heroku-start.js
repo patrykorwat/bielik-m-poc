@@ -273,10 +273,15 @@ app.get('/health', (req, res) => {
 
 // Status endpoint dla UI - mowi czy ciezkie zaleznosci sa juz warm.
 // Frontend pokaze banner "model sie rozkreca" podczas warming.
+// Bedrock status liczony z FAKTOW (kiedy ostatni success, czy trwa retry),
+// nie ze stale stringa - patrz bedrock-bielik/state.mjs.
+const { getBedrockEffectiveStatus } = await import('./bedrock-bielik/state.mjs');
+
 app.get('/api/status', (req, res) => {
   const elapsed = (s) => s.startedAt && !s.readyAt
     ? Math.round((Date.now() - s.startedAt) / 1000)
     : null;
+  const bedrock = getBedrockEffectiveStatus();
   res.json({
     lean: {
       status: warmState.lean.status,
@@ -284,9 +289,11 @@ app.get('/api/status', (req, res) => {
       elapsedSec: elapsed(warmState.lean),
     },
     bedrock: {
-      status: warmState.bedrock.status,
-      durationSec: warmState.bedrock.durationSec,
-      elapsedSec: elapsed(warmState.bedrock),
+      status: bedrock.status,
+      warmingForSec: bedrock.warmingForSec ?? null,
+      sinceLastSuccessSec: bedrock.sinceSec ?? null,
+      totalInvokes: bedrock.totalInvokes,
+      totalRetries: bedrock.totalRetries,
     },
   });
 });

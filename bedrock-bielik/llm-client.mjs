@@ -15,6 +15,12 @@ import {
   InvokeModelCommand,
 } from '@aws-sdk/client-bedrock-runtime';
 import { randomUUID } from 'node:crypto';
+import {
+  markBedrockAttempt,
+  markBedrockColdStart,
+  markBedrockSuccess,
+  markBedrockFailure,
+} from './state.mjs';
 
 function messagesToChatML(messages) {
   const parts = [];
@@ -80,12 +86,14 @@ class BedrockChatShim {
     // potrafi trwac do 5 min przy pierwszym uruchomieniu po dlugim idle.
     // Retry'ujemy 10 razy ze wzrastajacym backoffem do ~5 minut total.
     console.log('[bedrock] invoke start, modelArn=' + this.modelArn);
+    markBedrockAttempt();
     let resp;
     const maxAttempts = 10;
     const delays = [3000, 5000, 8000, 12000, 18000, 25000, 35000, 50000, 60000, 60000];
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         resp = await this.client.send(cmd);
+        markBedrockSuccess();
         if (attempt > 0) {
           console.log(`[bedrock] invoke OK po ${attempt + 1} probach`);
         }
@@ -95,11 +103,13 @@ class BedrockChatShim {
           || err?.$metadata?.httpStatusCode === 429;
         console.log(`[bedrock] attempt ${attempt + 1}/${maxAttempts} blad: name=${err?.name} status=${err?.$metadata?.httpStatusCode} coldStart=${isColdStart}`);
         if (isColdStart && attempt < maxAttempts - 1) {
+          markBedrockColdStart();
           const delay = delays[attempt];
           console.log(`[bedrock] ModelNotReady, czekam ${delay}ms i retry`);
           await new Promise(r => setTimeout(r, delay));
           continue;
         }
+        markBedrockFailure();
         throw err;
       }
     }
