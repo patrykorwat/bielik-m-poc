@@ -33,47 +33,11 @@
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
-
-      // Default: deny analytics and ads until consent is given
-      gtag('consent', 'default', {
-        'analytics_storage': 'denied',
-        'ad_storage': 'denied',
-        'ad_user_data': 'denied',
-        'ad_personalization': 'denied',
-        'wait_for_update': 1500
-      });
-
-      // If user already gave consent via our fallback banner, apply it immediately
-      (function(){
-        var consent = localStorage.getItem('formulo-cookie-consent');
-        if (consent === 'all') {
-          gtag('consent', 'update', {
-            'analytics_storage': 'granted',
-            'ad_storage': 'granted',
-            'ad_user_data': 'granted',
-            'ad_personalization': 'granted'
-          });
-        }
-      })();
-
       gtag('js', new Date());
       gtag('config', 'G-3H9NVJWHJQ');
-
-      // Called by our fallback CookieConsent component
-      window.formuloGrantConsent = function(level) {
-        localStorage.setItem('formulo-cookie-consent', level);
-        if (level === 'all') {
-          gtag('consent', 'update', {
-            'analytics_storage': 'granted',
-            'ad_storage': 'granted',
-            'ad_user_data': 'granted',
-            'ad_personalization': 'granted'
-          });
-        }
-      };
     </script>
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1616606963057752" crossorigin="anonymous"></script>
+    <!-- Umami Analytics (self-hosted, cookieless) -->
+    <script defer src="https://stats.radoskop.pl/script.js" data-website-id="12e65e1e-5181-495b-9e91-4274a397efe8"></script>
   </head>
   <body>
     <div id="root"></div>

@@ -61,6 +61,7 @@ function layout(title, description, canonical, body) {
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Formulo">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.css">
+  <script defer src="https://stats.radoskop.pl/script.js" data-website-id="12e65e1e-5181-495b-9e91-4274a397efe8"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.7; color: #1a1a2e; background: #f8f9fc; }

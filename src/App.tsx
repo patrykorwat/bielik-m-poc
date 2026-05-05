@@ -4,7 +4,6 @@ import { ChatHistoryService, ChatSession } from './services/chatHistoryService';
 import { ChatHistorySidebar } from './components/ChatHistorySidebar';
 import { MessageContent } from './components/MessageContent';
 import { FormulaReference } from './components/FormulaReference';
-import { CookieConsent } from './components/CookieConsent';
 import DailyChallenge from './components/DailyChallenge';
 import { QuizMode } from './components/QuizMode';
 import ImageUpload from './components/ImageUpload';
@@ -1180,7 +1179,6 @@ function App() {
           onClose={() => setShowHistory(false)}
         />
       )}
-      <CookieConsent />
     </div>
   );
 }
