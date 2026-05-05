@@ -392,9 +392,7 @@ body::after {
 }
 
 .app-header {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--blur));
-  -webkit-backdrop-filter: blur(var(--blur));
+  background: transparent;
   border: 1px solid var(--glass-border);
   padding: 16px 24px;
   border-radius: var(--radius) var(--radius) 0 0;
@@ -404,6 +402,22 @@ body::after {
   flex-wrap: wrap;
   gap: 12px;
   flex-shrink: 0;
+  position: relative;
+  isolation: isolate;
+}
+
+/* Glass effect on a pseudo-element so the header itself does NOT become a
+   containing block for position:fixed children (the bottom tab bar). */
+.app-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
 }
 
 .app-header h1 {
@@ -1207,6 +1221,9 @@ body::after {
     flex-wrap: nowrap;
     align-items: center;
     justify-content: space-between;
+  }
+
+  .app-header::before {
     background: var(--glass-bg-strong);
   }
 

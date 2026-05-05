@@ -183,6 +183,17 @@ function App() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  // Track mobile viewport so we can swap UI strings (e.g. shorter placeholder)
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   const navigateTo = (page: 'chat' | 'formulas' | 'quiz' | 'plan' | 'notebook' | 'stats') => {
@@ -1128,7 +1139,7 @@ function App() {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Wpisz zadanie matematyczne... (Enter aby wysłać, Shift+Enter dla nowej linii)"
+            placeholder={isMobile ? "Wpisz zadanie..." : "Wpisz zadanie matematyczne... (Enter aby wysłać, Shift+Enter dla nowej linii)"}
             className="message-input"
             rows={1}
           />

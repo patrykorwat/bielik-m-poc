@@ -138,11 +138,14 @@ const MathKeyboard: React.FC<MathKeyboardProps> = ({ onInsert, textareaRef }) =>
         aria-expanded={isOpen}
       >
         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <text x="3" y="18" fontFamily="Georgia, serif" fontSize="18" fontWeight="bold" fill="currentColor" stroke="none">∑</text>
-          <rect x="14" y="3" width="8" height="6" rx="1" />
-          <rect x="14" y="12" width="8" height="6" rx="1" />
-          <line x1="18" y1="4.5" x2="18" y2="7.5" />
-          <line x1="16.5" y1="6" x2="19.5" y2="6" />
+          <rect x="4" y="3" width="16" height="18" rx="2" />
+          <line x1="7" y1="7" x2="17" y2="7" />
+          <line x1="8" y1="12" x2="8.01" y2="12" />
+          <line x1="12" y1="12" x2="12.01" y2="12" />
+          <line x1="16" y1="12" x2="16.01" y2="12" />
+          <line x1="8" y1="16" x2="8.01" y2="16" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+          <line x1="16" y1="16" x2="16.01" y2="16" />
         </svg>
       </button>
 
