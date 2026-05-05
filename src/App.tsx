@@ -768,26 +768,70 @@ function App() {
             )}
           </button>
           <div className="page-tabs">
-            <button className={`page-tab ${activePage === 'chat' ? 'active' : ''}`} onClick={() => navigateTo('chat')}>
-              Czat
+            <button className={`page-tab ${activePage === 'chat' ? 'active' : ''}`} onClick={() => navigateTo('chat')} title="Czat">
+              <span className="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+              </span>
+              <span className="tab-label">Czat</span>
             </button>
-            <button className={`page-tab ${activePage === 'plan' ? 'active' : ''}`} onClick={() => navigateTo('plan')}>
-              Plan nauki
+            <button className={`page-tab ${activePage === 'plan' ? 'active' : ''}`} onClick={() => navigateTo('plan')} title="Plan nauki">
+              <span className="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <path d="M16 2v4M8 2v4M3 10h18"/>
+                  <path d="m9 16 2 2 4-4"/>
+                </svg>
+              </span>
+              <span className="tab-label">Plan</span>
             </button>
-            <button className={`page-tab ${activePage === 'quiz' ? 'active' : ''}`} onClick={() => navigateTo('quiz')}>
-              Sprawdź się
+            <button className={`page-tab ${activePage === 'quiz' ? 'active' : ''}`} onClick={() => navigateTo('quiz')} title="Sprawdź się">
+              <span className="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <circle cx="12" cy="12" r="6"/>
+                  <circle cx="12" cy="12" r="2"/>
+                </svg>
+              </span>
+              <span className="tab-label">Sprawdź</span>
             </button>
-            <button className={`page-tab ${activePage === 'formulas' ? 'active' : ''}`} onClick={() => navigateTo('formulas')}>
-              Wzory
+            <button className={`page-tab ${activePage === 'formulas' ? 'active' : ''}`} onClick={() => navigateTo('formulas')} title="Wzory">
+              <span className="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 7V5a2 2 0 0 1 2-2h2"/>
+                  <path d="M16 3h2a2 2 0 0 1 2 2v2"/>
+                  <path d="M20 17v2a2 2 0 0 1-2 2h-2"/>
+                  <path d="M8 21H6a2 2 0 0 1-2-2v-2"/>
+                  <path d="M9 9h6"/>
+                  <path d="M9 13h6"/>
+                  <path d="M9 17h4"/>
+                </svg>
+              </span>
+              <span className="tab-label">Wzory</span>
             </button>
             <button className={`page-tab ${activePage === 'notebook' ? 'active' : ''}`} onClick={() => navigateTo('notebook')} title="Notatnik Matematyczny">
-              📒 Notatnik
+              <span className="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+              </span>
+              <span className="tab-label">Notatnik</span>
               {notebookCount > 0 && (
                 <span className="notebook-tab-badge">{notebookCount}</span>
               )}
             </button>
             <button className={`page-tab ${activePage === 'stats' ? 'active' : ''}`} onClick={() => navigateTo('stats')} title="Moje Statystyki">
-              📊 Statystyki
+              <span className="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 3v18h18"/>
+                  <rect x="7" y="12" width="3" height="6" rx="0.5"/>
+                  <rect x="12" y="8" width="3" height="10" rx="0.5"/>
+                  <rect x="17" y="5" width="3" height="13" rx="0.5"/>
+                </svg>
+              </span>
+              <span className="tab-label">Statystyki</span>
             </button>
           </div>
           <GamificationWidget state={gamificationState} compact={true} />
@@ -1093,8 +1137,13 @@ function App() {
             onClick={handleSendMessage}
             disabled={!inputMessage.trim()}
             className="send-button"
+            aria-label="Wyślij"
           >
-            Wyślij
+            <span className="send-button-label">Wyślij</span>
+            <svg className="send-button-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="12" y1="19" x2="12" y2="5"/>
+              <polyline points="5 12 12 5 19 12"/>
+            </svg>
           </button>
         </div>
       </div>

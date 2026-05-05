@@ -467,6 +467,27 @@ body::after {
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.page-tab .tab-icon {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.page-tab .tab-icon svg {
+  display: block;
+}
+
+.page-tab .tab-label {
+  display: inline-block;
 }
 
 .page-tab:hover {
@@ -963,6 +984,14 @@ body::after {
   transform: none;
 }
 
+.send-button-icon {
+  display: none;
+}
+
+.send-button-label {
+  display: inline;
+}
+
 /* ===== TOOL CALLS & RESULTS ===== */
 .tool-calls {
   margin-top: 14px;
@@ -1151,75 +1180,116 @@ body::after {
 /* ===== MOBILE-FIRST RESPONSIVE ===== */
 
 /*
- * Mobile layout strategy:
- *   Row 1: [Logo] .............. [theme toggle] [nowy czat]
- *   Row 2: [Czat | Plan nauki | Sprawdź się | Wzory | ...] (scrollable)
+ * Mobile layout strategy (≤768px):
+ *   Top: compact single-line header [Logo] ............ [theme] [nowy czat]
+ *   Middle: full-bleed content (chat / plan / quiz / etc.)
+ *   Bottom: sticky tab bar with icons + labels (iOS-style)
  *
- * Hidden on mobile: gamification, historia, eksport
- * (historia is accessible from sidebar, eksport is a desktop convenience)
+ * Hidden on mobile: gamification widget, historia, eksport, footer.
  */
 
 @media (max-width: 768px) {
   .app-container {
     padding: 0;
+    /* Reserve space for the sticky bottom tab bar (62px) plus safe-area inset */
+    padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* ---- Header: stacked vertically, two tight rows ---- */
+  /* ---- HEADER: single compact horizontal row ---- */
   .app-header {
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 0;
-    gap: 4px;
-    flex-direction: column;
-    align-items: stretch;
-    position: relative;
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    gap: 8px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--glass-bg-strong);
   }
 
   .app-header h1 {
-    font-size: 16px;
-    padding-right: 100px; /* room for absolute-positioned buttons */
+    font-size: 17px;
+    padding-right: 0;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .app-header h1 svg {
+    width: 26px;
+    height: 26px;
   }
 
   .header-controls {
     display: flex;
     flex-wrap: nowrap;
-    gap: 2px;
-    width: 100%;
+    gap: 6px;
+    width: auto;
     align-items: center;
     overflow: visible;
+    flex-shrink: 0;
   }
 
-  /* Theme toggle: absolute, top-right, same row as logo */
+  /* Theme toggle: inline icon button */
   .theme-toggle {
-    position: absolute;
-    right: 90px;
-    top: 6px;
-    padding: 4px 6px;
-    z-index: 2;
+    position: static;
+    padding: 7px 9px;
+    font-size: 14px;
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .theme-toggle:hover {
+    background: var(--glass-bg-light);
   }
 
   .theme-toggle svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 
-  /* New chat button: absolute, top-right corner */
+  /* "Nowy czat" button: pill, slightly accented */
   .clear-button {
-    position: absolute;
-    right: 10px;
-    top: 4px;
-    padding: 4px 10px;
-    font-size: 11px;
-    z-index: 2;
+    position: static;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 999px;
   }
 
-  /* Page tabs: full-width scrollable strip */
+  /* Hide non-essential header controls on mobile */
+  .header-controls .gamification-widget,
+  .header-controls .gamification-widget.compact,
+  .history-button,
+  .export-button {
+    display: none;
+  }
+
+  /* ---- BOTTOM TAB BAR (was: page-tabs) ---- */
   .page-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
     width: 100%;
+    display: flex;
+    justify-content: space-around;
+    gap: 0;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    border-top: 1px solid var(--glass-border);
+    border-radius: 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    flex-shrink: 0;
-    padding: 2px;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
   }
 
   .page-tabs::-webkit-scrollbar {
@@ -1227,67 +1297,144 @@ body::after {
   }
 
   .page-tab {
-    padding: 5px 8px;
-    font-size: 11px;
-    flex-shrink: 0;
-  }
-
-  /* Hide non-essential controls on mobile */
-  .header-controls .gamification-widget,
-  .header-controls .gamification-widget.compact {
-    display: none;
-  }
-
-  .history-button {
-    display: none;
-  }
-
-  .export-button {
-    display: none;
-  }
-
-  /* ---- Footer: single compact line ---- */
-  .app-footer {
-    padding: 6px 10px;
-    gap: 6px;
+    flex: 1 1 0;
+    min-width: 56px;
+    padding: 6px 4px;
     font-size: 10px;
-    margin-top: 0;
+    font-weight: 600;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 12px;
+    color: var(--text-muted);
+    line-height: 1.1;
+    background: transparent;
+    transition: color 0.15s, background 0.15s, transform 0.1s;
   }
 
-  .app-footer .footer-legal {
+  .page-tab .tab-icon {
+    display: inline-flex;
+    width: 22px;
+    height: 22px;
+    color: inherit;
+  }
+
+  .page-tab .tab-label {
+    font-size: 10px;
+    letter-spacing: 0.1px;
+    white-space: nowrap;
+  }
+
+  .page-tab:hover {
+    color: var(--text-secondary);
+    background: transparent;
+  }
+
+  /* On mobile use a tinted "active" state instead of full gradient */
+  .page-tab.active {
+    background: transparent;
+    color: var(--primary);
+  }
+
+  .page-tab.active .tab-icon {
+    color: var(--primary);
+    transform: translateY(-1px);
+  }
+
+  .page-tab:active {
+    transform: scale(0.96);
+  }
+
+  /* Move the notebook badge to the corner of the icon */
+  .page-tab .notebook-tab-badge {
+    position: absolute;
+    top: 2px;
+    right: 50%;
+    transform: translateX(14px);
+    margin-left: 0;
+    min-width: 16px;
+    height: 16px;
+    font-size: 9px;
+  }
+
+  /* ---- FOOTER: hidden on mobile (saves space) ---- */
+  .app-footer {
     display: none;
   }
 
-  .app-footer .github-link {
-    display: none;
+  /* ---- CHAT CONTAINER ---- */
+  .chat-container {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
 
-  /* ---- Content area ---- */
+  /* ---- MESSAGES ---- */
   .message {
-    max-width: 95%;
-    padding: 10px 12px;
+    max-width: 92%;
+    padding: 12px 14px;
+    border-radius: 18px;
+  }
+
+  .message.user {
+    border-bottom-right-radius: 6px;
+  }
+
+  .message.assistant {
+    border-bottom-left-radius: 6px;
   }
 
   .messages-container {
-    padding: 8px;
-    gap: 6px;
+    padding: 12px 10px 16px;
+    gap: 10px;
   }
 
+  /* ---- INPUT AREA: compact, with rounded send button ---- */
   .input-container {
-    padding: 6px 8px;
-    gap: 4px;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+    align-items: flex-end;
+    background: var(--input-area-bg);
   }
 
   .message-input {
     font-size: 16px; /* prevents iOS zoom on focus */
-    padding: 8px 10px;
+    padding: 10px 14px;
+    border-radius: 22px;
+    min-height: 42px;
+    line-height: 1.4;
   }
 
   .send-button {
-    padding: 8px 14px;
-    font-size: 13px;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(102, 126, 234, 0.35);
   }
 
+  .send-button-label {
+    display: none;
+  }
+
+  .send-button-icon {
+    display: block;
+  }
+
+  /* Match the math keyboard / image upload buttons to send-button height */
+  .input-container .math-keyboard-toggle,
+  .input-container .image-upload-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+  }
+
+  /* ---- EMPTY STATE & EXAMPLE CHIPS ---- */
   .empty-state {
     padding: 8px 6px;
   }
@@ -1314,6 +1461,7 @@ body::after {
     padding: 14px;
   }
 
+  /* ---- CONFIG SCREEN ---- */
   .config-card {
     padding: 20px 16px;
     border-radius: var(--radius);
@@ -1323,6 +1471,7 @@ body::after {
     font-size: 20px;
   }
 
+  /* ---- TOOL CALLS / RESULTS ---- */
   .tool-calls,
   .tool-results {
     padding: 8px 10px;
@@ -1333,47 +1482,66 @@ body::after {
   }
 }
 
-/* Extra-small screens (iPhone SE, old phones ~320px) */
+/* Extra-small screens (iPhone SE, old phones ~400px) */
 @media (max-width: 400px) {
   .app-header {
-    padding: 4px 8px;
-  }
-
-  .app-header h1 {
-    font-size: 14px;
-    padding-right: 80px;
-  }
-
-  .page-tab {
-    padding: 4px 6px;
-    font-size: 10px;
-  }
-
-  .clear-button {
-    font-size: 10px;
-    padding: 3px 8px;
-  }
-
-  .theme-toggle {
-    right: 72px;
-  }
-
-  .input-container {
-    padding: 4px 6px;
-  }
-
-  .send-button {
     padding: 6px 10px;
-    font-size: 12px;
-  }
-
-  .input-container {
-    padding: 6px;
     gap: 4px;
   }
 
-  .send-button {
-    padding: 8px 12px;
-    font-size: 12px;
+  .app-header h1 {
+    font-size: 15px;
+    gap: 6px;
+  }
+
+  .app-header h1 svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .clear-button {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .theme-toggle {
+    padding: 5px 7px;
+  }
+
+  .theme-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .page-tab {
+    padding: 5px 2px;
+    min-width: 50px;
+    gap: 2px;
+  }
+
+  .page-tab .tab-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .page-tab .tab-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .page-tab .tab-label {
+    font-size: 9px;
+  }
+
+  .input-container {
+    padding: 8px;
+    gap: 4px;
+  }
+
+  .send-button,
+  .input-container .math-keyboard-toggle,
+  .input-container .image-upload-btn {
+    width: 40px;
+    height: 40px;
   }
 }

@@ -140,13 +140,21 @@
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
+  /* Sit above input + bottom tab bar (nav ≈62px + input ≈62px + gap) */
   .math-keyboard-panel {
     position: fixed;
-    bottom: 70px;
+    bottom: calc(132px + env(safe-area-inset-bottom, 0px));
     left: 8px;
     right: 8px;
     min-width: unset;
     max-width: unset;
+  }
+
+  /* Match round buttons in the input bar */
+  .math-keyboard-toggle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
   }
 
   .math-keyboard-symbols {
