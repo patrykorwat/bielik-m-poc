@@ -38,9 +38,70 @@
     </script>
     <!-- Umami Analytics (self-hosted, cookieless) -->
     <script defer src="https://stats.radoskop.pl/script.js" data-website-id="12e65e1e-5181-495b-9e91-4274a397efe8"></script>
+
+    <!-- Critical CSS: pokazuje hero zanim załaduje się bundle JS.
+         Ta sekcja zostanie podmieniona przez React po hydracji. -->
+    <style>
+      html, body { margin: 0; padding: 0; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; background: #0f172a; color: #f8fafc; }
+      [data-theme="light"] body { background: #f8f9fc; color: #1a1a2e; }
+      .ssr-shell { min-height: 100vh; display: flex; flex-direction: column; }
+      .ssr-header { padding: 14px 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(148,163,184,0.15); }
+      .ssr-logo { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg,#667eea,#764ba2); display: inline-block; }
+      .ssr-brand { font-weight: 700; font-size: 18px; letter-spacing: -0.2px; }
+      .ssr-main { flex: 1; max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; width: 100%; box-sizing: border-box; }
+      .ssr-hero h1 { font-size: clamp(26px, 5vw, 38px); line-height: 1.15; margin: 0 0 14px; letter-spacing: -0.5px; }
+      .ssr-hero p { font-size: clamp(15px, 2.4vw, 18px); line-height: 1.55; margin: 0 0 20px; opacity: 0.85; }
+      .ssr-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+      .ssr-pill { font-size: 13px; padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(102,126,234,0.4); background: rgba(102,126,234,0.08); }
+      .ssr-cta-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 24px; }
+      .ssr-cta { padding: 14px 14px; border-radius: 10px; border: 1px solid rgba(148,163,184,0.25); background: rgba(255,255,255,0.04); font-size: 14px; text-align: left; cursor: pointer; color: inherit; font-family: inherit; }
+      [data-theme="light"] .ssr-cta { background: #fff; border-color: #e2e8f0; }
+      .ssr-loader { margin-top: 20px; font-size: 13px; opacity: 0.55; display: flex; align-items: center; gap: 10px; }
+      .ssr-spin { width: 14px; height: 14px; border: 2px solid rgba(102,126,234,0.3); border-top-color: #667eea; border-radius: 50%; animation: ssr-rot 0.8s linear infinite; }
+      @keyframes ssr-rot { to { transform: rotate(360deg); } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="ssr-shell">
+        <div class="ssr-header">
+          <span class="ssr-logo" aria-hidden="true"></span>
+          <span class="ssr-brand">Formulo</span>
+        </div>
+        <main class="ssr-main">
+          <section class="ssr-hero">
+            <h1>Rozwiąż zadanie maturalne z matematyki krok po kroku</h1>
+            <p>Wpisz lub wklej dowolne zadanie. AI pokaże rozwiązanie po polsku, z każdym krokiem i wzorem. Bez logowania, bez opłat.</p>
+            <div class="ssr-pills">
+              <span class="ssr-pill">Matura podstawowa i rozszerzona</span>
+              <span class="ssr-pill">Bez logowania</span>
+              <span class="ssr-pill">Krok po kroku</span>
+            </div>
+            <div class="ssr-cta-row">
+              <button class="ssr-cta" type="button" data-q="Rozwiąż x² - 5x + 6 = 0">Równanie kwadratowe<br><small style="opacity:0.6">x² &minus; 5x + 6 = 0</small></button>
+              <button class="ssr-cta" type="button" data-q="Pochodna sin(x)">Pochodna<br><small style="opacity:0.6">d/dx sin(x)</small></button>
+              <button class="ssr-cta" type="button" data-q="log₂(8)">Logarytm<br><small style="opacity:0.6">log₂(8)</small></button>
+              <button class="ssr-cta" type="button" data-q="Średnia ważona z 12 i 18 z wagami 2 i 3">Średnia ważona<br><small style="opacity:0.6">12, 18 z wagami 2, 3</small></button>
+            </div>
+            <div class="ssr-loader"><span class="ssr-spin" aria-hidden="true"></span> Wczytuję pełną wersję aplikacji...</div>
+          </section>
+        </main>
+      </div>
+    </div>
+    <script>
+      // Po kliknięciu w przykład w SSR shellu zapamiętaj zapytanie w URL,
+      // tak żeby React po hydracji od razu uruchomił to zapytanie.
+      document.addEventListener('click', function (e) {
+        var t = e.target.closest && e.target.closest('.ssr-cta');
+        if (!t) return;
+        var q = t.getAttribute('data-q');
+        if (!q) return;
+        var url = new URL(window.location.href);
+        url.searchParams.set('q', q);
+        window.location.replace(url.toString());
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

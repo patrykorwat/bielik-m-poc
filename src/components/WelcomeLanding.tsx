@@ -64,10 +64,10 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
   dailyChallengeSlot,
 }) => {
   const examplePrompts = [
-    'x² - 5x + 6 = 0',
+    'Rozwiąż x² - 5x + 6 = 0',
     'Pochodna sin(x)',
     'log₂(8)',
-    'Średnia ważona',
+    'Średnia ważona z 12 i 18 z wagami 2 i 3',
     'Całka ∫x² dx',
     'Kombinacje C(10,3)',
   ];
@@ -110,10 +110,10 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
       <section className="hero-section">
         <div className="hero-content">
           <h1 className="hero-headline">
-            Darmowy asystent matematyczny po polsku
+            Rozwiąż zadanie maturalne z matematyki krok po kroku
           </h1>
           <p className="hero-subheadline">
-            Rozwiązuje zadania krok po kroku. Od matury podstawowej po studia.
+            Wpisz lub wklej dowolne zadanie. AI pokaże rozwiązanie po polsku, z każdym krokiem i wzorem. Bez logowania, bez opłat.
           </p>
 
           {/* Feature Pills */}
@@ -122,21 +122,38 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
               <div className="pill-icon">
                 <StepsIcon />
               </div>
-              <span>Krok po kroku</span>
+              <span>Matura podstawowa i rozszerzona</span>
             </div>
             <div className="feature-pill">
               <div className="pill-icon">
                 <CheckmarkIcon />
               </div>
-              <span>Weryfikacja SymPy</span>
+              <span>Bez logowania</span>
             </div>
             <div className="feature-pill">
               <div className="pill-icon">
                 <ChartIcon />
               </div>
-              <span>Diagramy i wykresy</span>
+              <span>Krok po kroku</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Example Prompts Section: pierwsza interakcja above the fold,
+          żeby użytkownik klikał od razu i nie odbijał się ze strony. */}
+      <section className="examples-section">
+        <h2 className="section-title">Kliknij przykład żeby zacząć</h2>
+        <div className="examples-grid">
+          {examplePrompts.map((prompt) => (
+            <button
+              key={prompt}
+              className="example-chip"
+              onClick={() => onSubmitQuery(prompt)}
+            >
+              {prompt}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -167,22 +184,6 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
               );
             })}
           </div>
-        </div>
-      </section>
-
-      {/* Example Prompts Section */}
-      <section className="examples-section">
-        <h2 className="section-title">Spróbuj przykładów</h2>
-        <div className="examples-grid">
-          {examplePrompts.map((prompt) => (
-            <button
-              key={prompt}
-              className="example-chip"
-              onClick={() => onSubmitQuery(prompt)}
-            >
-              {prompt}
-            </button>
-          ))}
         </div>
       </section>
 

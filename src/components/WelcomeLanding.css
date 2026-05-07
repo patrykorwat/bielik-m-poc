@@ -1,17 +1,17 @@
 .welcome-landing {
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 32px;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 48px 24px;
+  padding: 24px 24px 48px;
 }
 
 /* ===== HERO SECTION ===== */
 .hero-section {
   position: relative;
-  padding: 64px 40px;
+  padding: 36px 32px;
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
