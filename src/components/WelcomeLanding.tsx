@@ -64,7 +64,7 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
   dailyChallengeSlot,
 }) => {
   const examplePrompts = [
-    'Rozwiąż x² - 5x + 6 = 0',
+    'Wytłumacz x² - 5x + 6 = 0',
     'Pochodna sin(x)',
     'log₂(8)',
     'Średnia ważona z 12 i 18 z wagami 2 i 3',
@@ -81,15 +81,15 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
     },
     {
       num: '2',
-      title: 'AI analizuje i oblicza',
+      title: 'AI analizuje i tłumaczy',
       icon: BrainIcon,
-      description: 'System przetwarza dane i znajduje rozwiązanie',
+      description: 'System rozkłada zadanie i przygotowuje wyjaśnienie',
     },
     {
       num: '3',
-      title: 'Otrzymujesz rozwiązanie krok po kroku',
+      title: 'Uczysz się metody krok po kroku',
       icon: ListIcon,
-      description: 'Szczegółowe wyjaśnienie każdego kroku',
+      description: 'Szczegółowe wyjaśnienie każdego etapu i wzoru',
     },
   ];
 
@@ -110,10 +110,10 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
       <section className="hero-section">
         <div className="hero-content">
           <h1 className="hero-headline">
-            Rozwiąż zadanie maturalne z matematyki krok po kroku
+            Naucz się matematyki z korepetytorem AI
           </h1>
           <p className="hero-subheadline">
-            Wpisz lub wklej dowolne zadanie. AI pokaże rozwiązanie po polsku, z każdym krokiem i wzorem. Bez logowania, bez opłat.
+            Wpisz lub wklej dowolne zadanie. Korepetytor AI po polsku wytłumaczy ci metodę krok po kroku i pokaże, jak myśleć matematycznie. Bez logowania, bez opłat.
           </p>
 
           {/* Feature Pills */}
@@ -143,7 +143,7 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
       {/* Example Prompts Section: pierwsza interakcja above the fold,
           żeby użytkownik klikał od razu i nie odbijał się ze strony. */}
       <section className="examples-section">
-        <h2 className="section-title">Kliknij przykład żeby zacząć</h2>
+        <h2 className="section-title">Kliknij przykład, żeby zobaczyć wyjaśnienie</h2>
         <div className="examples-grid">
           {examplePrompts.map((prompt) => (
             <button

@@ -92,14 +92,14 @@ function layout(title, description, canonical, body) {
 <body>
   <div class="header">
     <a href="/">Formulo</a>
-    <div class="subtitle">Darmowy asystent matematyczny AI po polsku</div>
+    <div class="subtitle">Darmowy korepetytor AI z matematyki po polsku</div>
   </div>
   <div class="container">
     ${body}
-    <a href="/" class="cta">Rozwiąż zadanie z AI</a>
+    <a href="/" class="cta">Naucz się z korepetytorem AI</a>
   </div>
   <div class="footer">
-    <a href="/">formulo.pl</a> &middot; Darmowy asystent matematyczny oparty na modelu Bielik
+    <a href="/">formulo.pl</a> &middot; Darmowy korepetytor AI z matematyki oparty na modelu Bielik
   </div>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/contrib/auto-render.min.js"
@@ -129,10 +129,10 @@ const indexCards = datasets.map(ds => {
 
 const indexHtml = layout(
   'Zadania maturalne z matematyki | Formulo',
-  'Zbiór zadań maturalnych CKE z matematyki (podstawowa i rozszerzona) z lat 2015-2024. Rozwiąż je krok po kroku z AI.',
+  'Zbiór zadań maturalnych CKE z matematyki (podstawowa i rozszerzona) z lat 2015-2024. Naucz się ich rozwiązywać krok po kroku z korepetytorem AI.',
   `${SITE}/zadania/`,
   `<h1>Zadania maturalne z matematyki</h1>
-   <p style="margin-bottom:1.5rem;color:#555">Wybierz rok i poziom. Każde zadanie możesz rozwiązać krok po kroku z pomocą AI.</p>
+   <p style="margin-bottom:1.5rem;color:#555">Wybierz rok i poziom. Każde zadanie możesz przejść krok po kroku z korepetytorem AI, który tłumaczy metodę.</p>
    ${indexCards}`
 );
 mkdirSync(join(OUT, 'zadania'), { recursive: true });
@@ -157,12 +157,12 @@ for (const ds of datasets) {
   }).join('\n');
 
   const yearTitle = `Matura ${ds.levelLabel} ${ds.year} | Zadania z matematyki`;
-  const yearDesc = `Wszystkie zadania z matury ${ds.level === 'rozszerzona' ? 'rozszerzonej' : 'podstawowej'} z matematyki ${ds.year}. Rozwiąż krok po kroku z AI.`;
+  const yearDesc = `Wszystkie zadania z matury ${ds.level === 'rozszerzona' ? 'rozszerzonej' : 'podstawowej'} z matematyki ${ds.year}. Naucz się ich rozwiązywać krok po kroku z korepetytorem AI.`;
 
   const yearHtml = layout(yearTitle, yearDesc, `${SITE}/zadania/${s}/`,
     `<div class="breadcrumb"><a href="/zadania/">Zadania maturalne</a> &rsaquo; Matura ${ds.levelLabel} ${ds.year}</div>
      <h1>Matura ${ds.levelLabel} ${ds.year} &ndash; Matematyka</h1>
-     <p style="margin-bottom:1.5rem;color:#555">${ds.tasks.length} zadań. Kliknij, by zobaczyć treść i rozwiązać z AI.</p>
+     <p style="margin-bottom:1.5rem;color:#555">${ds.tasks.length} zadań. Kliknij, by zobaczyć treść i przejść przez wyjaśnienie z korepetytorem AI.</p>
      ${taskCards}`
   );
   writeFileSync(join(yearDir, 'index.html'), yearHtml);
@@ -175,7 +175,7 @@ for (const ds of datasets) {
     const pts = task.metadata?.max_points || '';
 
     const taskTitle = `Zadanie ${num} | Matura ${ds.levelLabel} ${ds.year} | Formulo`;
-    const taskDesc = `Matura ${ds.level === 'rozszerzona' ? 'rozszerzona' : 'podstawowa'} ${ds.year}, zadanie ${num}${pts ? ` (${pts} pkt)` : ''}. Rozwiąż krok po kroku z darmowym asystentem AI.`;
+    const taskDesc = `Matura ${ds.level === 'rozszerzona' ? 'rozszerzona' : 'podstawowa'} ${ds.year}, zadanie ${num}${pts ? ` (${pts} pkt)` : ''}. Naucz się tej metody krok po kroku z darmowym korepetytorem AI.`;
 
     let optionsHtml = '';
     if (task.options && typeof task.options === 'object') {
@@ -222,22 +222,22 @@ for (const ds of datasets) {
 
 // 3. Topic landing pages
 const topics = [
-  { slug: 'funkcja-kwadratowa', title: 'Funkcja kwadratowa', desc: 'Zadania maturalne z funkcji kwadratowej: wyznaczanie wierzchołka, miejsc zerowych, postaci kanonicznej, iloczynu i ogólnej. Rozwiąż krok po kroku z AI.',
-    content: 'Funkcja kwadratowa to jeden z najczęstszych tematów na maturze z matematyki. Formulo rozwiązuje zadania z funkcji kwadratowej krok po kroku, wyjaśniając każdy etap: od wyznaczania delty, przez miejsca zerowe, po postać kanoniczną i analizę wykresu paraboli. Wspierane typy zadań obejmują równania kwadratowe, nierówności kwadratowe, wyznaczanie wierzchołka paraboli, analizę parametrów a, b, c oraz zadania z wartością największą i najmniejszą funkcji kwadratowej na przedziale.' },
-  { slug: 'trygonometria', title: 'Trygonometria', desc: 'Zadania maturalne z trygonometrii: funkcje trygonometryczne, tożsamości, równania i nierówności trygonometryczne. Rozwiąż z AI.',
-    content: 'Trygonometria obejmuje funkcje sinus, cosinus, tangens i cotangens, ich wykresy, tożsamości trygonometryczne, wzory redukcyjne oraz równania i nierówności trygonometryczne. Formulo rozwiązuje te zadania symboliczne przez SymPy, podając dokładne wartości (nie przybliżenia dziesiętne). Obsługiwane zagadnienia: wartości funkcji trygonometrycznych dla kątów standardowych, wzory na sumę i różnicę kątów, wzory podwójnego kąta, równania typu sin(x) = a, nierówności trygonometryczne, zastosowania trygonometrii w geometrii (twierdzenie sinusów i cosinusów).' },
-  { slug: 'ciagi', title: 'Ciągi arytmetyczne i geometryczne', desc: 'Zadania maturalne z ciągów: ciąg arytmetyczny, geometryczny, sumy częściowe, wzór ogólny. Krok po kroku z AI.',
+  { slug: 'funkcja-kwadratowa', title: 'Funkcja kwadratowa', desc: 'Zadania maturalne z funkcji kwadratowej: wyznaczanie wierzchołka, miejsc zerowych, postaci kanonicznej, iloczynu i ogólnej. Naucz się rozwiązywać krok po kroku z korepetytorem AI.',
+    content: 'Funkcja kwadratowa to jeden z najczęstszych tematów na maturze z matematyki. Formulo tłumaczy zadania z funkcji kwadratowej krok po kroku, wyjaśniając każdy etap: od wyznaczania delty, przez miejsca zerowe, po postać kanoniczną i analizę wykresu paraboli. Wspierane typy zadań obejmują równania kwadratowe, nierówności kwadratowe, wyznaczanie wierzchołka paraboli, analizę parametrów a, b, c oraz zadania z wartością największą i najmniejszą funkcji kwadratowej na przedziale.' },
+  { slug: 'trygonometria', title: 'Trygonometria', desc: 'Zadania maturalne z trygonometrii: funkcje trygonometryczne, tożsamości, równania i nierówności trygonometryczne. Naucz się z korepetytorem AI.',
+    content: 'Trygonometria obejmuje funkcje sinus, cosinus, tangens i cotangens, ich wykresy, tożsamości trygonometryczne, wzory redukcyjne oraz równania i nierówności trygonometryczne. Formulo tłumaczy te zadania symboliczne przez SymPy, podając dokładne wartości (nie przybliżenia dziesiętne). Obsługiwane zagadnienia: wartości funkcji trygonometrycznych dla kątów standardowych, wzory na sumę i różnicę kątów, wzory podwójnego kąta, równania typu sin(x) = a, nierówności trygonometryczne, zastosowania trygonometrii w geometrii (twierdzenie sinusów i cosinusów).' },
+  { slug: 'ciagi', title: 'Ciągi arytmetyczne i geometryczne', desc: 'Zadania maturalne z ciągów: ciąg arytmetyczny, geometryczny, sumy częściowe, wzór ogólny. Krok po kroku z korepetytorem AI.',
     content: 'Ciągi liczbowe to obowiązkowy temat maturalny. Formulo obsługuje ciągi arytmetyczne (wzór na n-ty wyraz, suma n wyrazów, własności), ciągi geometryczne (iloraz, suma, zbieżność szeregu geometrycznego), ciągi rekurencyjne oraz zadania tekstowe prowadzące do ciągów. System automatycznie rozpoznaje typ ciągu i dobiera odpowiedni wzór: a_n = a_1 + (n-1)d dla arytmetycznego, a_n = a_1 * q^(n-1) dla geometrycznego.' },
-  { slug: 'geometria-analityczna', title: 'Geometria analityczna', desc: 'Zadania maturalne z geometrii analitycznej: proste, okręgi, parabole, odległości, wektory. Rozwiąż z AI.',
-    content: 'Geometria analityczna na maturze obejmuje równania prostych (postać ogólna, kierunkowa, odcinkowa), wzajemne położenie prostych (równoległość, prostopadłość), odległość punktu od prostej, równanie okręgu, wzajemne położenie prostej i okręgu, parabole jako wykresy funkcji kwadratowych oraz wektory. Formulo rozwiązuje te zadania symbolicznie, wyznaczając współrzędne punktów przecięcia, odległości, pola figur i inne wielkości geometryczne.' },
-  { slug: 'prawdopodobienstwo', title: 'Rachunek prawdopodobieństwa', desc: 'Zadania maturalne z prawdopodobieństwa: prawdopodobieństwo klasyczne, warunkowe, schemat Bernoulliego. Rozwiąż z AI.',
-    content: 'Rachunek prawdopodobieństwa na maturze obejmuje prawdopodobieństwo klasyczne (stosunek zdarzeń sprzyjających do wszystkich), prawdopodobieństwo warunkowe, wzór Bayesa, schemat Bernoulliego (powtarzanie doświadczeń niezależnych), drzewa decyzyjne i podstawy kombinatoryki potrzebne do obliczania liczby zdarzeń. Formulo rozwiązuje te zadania krok po kroku, obliczając symboliczne ułamki zamiast przybliżeń dziesiętnych.' },
-  { slug: 'pochodne', title: 'Pochodne i analiza funkcji', desc: 'Zadania z pochodnych: obliczanie pochodnych, ekstrema, monotoniczność, styczne, optymalizacja. Rozwiąż z AI.',
+  { slug: 'geometria-analityczna', title: 'Geometria analityczna', desc: 'Zadania maturalne z geometrii analitycznej: proste, okręgi, parabole, odległości, wektory. Naucz się z korepetytorem AI.',
+    content: 'Geometria analityczna na maturze obejmuje równania prostych (postać ogólna, kierunkowa, odcinkowa), wzajemne położenie prostych (równoległość, prostopadłość), odległość punktu od prostej, równanie okręgu, wzajemne położenie prostej i okręgu, parabole jako wykresy funkcji kwadratowych oraz wektory. Formulo tłumaczy te zadania symbolicznie, wyznaczając współrzędne punktów przecięcia, odległości, pola figur i inne wielkości geometryczne.' },
+  { slug: 'prawdopodobienstwo', title: 'Rachunek prawdopodobieństwa', desc: 'Zadania maturalne z prawdopodobieństwa: prawdopodobieństwo klasyczne, warunkowe, schemat Bernoulliego. Naucz się z korepetytorem AI.',
+    content: 'Rachunek prawdopodobieństwa na maturze obejmuje prawdopodobieństwo klasyczne (stosunek zdarzeń sprzyjających do wszystkich), prawdopodobieństwo warunkowe, wzór Bayesa, schemat Bernoulliego (powtarzanie doświadczeń niezależnych), drzewa decyzyjne i podstawy kombinatoryki potrzebne do obliczania liczby zdarzeń. Formulo tłumaczy te zadania krok po kroku, obliczając symboliczne ułamki zamiast przybliżeń dziesiętnych.' },
+  { slug: 'pochodne', title: 'Pochodne i analiza funkcji', desc: 'Zadania z pochodnych: obliczanie pochodnych, ekstrema, monotoniczność, styczne, optymalizacja. Naucz się z korepetytorem AI.',
     content: 'Pochodne i analiza funkcji to tematy matury rozszerzonej. Formulo obsługuje: obliczanie pochodnych (wielomiany, funkcje wymierne, trygonometryczne, wykładnicze, logarytmiczne), wyznaczanie ekstremów lokalnych i globalnych, badanie monotoniczności, wyznaczanie równania stycznej do wykresu funkcji, zadania optymalizacyjne (szukanie minimum/maksimum) oraz pełny przebieg zmienności funkcji z analizą dziedziny, granic, asymptot i punktów przegięcia.' },
-  { slug: 'rownania', title: 'Równania i nierówności', desc: 'Zadania maturalne z równań: wielomianowe, wymierne, z wartością bezwzględną, z parametrem, układy równań. Rozwiąż z AI.',
-    content: 'Równania i nierówności to fundament matury z matematyki. Formulo rozwiązuje równania wielomianowe (w tym kwadratowe, sześcienne), równania wymierne, równania z wartością bezwzględną, równania z parametrem, układy równań liniowych i nieliniowych, nierówności wielomianowe, nierówności wymierne oraz nierówności z wartością bezwzględną. System automatycznie sprawdza dziedzinę i eliminuje rozwiązania pozorne.' },
-  { slug: 'kombinatoryka', title: 'Kombinatoryka', desc: 'Zadania maturalne z kombinatoryki: permutacje, kombinacje, wariacje, silnia, zasada mnożenia. Rozwiąż z AI.',
-    content: 'Kombinatoryka na maturze obejmuje permutacje (uporządkowania zbioru), kombinacje (wybór k z n elementów), wariacje z powtórzeniami i bez, silnię, symbol Newtona, zasadę mnożenia i dodawania oraz twierdzenie o dwumianie Newtona. Formulo rozwiązuje te zadania krok po kroku, weryfikując wynik brute-force (wyliczając wszystkie przypadki, gdy to możliwe).' },
+  { slug: 'rownania', title: 'Równania i nierówności', desc: 'Zadania maturalne z równań: wielomianowe, wymierne, z wartością bezwzględną, z parametrem, układy równań. Naucz się z korepetytorem AI.',
+    content: 'Równania i nierówności to fundament matury z matematyki. Formulo tłumaczy równania wielomianowe (w tym kwadratowe, sześcienne), równania wymierne, równania z wartością bezwzględną, równania z parametrem, układy równań liniowych i nieliniowych, nierówności wielomianowe, nierówności wymierne oraz nierówności z wartością bezwzględną. System automatycznie sprawdza dziedzinę i eliminuje rozwiązania pozorne.' },
+  { slug: 'kombinatoryka', title: 'Kombinatoryka', desc: 'Zadania maturalne z kombinatoryki: permutacje, kombinacje, wariacje, silnia, zasada mnożenia. Naucz się z korepetytorem AI.',
+    content: 'Kombinatoryka na maturze obejmuje permutacje (uporządkowania zbioru), kombinacje (wybór k z n elementów), wariacje z powtórzeniami i bez, silnię, symbol Newtona, zasadę mnożenia i dodawania oraz twierdzenie o dwumianie Newtona. Formulo tłumaczy te zadania krok po kroku, weryfikując wynik brute-force (wyliczając wszystkie przypadki, gdy to możliwe).' },
 ];
 
 mkdirSync(join(OUT, 'tematy'), { recursive: true });
@@ -255,7 +255,7 @@ const topicsIndexHtml = layout(
   'Wszystkie tematy maturalne z matematyki: funkcje, trygonometria, ciągi, geometria, prawdopodobieństwo, pochodne, równania, kombinatoryka.',
   `${SITE}/tematy/`,
   `<h1>Tematy maturalne z matematyki</h1>
-   <p style="margin-bottom:1.5rem;color:#555">Wybierz temat i rozwiązuj zadania krok po kroku z pomocą AI.</p>
+   <p style="margin-bottom:1.5rem;color:#555">Wybierz temat i ucz się rozwiązywać zadania krok po kroku z korepetytorem AI.</p>
    ${topicCards}`
 );
 writeFileSync(join(OUT, 'tematy', 'index.html'), topicsIndexHtml);
@@ -272,7 +272,7 @@ for (const t of topics) {
        <div class="task-content">${t.content}</div>
      </div>
      <h2>Przykładowe zadania</h2>
-     <p style="color:#555;margin-bottom:1rem">Wklej dowolne zadanie z tego tematu do Formulo, a AI rozwiąże je krok po kroku z dokładnymi obliczeniami SymPy.</p>`
+     <p style="color:#555;margin-bottom:1rem">Wklej dowolne zadanie z tego tematu do Formulo, a korepetytor AI wytłumaczy ci każdy krok rozwiązania z dokładnymi obliczeniami SymPy.</p>`
   );
   writeFileSync(join(OUT, 'tematy', `${t.slug}.html`), topicHtml);
   sitemapUrls.push(`${SITE}/tematy/${t.slug}`);

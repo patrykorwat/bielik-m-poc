@@ -134,13 +134,13 @@ function layout(title, description, canonical, body, jsonLd = null) {
 <body>
   <div class="header">
     <a href="/">Formulo</a>
-    <div class="subtitle">Darmowy asystent matematyczny AI po polsku</div>
+    <div class="subtitle">Darmowy korepetytor AI z matematyki po polsku</div>
   </div>
   <div class="container">
     ${body}
   </div>
   <div class="footer">
-    <a href="/">formulo.pl</a> &middot; Darmowy asystent matematyczny oparty na modelu Bielik
+    <a href="/">formulo.pl</a> &middot; Darmowy korepetytor AI z matematyki oparty na modelu Bielik
   </div>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.28/dist/contrib/auto-render.min.js"
@@ -168,7 +168,7 @@ for (const ds of datasets) {
 
     // Build title and description
     const taskTitle = `Matura ${levelLabel} ${ds.year} matematyka zadanie ${num} - rozwiązanie | Formulo`;
-    const taskDesc = `Matura ${ds.level === 'rozszerzona' ? 'rozszerzona' : 'podstawowa'} ${ds.year}, zadanie ${num}${pts ? ` (${pts} pkt)` : ''}. Pełne rozwiązanie z odpowiedzią i wyjaśnieniami. Rozwiąż to zadanie krok po kroku z darmowym asystentem AI Formulo.`;
+    const taskDesc = `Matura ${ds.level === 'rozszerzona' ? 'rozszerzona' : 'podstawowa'} ${ds.year}, zadanie ${num}${pts ? ` (${pts} pkt)` : ''}. Pełne rozwiązanie z odpowiedzią i wyjaśnieniami. Naucz się tej metody krok po kroku z darmowym korepetytorem AI Formulo.`;
 
     // Build canonical URL
     const canonical = `${SITE}/zadania/${s}/rozwiazanie-${num}`;
@@ -282,7 +282,7 @@ for (const ds of datasets) {
       ${optionsHtml}
       ${answerHtml}
 
-      <a href="/?q=${encodeForURL(task.question)}" class="cta-button">→ Rozwiąż to zadanie w Formulo</a>
+      <a href="/?q=${encodeForURL(task.question)}" class="cta-button">→ Przejdź przez to zadanie z korepetytorem AI</a>
 
       <div class="nav-section">
         <h3>Inne zadania z tego roku</h3>
