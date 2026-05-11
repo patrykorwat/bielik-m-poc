@@ -140,6 +140,22 @@ const WelcomeLanding: React.FC<WelcomeLandingProps> = ({
         </div>
       </section>
 
+      {/* Learning Principle: jasna deklaracja edukacyjnego charakteru
+          aplikacji, widoczna od razu po hero. Adresuje obawy o "ściąganie"
+          i ułatwia ręczną weryfikację w Google Ads / Search. */}
+      <section className="learning-principle" aria-label="Cel aplikacji">
+        <div className="principle-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+        </div>
+        <div className="principle-text">
+          <strong>Formulo to korepetytor, nie generator gotowych odpowiedzi.</strong>{' '}
+          Tłumaczymy metodę krok po kroku, żebyś zrozumiał materiał i samodzielnie rozwiązał kolejne zadanie. Aplikacja służy do nauki przed egzaminem, nie do zastępowania własnej pracy.
+        </div>
+      </section>
+
       {/* Example Prompts Section: pierwsza interakcja above the fold,
           żeby użytkownik klikał od razu i nie odbijał się ze strony. */}
       <section className="examples-section">
