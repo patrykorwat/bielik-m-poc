@@ -17,7 +17,7 @@
     "start:proxies": "concurrently \"npm run mcp-proxy\" \"npm run lean-proxy\"",
     "start:all": "concurrently \"npm run dev\" \"npm run mcp-proxy\" \"npm run lean-proxy\" \"npm run rag-service\"",
     "build:server": "tsc --project tsconfig.server.json",
-    "generate:seo": "node seo/generate.js",
+    "generate:seo": "node seo/generate.js && node seo/generate-solutions.js",
     "heroku-postbuild": "npm run build && npm run build:server && npm run generate:seo && cd mcp-sympy-server && npm install && npm run build",
     "start:heroku": "node heroku-start.js"
   },
